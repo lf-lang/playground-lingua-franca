@@ -1,30 +1,14 @@
 /**
- * Simple demonstration of asynchronous input and timed output.
- * This version is not portable. It runs on MacOS.
- * It serves as a demonstration for how to write Lingua Franca
- * programs that use Apple's AudioToolbox.
+ * Demonstration of timed distributed Lingua Franca programs.
+ * This program is not portable. It runs on MacOS.
  * 
- * This program opens a simple, terminal-based user interface for
- * specifying a rhythmic audio output. The rhythm is displayed in
- * the terminal as it is generated and produced as audio using
- * sample audio files.
+ * This program elaborates RhythmMac to have two players that
+ * run on different machines. Each players can select a musical
+ * instrument, choose its rhythm, and control its tempo. The
+ * two programs do not communicate.
  * 
- * This program also uses ncurses, which needs to be installed on your machine
- * for this to work. It also uses the library utility sensor_simulator,
- * provided with Lingua Franca, which uses keyboard input to simulate
- * asynchronous sensors and beeps to simulate timed output.
- * See sensor_simulator.h for documentation.
- * 
- * The merengue rhythm comes from here: 
- * https://www.8notes.com/school/lessons/percussion/merengue.asp
- * 
- * The sound files come from here:
- * https://freewavesamples.com
- * 
- * Sound files are assumed to be wav files with sample rate 44,100,
- * 16-bit samples, linear PCM encoded.
- * Use afconvert on Mac to convert to the assumed input format.
- * 
+ * @see RhythmMac
+ * @see RhythmMacDistributed
  * @author Edward A. Lee
  */
 target C {
@@ -230,12 +214,12 @@ reactor RhythmSource(sixteenth:time(200 msec)) {
             self->active_rhythm = self->rhythm;
             self->active_emphasis = self->emphasis;
             self->count = 0;
-        } 
+        }
 
         schedule(tick, self->tick_duration);
     =}
 }
- 
+
 /**
  * Produce a note when a `note` input is received.
  * 
@@ -287,7 +271,7 @@ reactor PlayWaveform {
         } else {
             lf_play_audio_waveform(waveforms[self->waveform_id], note->value, get_logical_time());
         }
-    =} deadline (10 msec) {=  // NOTE: deadline has to match BUFFER_DURATION_NS.
+    =} deadline (100 msec) {=  // NOTE: deadline has to match BUFFER_DURATION_NS.
         fprintf(stderr, "WARNING: Missed deadline!\n");
     =}
     
@@ -296,9 +280,14 @@ reactor PlayWaveform {
     =}
 }
 
-main reactor RhythmMac {
+reactor RhythmMacPlayer {
     source = new RhythmSource();
     play = new PlayWaveform();
     source.note -> play.note;
     source.instrument -> play.waveform;
+}
+
+federated reactor RhythmMac at 10.0.0.202 {
+    player1 = new RhythmMacPlayer() at 10.0.0.202;
+    player2 = new RhythmMacPlayer() at 10.0.0.199;
 }
