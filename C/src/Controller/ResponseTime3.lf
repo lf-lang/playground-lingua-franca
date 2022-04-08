@@ -1,0 +1,81 @@
+target C {
+    timeout: 1 sec,
+    keepalive: true
+}
+reactor PhysicalPlant {
+    preamble {=
+        void* my_thread(void* a) {
+            while(true) {
+                schedule_int(a, 0, 42);
+                lf_nanosleep(MSEC(33));
+            }
+        }
+    =}
+    input control:double;
+    output sensor:double;
+    state last_sensor_time:time(0);
+    state previous_sensor_time:time(0);
+    state thread_id:lf_thread_t(0);
+    physical action a:int;
+    reaction(startup) -> a {=
+        lf_thread_create(&self->thread_id, &my_thread, a);
+    =}
+    reaction(a) -> sensor {=
+        SET(sensor, 42);
+        self->previous_sensor_time = self->last_sensor_time;
+        self->last_sensor_time = get_logical_time();
+    =}
+    reaction(control) {=
+        instant_t control_time = get_physical_time();
+        info_print("Latency %lld.", control_time - self->previous_sensor_time);
+        info_print("Logical time: %lld.", get_elapsed_logical_time());
+        info_print("Lag: %lld.", get_elapsed_physical_time() - get_elapsed_logical_time());
+    =} STP(33 msec) {=
+        warning_print("STP violation.");
+    =}
+}
+reactor Controller {
+    input sensor:double;
+    output control:double;
+    
+    state latest_control:double(0.0);
+    state first:bool(true);
+    state in_progress:bool(false);
+    
+    output request_for_planning:double;
+    input planning:double;
+    
+    reaction(planning) {=
+        self->latest_control = planning->value;
+        self->in_progress = false;
+    =}
+    reaction(sensor) -> control, request_for_planning {=
+        if (!self->first) {
+            SET(control, self->latest_control);
+        }
+        self->first = false;
+        info_print("******** in_progress: %d", self->in_progress);
+        if (!self->in_progress) {
+            self->in_progress = true;
+            SET(request_for_planning, sensor->value);
+        }
+    =}
+}
+reactor Planner {
+    input request:double;
+    output response: double;
+    reaction(request) -> response {=
+        lf_nanosleep(MSEC(100));
+        SET(response, request->value);
+    =}
+}
+main reactor {
+    p = new PhysicalPlant();
+    c = new Controller();
+    pl = new Planner();
+    
+    p.sensor -> c.sensor;
+    c.request_for_planning -> pl.request;
+    pl.response -> c.planning after 100 msec;
+    c.control -> p.control;
+}
