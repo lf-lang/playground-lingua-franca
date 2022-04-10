@@ -29,12 +29,14 @@
  *
 **/
 target Python {
-    files: ["include/pacman.py", "include/images"]
+    files: ["include/hbpacman.py", "include/images"]
 };
 
 preamble {=
-    import pacman
     import os
+    curr_dirname = os.path.dirname(__file__)
+    sys.path.append(curr_dirname)
+    import hbpacman as pacman
 =}
 
 #### View
