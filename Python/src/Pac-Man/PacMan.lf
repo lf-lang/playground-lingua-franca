@@ -1,7 +1,7 @@
 /**
  * A simple Pacman game.
  * Source: https://github.com/hbokmann/Pacman
- * FIXME: N/A
+ * LICENSE: N/A
  *
  * To run:
  * 1- lfc src/PacMan.lf
