@@ -26,7 +26,7 @@ reactor WebCam(webcam_id(0)) {
     state thread_should_be_running
     physical action frame_action
     preamble {=
-        import cv2
+        from cv2 import cv2
         import threading
         
         def video_capture(self, frame_action, running):
@@ -122,7 +122,7 @@ reactor Plotter(label_deadline(100 msec)) {
     state _prev_time(0);
 
     preamble {=
-        import cv2
+        from cv2 import cv2
     =}
     
     /**
