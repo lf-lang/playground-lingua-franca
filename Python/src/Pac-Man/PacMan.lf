@@ -47,7 +47,6 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     input score
     input[5] icon_name
 
-    output keyboard_events
     output tick
     output[5] icon
     
@@ -90,11 +89,6 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
         pacman.pygame.display.flip()
         self._clock.tick()
         tick.set(True)
-    =}
-
-    timer pygame_event(0, 100 msec)
-    reaction(pygame_event) -> keyboard_events {=
-        keyboard_events.set(pacman.pygame.event.get())
     =}
 
     reaction(static_sprites) {=
@@ -181,9 +175,9 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 ## Player
 # Should be replacable with an AI
 reactor Player extends BaseCharacter {
-    input keyboard_events
-
-    reaction(keyboard_events) -> sprite {=
+    timer pygame_event(0, 100 msec)
+    reaction(pygame_event) -> sprite {=
+        keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events.value:
             if event.type == pacman.pygame.QUIT:
                 request_stop()
@@ -414,9 +408,6 @@ main reactor {
     
     (controller.wall_list, controller.gate)+ -> 
         player.wall_list, player.gate_list, display.static_sprites
-
-    # Send any captured keyboard event to the player to react according to the issued command
-    display.keyboard_events -> player.keyboard_events
 
     (display.tick)+ -> 
         controller.tick, 
