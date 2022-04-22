@@ -178,7 +178,7 @@ reactor Player extends BaseCharacter {
     timer pygame_event(0, 100 msec)
     reaction(pygame_event) -> sprite {=
         keyboard_events = pacman.pygame.event.get()
-        for event in keyboard_events.value:
+        for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
                 request_stop()
             if event.type == pacman.pygame.KEYDOWN:
