@@ -1,9 +1,6 @@
-# Gnuplot commands for the FurutaPendulumWithOutput.lf program.
+# Gnuplot commands for the FurutaPendulum.lf program.
 
 set title 'Pendulum'            # Set graph title
-
-set xrange ["0":"3"]            # Set x-axis range of values
-set yrange [-2:2.5]             # Set y-axis range of values
 
 set xlabel "Time (seconds)"
  
