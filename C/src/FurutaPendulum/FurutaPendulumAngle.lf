@@ -15,7 +15,7 @@ import PendulumSimulation from "PendulumSimulation.lf";
 import Print from "FurutaPendulum.lf";
 
 main reactor {
-    p = new PendulumSimulation(initial_theta = 0.1);
+    p = new PendulumSimulation();
     c = new PendulumController();
     pr_theta = new Print(filename = "theta.data");
     p.phi, p.d_phi -> c.phi, c.d_phi;
