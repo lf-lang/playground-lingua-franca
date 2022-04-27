@@ -1,5 +1,6 @@
 target Python {
     files: [gui.py, keys.png, soundfont.sf2],
+    threading: true,
     keepalive: true
 };
 
