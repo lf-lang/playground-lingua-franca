@@ -1,27 +1,28 @@
 target Python;
-# A simple forward-Euler simulation of a Furuta pendulum,
-# based on the Ptolemy II model constructed by Johan Eker
-# and described in this paper:
-# 
-# J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
-# “Realistic simulations of embedded control systems,”
-# IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
-# 
-# The Ptolemy II model is more accurate because it uses an
-# RK-45 solver.
-# 
-# This outputs its state every `sample_period`.
-# It updates the state before outputting it
-# using the most recently received control input,
-# except on the first input, where it just outputs
-# the initial state.
-# 
-# The `theta` output is the angle of the pendulum,
-# which is 0 when the pendulum is pointing straight up,
-# and `d_theta` is its initial angular velocity.
-# The `phi` output is the angle of the horizontal
-# arm and `d_phi` is its angular velocity.
-# @author Edward A. Lee
+/**
+ * A simple forward-Euler simulation of a Furuta pendulum,
+ * based on the Ptolemy II model constructed by Johan Eker
+ * and described in this paper:
+ * 
+ * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
+ * “Realistic simulations of embedded control systems,”
+ * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
+ * 
+ * The Ptolemy II model is more accurate because it uses an
+ * RK-45 solver, but this is adequate for many purposes.
+ * 
+ * This outputs its state every `sample_period`.
+ * It updates the state before outputting it
+ * using the most recently received control input.
+ * 
+ * The `theta` output is the angle of the pendulum,
+ * which is 0 when the pendulum is pointing straight up,
+ * and `d_theta` is its initial angular velocity.
+ * The `phi` output is the angle of the horizontal
+ * arm and `d_phi` is its angular velocity.
+ *
+ * @author Edward A. Lee
+ */
 preamble {=
     import math
 =}
