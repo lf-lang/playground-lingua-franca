@@ -127,11 +127,11 @@ reactor MessageReceiver {
                     strcpy(writable_string, msg->data.c_str());
                     // writable_string[msg->data.length()] = '\0'; // Terminate with 0
                     RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data.c_str());
-                    std::cout << "At tag (" << get_elapsed_logical_time() << ","
+                    std::cout << "At tag (" << lf_time_logical_elapsed() << ","
                               << get_microstep() << ") calling schedule_value with value " 
                               << writable_string << " and length " << msg->data.length()
                               << "." << std::endl;
-                    schedule_copy(physical_action_, 0, &(writable_string), msg->data.length() + 1);
+                    lf_schedule_copy(physical_action_, 0, &(writable_string), msg->data.length() + 1);
                     // std::cout << "Done calling schedule_value." << std::endl;
                 }
                 rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;

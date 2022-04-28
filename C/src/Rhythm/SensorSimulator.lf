@@ -31,10 +31,10 @@ main reactor {
         show_tick("*");
     =}
     reaction(r) {=
-        info_print("Elapsed logical time: %lld.", get_elapsed_logical_time());
+        info_print("Elapsed logical time: %lld.", lf_time_logical_elapsed());
         show_tick(".");
     =}
     reaction(key) {=
-        info_print("You typed '%s' at elapsed time %lld.", key->value, get_elapsed_logical_time());
+        info_print("You typed '%s' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
     =}
 }

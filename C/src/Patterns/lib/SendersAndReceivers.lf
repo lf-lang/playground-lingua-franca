@@ -11,7 +11,7 @@ target C;
 reactor SendOnce {
     output out:int;
     reaction(startup) -> out {=
-        SET(out, 42);
+        lf_set(out, 42);
     =}
 }
 
@@ -33,7 +33,7 @@ reactor SendCount(
     output out:int;
     timer t(offset, period);
     reaction(t) -> out {=
-        SET(out, self->count);
+        lf_set(out, self->count);
         self->count += self->increment;
     =}
 }
@@ -46,7 +46,7 @@ reactor Receive {
     input in:int;
     reaction(in) {=
         info_print("At elapsed tag (%lld, %d), received %d.",
-            get_elapsed_logical_time(), get_microstep(),
+            lf_time_logical_elapsed(), get_microstep(),
             in->value
         );
     =}
@@ -56,18 +56,18 @@ reactor ReceiveAndSend {
     input in:int;
     output out:int;
     reaction(in) -> out {=
-        SET(out, in->value);
+        lf_set(out, in->value);
     =}
 }
 reactor SendOnceAndReceive {
     input in:int;
     output out:int;
     reaction(startup) -> out {=
-        SET(out, 42);
+        lf_set(out, 42);
     =}
     reaction(in) {=
         info_print("At tag (%lld, %d), received %d.",
-            get_elapsed_logical_time(),
+            lf_time_logical_elapsed(),
             get_microstep(),
             in->value
         );
@@ -130,12 +130,12 @@ reactor SendPeriodicallyAndReceiveMultiport (
     state count:int(start);
     
     reaction(t) -> out {=
-        SET(out, self->count);
+        lf_set(out, self->count);
         self->count += self->increment;
     =}
     reaction(in) {=
         info_print("At tag (%lld, %d), received:",
-            get_elapsed_logical_time(), get_microstep()
+            lf_time_logical_elapsed(), get_microstep()
         );
         for (int i = 0; i < self->width; i++) {
             info_print("  On channel %d: %d", i, in[i]->value);
@@ -161,13 +161,13 @@ reactor LocalRemoteUpdates(
     state count:int(0);
     
     reaction(t) -> out {=
-        SET(out, self->increment);
+        lf_set(out, self->increment);
         self->count += self->increment;
     =}
     reaction(in) {=
         self->count += in->value;
         info_print("At tag (%lld, %d), count is %d",
-            get_elapsed_logical_time(), get_microstep(),
+            lf_time_logical_elapsed(), get_microstep(),
             self->count
         );
     =}
@@ -182,7 +182,7 @@ reactor SendAndReceiveWithLocalQuery(
         period = query_period
     );
     reaction(local_query.out) -> local_query.in {=
-        SET(local_query.in, self->count);
+        lf_set(local_query.in, self->count);
     =}
 }
 // @label Accumulate local/remote increments, delayed query.
@@ -197,9 +197,9 @@ reactor SendAndReceiveWithDelayedQuery(
     );
     logical action a(query_delay);
     reaction(local_query.out) -> a {=
-        schedule(a, 0);
+        lf_schedule(a, 0);
     =}
     reaction(a) -> local_query.in {=
-        SET(local_query.in, self->count);
+        lf_set(local_query.in, self->count);
     =}
 }

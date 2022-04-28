@@ -84,8 +84,8 @@ reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
 
         # log structure: (elapsed_physical_time:int, tag:int, remote:bool, do_lock:bool, auto:bool)
         def append_log(self, auto, remote, do_lock):
-            elapsed_tag = Tag(get_elapsed_logical_time(), get_microstep())
-            log_entry = (get_elapsed_physical_time(), elapsed_tag, remote, do_lock, auto)
+            elapsed_tag = Tag(lf.time.logical_elapsed(), get_microstep())
+            log_entry = (lf.time.physical_elapsed(), elapsed_tag, remote, do_lock, auto)
             self.logger.append_log(self.format_log_message(log_entry))
 
         def listen_for_keypress(self, press_lock, press_unlock):

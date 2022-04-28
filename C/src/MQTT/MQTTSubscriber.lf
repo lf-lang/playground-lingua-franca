@@ -80,7 +80,7 @@ reactor MQTTSubscriber (
             int topicLen, 
             MQTTClient_message *message
         ) {
-            instant_t receive_physical_time = get_physical_time();
+            instant_t receive_physical_time = lf_time_physical();
             // If a physical timestamp was sent, report the transport time.
             size_t string_length = strlen((char*)message->payload); // Assumes null-terminated string.
             if (message->payloadlen == string_length + 1 + 2*sizeof(instant_t)) {
@@ -103,7 +103,7 @@ reactor MQTTSubscriber (
             lf_mutex_lock(&mutex);
             
             instant_t timestamp = extract_int64((unsigned char*)message->payload + message->payloadlen - sizeof(instant_t));
-            interval_t delay = timestamp - get_logical_time();
+            interval_t delay = timestamp - lf_time_logical();
             // printf("DEBUG: MQTTSubscriber.message_arrived: received timestamp that is %lld ahead of current_time %lld.\n", *timestamp - start_time, current_time);
             // printf("DEBUG: MQTTSubscriber.message_arrived: physical time is ahead of current logical time by: %lld.\n", receive_physical_time - current_time);
                         
@@ -115,14 +115,14 @@ reactor MQTTSubscriber (
             // exactly the logical time at the publisher plus the offset.
             // Otherwise, it will be scheduled at the current physical time.
             // The incoming message is in dynamically allocated memory.
-            // We copy the message using schedule_copy() because, unfortunately, Paho MQTT uses its own
+            // We copy the message using lf_schedule_copy() because, unfortunately, Paho MQTT uses its own
             // version of malloc() and free() (defined in Heap.h and Heap.c).
             // We could modify Paho MQTT to use the generic malloc() and free(),
-            // and then we could use schedule_value() to avoid the copy.
+            // and then we could use lf_schedule_value() to avoid the copy.
             // Note that the last 8 bytes of the message are the sender's timestamp.
             // We include that in the copy so that the reaction to the physical action
             // can measure the latency.
-            schedule_copy(incoming_message, delay, (char*)message->payload, message->payloadlen);
+            lf_schedule_copy(incoming_message, delay, (char*)message->payload, message->payloadlen);
             
             lf_mutex_unlock(&mutex);
 
@@ -208,7 +208,7 @@ reactor MQTTSubscriber (
         // The incoming_message action contains a token that we can just forward.
         // The allocated memory will be freed when the token's reference count hits 0.
         // Note that this token will still contain the sender's timestamp.
-        SET_TOKEN(message, incoming_message->token);
+        lf_set_token(message, incoming_message->token);
                 
         // Get the sender's timestamp.
         instant_t* timestamp = (instant_t*)(
@@ -221,14 +221,14 @@ reactor MQTTSubscriber (
         // and its receipt here, offset by the clock synchronization error,
         // assuming that the sender sent the message at a physical time matching its
         // logical timestamp.
-        interval_t latency = get_logical_time() - *timestamp;
+        interval_t latency = lf_time_logical() - *timestamp;
         LOG_PRINT("MQTTSubscriber.reaction: Received timestamp is larger than sent timestamp by: %lld.", latency);
         
         // If a physical timestamp was sent, use that to collect
         // latency stats instead of the logical time increment.
         size_t string_length = strlen(incoming_message->value); // Assumes null-terminated string.
         if (incoming_message->token->length == string_length + 1 + 2*sizeof(instant_t)) {
-            instant_t receive_physical_time = get_physical_time();
+            instant_t receive_physical_time = lf_time_physical();
             instant_t physical_timestamp = extract_int64((unsigned char*)(incoming_message->value + string_length + 1));
             latency = receive_physical_time - physical_timestamp;
             // printf("DEBUG: MQTTReceiver.reaction: Reacted to message after measured latency of %lld nsec (assuming synchronized clocks).\n", latency);

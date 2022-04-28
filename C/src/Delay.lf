@@ -28,7 +28,7 @@ reactor Ramp {
     output y:int;
     state count:int(0);
     reaction(t) -> y {=
-   		SET(y, self->count);
+   		lf_set(y, self->count);
    		self->count++;
     =}
 }
@@ -41,10 +41,10 @@ reactor Delay2 {
 	input x:int;
 	output y:int;
 	reaction(a) -> y {=
-        SET(y, a->value);
+        lf_set(y, a->value);
     =}
     reaction(x) -> a {=
-        schedule_int(a, 0, x->value);
+        lf_schedule_int(a, 0, x->value);
     =}
 }
 
@@ -56,7 +56,7 @@ reactor Print {
     reaction(x) {=
         printf("Logical time: %lld, Physical time %lld"
         		", Value: %d\n",
-        		get_elapsed_logical_time(),
-        		get_elapsed_physical_time(), x->value);
+        		lf_time_logical_elapsed(),
+        		lf_time_physical_elapsed(), x->value);
     =}
 }

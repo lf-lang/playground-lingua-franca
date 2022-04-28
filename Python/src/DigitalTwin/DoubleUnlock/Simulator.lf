@@ -40,13 +40,13 @@ reactor DoubleUnlockKeyFobTester(initial_delay(5)) {
     =}
 
     reaction(simulate_press_fob) -> send_lock_press_to_fob {=
-        tag = get_current_tag()
+        tag = lf.tag()
         print(f"Sent lock press {simulate_press_fob.value} to fob at ({tag.time}, {tag.microstep})")
         send_lock_press_to_fob.set(simulate_press_fob.value)
     =}
 
     reaction(simulate_press_twin) -> send_lock_press_to_twin {=
-        tag = get_current_tag()
+        tag = lf.tag()
         print(f"Sent lock press {simulate_press_twin.value} to twin at ({tag.time}, {tag.microstep})")
         send_lock_press_to_twin.set(simulate_press_twin.value)
     =}

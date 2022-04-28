@@ -85,19 +85,19 @@ reactor CustomerFactory(
     reaction(startup, next) -> send_customer, next {=                
         // send the new customer to the waiting room
         self->attempts++;
-        SET(send_customer, self->next_customer_id++);
+        lf_set(send_customer, self->next_customer_id++);
         
         if (self->next_customer_id < self->num_customers) {
             // Schedule again.
             interval_t delay = random_time(self->max_time_between_customers);
-            schedule(next, delay);
+            lf_schedule(next, delay);
         }
     =}
     
     reaction (again) -> send_customer {=
         size_t customer_id = again->value;
         self->attempts++;
-        SET(send_customer, customer_id);
+        lf_set(send_customer, customer_id);
     =}
     
     reaction (customer_returned) -> again {=
@@ -106,7 +106,7 @@ reactor CustomerFactory(
                 // The customer returned because the waiting room is full.
                 // Schedule again.
                 interval_t delay = random_time(self->max_time_between_customers);
-                schedule_int(again, delay, i);
+                lf_schedule_int(again, delay, i);
             }
         }
     =}
@@ -122,7 +122,7 @@ reactor CustomerFactory(
     
     reaction (shutdown) {=
         char buffer[LF_TIME_BUFFER_LENGTH];
-        lf_readable_time(buffer, get_elapsed_logical_time());
+        lf_readable_time(buffer, lf_time_logical_elapsed());
         info_print("Finished: %d customers got haircuts in %d attempts over %s.", 
                 self->done_customers, self->attempts, buffer
         );
@@ -158,11 +158,11 @@ reactor WaitingRoom(capacity:size_t(1000), num_customers:size_t(2000)) {
          size_t customer_id = customer_enters->value;
          
          if (deque_size(&self->queue) == self->capacity) {
-             SET(full[customer_id], true);
+             lf_set(full[customer_id], true);
          } else {
             if (self->barber_asleep) {
                 self->barber_asleep = false;
-                SET(barber_leaves_with_customer, customer_id);
+                lf_set(barber_leaves_with_customer, customer_id);
             } else {
                 // Note that the customer_id is being cast to a pointer
                 // because the payload of a queue element is a pointer.
@@ -170,7 +170,7 @@ reactor WaitingRoom(capacity:size_t(1000), num_customers:size_t(2000)) {
                 // to recast it to size_t, assuming void* has at least as
                 // many bits as size_t, which it must.
                 deque_push_back(&self->queue, (void*)customer_id);
-                SET(wait[customer_id], true);    
+                lf_set(wait[customer_id], true);    
             }
         }
     =}
@@ -179,7 +179,7 @@ reactor WaitingRoom(capacity:size_t(1000), num_customers:size_t(2000)) {
         if (deque_is_empty(&self->queue)) {
             self->barber_asleep = true;
         } else {
-            SET(barber_leaves_with_customer, (size_t)deque_pop_front(&self->queue));
+            lf_set(barber_leaves_with_customer, (size_t)deque_pop_front(&self->queue));
         }
     =}
 }
@@ -201,16 +201,16 @@ reactor Customer(bank_index:size_t(0)) {
     
     reaction (room_full) -> returned {=
         char buffer[LF_TIME_BUFFER_LENGTH];
-        lf_readable_time(buffer, get_elapsed_logical_time());
+        lf_readable_time(buffer, lf_time_logical_elapsed());
         info_print("Customer %d: Turned away at %s. Will try later.",
                 self->bank_index, buffer
         );
-        SET(returned, true);
+        lf_set(returned, true);
     =}
     
     reaction (wait) {=
         char buffer[LF_TIME_BUFFER_LENGTH];
-        lf_readable_time(buffer, get_elapsed_logical_time());
+        lf_readable_time(buffer, lf_time_logical_elapsed());
         info_print("Customer %d: Entered waiting room at %s. Waiting.",
                 self->bank_index, buffer
         );
@@ -218,7 +218,7 @@ reactor Customer(bank_index:size_t(0)) {
     
     reaction (start_cutting) {= 
         char buffer[LF_TIME_BUFFER_LENGTH];
-        lf_readable_time(buffer, get_elapsed_logical_time());
+        lf_readable_time(buffer, lf_time_logical_elapsed());
         info_print("Customer %d: Started a haircut at %s.",
                 self->bank_index, buffer
         );
@@ -226,11 +226,11 @@ reactor Customer(bank_index:size_t(0)) {
    
     reaction (done_cutting) -> done {=
         char buffer[LF_TIME_BUFFER_LENGTH];
-        lf_readable_time(buffer, get_elapsed_logical_time());
+        lf_readable_time(buffer, lf_time_logical_elapsed());
         info_print("Customer %d: Finished a haircut at %s.",
                 self->bank_index, buffer
         );
-        SET(done, true);
+        lf_set(done, true);
     =}
 }
 
@@ -260,20 +260,20 @@ reactor Barber(
           
     reaction (done) -> done_cutting, next {=
         int customer_id = done->value;
-        SET(done_cutting[customer_id], true);
-        SET(next, true);
+        lf_set(done_cutting[customer_id], true);
+        lf_set(next, true);
     =}
     
     reaction (enter) -> start_cutting, done {=        
         int customer_id = enter->value;
-        SET(start_cutting[customer_id], true);
+        lf_set(start_cutting[customer_id], true);
         
         // Calculate a random delay.
         interval_t delay = self->min_cut_time
                 + random_time(self->max_cut_time - self->min_cut_time);
         
         // Notify the customer 
-        schedule_int(done, delay, customer_id);
+        lf_schedule_int(done, delay, customer_id);
     =}
 }
 

@@ -98,7 +98,7 @@ reactor MessageGenerator {
     reaction(t) {=        
         auto message = std_msgs::msg::Int64();
         // std::cout << "Executing timer reaction." << std::endl;
-        message.data = get_logical_time() + MSEC(25); // Add a 25 msec delay
+        message.data = lf_time_logical() + MSEC(25); // Add a 25 msec delay
         // RCLCPP_INFO(self->minimal_publisher->get_logger(),
         //            "Sender publishing: '%lld'", message.data);
         self->minimal_publisher->publisher_->publish(message);
@@ -126,10 +126,10 @@ reactor MessageReceiver {
                 void topic_callback(const std_msgs::msg::Int64::SharedPtr msg) const {
                     // writable_string[msg->data.length()] = '\0'; // Terminate with 0
                     // RCLCPP_INFO(this->get_logger(), "I heard: '%lld'", msg->data);
-                    // std::cout << "At tag (" << get_elapsed_logical_time() << ","
+                    // std::cout << "At tag (" << lf_time_logical_elapsed() << ","
                     //          << get_microstep() << ") calling schedule_copy with value " 
                     //          << msg->data  << "." << std::endl;
-                    schedule_copy(physical_action_, 0, &(msg->data), sizeof(instant_t));
+                    lf_schedule_copy(physical_action_, 0, &(msg->data), sizeof(instant_t));
                     // std::cout << "Done calling schedule_value." << std::endl;
                 }
                 rclcpp::Subscription<std_msgs::msg::Int64>::SharedPtr subscription_;
@@ -147,12 +147,12 @@ reactor MessageReceiver {
     reaction(ros_message_a) -> ros_message_l {=
         // std::cout << "Physical action triggered." << std::endl;
         // printf("Received: %lld.\n", ros_message_a->value);
-        schedule(ros_message_l, ros_message_a->value - get_logical_time());
+        lf_schedule(ros_message_l, ros_message_a->value - lf_time_logical());
     =}
     
     reaction(ros_message_l) {=
         printf("PTIDES reaction called at tag (%lld, %u).\n",
-               get_elapsed_logical_time(),
+               lf_time_logical_elapsed(),
                get_microstep());
     =}
 

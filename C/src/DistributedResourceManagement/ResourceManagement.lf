@@ -67,37 +67,37 @@ reactor Client(
     
     reaction(startup, release_trigger) -> release, request_trigger {=
         if (release_trigger->is_present) {
-            tag_t tag = get_current_tag();
+            tag_t tag = lf_tag();
             info_print("%s (ID %d): At tag (%lld, %u), released access.",
                 self->name,
                 self->id,
                 tag.time - start_time, tag.microstep
             );
-            SET(release, true);
+            lf_set(release, true);
         }
-        schedule(request_trigger, 0);
+        lf_schedule(request_trigger, 0);
     =}
     
     reaction(request_trigger) -> request {=
-        tag_t tag = get_current_tag();
+        tag_t tag = lf_tag();
         info_print("%s (ID %d): At tag (%lld, %u), requesting access.",
             self->name,
             self->id,
             tag.time - start_time, tag.microstep
         );
         self->requests_outstanding++;
-        SET(request, true);
+        lf_set(request, true);
     =}
     
     reaction (grant) -> release_trigger {=
-        tag_t tag = get_current_tag();
+        tag_t tag = lf_tag();
         info_print("%s (ID %d): At tag (%lld, %u), granted access.",
             self->name,
             self->id,
             tag.time - start_time, tag.microstep
         );
         self->requests_outstanding--;
-        schedule(release_trigger, 0);
+        lf_schedule(release_trigger, 0);
     =}
     
     reaction(shutdown) {=
@@ -247,7 +247,7 @@ reactor ResourceManager(
         // Just forward the request. The determination of whether
         // the request can be granted cannot be made until we have received
         // any remote requests with the same tag.
-        SET(request, self->id);
+        lf_set(request, self->id);
     =}
     
     reaction(local_release) -> release {=
@@ -259,7 +259,7 @@ reactor ResourceManager(
             );
         } else {
             pop(&self->queue, NULL);
-            SET(release, self->id);
+            lf_set(release, self->id);
         }
     =}
     
@@ -280,7 +280,7 @@ reactor ResourceManager(
                         && self->queue.queue[self->queue.head] == self->id
                     ) {
                         // Next request on the queue is me!
-                        SET(local_grant, true);
+                        lf_set(local_grant, true);
                     }
                     // Since there shouldn't be more than one request, return now.
                     return;
@@ -358,7 +358,7 @@ reactor ResourceManager(
         // matches the local ID, grant the request.
         if (local_request->is_present && self->queue.queue[self->queue.head] == self->id) {
             // Grant request.
-            SET(local_grant, true);
+            lf_set(local_grant, true);
         }
     =}
     

@@ -21,11 +21,11 @@ reactor TakeTime(
     input in:int;
     output out:int;
     reaction(in) -> out {=
-        instant_t start_time = get_physical_time();
+        instant_t start_time = lf_time_physical();
         int f0 = 0;
         int f1 = 1;
         int count = 0;
-        while (get_physical_time() < start_time + self->approximate_time) {
+        while (lf_time_physical() < start_time + self->approximate_time) {
         	int next_term = f0 + f1;
         	if (next_term < 0LL) {
                 // Overflow has occurred. Start over.
@@ -38,7 +38,7 @@ reactor TakeTime(
             	count++;
             }
         }
-        SET(out, f1);
+        lf_set(out, f1);
         info_print("The %d-th Fibonacci number is %d.", count, f0);
     =}
 }
