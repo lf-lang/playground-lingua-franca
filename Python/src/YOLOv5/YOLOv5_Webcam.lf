@@ -35,7 +35,7 @@ reactor WebCam(webcam_id(0)) {
             while running.is_set():
                 if ret is True:
                     # If got a frame, schedule the physical action
-                    frame_action.schedule(0, (get_elapsed_physical_time(), frame))
+                    frame_action.schedule(0, (lf.time.physical_elapsed(), frame))
                 ret, frame = self.stream.read()
             return None
     =}
@@ -139,7 +139,7 @@ reactor Plotter(label_deadline(100 msec)) {
     reaction(labels) {=
         # DNN output was on time
     =} deadline(label_deadline) {=
-        print(f"Received the DNN output late by about {(get_physical_time() - get_logical_time())/1000000}ms.")
+        print(f"Received the DNN output late by about {(lf.time.physical() - lf.time.logical())/1000000}ms.")
     =}
     
     /**

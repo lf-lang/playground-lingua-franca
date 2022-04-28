@@ -100,7 +100,7 @@ reactor UpdateGraphics {
         self.update_graphics.send(((152,251,152), 
                                    (0, 0, 0), 
                                    "{}. Press any key!".format(prompt.value)))
-        self.prompt_time = get_physical_time()
+        self.prompt_time = lf.time.physical()
     =}
     
     reaction(user_input) -> another {=
@@ -126,7 +126,7 @@ reactor UpdateGraphics {
                                            "Average response time: undefined"))
             request_stop()
         else:
-            time_in_ms = (get_logical_time() - self.prompt_time) // MSEC(1)
+            time_in_ms = (lf.time.logical() - self.prompt_time) // MSEC(1)
             self.update_graphics.send(((205,92,92), 
                                        (0, 0, 0), 
                                        "Response time in milliseconds: {}".format(time_in_ms), 
