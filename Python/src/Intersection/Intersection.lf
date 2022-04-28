@@ -201,7 +201,7 @@ reactor Vehicle (vehicle_id(0)){
             
             # First, how far are we from the intersection
             distance_remaining = self.intersection_pos.distance(self.current_pos)
-            time_remaining = (self.granted_time_to_enter - get_logical_time()) / (BILLION * 1.0)
+            time_remaining = (self.granted_time_to_enter - lf.time.logical()) / (BILLION * 1.0)
             
             print("########################################")
             print("Vehicle {}: Distance to intersection: {}m.".format(self.vehicle_id + 1, distance_remaining))
@@ -282,11 +282,11 @@ reactor Vehicle (vehicle_id(0)){
     reaction(grant) {=        
         print("Vehicle {} Granted access".format(self.vehicle_id + 1),
             "to enter the intersection at elapsed logical time {:d}.\n".format(
-                int(grant.value.arrival_time) - get_start_time()
+                int(grant.value.arrival_time) - lf.time.start()
             ),
             "Current elapsed logical time: {:d}, Current physical time is {:d}.".format(
-            get_elapsed_logical_time(),
-            get_elapsed_physical_time())
+            lf.time.logical_elapsed(),
+            lf.time.physical_elapsed())
         )
         
         self.granted_time_to_enter = grant.value.arrival_time
@@ -330,7 +330,7 @@ reactor RSU (
                 print("*** RSU: Vehicle {}'s distance to intersection is {}.".format(i+1, dr))
                 arrival_in = dr / speed_in_m_per_sec
                     		
-                time_message_sent = get_logical_time()
+                time_message_sent = lf.time.logical()
                 
                 # Convert the time interval to nsec (it is in seconds).
                 arrival_time_ns = time_message_sent + (arrival_in * BILLION)
@@ -356,9 +356,9 @@ reactor RSU (
                 print("*** RSU: Granted access to vehicle {} to enter at "
                     "time {} with average target velocity {} m/s. Next available time is {}".format(
                     i + 1,
-                    response.arrival_time - get_start_time(),
+                    response.arrival_time - lf.time.start(),
                     response.target_speed,
-                    self.earliest_free - get_start_time())
+                    self.earliest_free - lf.time.start())
                 )
     =}
     

@@ -20,7 +20,7 @@ reactor Plotter {
     state times({=[]=})
     state values({=[]=})
     reaction(data) {=
-        self.times.append(get_elapsed_logical_time()/1e9)
+        self.times.append(lf.time.logical_elapsed()/1e9)
         self.values.append(data.value)
     =}
     reaction(shutdown) {=

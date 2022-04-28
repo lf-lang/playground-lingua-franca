@@ -28,11 +28,11 @@ reactor Vehicle(
                 self.vehicle_id = vehicle_id
 
             def info(self, *args):
-                print(f"{get_logical_time()} - vehicle_{self.vehicle_id}: ", args)
+                print(f"{lf.time.logical()} - vehicle_{self.vehicle_id}: ", args)
 
         class LFClock(GenericClock):
             def get_current_time_in_ns(self):
-                return get_logical_time()
+                return lf.time.logical()
     =}
 
     reaction(startup) {=
