@@ -22,11 +22,11 @@ reactor GenericTask(name:string("")) {
         printf("%s\n", self->name);
         int r = rand() % 10;
         if (r == 0) {
-            SET(failure, true);
+            lf_set(failure, true);
         } else if (r >= 6) {
-            SET(success, true);
+            lf_set(success, true);
         } else {
-            schedule(continue_task, MSEC(250));
+            lf_schedule(continue_task, MSEC(250));
         }
     =}
 }
@@ -54,12 +54,12 @@ reactor Robot {
         // Potential solution for resuming after charging
 //        reaction(entry) -> MoveToObj.start {=
 //            // PROBLEM!!
-//            SET(MoveToObj.start, true);
+//            lf_set(MoveToObj.start, true);
 //        =}
         
         reaction(BatteryOK) -> Charging {=
             if (!BatteryOK->value) {
-                SET_MODE(Charging);
+                lf_set_mode(Charging);
                 printf("Battery empty\n");
             }
         =}
@@ -72,13 +72,13 @@ reactor Robot {
         
         // Potential solution for starting task when mode is entered because no start event is provided
 //        reaction(entry) -> GoCharge.start {=
-//            SET(GoCharge.start, true);
+//            lf_set(GoCharge.start, true);
 //        =}
         
         reaction(BatteryOK, GoCharge.success) -> Nominal {=
             // Assumes simultaneous presence
             if (BatteryOK->value && GoCharge.success->value) {
-                SET_MODE(Nominal);
+                lf_set_mode(Nominal);
                 printf("Battery charged\n");
             }
         =}
@@ -92,12 +92,12 @@ main reactor {
     robot = new Robot()
     
     reaction(startup) -> robot.start {=
-        SET(robot.start, true);
+        lf_set(robot.start, true);
     =}
 
     reaction(Battery) -> robot.BatteryOK {=
         self->battery_state--;
-        SET(robot.BatteryOK, self->battery_state > 0);
+        lf_set(robot.BatteryOK, self->battery_state > 0);
         if (self->battery_state <= 0) {
             self->battery_state = 5;
         }

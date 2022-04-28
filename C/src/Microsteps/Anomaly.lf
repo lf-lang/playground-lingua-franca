@@ -17,17 +17,17 @@ reactor Source {
     reaction(startup, redo) -> out1, out2, redo {=
         if (self->count++ < 4) {
             if (self->count % 2 == 0) {
-               SET (out2, self->count);
+               lf_set (out2, self->count);
             } else {
-               SET(out1, self->count);
+               lf_set(out1, self->count);
             }
-            schedule(redo, 0);
+            lf_schedule(redo, 0);
         } else {
             self->count = 0;
             // The following resets the microstep to 0.
             // If it were to not do that, then microsteps would
             // grow monotonically as execution advances.
-            schedule(redo, MSEC(10));
+            lf_schedule(redo, MSEC(10));
         }
     =}
 }
@@ -36,10 +36,10 @@ reactor Destination(name:string("dest")) {
     input in2:int;
     reaction (in1, in2) {=
         if (in1->is_present) {
-            printf("%s: Tag (%lld, %d): in1 received %d\n", self->name, get_elapsed_logical_time(), get_microstep(), in1->value);
+            printf("%s: Tag (%lld, %d): in1 received %d\n", self->name, lf_time_logical_elapsed(), get_microstep(), in1->value);
         }
         if (in2->is_present) {
-            printf("%s: Tag (%lld, %d): in2 received %d\n", self->name, get_elapsed_logical_time(), get_microstep(), in2->value);
+            printf("%s: Tag (%lld, %d): in2 received %d\n", self->name, lf_time_logical_elapsed(), get_microstep(), in2->value);
         }
     =}
 }

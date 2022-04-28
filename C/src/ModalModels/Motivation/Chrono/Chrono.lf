@@ -90,9 +90,9 @@ reactor ChronoLogic {
             	}
             }
             // Only create outputs for changes
-        	SET(d, self->dState);
-        	SET(s, self->sState);
-        	SET(m, self->mState);
+        	lf_set(d, self->dState);
+        	lf_set(s, self->sState);
+        	lf_set(m, self->mState);
         }
     =}
 }
@@ -103,7 +103,7 @@ reactor GetUserInput {
             int c;
             while(1) {
 				c = getchar();
-                schedule_copy(user_input, 0, &c, 1);
+                lf_schedule_copy(user_input, 0, &c, 1);
                 if (c == EOF) break;
             }
             return NULL;
@@ -123,7 +123,7 @@ reactor GetUserInput {
         if (user_input->value == 'x') {
             request_stop();
         } else {
-            SET(stst, 42);            
+            lf_set(stst, 42);            
         }
     =}
 }

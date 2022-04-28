@@ -52,7 +52,7 @@ reactor ModalModel(sample_size(10)) {
             self.count += 1
             if self.count == self.sample_size:
                 self.count = 0
-                processAVG.schedule(0)
+                processAVG.lf_schedule(0)
     =}
     
     /** @label Mode AVG: Process and Transition */
@@ -74,7 +74,7 @@ reactor ModalModel(sample_size(10)) {
             self.count += 1
             if self.count == self.sample_size:
                 self.count = 0
-                processMAX.schedule(0)
+                processMAX.lf_schedule(0)
     =}
     
     /** @label Mode MAX: Process and Transition */

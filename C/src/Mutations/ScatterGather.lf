@@ -31,7 +31,7 @@ reactor Worker(id:int(2)) {
     output worker_out:int;
     reaction(worker_in) -> worker_out {=
         printf("Worker received in first reaction%d\n", worker_in->value);
-        SET(worker_out, worker_in->value * self->id);
+        lf_set(worker_out, worker_in->value * self->id);
     =}
     reaction(worker_in) {=
         printf("Worker received second %d\n", worker_in->value);
@@ -58,7 +58,7 @@ reactor ScatterGather2 {
     // number of reactions sensitive to the input we will provide.
     template_worker = new Worker();
     reaction(in) -> template_worker.worker_in {=
-        SET(template_worker.worker_in, in->value[0]);
+        lf_set(template_worker.worker_in, in->value[0]);
         // SCATTER(in, worker_in, Worker, self->workers, id);
         // Create an array of pointers to work self structs.
         self->workers = malloc(in->length * sizeof(worker_self_t*));

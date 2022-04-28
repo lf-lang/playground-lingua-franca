@@ -50,36 +50,36 @@ reactor RandomSource(min_time:time(2 sec), max_time:time(8 sec)) {
         srand(time(0));
         
         // Schedule the first event.
-        schedule(prompt, additional_time(0, self->max_time - self->min_time));
+        lf_schedule(prompt, additional_time(0, self->max_time - self->min_time));
     =}
     reaction(prompt) -> out {=
         self->count++;
         printf("%d. Hit Return or Enter!", self->count);
         fflush(stdout);
-        SET(out, self->count);
+        lf_set(out, self->count);
     =}
     reaction(another) -> prompt {=
         // Schedule the next event.
-        schedule(prompt, additional_time(0, self->max_time - self->min_time));
+        lf_schedule(prompt, additional_time(0, self->max_time - self->min_time));
     =}
 }
 /**
  * Upon receiving a prompt, record the time of the prompt,
  * then listen for user input. When the user hits return,
- * then schedule a physical action that records the time
+ * then lf_schedule a physical action that records the time
  * of this event and then report the response time.
  */
 reactor GetUserInput {
     preamble {=
         // Thread to read input characters until an EOF is received.
-        // Each time a newline is received, schedule a user_response action.
+        // Each time a newline is received, lf_schedule a user_response action.
         void* read_input(void* user_response) {
             int c;
             while(1) {
                 while((c = getchar()) != '\n') {
                     if (c == EOF) break;
                 }
-                schedule_copy(user_response, 0, &c, 1);
+                lf_schedule_copy(user_response, 0, &c, 1);
                 if (c == EOF) break;
             }
             return NULL;
@@ -102,9 +102,9 @@ reactor GetUserInput {
     
     initial mode Preparing {
         reaction(prompt) -> Waiting {=
-            self->prompt_time = get_logical_time();
+            self->prompt_time = lf_time_logical();
             // Switch to mode waiting for user input
-            SET_MODE(Waiting);
+            lf_set_mode(Waiting);
         =}
         
         reaction(user_response) {=
@@ -114,16 +114,16 @@ reactor GetUserInput {
     }
     mode Waiting {
         reaction(user_response) -> another, Preparing {=
-            int time_in_ms = (get_logical_time() - self->prompt_time) / 1000000LL;
+            int time_in_ms = (lf_time_logical() - self->prompt_time) / 1000000LL;
             printf("Response time in milliseconds: %d\n", time_in_ms);
             self->count++;
             self->total_time_in_ms += time_in_ms;
             // In the original the time was set to zero to encode the mode. This is no longer necessary.
             // self->prompt_time = 0LL;
             // Trigger another prompt.
-            SET(another, 42);
+            lf_set(another, 42);
             // Switch to mode waiting for next prompt
-            SET_MODE(Preparing);
+            lf_set_mode(Preparing);
         =}
     }
     

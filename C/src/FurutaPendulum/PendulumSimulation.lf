@@ -125,10 +125,10 @@ reactor PendulumSimulation(
             self->first = false;
         }
         // Output the state.
-        SET(theta, self->x[0]);
-        SET(d_theta, self->x[1]);
-        SET(phi, self->x[2]);
-        SET(d_phi, self->x[3]);
+        lf_set(theta, self->x[0]);
+        lf_set(d_theta, self->x[1]);
+        lf_set(phi, self->x[2]);
+        lf_set(d_phi, self->x[3]);
     =}
     reaction(u) {=
         self->latest_u = u->value;

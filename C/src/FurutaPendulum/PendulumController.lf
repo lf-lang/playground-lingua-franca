@@ -56,13 +56,13 @@ reactor PendulumController(
                     + cos(th) - 1.0;
             double c = sign(d_theta->value * cos(th));
             double out = sign(E) * MIN(fabs(self->k * E), self->n) * c;
-            SET(control, out);
-            SET(energy, E);
-            SET(modeID, -1);
+            lf_set(control, out);
+            lf_set(energy, E);
+            lf_set(modeID, -1);
         =}
         reaction(theta) -> Catch {=
             if (fabs(theta->value) < self->region1) {
-                SET_MODE(Catch);
+                lf_set_mode(Catch);
             }
         =}
     }
@@ -70,20 +70,20 @@ reactor PendulumController(
     mode Catch {
         reaction(theta, d_theta, phi, d_phi) -> control, modeID, energy {=
             double th = restrictAngle(theta->value);
-            SET(control, -1.0 * (
+            lf_set(control, -1.0 * (
                 th * self->ci1
                 + d_theta->value * self->ci2
                 + (phi->value - self->phi2) * self->ci3
                 + d_phi->value * self->ci4
             ));
-            SET(modeID, 0);
+            lf_set(modeID, 0);
             double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
                     + cos(th) - 1.0;
-            SET(energy, E);
+            lf_set(energy, E);
         =}
         reaction(phi, d_phi) -> Stabilize {=
             if (fabs(d_phi->value) < self->max_speed) {
-                SET_MODE(Stabilize);
+                lf_set_mode(Stabilize);
                 self->phi0 = phi->value;
             }
         =}
@@ -92,7 +92,7 @@ reactor PendulumController(
     mode Stabilize {
         reaction(theta, d_theta, phi, d_phi) -> control, modeID, energy {=
             double th = restrictAngle(theta->value);
-            SET(control, -1.0 * (
+            lf_set(control, -1.0 * (
                 th * self->si1
                 + d_theta->value * self->si2
                 + (phi->value - self->phi0) * self->si3
@@ -100,13 +100,13 @@ reactor PendulumController(
             ));
             double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
                     + cos(th) - 1.0;
-            SET(energy, E);
-            SET(modeID, 1);
+            lf_set(energy, E);
+            lf_set(modeID, 1);
         =}
         reaction(theta) -> SwingUp {=
             double th = restrictAngle(theta->value);
             if (fabs(th) > self->region2) {
-                SET_MODE(SwingUp);
+                lf_set_mode(SwingUp);
             }
         =}
     }

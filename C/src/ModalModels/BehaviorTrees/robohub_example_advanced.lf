@@ -29,11 +29,11 @@ reactor GenericTask(name:string("")) {
         reaction(finish) -> success, Succeeded, failure, Failed {=
             int r = rand() % 6;
             if (r == 0) {
-                SET(failure, true);
-                SET_MODE(Failed);
+                lf_set(failure, true);
+                lf_set_mode(Failed);
             } else {
-                SET(success, true);
-                SET_MODE(Succeeded);
+                lf_set(success, true);
+                lf_set_mode(Succeeded);
             }
         =}
     }
@@ -54,7 +54,7 @@ reactor NominalBehavior {
         MoveToObjTask.failure -> failure
         
         reaction(MoveToObjTask.success) -> CloseGrip {=
-            SET_MODE(CloseGrip);
+            lf_set_mode(CloseGrip);
         =}
     }
     
@@ -64,7 +64,7 @@ reactor NominalBehavior {
         CloseGripTask.failure -> failure
         
         reaction(CloseGripTask.success) -> MoveHome {=
-            SET_MODE(MoveHome);
+            lf_set_mode(MoveHome);
         =}
     }
     
@@ -74,7 +74,7 @@ reactor NominalBehavior {
         MoveHomeTask.failure -> failure
         
         reaction(MoveHomeTask.success) -> success {=
-            SET(success, true);
+            lf_set(success, true);
         =}
     }
 }
@@ -93,7 +93,7 @@ reactor Robot {
         
         reaction(BatteryOK) -> Charging {=
             if (!BatteryOK->value) {
-                SET_MODE(Charging);
+                lf_set_mode(Charging);
                 printf("Battery empty\n");
             }
         =}
@@ -107,7 +107,7 @@ reactor Robot {
         reaction(BatteryOK, GoCharge.success) -> Nominal {=
             // Assumes simultaneous presence
             if (BatteryOK->value && GoCharge.success->value) {
-                SET_MODE(Nominal);
+                lf_set_mode(Nominal);
                 printf("Battery charged\n");
             }
         =}
@@ -122,7 +122,7 @@ main reactor {
     
     reaction(Battery) -> robot.BatteryOK {=
         self->battery_state--;
-        SET(robot.BatteryOK, self->battery_state > 0);
+        lf_set(robot.BatteryOK, self->battery_state > 0);
         if (self->battery_state <= 0) {
             self->battery_state = 5;
         }

@@ -64,10 +64,10 @@ reactor Vehicle (
 	        request_message_t message;
         	message.speed = self->speed;
         	message.distance = self->distance;
-        	SET(request, message);
-        	schedule(delay, timer_periods[self->bank_index]);
+        	lf_set(request, message);
+        	lf_schedule(delay, timer_periods[self->bank_index]);
         } else {
-           	schedule(delay, timer_offsets[self->bank_index]);
+           	lf_schedule(delay, timer_offsets[self->bank_index]);
         }
     =}
 
@@ -75,14 +75,14 @@ reactor Vehicle (
         request_message_t message;
        	message.speed = self->speed;
        	message.distance = self->distance;
-       	SET(request, message);
-       	schedule(delay, timer_periods[self->bank_index]);
+       	lf_set(request, message);
+       	lf_schedule(delay, timer_periods[self->bank_index]);
     =}
     
     reaction(grant) {=
         info_print("Granted access at elapsed logical time %lld. Physical time is %lld",
-            get_elapsed_logical_time(),
-            get_elapsed_physical_time()
+            lf_time_logical_elapsed(),
+            lf_time_physical_elapsed()
         );
     =}
 }
@@ -109,7 +109,7 @@ reactor RSU (
         		double speed_in_m_per_sec = request[i]->value.speed * 1000.0 / 3600.0;
         		double arrival_in = request[i]->value.distance / speed_in_m_per_sec;
         		
-        		instant_t time_message_sent = get_logical_time();
+        		instant_t time_message_sent = lf_time_logical();
         		
         		// Convert the time interval to nsec (it is seconds).
         		interval_t arrival_time_ns = time_message_sent + (interval_t) (arrival_in * BILLION);
@@ -125,7 +125,7 @@ reactor RSU (
                     // Could be smarter than this, but just send the nominal speed in intersection.
                     response.target_speed = self->nominal_speed_in_intersection;
                 }
-                SET(grant[i], response);
+                lf_set(grant[i], response);
                 // Update earliest free on the assumption that the vehicle
                 // maintains its target speed (on average) within the intersection.
                 interval_t time_in_intersection 

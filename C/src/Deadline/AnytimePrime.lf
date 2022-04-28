@@ -1,13 +1,13 @@
 /**
- * This program is a concept demonstration showing how the check_deadline()
+ * This program is a concept demonstration showing how the lf_check_deadline()
  * function works. This program performs "anytime computation" (https://en.wikipedia.org/wiki/Anytime_algorithm)
- * to find the largest prime within the given deadline. The check_deadline()
+ * to find the largest prime within the given deadline. The lf_check_deadline()
  * function is called after checking whether each number is prime. If
- * check_deadline() is called after the deadline has passed, the function calls
+ * lf_check_deadline() is called after the deadline has passed, the function calls
  * the deadline handler and returns true. Then the reaction outputs the largest
  * prime found by that time and exits.
  *
- * For more discussion on check_deadline(), see: https://github.com/lf-lang/lingua-franca/issues/403
+ * For more discussion on lf_check_deadline(), see: https://github.com/lf-lang/lingua-franca/issues/403
  *
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  * @author Edward A. Lee (eal@berkeley.edu)
@@ -32,7 +32,7 @@ reactor Prime {
         vector_t primes = vector_new(10000);
         vector_push(&primes, (void*)2);
 
-        while (!check_deadline(self, true)) {
+        while (!lf_check_deadline(self, true)) {
             current_num++;
             int i = 0;
             for (i = 0; i < num_primes; i++) {
@@ -48,7 +48,7 @@ reactor Prime {
         }
 
         // Output the largest prime found.
-        SET(out, (long long)primes.start[num_primes - 1]);
+        lf_set(out, (long long)primes.start[num_primes - 1]);
     =} deadline (3 sec) {=
         info_print("Deadline handler called!");
     =}

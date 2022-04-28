@@ -30,7 +30,7 @@ reactor ButtonController(
         }
     =}
     reaction(pushed) -> push {=
-        SET(push, true);
+        lf_set(push, true);
     =}
 }
 reactor MachineController {
@@ -38,23 +38,23 @@ reactor MachineController {
     input run:bool;
     initial mode Off {
         reaction(run) -> Running {=
-            SET_MODE(Running);
+            lf_set_mode(Running);
         =}
     }
     mode Running {
         timer t(0, 100 msec);
         reaction(emergencyStop) -> Off {=
-            if (emergencyStop) SET_MODE(Off);
+            if (emergencyStop) lf_set_mode(Off);
         =} deadline (1 msec) {=
             info_print("DEADLINE VIOLATION!");
-            SET_MODE(Off);
+            lf_set_mode(Off);
         =}
         // With centralized coordination, time cannot advance to trigger
         // this reaction unless null messages have arrived on emergencyStop.
         reaction(t) -> Off {=
             show_tick("*");
         =} deadline (10 msec) {=
-            SET_MODE(Off);
+            lf_set_mode(Off);
         =}
     }
 }

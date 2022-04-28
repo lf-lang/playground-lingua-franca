@@ -3,7 +3,7 @@ target C {threads: 1, keepalive: true, flags: "-lncurses"};
 /**
  * FIXME: there are still two problems with this implementation:
  * 1. Use of a global variable to let the ncurses thread find the actions
- * that it should schedule. It would be helpful to have some kind of generic
+ * that it should lf_schedule. It would be helpful to have some kind of generic
  * framework for setting up interactive tests.
  * 2. When the program runs out of space on the terminal, newlines are ignored.
  * It is not clear to me why this is the case, but I've only just now started
@@ -41,7 +41,7 @@ preamble {=
 	    char c = 0;         // Command: [1-6|q-y]
 	    int v = 0;
 	    while (true) {
-	    	bool skip = false; // Whether to schedule and event or not  	
+	    	bool skip = false; // Whether to lf_schedule and event or not  	
 	      	c = getch();
 	      	switch(c) {
                 case 'q':
@@ -68,7 +68,7 @@ preamble {=
             }
 	      	
 	      	if (!skip) {
-                schedule_int(pedals.brake, 0, v);
+                lf_schedule_int(pedals.brake, 0, v);
             }
             
            	skip = false;
@@ -97,7 +97,7 @@ preamble {=
             }
 	      	
 	      	if (!skip) {
-                schedule_int(pedals.accelerate, 0, v);
+                lf_schedule_int(pedals.accelerate, 0, v);
             }
 	   }
 	   endwin();
@@ -123,13 +123,13 @@ reactor MotorControl {
 	//@label Set torque to zero if car is braking
 	reaction(brkOn) -> torque {=
 		self->braking = brkOn->value;
-		SET(torque, 0);
+		lf_set(torque, 0);
 	=}
 	
 	//@label Adjust torque unless car is braking
 	reaction(angle) -> torque {= 
 		if (!self->braking) {
-			SET(torque, calc_motor_torque(angle->value));
+			lf_set(torque, calc_motor_torque(angle->value));
 		} else if (angle->value > 0){
             printw("Cannot accelerate; release brake pedal first.\n");
         }
@@ -153,14 +153,14 @@ reactor BrakePedal {
     reaction(a) -> angle, applied {=
     	if (self->last != a->value) {
         	if (self->last == 0) {
-                SET(applied, true); // zero to nonzero
+                lf_set(applied, true); // zero to nonzero
             } else if (a->value == 0) {
-                SET(applied, false); // nonzero to zero
+                lf_set(applied, false); // nonzero to zero
             }
             
         	self->last = a->value;
         	
- 			SET(angle, a->value);       	
+ 			lf_set(angle, a->value);       	
         }
      =}
 }
@@ -181,7 +181,7 @@ reactor Accelerator {
     // @label Output reported angle
     reaction(a) -> angle {=
         if (self->last != a->value) {
-			SET(angle, a->value);
+			lf_set(angle, a->value);
 			self->last = a->value;
         }
     =}    
@@ -218,7 +218,7 @@ reactor BrakeControl {
 	output force:int;
 	
 	reaction(angle) -> force {=
-        SET(force, calc_brake_force(angle->value));
+        lf_set(force, calc_brake_force(angle->value));
     =}
 }
 

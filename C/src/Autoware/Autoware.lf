@@ -15,7 +15,7 @@ reactor Camera(offset:time(0), period:time(1 sec)) {
 	timer t(offset, period);
 
     reaction(t) -> image {=
-        SET(image, "kitty");
+        lf_set(image, "kitty");
     =}
 }
 
@@ -25,7 +25,7 @@ reactor LIDAR(offset:time(0), period:time(1 sec)) {
     timer t(offset, period);
 
     reaction(t) -> pointcloud {=
-        SET(pointcloud, "INTERSECTION");
+        lf_set(pointcloud, "INTERSECTION");
     =}
 }
 
@@ -42,7 +42,7 @@ reactor ImageObjectDetection {
    
     void camera_callback(void* a) {
         // cudaDeviceSynchronize() and copy back goes here.
-        schedule(a, 0);
+        lf_schedule(a, 0);
     }
     // Simulate time passing before a callback occurs instead of executing on GPU.
     void* camera_take_time(void* a) {
@@ -63,8 +63,8 @@ reactor ImageObjectDetection {
 
         /* Busy wait for 2 msecs for now instead of calling CUDA kernels */
         interval_t sleep_time = MSEC(2);
-        instant_t start_time = get_physical_time();
-        while (get_physical_time() < start_time + sleep_time) {};
+        instant_t start_time = lf_time_physical();
+        while (lf_time_physical() < start_time + sleep_time) {};
 
         pthread_create(&self->thread_id, NULL, &camera_take_time, CUDA);
     =}
@@ -78,7 +78,7 @@ reactor ImageObjectDetection {
 
 
 
-        SET(object, "DUMMY Results");
+        lf_set(object, "DUMMY Results");
     =}
 }
 
@@ -95,7 +95,7 @@ reactor LIDARObjectDetection {
    
     void LIDAR_callback(void* a) {
         // cudaDeviceSynchronize() and copy back goes here.
-        schedule(a, 0);
+        lf_schedule(a, 0);
     }
     // Simulate time passing before a callback occurs instead of executing on GPU.
     void* LIDAR_take_time(void* a) {
@@ -114,26 +114,26 @@ reactor LIDARObjectDetection {
         // cudaMalloc(&y_state_d, SIZE);
         // cudaMemcpy(&y_state_d, y_state, SIZE, cudaMemcpyHosttoDevice);
         // kernel<<<1,1>>>(y_state_d);
-	//printf("LIDAR triggered at %llu\n", get_physical_time());
+	//printf("LIDAR triggered at %llu\n", lf_time_physical());
 
         /* Busy wait for 2 msecs for now instead of calling CUDA kernels */
         interval_t sleep_time = MSEC(2);
-        instant_t start_time = get_physical_time();
-        while (get_physical_time() < start_time + sleep_time) {};
+        instant_t start_time = lf_time_physical();
+        while (lf_time_physical() < start_time + sleep_time) {};
 
         pthread_create(&self->thread_id, NULL, &LIDAR_take_time, CUDA);        
     =}
 
     reaction(CUDA) -> object {=
         // cudaMalloc(&y_out_d, SIZE);
-	//printf("LIDAR triggered at %llu\n", get_physical_time());
-	// printf("LIDAR triggered at %llu\n", get_logical_time());
+	//printf("LIDAR triggered at %llu\n", lf_time_physical());
+	// printf("LIDAR triggered at %llu\n", lf_time_logical());
         
         // cudaMemcpy(&y_out, results_d, SIZE, cudaMemcpyDevicetoHost);
 
         // cudaDeviceSynchronize();
 
-        SET(object, "Hey look there is a kitty!");
+        lf_set(object, "Hey look there is a kitty!");
     =}
 }
 
@@ -156,49 +156,49 @@ reactor DataFusion(threshold:time(20 msec)) {
         if(imageobject->is_present)
         {
 		    self->tmpImageobject = imageobject->value;
-		    self->tmpImageobjectTag = get_logical_time(); // Store the tag
+		    self->tmpImageobjectTag = lf_time_logical(); // Store the tag
 		   
-		    instant_t window = self->tmpLIDARobjectTag - get_logical_time();
+		    instant_t window = self->tmpLIDARobjectTag - lf_time_logical();
 	
 		    if(LIDARobject->is_present)
 		    {
-			schedule(both_ports_are_present, 0);
+			lf_schedule(both_ports_are_present, 0);
 		    }
 	            
 	 	    else if(window < (long)1000000)
 		    {
-		    	schedule(both_ports_are_present, 0);
+		    	lf_schedule(both_ports_are_present, 0);
 		    }
 		    else
 		    {	
-		    	// instant_t elapsed = get_physical_time() - get_logical_time(); // How much time has passed - soft
+		    	// instant_t elapsed = lf_time_physical() - lf_time_logical(); // How much time has passed - soft
 		    	instant_t elapsed = self->threshold; // How much time has passed - hard
 	            instant_t remaining = (long)30000000 - elapsed; // How much time is left
 	            instant_t schedule_in = remaining - (long)8000000; // Combined WCET of the remaining reactions is 8 msec
-		        schedule(both_ports_are_present, schedule_in);
+		        lf_schedule(both_ports_are_present, schedule_in);
             }
-	    // printf("Received image object at %llu physical and %llu logical.\n", get_physical_time(), get_logical_time());
+	    // printf("Received image object at %llu physical and %llu logical.\n", lf_time_physical(), lf_time_logical());
         }
         else if(LIDARobject->is_present)
         {
             self->tmpLIDARobject = LIDARobject->value;
-	    	self->tmpLIDARobjectTag = get_logical_time(); // Store the tag
+	    	self->tmpLIDARobjectTag = lf_time_logical(); // Store the tag
             
-	    	instant_t window = self->tmpImageobjectTag - get_logical_time();                                                                                                                                                                       
+	    	instant_t window = self->tmpImageobjectTag - lf_time_logical();                                                                                                                                                                       
             
 		    if( window < (long)1000000)
 	        {
-	        	schedule(both_ports_are_present, 0);
+	        	lf_schedule(both_ports_are_present, 0);
 	        }
 	        else
 	        {
-			// instant_t elapsed = get_physical_time() - get_logical_time(); // How much time has passed - soft
+			// instant_t elapsed = lf_time_physical() - lf_time_logical(); // How much time has passed - soft
 		    	instant_t elapsed = self->threshold; // How much time has passed - hard
 	            instant_t remaining = (long)30000000 - elapsed; // How much time is left    
 		        instant_t schedule_in = remaining - (long)8000000; // Combined WCET of the remaining reactions is 8 msec
-	            schedule(both_ports_are_present, schedule_in);
+	            lf_schedule(both_ports_are_present, schedule_in);
 	        }	   
-	    // printf("Received LIDAR object at %llu physical and %llu logical.\n", get_physical_time(), get_logical_time());
+	    // printf("Received LIDAR object at %llu physical and %llu logical.\n", lf_time_physical(), lf_time_logical());
         }
 
 
@@ -211,13 +211,13 @@ reactor DataFusion(threshold:time(20 msec)) {
     reaction(both_ports_are_present) -> object
     {=
 
-        printf("Fusion scheduled at: ( %llu , %llu ).\n", get_physical_time(), get_logical_time());
-       //printf("Fusion: %llu\n", get_physical_time());
+        printf("Fusion scheduled at: ( %llu , %llu ).\n", lf_time_physical(), lf_time_logical());
+       //printf("Fusion: %llu\n", lf_time_physical());
         /* Busy wait for 2 msecs for now instead of calling CUDA kernels */
         interval_t sleep_time = MSEC(2);
-        instant_t start_time = get_physical_time();
-        while (get_physical_time() < start_time + sleep_time) {};
-        SET(object, "fused");
+        instant_t start_time = lf_time_physical();
+        while (lf_time_physical() < start_time + sleep_time) {};
+        lf_set(object, "fused");
     =}
 }
 
@@ -230,7 +230,7 @@ reactor Semantics {
         struct timespec sleep_time = {(time_t) 0, (long)6000000};
         struct timespec remaining_time;
         nanosleep(&sleep_time, &remaining_time);
-	SET(actuation, 5);
+	lf_set(actuation, 5);
     =}
 }
 
@@ -239,8 +239,8 @@ reactor Actuator(threshold:time(33 msec)){
 
     reaction(actuation) {=
         // Do nothing;
-        printf("Actuator scheduled at: ( %llu , %llu ).\n", get_physical_time(), get_logical_time());
-       // printf("Actuator: %llu\n", get_physical_time());
+        printf("Actuator scheduled at: ( %llu , %llu ).\n", lf_time_physical(), lf_time_logical());
+       // printf("Actuator: %llu\n", lf_time_physical());
     =} deadline(threshold) {=
         printf("Deadline violation detected in Actuator.\n");
     =}
@@ -252,7 +252,7 @@ reactor SafetyBreak {
     output actuation:int;
 
     reaction(LIDARPointCloud) -> actuation {=
-        SET(actuation, 5);
+        lf_set(actuation, 5);
     =}
 }
 

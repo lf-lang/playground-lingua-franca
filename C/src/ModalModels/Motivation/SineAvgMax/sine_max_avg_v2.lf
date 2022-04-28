@@ -29,7 +29,7 @@ reactor ModalModel(sample_size(10)) {
             self.count += 1
             if self.count == self.sample_size:
                 self.count = 0
-                process.schedule(0)
+                process.lf_schedule(0)
     =}
     
 //    initial mode AVG {

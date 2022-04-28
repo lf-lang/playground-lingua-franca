@@ -36,7 +36,7 @@ reactor Print(filename:string("output.data")) {
         }
     =}
     reaction(y) {=
-        double t = get_elapsed_logical_time() / 1.0e9;
+        double t = lf_time_logical_elapsed() / 1.0e9;
         fprintf(self->file, "%f %f\n", t, y->value);
     =}
     reaction(shutdown) {=

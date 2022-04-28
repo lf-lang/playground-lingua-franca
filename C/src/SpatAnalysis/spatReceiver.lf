@@ -8,7 +8,7 @@
  */
 
 target C {
-    threads: 1, // Must use threaded implementation so schedule is thread safe.
+    threads: 1, // Must use threaded implementation so lf_schedule is thread safe.
     flags: "-I/usr/local/include -L/usr/local/lib -g -lpaho-mqtt3c src-gen/core/util.c ",
     timeout: 60 secs,
     keepalive: true
@@ -48,14 +48,14 @@ reactor recvSpatMessage2 {
     
     reaction(message) {=
     	/*printf("PrintMessage: At (elapsed) time %lld, subscriber receives: %s\n",
-            get_elapsed_logical_time(),
+            lf_time_logical_elapsed(),
             message->value
         );*/
     	
     	sscanf(message->value, "%d %llu", &self->signal_phase, &self->residual);
     	printf("EVENT: residual: %llu\n", self->residual);
     	printf("EVENT: phase: %d\n", self->signal_phase);
-    	printf("spatReceiver: At phy time %lld, Phase:%d residual:%llu nsec.\n", get_physical_time(), self->signal_phase, self->residual);
+    	printf("spatReceiver: At phy time %lld, Phase:%d residual:%llu nsec.\n", lf_time_physical(), self->signal_phase, self->residual);
    	=} deadline (10 msec) {=
         printf("EVENT: deadline_miss: true\n");
     =}
@@ -71,7 +71,7 @@ reactor PrintMessage {
     input message:char*;
     reaction(message) {=
         printf("PrintMessage: At (elapsed) time %lld, subscriber receives: %s\n",
-            get_elapsed_logical_time(),
+            lf_time_logical_elapsed(),
             message->value
         );
     =}
