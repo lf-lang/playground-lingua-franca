@@ -26,7 +26,7 @@ reactor Sensor {
                         break;
                     }
                 }
-                schedule(response, 0);
+                lf_schedule(response, 0);
                 if (c == EOF) {
                     break;
                 }
@@ -45,8 +45,8 @@ reactor Sensor {
     =}
 
     reaction(response) -> y {=
-        printf("Reacting to physical action at %lld\n", get_elapsed_logical_time());
-        SET(y, true);
+        printf("Reacting to physical action at %lld\n", lf_time_logical_elapsed());
+        lf_set(y, true);
     =}
 }
 
@@ -62,21 +62,21 @@ reactor Analysis {
             printf("Skipping work!\n");
         }
         self->do_work = !self->do_work;
-        SET(y, true);
+        lf_set(y, true);
     =}
 }
 
 reactor Actuator {
     input x:bool;
     reaction(x) {=
-        instant_t l = get_elapsed_logical_time();
-        instant_t p = get_elapsed_physical_time();
+        instant_t l = lf_time_logical_elapsed();
+        instant_t p = lf_time_physical_elapsed();
         printf("Actuating... Logical time: %lld "
         		"Physical time: %lld Lag: %lld\n", 
         		l, p, p-l);
     =} deadline(500 usecs) {=
-        instant_t d = get_elapsed_physical_time() 
-        		- get_elapsed_logical_time();
+        instant_t d = lf_time_physical_elapsed() 
+        		- lf_time_logical_elapsed();
         printf("Deadline missed! Lag: %lld "
         		"(too late by %lld nsecs)\n", 
         		d, d-500000);

@@ -76,25 +76,25 @@ reactor Server(
     output update:int;
     state queries_outstanding:int(0);
     reaction(query_trigger) -> query {=
-        SET(query, true);
+        lf_set(query, true);
         self->queries_outstanding++;
     =}
     
     reaction(update_trigger) -> update {=
-        SET(update, self->update_amount);
+        lf_set(update, self->update_amount);
     =} deadline(update_deadline) {=
         error_print("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
                 "     Elapsed physical time is %lld.",
-                get_logical_time() - start_time, 
+                lf_time_logical() - start_time, 
                 get_microstep(),
                 self->name,
-                get_elapsed_physical_time()
+                lf_time_physical_elapsed()
         );
     =}
     
     reaction(reply) {=
         info_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
-            get_elapsed_logical_time(), get_microstep(), self->server_name, reply->value
+            lf_time_logical_elapsed(), get_microstep(), self->server_name, reply->value
         );
         self->queries_outstanding--;
     =}
@@ -173,10 +173,10 @@ reactor Database(
         }
         info_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
                 "     Elapsed physical time is %lld.",
-                get_logical_time() - start_time, get_microstep(),
+                lf_time_logical() - start_time, get_microstep(),
                 self->name,
                 self->record,
-                get_elapsed_physical_time()
+                lf_time_physical_elapsed()
         );
     =} STP (4 msec) {=
 #ifdef FEDERATED_DECENTRALIZED
@@ -192,7 +192,7 @@ reactor Database(
                         remote_update[i]->value,
                         remote_update[i]->intended_tag.time - start_time,
                         remote_update[i]->intended_tag.microstep,
-                        get_elapsed_physical_time()
+                        lf_time_physical_elapsed()
                 );
                 self->record += remote_update[i]->value;
             }
@@ -204,7 +204,7 @@ reactor Database(
     =}
     
     reaction(query) -> balance {=
-        SET(balance, self->record);
+        lf_set(balance, self->record);
     =}
 }
 

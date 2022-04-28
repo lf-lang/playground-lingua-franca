@@ -11,9 +11,9 @@ reactor Controller {
   =}
   reaction(external)->close, lock, open, unlock {=
     if (external->value) {
-      SET(close, true); SET(lock, true);
+      lf_set(close, true); lf_set(lock, true);
     } else {
-      SET(open, true); SET(unlock, true);
+      lf_set(open, true); lf_set(unlock, true);
     }
   =}
 }

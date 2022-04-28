@@ -97,7 +97,7 @@ reactor MessageGenerator(root:string("")) {
         // Populate the output string and increment the count.
         snprintf(message->value, length, "%s %d", self->root, self->count++);
         info_print("MessageGenerator: At time %lld, publish message: %s",
-            get_elapsed_logical_time(),
+            lf_time_logical_elapsed(),
             message->value
         );
     =}
@@ -112,7 +112,7 @@ reactor PrintMessage {
     input message:char*;
     reaction(message) {=
         info_print("PrintMessage: At (elapsed) logical time %lld, subscriber receives: %s",
-            get_elapsed_logical_time(),
+            lf_time_logical_elapsed(),
             message->value
         );
     =}

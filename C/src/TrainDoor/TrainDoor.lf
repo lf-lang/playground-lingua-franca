@@ -24,13 +24,13 @@ preamble {=
         while(1) {
             int c = getchar();
             if (c == 'm') {
-                schedule(buttons.move, 0);
+                lf_schedule(buttons.move, 0);
             }
             if (c == 'o') {
-                schedule(buttons.open, 0);
+                lf_schedule(buttons.open, 0);
             }
             if (c == 'c') {
-                schedule(buttons.close, 0);
+                lf_schedule(buttons.close, 0);
             }
             if (c == EOF) {
                 break;
@@ -53,13 +53,13 @@ reactor MotionDetector {
 	=}
 	reaction(movement) {=
         printf("Motion detected!\n");
-        self->timestamp = get_logical_time();
+        self->timestamp = lf_time_logical();
     =}
     reaction(check) -> ok {=
-        if (self->timestamp == 0L || (get_logical_time() - self->timestamp) > SECS(2)) {
-            SET(ok, true);
+        if (self->timestamp == 0L || (lf_time_logical() - self->timestamp) > SECS(2)) {
+            lf_set(ok, true);
         } else {
-            SET(ok, false);
+            lf_set(ok, false);
         }
     =}
 }
@@ -83,7 +83,7 @@ reactor DoorController {
         	printf("The door is already open\n");
         } else {
             printf("Checking the motion sensor\n");
-			SET(check, false);
+			lf_set(check, false);
 			self->requested = true;
         }
     =}

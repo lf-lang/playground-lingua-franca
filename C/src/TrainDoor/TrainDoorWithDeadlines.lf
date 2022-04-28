@@ -12,8 +12,8 @@ reactor Controller {
     // ... Set up sensing.
   =}
   reaction(external_move)->lock, move, unlock, stop {=
-    SET(lock, external_move->value);
-    SET(move, external_move->value);
+    lf_set(lock, external_move->value);
+    lf_set(move, external_move->value);
   =}
 }
 realtime reactor Train {

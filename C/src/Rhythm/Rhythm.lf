@@ -170,9 +170,9 @@ reactor RhythmSource(
         	mkdir("log", 0755);
         	int fed_id = get_fed_id();
         	if (fed_id < 0) {
-        		sprintf(log_file_name, "log/Rhythm_%lld.log", get_logical_time());
+        		sprintf(log_file_name, "log/Rhythm_%lld.log", lf_time_logical());
       		} else {
-        		sprintf(log_file_name, "log/Rhythm_%d_%lld.log", fed_id, get_logical_time());
+        		sprintf(log_file_name, "log/Rhythm_%d_%lld.log", fed_id, lf_time_logical());
         	}
         }
         if (start_sensor_simulator(
@@ -184,7 +184,7 @@ reactor RhythmSource(
         // Register action to trigger on key press.
         register_sensor_key('\0', key);
         
-        schedule(tick, self->tick_duration);
+        lf_schedule(tick, self->tick_duration);
     =}
     
     /**
@@ -194,30 +194,30 @@ reactor RhythmSource(
         int numeric;
         switch (key->value) {
             case '0':
-                SET(instrument, 0);
+                lf_set(instrument, 0);
                 break;
             case 'd':
                 self->rhythm = DOWNBEAT;
                 self->emphasis = DOWNBEAT;
-                SET(rhythm_change, 'd');
+                lf_set(rhythm_change, 'd');
                 info_print("Changing rhythm to downbeat only.");
                 break;
             case 'm':
                 self->rhythm = MERENGUE;
                 self->emphasis = MERENGUE_EMPHASIS;
-                SET(rhythm_change, 'm');
+                lf_set(rhythm_change, 'm');
                 info_print("Changing rhythm to merengue.");
                 break;
             case 'b':
                 self->rhythm = BOSSA_NOVA;
                 self->emphasis = BOSSA_NOVA_EMPHASIS;
-                SET(rhythm_change, 'b');
+                lf_set(rhythm_change, 'b');
                 info_print("Changing rhythm to bossa nova.");
                 break;
             case 's':
                 self->rhythm = SAMBA;
                 self->emphasis = SAMBA_EMPHASIS;
-                SET(rhythm_change, 's');
+                lf_set(rhythm_change, 's');
                 info_print("Changing rhythm to samba.");
                 break;
             case 'x':
@@ -228,19 +228,19 @@ reactor RhythmSource(
                 if (self->tick_duration < self->delta) {
                     self->tick_duration = self->delta;
                 }
-                SET(tempo_change, self->delta);
+                lf_set(tempo_change, self->delta);
                 info_print("Speeding up tempo.");
                 break;
             case '-':
                 self->tick_duration += self->delta;
-                SET(tempo_change, -self->delta);
+                lf_set(tempo_change, -self->delta);
                 info_print("Slowing down tempo.");
                 break;
             default:
                 numeric = (int)key->value;
                 if (numeric >= 49 && numeric <= 57) {
                     // A digit between 1 and 9.
-                    SET(instrument, numeric - 48);
+                    lf_set(instrument, numeric - 48);
                 	info_print("Changing instrument to %c.", numeric);
                 }
         }
@@ -290,7 +290,7 @@ reactor RhythmSource(
             if (position & self->active_emphasis) {
                 emphasis = 1.0;
             }
-            SET(note, emphasis);
+            lf_set(note, emphasis);
             beeped++;
         }
         if (beeped > 0) {
@@ -309,7 +309,7 @@ reactor RhythmSource(
             self->count = 0;
         }
         
-        schedule(tick, self->tick_duration);
+        lf_schedule(tick, self->tick_duration);
     =}
     
     reaction(shutdown) {=

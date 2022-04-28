@@ -37,7 +37,7 @@ reactor PrintMessageWithDetector(offset:time(10 msec)) extends PrintMessage {
         );
     =}
     reaction(local) {=
-        tag_t tag = get_current_tag();
+        tag_t tag = lf_tag();
         info_print("Timer triggered at logical tag (%lld, %u).",
             tag.time - start_time, tag.microstep
         );

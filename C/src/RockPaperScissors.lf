@@ -35,19 +35,19 @@ reactor Player(id:char(0)) {
 	reaction(startup) {=
         // Seed the random number generator.
         // Use the ID to ensure each player has a different seed.
-        srand((unsigned) get_logical_time() / self->id);
+        srand((unsigned) lf_time_logical() / self->id);
     =}
 
     reaction(startup, repeat) -> reveal {=
         self->choice = rand() % 3;
-        SET(reveal, self->choice);
+        lf_set(reveal, self->choice);
         printf("Player %d chose '%s'\n", self->id, symbol_names[self->choice]);
     =}
 	
     reaction(observe) -> repeat {=
         if (observe->value == self->choice) {
             printf("Player %d declares a tie.\n", self->id);    
-            schedule(repeat, 0);
+            lf_schedule(repeat, 0);
         } else if (observe->value == (self->choice + 1) % 3) {
         	printf("Player %d won!\n", self->id);    
         }

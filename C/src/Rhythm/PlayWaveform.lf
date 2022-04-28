@@ -93,7 +93,7 @@ reactor PlayWaveform (
         
         // Start an audio loop that will become ready to receive
         // amplitude samples of audio data.
-        lf_start_audio_loop(get_logical_time());
+        lf_start_audio_loop(lf_time_logical());
     =}
     
     reaction(waveform) {=
@@ -102,9 +102,9 @@ reactor PlayWaveform (
     
     reaction(note) {=
         if (self->waveform_id < 0 || self->waveform_id > NUM_WAVEFORMS) {
-            lf_play_audio_waveform(NULL, note->value, get_logical_time());
+            lf_play_audio_waveform(NULL, note->value, lf_time_logical());
         } else {
-            lf_play_audio_waveform(waveforms[self->waveform_id], note->value, get_logical_time());
+            lf_play_audio_waveform(waveforms[self->waveform_id], note->value, lf_time_logical());
         }
     =}
     
