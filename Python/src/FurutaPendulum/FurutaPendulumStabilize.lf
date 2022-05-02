@@ -7,7 +7,7 @@
 # 
 # @author Edward A. Lee
 target Python {
-    timeout: 4 secs,
+    timeout: 8 secs,
     fast: true
 }
 import PendulumSimulation from "PendulumSimulation.lf"
@@ -56,6 +56,8 @@ reactor PendulumController(
 }
 
 main reactor {
+    timer d(3 sec);  // One-shot disturbance at 3 seconds.
+
     p = new PendulumSimulation(initial_theta = 0.1)
     c = new PendulumController()
     plt = new Plotter()
@@ -63,4 +65,8 @@ main reactor {
         -> c.theta, c.d_theta, c.phi, c.d_phi
     c.control -> p.u
     p.theta -> plt.data
+
+    reaction(d) -> p.d {=
+        p.d.set(1.0);
+    =}
 }

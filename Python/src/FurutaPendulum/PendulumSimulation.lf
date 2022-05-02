@@ -21,6 +21,18 @@ target Python;
  * The `phi` output is the angle of the horizontal
  * arm and `d_phi` is its angular velocity.
  *
+ * The `u` input is the control input, which applies
+ * torque to the arm. The `d` input is an impulsive
+ * disturbance applied to the pendulum, as if you were
+ * to tap it with a hard object. When an input is
+ * received on `d`, its value provides an instantaneous
+ * increment or decrement to `d_theta`.
+ * Notice that no output is produced when an input
+ * is received on `d` unless that input is simultaneous
+ * with the sampling period. The effect of the disturbance
+ * will not be seen on the outputs until the next sample,
+ * as would usually be the case for digital controller.
+ *
  * @author Edward A. Lee
  */
 preamble {=
@@ -36,6 +48,7 @@ reactor PendulumSimulation(
     epsilon(0.08103060)
 ){
     input u                #  Control input.
+    input d                #  Impulsive disturbance
     
     output theta           #  Pendulum angle.
     output d_theta         #  Pendulum angular velocity.
@@ -48,6 +61,16 @@ reactor PendulumSimulation(
     
     timer t(0, sample_period)
     
+    reaction(d) {=
+        # NOTE: Here, we effectively shift the disturbance to be
+        # simultaneous with the next sample. A more accurate model
+        # would apply the disturbance immediately.
+        # The update of the state vector in the reaction below
+        # should first be factored out to a method, when methods
+        # are implemented in C.
+        self.x[1] = self.x[1] + d.value;
+    =}
+
     reaction(t) -> theta, d_theta, phi, d_phi {=
         if not(self.first):
             # Update the state.
