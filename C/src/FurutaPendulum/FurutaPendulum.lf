@@ -32,7 +32,7 @@ reactor Print(filename:string("output.data")) {
     reaction(startup) {=
         self->file = fopen(self->filename, "w");
         if(self->file == NULL) {
-            error_print_and_exit("Failed to open file: %s", self->filename);
+            lf_print_error_and_exit("Failed to open file: %s", self->filename);
         }
     =}
     reaction(y) {=
