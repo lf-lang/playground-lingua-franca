@@ -380,7 +380,7 @@ reactor GameController(number_of_ghosts(4)) {
     =}
 }
 
-federated reactor {
+main reactor {
     ### Controller
     controller = new GameController()
 
