@@ -7,10 +7,17 @@
  * however, this program can complete 800 msec of work in about
  * 225 msec. 
  */
- target C {
+target C {
     timeout: 2 sec,
     workers: 1, // Change to 4 to see speed up.
 };
+main reactor(width:int(4)) {
+    a = new Source();
+    t = new[width] TakeTime();
+    (a.out)+ -> t.in;
+    b = new Destination(width = width);
+    t.out -> b.in;
+}
 reactor Source {
         timer t(0, 200 msec);
         output out:int;
@@ -49,11 +56,4 @@ reactor Destination(width:int(4)) {
                 }
                 self->s += in_width;
         =}
-}
-main reactor(width:int(4)) {
-        a = new Source();
-        t = new[width] TakeTime();
-        (a.out)+ -> t.in;
-    b = new Destination(width = width);
-        t.out -> b.in;
 }
