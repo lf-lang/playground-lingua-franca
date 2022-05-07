@@ -222,7 +222,7 @@ reactor MQTTSubscriber (
         // assuming that the sender sent the message at a physical time matching its
         // logical timestamp.
         interval_t latency = lf_time_logical() - *timestamp;
-        LOG_PRINT("MQTTSubscriber.reaction: Received timestamp is larger than sent timestamp by: %lld.", latency);
+        lf_print_log("MQTTSubscriber.reaction: Received timestamp is larger than sent timestamp by: %lld.", latency);
         
         // If a physical timestamp was sent, use that to collect
         // latency stats instead of the logical time increment.

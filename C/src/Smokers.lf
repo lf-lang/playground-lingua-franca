@@ -115,15 +115,15 @@ reactor Agent {
         if (choice == 0) {
             lf_set(tobacco, true);
             lf_set(paper, true);
-            info_print("Agent putting tobacco and paper on the table.");
+            lf_print("Agent putting tobacco and paper on the table.");
         } else if (choice == 1) {
             lf_set(tobacco, true);
             lf_set(matches, true);
-            info_print("Agent putting tobacco and matches on the table.");
+            lf_print("Agent putting tobacco and matches on the table.");
         } else {
             lf_set(paper, true);
             lf_set(matches, true);
-            info_print("Agent putting paper and matches on the table.");
+            lf_print("Agent putting paper and matches on the table.");
         }
     =}
 }
@@ -140,18 +140,18 @@ reactor Smoker(
     logical action smoke;
     
     reaction(smoke) -> done {=
-        info_print("Smoker is done smoking.");
+        lf_print("Smoker is done smoking.");
         lf_set(done, true);
     =}
     reaction(tobacco, paper, matches) -> smoke {=
         if (self->has == 0 && paper->is_present && matches->is_present) {
-            info_print("Smoker with tobacco starts smoking.");
+            lf_print("Smoker with tobacco starts smoking.");
             lf_schedule(smoke, self->smoke_time);
         } else if (self->has == 1 && tobacco->is_present && matches->is_present) {
-            info_print("Smoker with paper starts smoking.");
+            lf_print("Smoker with paper starts smoking.");
             lf_schedule(smoke, self->smoke_time);
         } else if (self->has == 2 && tobacco->is_present && paper->is_present) {
-            info_print("Smoker with matches starts smoking.");
+            lf_print("Smoker with matches starts smoking.");
             lf_schedule(smoke, self->smoke_time);
         }
     =}

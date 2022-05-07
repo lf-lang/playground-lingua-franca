@@ -39,6 +39,6 @@ reactor TakeTime(
             }
         }
         lf_set(out, f1);
-        info_print("The %d-th Fibonacci number is %d.", count, f0);
+        lf_print("The %d-th Fibonacci number is %d.", count, f0);
     =}
 }

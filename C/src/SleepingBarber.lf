@@ -123,7 +123,7 @@ reactor CustomerFactory(
     reaction (shutdown) {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        info_print("Finished: %d customers got haircuts in %d attempts over %s.", 
+        lf_print("Finished: %d customers got haircuts in %d attempts over %s.", 
                 self->done_customers, self->attempts, buffer
         );
     =}
@@ -202,7 +202,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (room_full) -> returned {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        info_print("Customer %d: Turned away at %s. Will try later.",
+        lf_print("Customer %d: Turned away at %s. Will try later.",
                 self->bank_index, buffer
         );
         lf_set(returned, true);
@@ -211,7 +211,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (wait) {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        info_print("Customer %d: Entered waiting room at %s. Waiting.",
+        lf_print("Customer %d: Entered waiting room at %s. Waiting.",
                 self->bank_index, buffer
         );
     =}
@@ -219,7 +219,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (start_cutting) {= 
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        info_print("Customer %d: Started a haircut at %s.",
+        lf_print("Customer %d: Started a haircut at %s.",
                 self->bank_index, buffer
         );
     =}
@@ -227,7 +227,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (done_cutting) -> done {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        info_print("Customer %d: Finished a haircut at %s.",
+        lf_print("Customer %d: Finished a haircut at %s.",
                 self->bank_index, buffer
         );
         lf_set(done, true);

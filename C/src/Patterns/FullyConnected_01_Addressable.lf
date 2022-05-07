@@ -20,7 +20,7 @@ reactor Node(
     output[num_nodes] out: int;
     
     reaction (startup) -> out{=
-     	info_print("Hello from node %d!", self->bank_index);
+     	lf_print("Hello from node %d!", self->bank_index);
      	// broadcast my ID to everyone
      	lf_set(out[(self->bank_index + 1) % self->num_nodes], self->bank_index);    
     =}

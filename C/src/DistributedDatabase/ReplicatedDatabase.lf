@@ -83,30 +83,31 @@ reactor Server(
     reaction(update_trigger) -> update {=
         lf_set(update, self->update_amount);
     =} deadline(update_deadline) {=
-        error_print("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
+        tag_t tag = lf_tag();
+        lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
                 "     Elapsed physical time is %lld.",
-                lf_time_logical() - start_time, 
-                get_microstep(),
+                tag.time - start_time, 
+                tag.microstep,
                 self->name,
                 lf_time_physical_elapsed()
         );
     =}
     
     reaction(reply) {=
-        info_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
-            lf_time_logical_elapsed(), get_microstep(), self->server_name, reply->value
+        lf_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
+            lf_time_logical_elapsed(), lf_tag().microstep, self->server_name, reply->value
         );
         self->queries_outstanding--;
     =}
     
     reaction(shutdown) {=
         if (self->queries_outstanding != 0) {
-            error_print("Server \"%s\": Number of queries with no reply: %d.", 
+            lf_print_error("Server \"%s\": Number of queries with no reply: %d.", 
                 self->server_name,
                 self->queries_outstanding
             );
         } else {
-            info_print("Server \"%s\" successfully replied to all queries.", 
+            lf_print("Server \"%s\" successfully replied to all queries.", 
                 self->server_name
             );
         }
@@ -171,9 +172,9 @@ reactor Database(
                 self->record += remote_update[i]->value;
             }
         }
-        info_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
+        lf_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
                 "     Elapsed physical time is %lld.",
-                lf_time_logical() - start_time, get_microstep(),
+                lf_time_logical() - start_time, lf_tag().microstep,
                 self->name,
                 self->record,
                 lf_time_physical_elapsed()
@@ -182,7 +183,7 @@ reactor Database(
 #ifdef FEDERATED_DECENTRALIZED
         for (int i = 0; i < remote_update_width; i++) {
             if (remote_update[i]->is_present) {
-                warning_print("At tag (%lld, %u), database \"%s\" "
+                lf_print_warning("At tag (%lld, %u), database \"%s\" "
                         "received remote update (%d) with intended tag (%lld, %u).\n"
                         "     Balance previously reported may have been incorrect.\n"
                         "     Elapsed physical time is %lld.",
@@ -199,7 +200,7 @@ reactor Database(
         }
 #else
         // The tardy handler should not be invoked
-        error_print_and_exit("FATAL: Update is tardy and coordination is not decentralized.");
+        lf_print_error_and_exit("FATAL: Update is tardy and coordination is not decentralized.");
 #endif
     =}
     

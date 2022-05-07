@@ -69,7 +69,7 @@ reactor Destination {
         });
         
         // Check the ref count == 1
-        // info_print("%d", x->token->ref_count);
+        // lf_print("%d", x->token->ref_count);
         // assert(x->token->ref_count == 1); // Might be optimized away (see validate in cpp target)
         
         //rclcpp::SerializedMessage* msg = new rclcpp::SerializedMessage(x->token->length, rcl_get_default_allocator());
@@ -82,9 +82,9 @@ reactor Destination {
         auto serializer_obj = rclcpp::Serialization<std_msgs::msg::Int32>();
         serializer_obj.deserialize_message(msg.get(), &int_msg);
         
-        info_print("Received %d.", int_msg.data);
+        lf_print("Received %d.", int_msg.data);
         if (int_msg.data != self->s) {
-            warning_print("Expected %d and got %d.", self->s, int_msg.data);
+            lf_print_warning("Expected %d and got %d.", self->s, int_msg.data);
         }
         self->s++;
     =}

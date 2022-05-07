@@ -53,7 +53,7 @@ reactor Receiver {
         
     reaction (in) {=        
         // Print the ROS2 message data
-        info_print(
+        lf_print(
             "Serialized integer after deserialization: %d", 
             in->value.data
         );

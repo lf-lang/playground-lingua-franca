@@ -32,13 +32,13 @@ reactor PrintMessageWithDetector(offset:time(10 msec)) extends PrintMessage {
     reaction (message) {=
         // Empty. The base class will react and report the incoming message.
     =} STP(0) {=
-        warning_print("Message is tardy. Intended tag is (%lld, %u).",
+        lf_print_warning("Message is tardy. Intended tag is (%lld, %u).",
             message->intended_tag.time - start_time, message->intended_tag.microstep
         );
     =}
     reaction(local) {=
         tag_t tag = lf_tag();
-        info_print("Timer triggered at logical tag (%lld, %u).",
+        lf_print("Timer triggered at logical tag (%lld, %u).",
             tag.time - start_time, tag.microstep
         );
     =}

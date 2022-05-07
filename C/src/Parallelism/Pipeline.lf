@@ -49,8 +49,8 @@ reactor SendCount(
 reactor Receive {
     input in:int;
     reaction(in) {=
-        info_print("At elapsed tag (%lld, %d), received %d.",
-            lf_time_logical_elapsed(), get_microstep(),
+        lf_print("At elapsed tag (%lld, %d), received %d.",
+            lf_time_logical_elapsed(), lf_tag().microstep,
             in->value
         );
         if (in->value >= 10) {

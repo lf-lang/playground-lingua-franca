@@ -45,8 +45,8 @@ reactor SendCount(
 reactor Receive {
     input in:int;
     reaction(in) {=
-        info_print("At elapsed tag (%lld, %d), received %d.",
-            lf_time_logical_elapsed(), get_microstep(),
+        lf_print("At elapsed tag (%lld, %d), received %d.",
+            lf_time_logical_elapsed(), lf_tag().microstep,
             in->value
         );
     =}
@@ -66,9 +66,9 @@ reactor SendOnceAndReceive {
         lf_set(out, 42);
     =}
     reaction(in) {=
-        info_print("At tag (%lld, %d), received %d.",
+        lf_print("At tag (%lld, %d), received %d.",
             lf_time_logical_elapsed(),
-            get_microstep(),
+            lf_tag().microstep,
             in->value
         );
     =}
@@ -134,11 +134,11 @@ reactor SendPeriodicallyAndReceiveMultiport (
         self->count += self->increment;
     =}
     reaction(in) {=
-        info_print("At tag (%lld, %d), received:",
-            lf_time_logical_elapsed(), get_microstep()
+        lf_print("At tag (%lld, %d), received:",
+            lf_time_logical_elapsed(), lf_tag().microstep
         );
         for (int i = 0; i < self->width; i++) {
-            info_print("  On channel %d: %d", i, in[i]->value);
+            lf_print("  On channel %d: %d", i, in[i]->value);
         }
     =}
 }
@@ -166,8 +166,8 @@ reactor LocalRemoteUpdates(
     =}
     reaction(in) {=
         self->count += in->value;
-        info_print("At tag (%lld, %d), count is %d",
-            lf_time_logical_elapsed(), get_microstep(),
+        lf_print("At tag (%lld, %d), count is %d",
+            lf_time_logical_elapsed(), lf_tag().microstep,
             self->count
         );
     =}

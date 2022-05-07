@@ -68,7 +68,7 @@ reactor Client(
     reaction(startup, release_trigger) -> release, request_trigger {=
         if (release_trigger->is_present) {
             tag_t tag = lf_tag();
-            info_print("%s (ID %d): At tag (%lld, %u), released access.",
+            lf_print("%s (ID %d): At tag (%lld, %u), released access.",
                 self->name,
                 self->id,
                 tag.time - start_time, tag.microstep
@@ -80,7 +80,7 @@ reactor Client(
     
     reaction(request_trigger) -> request {=
         tag_t tag = lf_tag();
-        info_print("%s (ID %d): At tag (%lld, %u), requesting access.",
+        lf_print("%s (ID %d): At tag (%lld, %u), requesting access.",
             self->name,
             self->id,
             tag.time - start_time, tag.microstep
@@ -91,7 +91,7 @@ reactor Client(
     
     reaction (grant) -> release_trigger {=
         tag_t tag = lf_tag();
-        info_print("%s (ID %d): At tag (%lld, %u), granted access.",
+        lf_print("%s (ID %d): At tag (%lld, %u), granted access.",
             self->name,
             self->id,
             tag.time - start_time, tag.microstep
@@ -101,7 +101,7 @@ reactor Client(
     =}
     
     reaction(shutdown) {=
-        info_print("%s (ID %d): Number of requests that were never granted: %d",
+        lf_print("%s (ID %d): Number of requests that were never granted: %d",
             self->name,
             self->id,
             self->requests_outstanding
@@ -190,7 +190,7 @@ reactor ResourceManager(
             }
             if (queue->size >= queue->capacity) {
                 // Queue is full.
-                warning_print("Queue is full. "
+                lf_print_warning("Queue is full. "
                     "Resource request from ID %d will be dropped.",
                     entry
                 );
@@ -252,7 +252,7 @@ reactor ResourceManager(
     
     reaction(local_release) -> release {=
         if (self->queue.queue[self->queue.head] != self->id) {
-            warning_print("%s (ID %d): attempting to release the resource but "
+            lf_print_warning("%s (ID %d): attempting to release the resource but "
                 "does not hold it.",
                 self->name,
                 self->id
@@ -269,7 +269,7 @@ reactor ResourceManager(
                 // NOTE: There should not be more than one resource release
                 // at any logical tag.
                 if (remote_release[i]->value != self->queue.queue[self->queue.head]) {
-                    warning_print("%s: Received release from manager %d, but that "
+                    lf_print_warning("%s: Received release from manager %d, but that "
                         "manager does not hold the resource. Ignoring the release.",
                         self->name,
                         remote_release[i]->value
@@ -295,7 +295,7 @@ reactor ResourceManager(
             // If the local node is already on the request queue, ignore the request.
             if (on_queue(&self->queue, self->id)) {
                 // (this should not happen).
-                warning_print("%s: Redundant resource request. "
+                lf_print_warning("%s: Redundant resource request. "
                     "My manager ID %d is already on the queue.",
                     self->name,
                     self->id
@@ -315,7 +315,7 @@ reactor ResourceManager(
                 if (on_queue(&self->queue, id)) {
                     // The ID is already on the queue
                     // (this should not happen).
-                    warning_print("%s (ID %d): received redundant resource request. "
+                    lf_print_warning("%s (ID %d): received redundant resource request. "
                         "Manager %d is already on the queue. Ignoring request.",
                         self->name,
                         self->id,
@@ -326,7 +326,7 @@ reactor ResourceManager(
                     // push the local ID first.
                     if (local >= 0 && local < id) {
                         if (push(&self->queue, local) != 0) {
-                            warning_print("%s: (ID %d) queue is full. Ignoring local request.",
+                            lf_print_warning("%s: (ID %d) queue is full. Ignoring local request.",
                                 self->name,
                                 self->id
                             );
@@ -336,7 +336,7 @@ reactor ResourceManager(
                     }
                     // Now push the remote request.
                     if (push(&self->queue, id) != 0) {
-                        warning_print("%s (ID %d): Queue is full. Ignoring request.",
+                        lf_print_warning("%s (ID %d): Queue is full. Ignoring request.",
                             self->name,
                             self->id
                         );
@@ -348,7 +348,7 @@ reactor ResourceManager(
         // push it now.
         if (local >= 0) {
             if (push(&self->queue, local) != 0) {
-                warning_print("%s: (ID %d) queue is full. Ignoring local request.",
+                lf_print_warning("%s: (ID %d) queue is full. Ignoring local request.",
                     self->name,
                     self->id
                 );
