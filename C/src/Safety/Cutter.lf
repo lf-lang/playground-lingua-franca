@@ -24,9 +24,9 @@ reactor ButtonController(
     reaction(startup) -> pushed {=
         register_sensor_key(self->key, pushed);
         if (self->key == '\0') {
-            info_print("%s with any key", self->description);
+            lf_print("%s with any key", self->description);
         } else {
-            info_print("%s with '%c'", self->description, self->key);
+            lf_print("%s with '%c'", self->description, self->key);
         }
     =}
     reaction(pushed) -> push {=
@@ -46,7 +46,7 @@ reactor MachineController {
         reaction(emergencyStop) -> Off {=
             if (emergencyStop) lf_set_mode(Off);
         =} deadline (1 msec) {=
-            info_print("DEADLINE VIOLATION!");
+            lf_print("DEADLINE VIOLATION!");
             lf_set_mode(Off);
         =}
         // With centralized coordination, time cannot advance to trigger
@@ -72,7 +72,7 @@ main reactor {
         // This has to be done exactly once.
         start_sensor_simulator(messages, num_messages, 16, NULL, LOG_LEVEL_INFO);
         register_sensor_key('x', stop);
-        info_print("Exit with 'x'");
+        lf_print("Exit with 'x'");
     =}
     reaction(stop) {=
         request_stop();

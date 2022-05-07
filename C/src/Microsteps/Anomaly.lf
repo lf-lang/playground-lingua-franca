@@ -36,10 +36,14 @@ reactor Destination(name:string("dest")) {
     input in2:int;
     reaction (in1, in2) {=
         if (in1->is_present) {
-            printf("%s: Tag (%lld, %d): in1 received %d\n", self->name, lf_time_logical_elapsed(), get_microstep(), in1->value);
+            lf_print("%s: Tag (%lld, %d): in1 received %d", self->name, 
+                lf_time_logical_elapsed(), lf_tag().microstep, in1->value
+            );
         }
         if (in2->is_present) {
-            printf("%s: Tag (%lld, %d): in2 received %d\n", self->name, lf_time_logical_elapsed(), get_microstep(), in2->value);
+            lf_print("%s: Tag (%lld, %d): in2 received %d", self->name,
+                lf_time_logical_elapsed(), lf_tag().microstep, in2->value
+            );
         }
     =}
 }

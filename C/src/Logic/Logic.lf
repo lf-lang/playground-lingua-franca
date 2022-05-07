@@ -37,7 +37,7 @@ reactor LogicalAnd {
    
     reaction(a, b) {=
         printf("Output: %d, tag: (%lld, %u)\n", 
-            a->is_present & b->is_present, lf_time_logical_elapsed(), get_microstep()
+            a->is_present & b->is_present, lf_time_logical_elapsed(), lf_tag().microstep
         );
     =}
 }

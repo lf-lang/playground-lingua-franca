@@ -98,14 +98,14 @@ reactor Sieve {
         // FIXME: This should be done in large chunks rather than on each call?
         bool** new_memory = (bool**)realloc(_lf_is_present_fields, (_lf_is_present_fields_size + 1) * sizeof(bool*));
         if (new_memory == NULL) {
-            error_print("Out of memory!");
+            lf_print_error("Out of memory!");
             request_stop();
         } else {
             _lf_is_present_fields = new_memory;
             
             new_memory = (bool**)realloc(_lf_is_present_fields_abbreviated, (_lf_is_present_fields_size + 1) * sizeof(bool*));
             if (new_memory == NULL) {
-                error_print("Out of memory!");
+                lf_print_error("Out of memory!");
                 request_stop();
             } else {
                 _lf_is_present_fields_abbreviated = new_memory;

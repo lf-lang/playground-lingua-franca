@@ -80,7 +80,7 @@ reactor Vehicle (
     =}
     
     reaction(grant) {=
-        info_print("Granted access at elapsed logical time %lld. Physical time is %lld",
+        lf_print("Granted access at elapsed logical time %lld. Physical time is %lld",
             lf_time_logical_elapsed(),
             lf_time_physical_elapsed()
         );
@@ -134,7 +134,7 @@ reactor RSU (
                         );
                 self->earliest_free = response.arrival_time + time_in_intersection;
                 
-                info_print("*** Grant access to vehicle %d to enter at time %lld. Next available time is %lld",
+                lf_print("*** Grant access to vehicle %d to enter at time %lld. Next available time is %lld",
                     i,
                     response.arrival_time - start_time,
                     self->earliest_free - start_time
