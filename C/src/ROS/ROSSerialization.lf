@@ -13,8 +13,7 @@
 target CCpp {
     coordination: decentralized,
     timeout: 10 sec,
-    cmake-include: "include/CMakeListsExtension.txt",
-    files: ["include/ament_target_dependencies.cmake"],
+    cmake-include: "include/CMakeListsExtension.txt"
 };
 
 preamble {=
