@@ -1,0 +1,70 @@
+/**
+ * Taskset Generator of Lingua Franca
+ * @author Hokeun Kim
+ * @author Yunsang Cho
+ */
+
+target C {
+    timeout: 10 sec
+};
+
+preamble {=
+    typedef struct task_config_t {
+        int id;
+        long long int release_time;
+        long long int exe_time;
+    } task_config_t;
+=}
+
+// Each Task has information about its release time and exeuction time
+reactor Task {
+
+    input in:task_config_t;
+    state exe_time:time(0 sec);
+    state id:int;
+    logical action release;
+
+    reaction(in) -> release {=
+        self->id = in->value.id;
+        self->exe_time = in->value.exe_time;
+        lf_schedule(release, in->value.release_time);
+    =}
+    
+    reaction(release) -> release {=
+        long long int physical_start_time = lf_time_physical();
+        printf("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
+            self->id,
+            lf_time_logical_elapsed(),
+            lf_time_physical_elapsed(),
+            self->exe_time
+        );
+        while (lf_time_physical() < physical_start_time + self->exe_time) {
+
+        };
+        printf("Task %d finished execution at physical time %lld nsec\n",
+            self->id,
+            lf_time_physical_elapsed());
+    =}
+}
+
+// Runner with uniform task execution time and release time = 0.
+reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:float(0.6)) {
+    output[100] out:task_config_t;
+
+    reaction(startup) -> out {=
+        long long int exe_time = (long long int) ((self->total_time * self->utilization) / self->num_task);
+        for (int i = 0; i < self->num_task; i++) {
+            task_config_t message;
+            message.id = i;
+            message.exe_time = exe_time;
+            message.release_time = (long long int) 0;
+            lf_set(out[i], message);
+        }
+    =}
+}
+
+main reactor BasicTaskSetGenerator {
+    runner = new SimpleRunner();
+    tasks = new[100] Task();
+    runner.out -> tasks.in;
+}
