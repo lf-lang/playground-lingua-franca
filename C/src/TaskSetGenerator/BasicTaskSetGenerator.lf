@@ -5,7 +5,8 @@
  */
 
 target C {
-    timeout: 10 sec
+    timeout: 10 sec,
+    workers: 8
 };
 
 preamble {=
@@ -63,8 +64,26 @@ reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:floa
     =}
 }
 
+
+// Runner considering number of workers when computing execution time with uniform task execution time and release time = 0.
+reactor RunnerForMultipleWorkers(num_task:int(100), total_time:time(10 sec), utilization:float(0.6)) {
+    output[100] out:task_config_t;
+
+    reaction(startup) -> out {=
+        long long int exe_time = (long long int) NUMBER_OF_WORKERS * ((self->total_time * self->utilization) / self->num_task);
+        for (int i = 0; i < self->num_task; i++) {
+            task_config_t message;
+            message.id = i;
+            message.exe_time = exe_time;
+            message.release_time = (long long int) 0;
+            lf_set(out[i], message);
+        }
+    =}
+}
+
 main reactor BasicTaskSetGenerator {
-    runner = new SimpleRunner();
+    //runner = new SimpleRunner();
+    runner = new RunnerForMultipleWorkers();
     tasks = new[100] Task();
     runner.out -> tasks.in;
 }
