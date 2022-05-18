@@ -5,7 +5,8 @@
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  */
 target C {
-    keepalive: true
+    keepalive: true,
+    coordination-options: {advance-message-interval: 10 msec} 
 };
 
 preamble {=
@@ -70,6 +71,7 @@ reactor ChatHandler {
     output send:string;
     u = new InputHandler();
     r = new Printer();
+
     
     reaction(u.out) -> send {=
         lf_set(send, u.out->value);
@@ -78,6 +80,7 @@ reactor ChatHandler {
         lf_set(r.in, receive->value);
     =}
 }
+
 federated reactor SimpleChat {
     a = new ChatHandler();
 
