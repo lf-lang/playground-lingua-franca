@@ -1,0 +1,90 @@
+/**
+ * This program is a simple chat application for two users.
+ *
+ * @author Byeonggil Jun (junbg@hanyang.ac.kr)
+ * @author Hokeun Kim (hokeunkim@berkeley.edu)
+ */
+target C {
+    keepalive: true,
+    coordination-options: {advance-message-interval: 10 msec} 
+};
+
+preamble {=
+        #include <unistd.h>
+=}
+
+reactor InputHandler {
+    preamble {=
+        // Global buffer.
+        char buf[256];
+        void* read_input(void* response) {
+            int c;
+            int i = 0;
+            while(1) {
+                printf("Press Enter a message.\n");  
+                while((c = getchar()) != '\n') {
+                    buf[i++] = c;
+                    if (c == EOF) {
+                        request_stop();
+                        break;
+                    }
+                }
+                buf[i] = 0;
+                printf("User input: %s\n", buf);
+                i = 0;
+
+                char* ptr = buf;
+                // The following copies the char*, not the string.
+                lf_schedule_copy(response, 0, &ptr, 1);
+                if (c == EOF) {
+                    break;
+                }
+            }
+            return NULL;
+        }
+    =}
+
+    physical action response:string;
+    output out:string;
+    
+    reaction(startup) -> response {=
+        lf_thread_t thread_id;
+        lf_thread_create(&thread_id, &read_input, response);
+    =}
+
+    reaction(response) -> out {=
+        printf("Reacting to physical action at %lld\n", get_elapsed_logical_time());
+        lf_set(out, response->value);
+    =}
+}
+
+reactor Printer {
+    input in:string;
+
+    reaction(in) {=
+        printf("Received: %s\n", in->value);
+    =}
+}
+
+reactor ChatHandler {
+    input receive:string;
+    output send:string;
+    u = new InputHandler();
+    r = new Printer();
+
+    
+    reaction(u.out) -> send {=
+        lf_set(send, u.out->value);
+    =}
+    reaction(receive) -> r.in {=
+        lf_set(r.in, receive->value);
+    =}
+}
+
+federated reactor SimpleChat {
+    a = new ChatHandler();
+
+    b = new ChatHandler();
+    b.send -> a.receive;
+    a.send -> b.receive;
+}
