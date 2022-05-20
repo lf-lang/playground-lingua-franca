@@ -20,7 +20,8 @@
 target C {
     timeout: 3 secs,
     fast: true,
-    build: "./build_run_plot.sh FurutaPendulum pendulum"
+    flags: "-lm",
+    build: "./build_run_plot.sh FurutaPendulum pendulum open"
 }
 import PendulumController from "PendulumController.lf";
 import PendulumSimulation from "PendulumSimulation.lf";
