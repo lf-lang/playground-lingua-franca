@@ -10,7 +10,9 @@
  * This program specifies a build script that only code generates
  * and compiles the program, as usual, but also executes the
  * program and processes its output to generate and open a
- * plot.
+ * plot. You may need to change the last argument passed to 
+ * the build script to the name of a PDF viewer installed on
+ * your system.
  * 
  * You have to have installed gnuplot and have it in your
  * PATH for this script to work as expected (and also cmake).
