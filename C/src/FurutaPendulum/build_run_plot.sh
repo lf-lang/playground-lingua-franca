@@ -2,7 +2,8 @@
 # This script compiles the generated code,
 # executes it, and plots the results.
 # The first argument is the name of the main reactor,
-# and the second is the root name of the gnuplot file to use.
+# the second is the root name of the gnuplot file to use,
+# and the last argument is the viewer to render the PDF in.
 
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
@@ -15,6 +16,14 @@ mv $1 ${LF_BIN_DIRECTORY}
 # Invoke the executable.
 ${LF_BIN_DIRECTORY}/$1
 
-# Plot the results, which have appeared in the src-gen directory.
+# Plot the results, which have appeared in the src directory.
 gnuplot ${LF_SOURCE_DIRECTORY}/$2.gnuplot
-open $2.pdf
+
+# Open the produced PDF using the specified viewer
+if ! command -v $3 &> /dev/null
+then
+    echo "'$3' could not be found; please specify another PDF viewer."
+    exit
+else
+    $3 $2.pdf &
+fi
