@@ -1,5 +1,5 @@
 /**
- * This program is a simple chat application for two users.
+ * This program is a simple chat application for N users.
  *
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
@@ -59,10 +59,10 @@ reactor InputHandler {
 }
 
 reactor Printer (
-    N:int(2)
+    N:int(2) 
 ) {
     //add N input control
-    input in:string;
+    input[N] in:string;
 
     reaction(in) {=
         printf("Received: %s\n", in->value);
@@ -73,15 +73,15 @@ reactor ChatHandler (
     N:int(2)
 ) {
     //add N input control
-    input receive:string;
+    input[N] receive:string;
     output send:string;
     u = new InputHandler();
-    r = new Printer();
+    r = new Printer(N=N);
 
-    
     reaction(u.out) -> send {=
         lf_set(send, u.out->value);
     =}
+    
     reaction(receive) -> r.in {=
         lf_set(r.in, receive->value);
     =}
