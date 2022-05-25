@@ -58,11 +58,9 @@ reactor InputHandler {
     =}
 }
 
-reactor Printer (
-    N:int(2) 
-) {
+reactor Printer {
     //add N input control
-    input[N] in:string;
+    input in:string;
 
     reaction(in) {=
         printf("Received: %s\n", in->value);
@@ -76,14 +74,18 @@ reactor ChatHandler (
     input[N] receive:string;
     output send:string;
     u = new InputHandler();
-    r = new Printer(N=N);
+    r = new Printer();
 
     reaction(u.out) -> send {=
         lf_set(send, u.out->value);
     =}
-    
+
     reaction(receive) -> r.in {=
-        lf_set(r.in, receive->value);
+        for (int i = 0; i < receive_width; i++) {
+            if (receive[i]->is_present) {
+                lf_set(r.in, receive[i]->value); 
+            }
+        }
     =}
 }
 
