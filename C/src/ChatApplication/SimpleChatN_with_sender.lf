@@ -63,12 +63,8 @@ reactor Printer {
     input in:string;
     input sender:int;
 
-    reaction(sender) {=
-        printf("message from %d\n", sender);
-    =}
-
-    reaction(in) {=
-        printf("Received: %s\n", in->value);
+    reaction(in, sender) {=
+        printf("Received message from %d: %s\n", sender, in->value);
     =}
 }
 
