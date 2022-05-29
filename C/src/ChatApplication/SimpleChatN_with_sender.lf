@@ -64,7 +64,10 @@ reactor Printer {
     input sender:int;
 
     reaction(in, sender) {=
-        printf("Received message from %d: %s\n", sender, in->value);
+        printf("Received message from %d: %s\n", sender->value, in->value);
+        if (sender->is_present) {
+            printf("sender has no problem, value = %d\n", sender);
+        }
     =}
 }
 
