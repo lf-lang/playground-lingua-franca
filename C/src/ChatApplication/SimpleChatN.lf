@@ -91,7 +91,7 @@ reactor ChatHandler (
 }
 
 federated reactor SimpleChatN (
-    N:int(2)
+    N:int(4)
 ) {
     people = new[N] ChatHandler(N=N);
     (people.send)+ -> people.receive
