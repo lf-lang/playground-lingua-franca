@@ -4,7 +4,7 @@
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  */
-target C {
+ target C {
     keepalive: true,   
     coordination-options: {advance-message-interval: 10 msec} 
 };
@@ -61,9 +61,13 @@ reactor InputHandler {
 reactor Printer {
     //add N input control
     input in:string;
+    input sender:int;
 
-    reaction(in) {=
-        printf("Received: %s\n", in->value);
+    reaction(in, sender) {=
+        printf("Received message from %d: %s\n", sender->value, in->value);
+        if (sender->is_present) {
+            printf("sender has no problem, value = %d\n", sender);
+        }
     =}
 }
 
@@ -80,9 +84,11 @@ reactor ChatHandler (
         lf_set(send, u.out->value);
     =}
 
-    reaction(receive) -> r.in {=
+    reaction(receive) -> r.sender, r.in {=
         for (int i = 0; i < receive_width; i++) {
             if (receive[i]->is_present) {
+                lf_set(r.sender, i);
+                printf("send with sender name %d\n", i); 
                 lf_set(r.in, receive[i]->value); 
             }
         }
@@ -90,7 +96,7 @@ reactor ChatHandler (
 }
 
 federated reactor SimpleChatN (
-    N:int(4)
+    N:int(2)
 ) {
     people = new[N] ChatHandler(N=N);
     (people.send)+ -> people.receive
