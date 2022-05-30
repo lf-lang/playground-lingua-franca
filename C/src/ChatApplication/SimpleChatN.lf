@@ -82,7 +82,7 @@ reactor ChatHandler (
     reaction(receive) -> r.sender, r.in {=
         for (int i = 0; i < receive_width; i++) {
             if (receive[i]->is_present) {
-                //send sender's name
+                // Send sender's ID along with the data.
                 lf_set(r.sender, i);
                 lf_set(r.in, receive[i]->value); 
             }
