@@ -9,8 +9,17 @@ Python >= 3.7.13
 
 
 ## How to Install prerequisties
+* Set the environment variable LF_PATH to the path where Lingua Franca is installed  
+  (You can check by using a command `echo $LF_PATH`)
+
+* Install python libraries
 ```
 pip3 install numpy scipy matplotlib
+```
+
+* Install python tkinter library for using GUI
+```
+apt-get install python3-tk
 ```
 
 for MacOS users, 
@@ -27,7 +36,9 @@ python3 gui.py
 
 2. Select options and click [Run] button.
 
-![gui](https://user-images.githubusercontent.com/43602849/171104513-d0e79c52-48f3-425a-87cc-588f335a2ec2.png)
+![gui](https://user-images.githubusercontent.com/43602849/171114948-b6820891-a655-4165-af48-16ada7836900.png)
 
 3. A graph representing total execution time for different number of workers will appear.
 
+
+![graph](https://user-images.githubusercontent.com/43602849/171115217-db1fec79-c088-4704-82eb-1ba817d519d5.png)
