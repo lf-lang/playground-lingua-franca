@@ -15,9 +15,7 @@ import shutil
 from functools import partial
 import random
 
-TEMPLATE_PATH = './BasicTaskSetGeneratorTemplate.lf'
-
-
+timeUnits = ['sec', 'msec', 'usec', 'nsec']
 
 def step(num_workers, scheduler_type):
 
@@ -30,15 +28,15 @@ def step(num_workers, scheduler_type):
         contents = contents.replace(key, value)
 
     filename = f'practice_{scheduler_type}_{num_workers}'
-    filepath = f'./.gui/src/{filename}.lf'
+    filepath = f'{WORKING_DIR}/.gui/src/{filename}.lf'
     with open(filepath, "w") as lf_file:
         lf_file.write(contents)
         lf_file.close()
         print(f"File saved: {filepath}")
 
-    out = subprocess.run([f'{LF_PATH}/gradlew','runLfc', '--args', filepath], capture_output=True)
+    out = subprocess.run([f'./gradlew','runLfc', '--args', filepath], capture_output=True)
 
-    print("Build sccessfully!")
+    print("Build successfully!")
     lf_out = subprocess.run([f'./.gui/bin/{filename}'], capture_output=True)
 
     for line in reversed(lf_out.stdout.decode("utf-8").split('\n')):
@@ -49,9 +47,6 @@ def step(num_workers, scheduler_type):
     exe_time = int(exe_time.replace(',','')) / 1000000000
     return exe_time
     
-
-
-
 
 def runLfc():
 
@@ -125,8 +120,6 @@ def plot_graph(data):
     plt.title(title, fontsize= 10)
     #plt.title(f'{"Sporadic" if periodicity.get() == 1 else f"Periodic"} / Total time: {char_to_replace["TOTAL_TIME"]} / Number of Tasks: {char_to_replace["NUM_TASKS"]} / Utilization: {char_to_replace["UTILIZATION"]}')
     plt.show()
-
-timeUnits = ['sec', 'msec', 'usec', 'nsec']
 
 def create_input_frame(container):
     initialize()
@@ -211,17 +204,20 @@ def create_main():
     main.mainloop()
 
 def initialize():
-    if (os.path.isdir('./.gui')):
-        shutil.rmtree('./.gui')
+    if (os.path.isdir(f'{WORKING_DIR}/.gui')):
+        shutil.rmtree(f'{WORKING_DIR}/.gui')
 
-    os.mkdir('./.gui')
-    os.mkdir('./.gui/src')
+    os.mkdir(f'{WORKING_DIR}/.gui')
+    os.mkdir(f'{WORKING_DIR}/.gui/src')
 
 
 if __name__ == "__main__":
-    global LF_PATH
+    global LF_PATH, WORKING_DIR, TEMPLATE_PATH
     LF_PATH = os.getenv("LF_PATH")
     if LF_PATH == None:
         sys.exit("Set the environment variable LF_PATH to the path where Lingua Franca is installed")
-        
+    
+    WORKING_DIR = os.getcwd()
+    TEMPLATE_PATH = f'{WORKING_DIR}/BasicTaskSetGeneratorTemplate.lf'
+    os.chdir(LF_PATH)
     create_main()
