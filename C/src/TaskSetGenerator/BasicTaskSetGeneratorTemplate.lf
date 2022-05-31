@@ -5,9 +5,9 @@
  */
 
 target C {
-    timeout: 10 sec,
+    timeout: TOTAL_TIME,
     workers: NUM_WORKERS,
-    tracing: true
+    scheduler: SCHEDULER_TYPE
 };
 
 preamble {=
@@ -15,7 +15,10 @@ preamble {=
         int id;
         long long int release_time;
         long long int exe_time;
+        bool    periodic;
+        long long int period;
     } task_config_t;
+    //#define 
 =}
 
 // Each Task has information about its release time and exeuction time
@@ -24,24 +27,30 @@ reactor Task {
     input in:task_config_t;
     state exe_time:time(0 sec);
     state id:int;
+    state periodic:bool(false);
+    state period:time(0 sec);
     logical action release;
 
     reaction(startup) {=
-        if (!register_user_trace_event("ID")) {
-        fprintf(stderr, "ERROR: Failed to register trace event.\n");
-        exit(1);
-        }
+        #ifdef TASK_SET_TRACING_ON
+            if (!register_user_trace_event("ID")) {
+                fprintf(stderr, "ERROR: Failed to register trace event.\n");
+                exit(1);
+            }
+        #endif // TASK_SET_TRACING_ON
     =}
 
     reaction(in) -> release {=
         self->id = in->value.id;
         self->exe_time = in->value.exe_time;
+        self->periodic = in->value.periodic;
+        self->period = in->value.period;
         lf_schedule(release, in->value.release_time);
     =}
     
     reaction(release) -> release {=
         long long int physical_start_time = lf_time_physical();
-        tracepoint_user_value("ID", self->id);
+        //tracepoint_user_value("ID", self->id);
         printf("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
             self->id,
             lf_time_logical_elapsed(),
@@ -54,20 +63,30 @@ reactor Task {
         printf("Task %d finished execution at physical time %lld nsec\n",
             self->id,
             lf_time_physical_elapsed());
+        if (self->periodic) {
+            lf_schedule(release, self->period);
+        }
     =}
 }
 
 // Runner with uniform task execution time and release time = 0.
-reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:float(0.6)) {
+reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:float(0.6), periodic:bool(false), period:time(1 sec)) {
     output[100] out:task_config_t;
-
+    
     reaction(startup) -> out {=
-        long long int exe_time = (long long int) ((self->total_time * self->utilization) / self->num_task);
+        long long int exe_time;
+        if (self->periodic) {
+            exe_time = (long long int) ((self->utilization * self->period) / self->num_task);
+        } else {
+            exe_time = (long long int) ((self->total_time * self->utilization) / self->num_task);
+        }
         for (int i = 0; i < self->num_task; i++) {
             task_config_t message;
             message.id = i;
             message.exe_time = exe_time;
             message.release_time = (long long int) 0;
+            message.periodic = self->periodic;
+            message.period = (long long int) self->period;
             lf_set(out[i], message);
         }
     =}
@@ -108,7 +127,7 @@ reactor RandomReleaseRunner(num_task:int(100), total_time:time(10 sec), utilizat
 }
 
 main reactor {
-    runner = new SimpleRunner(num_task=NUM_TASKS, total_time=TOTAL_TIME sec, utilization=UTILIZATION);
+    runner = new SimpleRunner(num_task=NUM_TASKS, total_time=TOTAL_TIME, utilization=UTILIZATION, periodic=PERIODIC, period=PERIOD);
     //runner = new RunnerForMultipleWorkers();
     //runner = new RandomReleaseRunner();
     tasks = new[100] Task();
