@@ -37,7 +37,7 @@ def step(num_workers, scheduler_type):
     out = subprocess.run([f'./gradlew','runLfc', '--args', filepath], capture_output=True)
 
     print("Build successfully!")
-    lf_out = subprocess.run([f'./.gui/bin/{filename}'], capture_output=True)
+    lf_out = subprocess.run([f'{WORKING_DIR}/.gui/bin/{filename}'], capture_output=True)
 
     for line in reversed(lf_out.stdout.decode("utf-8").split('\n')):
         if line.startswith("---- Elapsed physical"):
