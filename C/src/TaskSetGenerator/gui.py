@@ -60,7 +60,7 @@ def runLfc():
 
     global char_to_replace, template
     workers = [1, 2, 5, 20]
-    schedulers = ["NP", "GEDF_NP", "GEDF_NP_CI"]
+    schedulers = {"NP": is_NP.get(), "GEDF_NP": is_GEDF_NP.get(), "GEDF_NP_CI": is_GEDF_NP_CI.get()}
     
 
     char_to_replace = {
@@ -70,16 +70,18 @@ def runLfc():
         '$UTILIZATION$': utilization.get(),
         '$NUM_WORKERS$': '',
         '$PERIODIC$':'false' if periodicity.get() == 1 else 'true',
-        '$PERIOD$': str(period.get()) + " " + str(periodUnit.get())
+        '$PERIOD$': str(period.get()) + " " + str(period_unit.get())
     }
 
     with open(TEMPLATE_PATH) as f:
         template = f.read()
 
+
+    target_schedulers = [k for k, v in schedulers.items() if v == True]
     exe_times = {}
 
     workers = [i for i in range(1, 21)]
-    for scheduler in schedulers:
+    for scheduler in target_schedulers:
         exe_time = []
         for worker in workers:
             exe_time.append(step(worker, scheduler))
@@ -91,9 +93,7 @@ def runLfc():
     result['exe_times'] = exe_times
     
     plot_graph(result)
-    #print(result)
-
-
+    
 def plot_graph(data):
     
     fig, ax = plt.subplots()
@@ -105,13 +105,14 @@ def plot_graph(data):
     axes = []
     patches = []
     schedulers = data['exe_times'].keys()
-    for scheduler in schedulers:
-        
-        color = (random.random(), random.random(), random.random())
-        patches.append(mpatches.Patch(color=color, label=scheduler))
 
-        axes.append(ax.plot(workers, data['exe_times'][scheduler], '--', color=color))
-        plt.scatter(scatters, [data['exe_times'][scheduler][i-1] for i in scatters], color=color)
+    colors = ['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD']
+    for i, scheduler in enumerate(schedulers):
+        
+        patches.append(mpatches.Patch(color=colors[i], label=scheduler))
+
+        axes.append(ax.plot(workers, data['exe_times'][scheduler], '--', color=colors[i]))
+        plt.scatter(scatters, [data['exe_times'][scheduler][i-1] for i in scatters], color=colors[i])
         
     ax.legend(handles=patches, loc='upper right')
     plt.axis([0, max(workers)+1, 0, max(max(i) for i in data['exe_times'].values()) * 1.2])
@@ -126,7 +127,6 @@ def plot_graph(data):
     title += f' / Total time: {char_to_replace["$TOTAL_TIME$"]} / Number of Tasks: {char_to_replace["$NUM_TASKS$"]} / Utilization: {char_to_replace["$UTILIZATION$"]}'
 
     plt.title(title, fontsize= 10)
-    #plt.title(f'{"Sporadic" if periodicity.get() == 1 else f"Periodic"} / Total time: {char_to_replace["$TOTAL_TIME$"]} / Number of Tasks: {char_to_replace["$NUM_TASKS$"]} / Utilization: {char_to_replace["$UTILIZATION$"]}')
     plt.show()
 
 def create_input_frame(container):
@@ -161,9 +161,16 @@ def create_input_frame(container):
     period_entry = ttk.Entry(frame, textvariable=period)
     period_entry.grid(column=1, row=4, sticky=tk.W)
 
-    select_period_unit = ttk.Combobox(frame, textvariable=periodUnit, values=time_units, state='readonly')
+    select_period_unit = ttk.Combobox(frame, textvariable=period_unit, values=time_units, state='readonly')
     select_period_unit.current(1)
     select_period_unit.grid(column=2, row=4, sticky=tk.W)
+
+    scheduler_label = ttk.LabelFrame(frame, text="Scheduler")
+    scheduler_label.grid(column=0, row=5, sticky=tk.W)
+
+    ttk.Checkbutton(scheduler_label, text='NP', variable=is_NP, onvalue=True, offvalue=False).grid(column=0, row=0, sticky=tk.W)
+    ttk.Checkbutton(scheduler_label, text='GEDF_NP', variable=is_GEDF_NP, onvalue=True, offvalue=False).grid(column=1, row=0, sticky=tk.W)
+    ttk.Checkbutton(scheduler_label, text='GEDF_NP_CI', variable=is_GEDF_NP_CI, onvalue=True, offvalue=False).grid(column=2, row=0, sticky=tk.W)
 
     return frame
 
@@ -171,9 +178,32 @@ def create_input_frame(container):
 def exit(container):
     container.quit()
 
+def set_global_variables():
+    global num_tasks, total_time, total_time_unit, utilization, periodicity, period, period_unit
+    global is_NP, is_GEDF_NP, is_GEDF_NP_CI
+
+    num_tasks = tk.IntVar()
+    total_time = tk.IntVar()
+    total_time_unit = tk.StringVar()
+    utilization = tk.StringVar()
+    periodicity = tk.IntVar()
+    period = tk.IntVar()
+    period_unit = tk.StringVar()
+    is_NP = tk.BooleanVar()
+    is_GEDF_NP = tk.BooleanVar()
+    is_GEDF_NP_CI = tk.BooleanVar()
+
+    num_tasks.set(20)
+    total_time.set(1)
+    utilization.set("0.6")
+    periodicity.set(1)
+    period.set(100)
+    is_NP.set(True)
+    is_GEDF_NP.set(True)
+    is_GEDF_NP_CI.set(True)
+
 
 def create_main():
-    global num_tasks, total_time, total_time_unit, utilization, periodicity, period, periodUnit
 
     main = tk.Tk()
     main.title('TaskSet generator')
@@ -183,28 +213,19 @@ def create_main():
     main.rowconfigure(0, weight=3)
     main.rowconfigure(1, weight=1)
 
-    num_tasks = tk.IntVar()
-    total_time = tk.IntVar()
-    total_time_unit = tk.StringVar()
-    utilization = tk.StringVar()
-    periodicity = tk.IntVar()
-    period = tk.IntVar()
-    periodUnit = tk.StringVar()
-
-    num_tasks.set(20)
-    total_time.set(1)
-    utilization.set("0.6")
-    periodicity.set(1)
-    period.set(100)
+    set_global_variables()
 
     input_frame = create_input_frame(main)
     input_frame.grid(column=0, row=0, sticky="NSEW")
 
-    runButton = ttk.Button(main, text="Run", command=runLfc)
-    runButton.grid(column=0, row=1)
+    button_frame = ttk.Frame(main)
+    button_frame.grid(column=0, row=1, sticky=tk.W)
 
-    exitButton = ttk.Button(main, text='Exit', command=partial(exit, main))
-    exitButton.grid(column=1, row=1)
+    runButton = ttk.Button(button_frame, text="Run", command=runLfc)
+    runButton.grid(column=0, row=0)
+
+    exitButton = ttk.Button(button_frame, text='Exit', command=partial(exit, main))
+    exitButton.grid(column=1, row=0)
 
     main.mainloop()
 
