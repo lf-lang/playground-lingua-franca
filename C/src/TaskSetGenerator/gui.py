@@ -20,7 +20,7 @@ import sys
 import subprocess
 import shutil
 from functools import partial
-import random
+import statistics
 
 time_units = ['sec', 'msec', 'usec', 'nsec']
 
@@ -81,10 +81,12 @@ def runLfc():
     exe_times = {}
 
     workers = [i for i in range(1, 21)]
+
+    
     for scheduler in target_schedulers:
         exe_time = []
         for worker in workers:
-            exe_time.append(step(worker, scheduler))
+            exe_time.append(statistics.mean([step(worker, scheduler) for _ in range(num_iterations.get())]))
         exe_times[scheduler] = exe_time.copy()
         exe_time.clear()
 
@@ -153,20 +155,24 @@ def create_input_frame(container):
     utilization_entry = ttk.Entry(frame, textvariable=utilization)
     utilization_entry.grid(column=1, row=2, sticky=tk.W)
     
-    ttk.Label(frame, text="Periodicity:").grid(column=0, row=3, sticky=tk.W)
-    ttk.Radiobutton(frame, text="sporadic", variable=periodicity, value=1).grid(column=1, row=3)
-    ttk.Radiobutton(frame, text="periodic", variable=periodicity, value=2).grid(column=2, row=3)
+    ttk.Label(frame, text="Number of iterations:").grid(column=0, row=3, sticky=tk.W)
+    num_iterations_entry = ttk.Entry(frame, textvariable=num_iterations)
+    num_iterations_entry.grid(column=1, row=3, sticky=tk.W)
 
-    ttk.Label(frame, text="Period:").grid(column=0, row=4, sticky=tk.W)
+    ttk.Label(frame, text="Periodicity:").grid(column=0, row=4, sticky=tk.W)
+    ttk.Radiobutton(frame, text="sporadic", variable=periodicity, value=1).grid(column=1, row=4)
+    ttk.Radiobutton(frame, text="periodic", variable=periodicity, value=2).grid(column=2, row=4)
+
+    ttk.Label(frame, text="Period:").grid(column=0, row=5, sticky=tk.W)
     period_entry = ttk.Entry(frame, textvariable=period)
-    period_entry.grid(column=1, row=4, sticky=tk.W)
+    period_entry.grid(column=1, row=5, sticky=tk.W)
 
     select_period_unit = ttk.Combobox(frame, textvariable=period_unit, values=time_units, state='readonly')
     select_period_unit.current(1)
-    select_period_unit.grid(column=2, row=4, sticky=tk.W)
+    select_period_unit.grid(column=2, row=5, sticky=tk.W)
 
     scheduler_label = ttk.LabelFrame(frame, text="Scheduler")
-    scheduler_label.grid(column=0, row=5, sticky=tk.W)
+    scheduler_label.grid(column=0, row=6, sticky=tk.W)
 
     ttk.Checkbutton(scheduler_label, text='NP', variable=is_NP, onvalue=True, offvalue=False).grid(column=0, row=0, sticky=tk.W)
     ttk.Checkbutton(scheduler_label, text='GEDF_NP', variable=is_GEDF_NP, onvalue=True, offvalue=False).grid(column=1, row=0, sticky=tk.W)
@@ -179,13 +185,14 @@ def exit(container):
     container.quit()
 
 def set_global_variables():
-    global num_tasks, total_time, total_time_unit, utilization, periodicity, period, period_unit
+    global num_tasks, total_time, total_time_unit, utilization, periodicity, period, period_unit, num_iterations
     global is_NP, is_GEDF_NP, is_GEDF_NP_CI
 
     num_tasks = tk.IntVar()
     total_time = tk.IntVar()
     total_time_unit = tk.StringVar()
     utilization = tk.StringVar()
+    num_iterations = tk.IntVar()
     periodicity = tk.IntVar()
     period = tk.IntVar()
     period_unit = tk.StringVar()
@@ -196,6 +203,7 @@ def set_global_variables():
     num_tasks.set(20)
     total_time.set(1)
     utilization.set("0.6")
+    num_iterations.set(1)
     periodicity.set(1)
     period.set(100)
     is_NP.set(True)
