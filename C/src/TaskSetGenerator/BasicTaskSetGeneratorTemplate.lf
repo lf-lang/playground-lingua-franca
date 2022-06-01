@@ -5,9 +5,9 @@
  */
 
 target C {
-    timeout: TOTAL_TIME,
-    workers: NUM_WORKERS,
-    scheduler: SCHEDULER_TYPE
+    timeout: $TOTAL_TIME$,
+    workers: $NUM_WORKERS$,
+    scheduler: $SCHEDULER_TYPE$
 };
 
 preamble {=
@@ -97,7 +97,7 @@ reactor RunnerForMultipleWorkers(num_task:int(100), total_time:time(10 sec), uti
     output[100] out:task_config_t;
 
     reaction(startup) -> out {=
-        long long int exe_time = (long long int) NUMBER_OF_WORKERS * ((self->total_time * self->utilization) / self->num_task);
+        long long int exe_time = (long long int) $NUM_WORKERS$ * ((self->total_time * self->utilization) / self->num_task);
         for (int i = 0; i < self->num_task; i++) {
             task_config_t message;
             message.id = i;
@@ -114,7 +114,7 @@ reactor RandomReleaseRunner(num_task:int(100), total_time:time(10 sec), utilizat
 
     reaction(startup) -> out {=
         srand(time(0));
-        long long int exe_time = (long long int) NUMBER_OF_WORKERS * ((self->total_time * self->utilization) / self->num_task);
+        long long int exe_time = (long long int) $NUM_WORKERS$ * ((self->total_time * self->utilization) / self->num_task);
         for (int i = 0; i < self->num_task; i++) {
             task_config_t message;
             float r = (float) rand() / (float) RAND_MAX;
@@ -127,7 +127,7 @@ reactor RandomReleaseRunner(num_task:int(100), total_time:time(10 sec), utilizat
 }
 
 main reactor {
-    runner = new SimpleRunner(num_task=NUM_TASKS, total_time=TOTAL_TIME, utilization=UTILIZATION, periodic=PERIODIC, period=PERIOD);
+    runner = new SimpleRunner(num_task=$NUM_TASKS$, total_time=$TOTAL_TIME$, utilization=$UTILIZATION$, periodic=$PERIODIC$, period=$PERIOD$);
     //runner = new RunnerForMultipleWorkers();
     //runner = new RandomReleaseRunner();
     tasks = new[100] Task();
