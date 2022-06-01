@@ -1,8 +1,15 @@
+# A GUI program for task set generator.
+# It helps to configure task sets to be generated, 
+# and make graph to evaluate different schedulers.
+#
+# @author Yunsang Cho
+# @author Hokeun Kim
+
+
 import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from scipy.interpolate import interp1d
 import numpy as np
 
 import matplotlib
@@ -15,13 +22,13 @@ import shutil
 from functools import partial
 import random
 
-timeUnits = ['sec', 'msec', 'usec', 'nsec']
+time_units = ['sec', 'msec', 'usec', 'nsec']
 
 def step(num_workers, scheduler_type):
 
     global char_to_replace, template
-    char_to_replace['SCHEDULER_TYPE'] = scheduler_type
-    char_to_replace['NUM_WORKERS'] = str(num_workers)
+    char_to_replace['$SCHEDULER_TYPE$'] = scheduler_type
+    char_to_replace['$NUM_WORKERS$'] = str(num_workers)
 
     contents = template
     for key, value in char_to_replace.items():
@@ -36,7 +43,7 @@ def step(num_workers, scheduler_type):
 
     out = subprocess.run([f'./gradlew','runLfc', '--args', filepath], capture_output=True)
 
-    print("Build successfully!")
+    print("Built successfully!")
     lf_out = subprocess.run([f'{WORKING_DIR}/.gui/bin/{filename}'], capture_output=True)
 
     for line in reversed(lf_out.stdout.decode("utf-8").split('\n')):
@@ -48,6 +55,7 @@ def step(num_workers, scheduler_type):
     return exe_time
     
 
+# A function called when the [Run] button is clicked
 def runLfc():
 
     global char_to_replace, template
@@ -56,13 +64,13 @@ def runLfc():
     
 
     char_to_replace = {
-        'SCHEDULER_TYPE': 'NP',
-        'NUM_TASKS': str(numOfTasks.get()),
-        'TOTAL_TIME': str(totalTime.get()) + " " + str(totalTimeUnit.get()),
-        'UTILIZATION': utilization.get(),
-        'NUM_WORKERS': '1',
-        'PERIODIC':'false' if periodicity.get() == 1 else 'true',
-        'PERIOD': str(period.get()) + " " + str(periodUnit.get())
+        '$SCHEDULER_TYPE$': '',
+        '$NUM_TASKS$': str(num_tasks.get()),
+        '$TOTAL_TIME$': str(total_time.get()) + " " + str(total_time_unit.get()),
+        '$UTILIZATION$': utilization.get(),
+        '$NUM_WORKERS$': '',
+        '$PERIODIC$':'false' if periodicity.get() == 1 else 'true',
+        '$PERIOD$': str(period.get()) + " " + str(periodUnit.get())
     }
 
     with open(TEMPLATE_PATH) as f:
@@ -114,11 +122,11 @@ def plot_graph(data):
     if periodicity.get() == 1:
         title += 'Sporadic'
     else:
-        title += f'Periodic(period: {char_to_replace["PERIOD"]})'
-    title += f' / Total time: {char_to_replace["TOTAL_TIME"]} / Number of Tasks: {char_to_replace["NUM_TASKS"]} / Utilization: {char_to_replace["UTILIZATION"]}'
+        title += f'Periodic(period: {char_to_replace["$PERIOD$"]})'
+    title += f' / Total time: {char_to_replace["$TOTAL_TIME$"]} / Number of Tasks: {char_to_replace["$NUM_TASKS$"]} / Utilization: {char_to_replace["$UTILIZATION$"]}'
 
     plt.title(title, fontsize= 10)
-    #plt.title(f'{"Sporadic" if periodicity.get() == 1 else f"Periodic"} / Total time: {char_to_replace["TOTAL_TIME"]} / Number of Tasks: {char_to_replace["NUM_TASKS"]} / Utilization: {char_to_replace["UTILIZATION"]}')
+    #plt.title(f'{"Sporadic" if periodicity.get() == 1 else f"Periodic"} / Total time: {char_to_replace["$TOTAL_TIME$"]} / Number of Tasks: {char_to_replace["$NUM_TASKS$"]} / Utilization: {char_to_replace["$UTILIZATION$"]}')
     plt.show()
 
 def create_input_frame(container):
@@ -130,17 +138,16 @@ def create_input_frame(container):
     frame.columnconfigure(0, weight=3)
 
     ttk.Label(frame, text="Number of Tasks:").grid(column=0, row=0, sticky=tk.W)
-    numOfTasks_entry = ttk.Entry(frame, textvariable=numOfTasks)
-    numOfTasks_entry.grid(column=1, row=0, sticky=tk.W)
+    num_tasks_entry = ttk.Entry(frame, textvariable=num_tasks)
+    num_tasks_entry.grid(column=1, row=0, sticky=tk.W)
     
-
     ttk.Label(frame, text="Total time:").grid(column=0, row=1, sticky=tk.W)
-    totalTime_entry = ttk.Entry(frame, textvariable=totalTime)
-    totalTime_entry.grid(column=1, row=1, sticky=tk.W)
+    total_time_entry = ttk.Entry(frame, textvariable=total_time)
+    total_time_entry.grid(column=1, row=1, sticky=tk.W)
 
-    select_timeUnit = ttk.Combobox(frame, textvariable=totalTimeUnit, values=timeUnits, state='readonly')
-    select_timeUnit.current(0)
-    select_timeUnit.grid(column=2, row=1, sticky=tk.W)
+    select_time_unit = ttk.Combobox(frame, textvariable=total_time_unit, values=time_units, state='readonly')
+    select_time_unit.current(0)
+    select_time_unit.grid(column=2, row=1, sticky=tk.W)
 
     ttk.Label(frame, text="Utilization:").grid(column=0, row=2, sticky=tk.W)
     utilization_entry = ttk.Entry(frame, textvariable=utilization)
@@ -149,15 +156,14 @@ def create_input_frame(container):
     ttk.Label(frame, text="Periodicity:").grid(column=0, row=3, sticky=tk.W)
     ttk.Radiobutton(frame, text="sporadic", variable=periodicity, value=1).grid(column=1, row=3)
     ttk.Radiobutton(frame, text="periodic", variable=periodicity, value=2).grid(column=2, row=3)
-    #b2.pack(anchor= tk.W)
 
     ttk.Label(frame, text="Period:").grid(column=0, row=4, sticky=tk.W)
     period_entry = ttk.Entry(frame, textvariable=period)
     period_entry.grid(column=1, row=4, sticky=tk.W)
 
-    select_periodUnit = ttk.Combobox(frame, textvariable=periodUnit, values=timeUnits, state='readonly')
-    select_periodUnit.current(1)
-    select_periodUnit.grid(column=2, row=4, sticky=tk.W)
+    select_period_unit = ttk.Combobox(frame, textvariable=periodUnit, values=time_units, state='readonly')
+    select_period_unit.current(1)
+    select_period_unit.grid(column=2, row=4, sticky=tk.W)
 
     return frame
 
@@ -167,7 +173,7 @@ def exit(container):
 
 
 def create_main():
-    global numOfTasks, totalTime, totalTimeUnit, utilization, periodicity, period, periodUnit
+    global num_tasks, total_time, total_time_unit, utilization, periodicity, period, periodUnit
 
     main = tk.Tk()
     main.title('TaskSet generator')
@@ -177,16 +183,16 @@ def create_main():
     main.rowconfigure(0, weight=3)
     main.rowconfigure(1, weight=1)
 
-    numOfTasks = tk.IntVar()
-    totalTime = tk.IntVar()
-    totalTimeUnit = tk.StringVar()
+    num_tasks = tk.IntVar()
+    total_time = tk.IntVar()
+    total_time_unit = tk.StringVar()
     utilization = tk.StringVar()
     periodicity = tk.IntVar()
     period = tk.IntVar()
     periodUnit = tk.StringVar()
 
-    numOfTasks.set(20)
-    totalTime.set(1)
+    num_tasks.set(20)
+    total_time.set(1)
     utilization.set("0.6")
     periodicity.set(1)
     period.set(100)
@@ -194,7 +200,6 @@ def create_main():
     input_frame = create_input_frame(main)
     input_frame.grid(column=0, row=0, sticky="NSEW")
 
-    
     runButton = ttk.Button(main, text="Run", command=runLfc)
     runButton.grid(column=0, row=1)
 
@@ -209,7 +214,6 @@ def initialize():
 
     os.mkdir(f'{WORKING_DIR}/.gui')
     os.mkdir(f'{WORKING_DIR}/.gui/src')
-
 
 if __name__ == "__main__":
     global LF_PATH, WORKING_DIR, TEMPLATE_PATH
