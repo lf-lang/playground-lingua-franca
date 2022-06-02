@@ -13,6 +13,7 @@ target C {
 preamble {=
     typedef struct task_config_t {
         int id;
+        long long int total_time;
         long long int release_time;
         long long int exe_time;
         bool    periodic;
@@ -25,6 +26,7 @@ preamble {=
 reactor Task {
 
     input in:task_config_t;
+    state total_time:time(0 sec);
     state exe_time:time(0 sec);
     state id:int;
     state periodic:bool(false);
@@ -42,6 +44,7 @@ reactor Task {
 
     reaction(in) -> release {=
         self->id = in->value.id;
+        self->total_time = in->value.total_time;
         self->exe_time = in->value.exe_time;
         self->periodic = in->value.periodic;
         self->period = in->value.period;
@@ -63,8 +66,13 @@ reactor Task {
         printf("Task %d finished execution at physical time %lld nsec\n",
             self->id,
             lf_time_physical_elapsed());
-        if (self->periodic) {
+        if (self->periodic) {   // periodic task
             lf_schedule(release, self->period);
+        } else {            // sporadic task
+            srand(0);
+            float r = (float) rand() / (float) RAND_MAX;
+            long long int period = self->exe_time + (long long int) (r * self->total_time);
+            lf_schedule(release, period);
         }
     =}
 }
@@ -83,6 +91,7 @@ reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:floa
         for (int i = 0; i < self->num_task; i++) {
             task_config_t message;
             message.id = i;
+            message.total_time = self->total_time;
             message.exe_time = exe_time;
             message.release_time = (long long int) 0;
             message.periodic = self->periodic;
