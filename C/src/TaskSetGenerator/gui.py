@@ -42,8 +42,19 @@ def step(num_workers, scheduler_type):
         print(f"File saved: {filepath}")
 
     out = subprocess.run([f'./gradlew','runLfc', '--args', filepath], capture_output=True)
+    built_success = False
+    for line in reversed(out.stdout.decode("utf-8").split('\n')):
+        if line.startswith("BUILD SUCCESSFUL"):
+            built_success = True
+            break
 
-    print("Built successfully!")
+    if built_success:
+        print("Built Successfully!")
+    else:
+        print("Build Failed")
+        print(out.stderr.decode("utf-8"))
+        exit(0)
+
     lf_out = subprocess.run([f'{WORKING_DIR}/.gui/bin/{filename}'], capture_output=True)
 
     for line in reversed(lf_out.stdout.decode("utf-8").split('\n')):
@@ -113,8 +124,12 @@ def plot_graph(data):
         
         patches.append(mpatches.Patch(color=colors[i], label=scheduler))
 
-        axes.append(ax.plot(workers, data['exe_times'][scheduler], '--', color=colors[i]))
-        plt.scatter(scatters, [data['exe_times'][scheduler][i-1] for i in scatters], color=colors[i])
+        if (graph_option.get() == 'line'):
+            axes.append(ax.plot(workers, data['exe_times'][scheduler], '--', color=colors[i]))
+        elif (graph_option.get() == 'dot'):
+            axes.append(ax.scatter(workers, data['exe_times'][scheduler], color=colors[i]))
+
+        #plt.scatter(scatters, [data['exe_times'][scheduler][i-1] for i in scatters], color=colors[i])
         
     ax.legend(handles=patches, loc='upper right')
     plt.axis([0, max(workers)+1, 0, max(max(i) for i in data['exe_times'].values()) * 1.2])
@@ -178,6 +193,12 @@ def create_input_frame(container):
     ttk.Checkbutton(scheduler_label, text='GEDF_NP', variable=is_GEDF_NP, onvalue=True, offvalue=False).grid(column=1, row=0, sticky=tk.W)
     ttk.Checkbutton(scheduler_label, text='GEDF_NP_CI', variable=is_GEDF_NP_CI, onvalue=True, offvalue=False).grid(column=2, row=0, sticky=tk.W)
 
+    select_graph_option = ttk.LabelFrame(frame, text="Graph Option")
+    select_graph_option.grid(column=2, row=6, sticky=tk.W)
+    ttk.Radiobutton(select_graph_option, text="line", variable=graph_option, value="line").grid(column=0, row=0)
+    ttk.Radiobutton(select_graph_option, text="dot", variable=graph_option, value="dot").grid(column=1, row=0)
+
+
     return frame
 
 
@@ -186,7 +207,7 @@ def exit(container):
 
 def set_global_variables():
     global num_tasks, total_time, total_time_unit, utilization, periodicity, period, period_unit, num_iterations
-    global is_NP, is_GEDF_NP, is_GEDF_NP_CI
+    global is_NP, is_GEDF_NP, is_GEDF_NP_CI, graph_option
 
     num_tasks = tk.IntVar()
     total_time = tk.IntVar()
@@ -199,6 +220,7 @@ def set_global_variables():
     is_NP = tk.BooleanVar()
     is_GEDF_NP = tk.BooleanVar()
     is_GEDF_NP_CI = tk.BooleanVar()
+    graph_option = tk.StringVar()
 
     num_tasks.set(20)
     total_time.set(1)
@@ -209,6 +231,7 @@ def set_global_variables():
     is_NP.set(True)
     is_GEDF_NP.set(True)
     is_GEDF_NP_CI.set(True)
+    graph_option.set("line")
 
 
 def create_main():
