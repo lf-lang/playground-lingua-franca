@@ -142,7 +142,6 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     reaction(moving_sprites) {=
         self._screen.fill(pacman.black)
         sprite_list = pacman.pygame.sprite.RenderPlain()
-
         for sprite in moving_sprites:
             if sprite.is_present and isinstance(sprite.value, pacman.pygame.sprite.Group):
                 sprite.value.draw(self._screen)
@@ -156,6 +155,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     
     reaction(game_over) {=
         #Grey background
+        
         w = pacman.pygame.Surface((400,200))  # the size of your rect
         w.set_alpha(10)                # alpha level
         w.fill((128,128,128))           # this fills the entire surface
@@ -209,22 +209,35 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 # Should be replacable with an AI
 reactor Player extends BaseCharacter {
     timer pygame_event(0, 100 msec)
+    
+    output pause
+    
+    state _pause({=False=})
+    
     reaction(pygame_event) -> sprite {=
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
                 request_stop()
             if event.type == pacman.pygame.KEYDOWN:
-                if event.key == pacman.pygame.K_LEFT:
-                    self.character_instance.changespeed(-30, 0)
-                if event.key == pacman.pygame.K_RIGHT:
-                    self.character_instance.changespeed(30, 0)
-                if event.key == pacman.pygame.K_UP:
-                    self.character_instance.changespeed(0, -30)
-                if event.key == pacman.pygame.K_DOWN:
-                    self.character_instance.changespeed(0, 30)
+                if event.key == pacman.pygame.K_SPACE:
+                    if self._pause is False:
+                        self._pause = True
+                    else:
+                        self._pause = False
+                    print(self._pause)
+                elif self._pause is False:
+                    if event.key == pacman.pygame.K_LEFT:
+                        self.character_instance.changespeed(-30, 0)
+                    if event.key == pacman.pygame.K_RIGHT:
+                        self.character_instance.changespeed(30, 0)
+                    if event.key == pacman.pygame.K_UP:
+                        self.character_instance.changespeed(0, -30)
+                    if event.key == pacman.pygame.K_DOWN:
+                        self.character_instance.changespeed(0, 30)
+           
 
-            if event.type == pacman.pygame.KEYUP:
+            if event.type == pacman.pygame.KEYUP and self._pause is False:
                 if event.key == pacman.pygame.K_LEFT:
                     self.character_instance.changespeed(30, 0)
                 if event.key == pacman.pygame.K_RIGHT:
@@ -233,12 +246,13 @@ reactor Player extends BaseCharacter {
                     self.character_instance.changespeed(0, 30)
                 if event.key == pacman.pygame.K_DOWN:
                     self.character_instance.changespeed(0, -30)
-        
-        self.character_instance.update(
-            self._wall_list,
-            self._gate_list
-        )
+        if self._pause is False:
+            self.character_instance.update(
+                self._wall_list,
+                self._gate_list
+            )
         sprite.set(self.character_instance)
+        #pause.set(self._pause)
     =}
 }
 
@@ -246,33 +260,41 @@ reactor Player extends BaseCharacter {
 # FIXME: Different Ghosts should have different personalities
 reactor Ghost (directions({=()=})) extends BaseCharacter {
     input tick    
+    #input pause
+    
+    #state _pause(False)
     state turn(0)
     state steps(0)
+    
+    /**reaction(pause) {=
+        self._pause = pause.value
+    =}**/
 
     reaction(tick) -> sprite {=
-        returned = self.character_instance.changespeed(
-            self.directions,
-            False,
-            self.turn,
-            self.steps,
-            len(self.directions)-1
-        )
-        self.turn = returned[0]
-        self.steps = returned[1]
-        self.character_instance.changespeed(
-            self.directions,
-            False,
-            self.turn,
-            self.steps,
-            len(self.directions)-1
-        )
-        self.character_instance.update(
-            self._wall_list,
-            False
-        )
+        if tick.is_present:
+            returned = self.character_instance.changespeed(
+                self.directions,
+                False,
+                self.turn,
+                self.steps,
+                len(self.directions)-1
+            )
+            self.turn = returned[0]
+            self.steps = returned[1]
+            self.character_instance.changespeed(
+                self.directions,
+                False,
+                self.turn,
+                self.steps,
+                len(self.directions)-1
+            )
+            self.character_instance.update(
+                self._wall_list,
+                False
+            )
         sprite.set(self.character_instance)
     =}
-
+    
 }
 
 #### Controller
@@ -286,7 +308,7 @@ reactor GameController(number_of_ghosts(4)) {
     input[number_of_ghosts] ghost_sprites
     input pacman_sprite
     input tick # The game tick
-
+    
     state _wall_list
     state _gate
     state _block_list({=pacman.pygame.sprite.RenderPlain()=})
@@ -302,7 +324,7 @@ reactor GameController(number_of_ghosts(4)) {
 
         wall_list.set(self._wall_list)
         gate.set(self._gate)
-
+        
     =}
     
     reaction(pacman_sprite) {=
@@ -408,6 +430,8 @@ main reactor {
         player.sprite, 
         ghosts.sprite -> 
             display.moving_sprites
+   
+    #(player.pause)+ -> ghosts.pause
 
     controller.game_over -> display.game_over
     
@@ -427,4 +451,5 @@ main reactor {
     ghosts.icon_name, player.icon_name -> display.icon_name
 
     display.icon -> ghosts.icon, player.icon
+    
 }
