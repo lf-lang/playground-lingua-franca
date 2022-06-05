@@ -180,6 +180,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input icon
+    input controllerpause # from controller to pause at end
 
     output sprite
     output icon_name
@@ -187,6 +188,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
     state character_instance
     state _wall_list
     state _gate_list
+    state _pause({=False=})
 
     reaction(startup) -> icon_name {=
         dirname = os.path.dirname(__file__)
@@ -202,6 +204,11 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
         self._wall_list = wall_list.value
         self._gate_list = gate_list.value
     =}
+    
+    # reaction to update pause from controller 
+    /**reaction(controllerpause) {=
+        self._pause = controllerpause
+    =}**/
 
 }
 
@@ -210,9 +217,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 reactor Player extends BaseCharacter {
     timer pygame_event(0, 100 msec)
     
-    output pause
-    
-    state _pause({=False=})
+    output playerpause
     
     reaction(pygame_event) -> sprite {=
         keyboard_events = pacman.pygame.event.get()
@@ -226,7 +231,7 @@ reactor Player extends BaseCharacter {
                     else:
                         self._pause = False
                     print(self._pause)
-                elif self._pause is False:
+                elif self._pause is False: 
                     if event.key == pacman.pygame.K_LEFT:
                         self.character_instance.changespeed(-30, 0)
                     if event.key == pacman.pygame.K_RIGHT:
@@ -237,7 +242,7 @@ reactor Player extends BaseCharacter {
                         self.character_instance.changespeed(0, 30)
            
 
-            if event.type == pacman.pygame.KEYUP and self._pause is False:
+            if event.type == pacman.pygame.KEYUP and self._pause is False: 
                 if event.key == pacman.pygame.K_LEFT:
                     self.character_instance.changespeed(30, 0)
                 if event.key == pacman.pygame.K_RIGHT:
@@ -252,7 +257,7 @@ reactor Player extends BaseCharacter {
                 self._gate_list
             )
         sprite.set(self.character_instance)
-        #pause.set(self._pause)
+        #playerpause.set(self._pause)
     =}
 }
 
@@ -260,18 +265,17 @@ reactor Player extends BaseCharacter {
 # FIXME: Different Ghosts should have different personalities
 reactor Ghost (directions({=()=})) extends BaseCharacter {
     input tick    
-    #input pause
+    #input playerpause # pause from player
     
-    #state _pause(False)
     state turn(0)
     state steps(0)
     
-    /**reaction(pause) {=
-        self._pause = pause.value
+    /**reaction(playerpause) {=
+        self._pause = playerpause.value
     =}**/
 
     reaction(tick) -> sprite {=
-        if tick.is_present:
+        if tick.is_present: # and self._state is False
             returned = self.character_instance.changespeed(
                 self.directions,
                 False,
@@ -304,6 +308,7 @@ reactor GameController(number_of_ghosts(4)) {
     output block_list # List of yummy dots for Pac-Man
     output score # The game score
     output game_over
+    # output controllerpause #
 
     input[number_of_ghosts] ghost_sprites
     input pacman_sprite
@@ -316,6 +321,7 @@ reactor GameController(number_of_ghosts(4)) {
     state _score(0)
     state _pacman_sprite
     state _pacman_collide({=pacman.pygame.sprite.RenderPlain()=})
+    # state _controllerpause({=True=}) 
     
     reaction(startup) -> wall_list, gate {=
         _all_sprites_list = pacman.pygame.sprite.RenderPlain()
@@ -370,6 +376,8 @@ reactor GameController(number_of_ghosts(4)) {
 
         if self._score == self._score_to_win:
             game_over.set("Won!")
+            #pause isntead of stop game
+            # controllerpause.set(self._controllerpause)
             request_stop()
 
     
@@ -387,6 +395,8 @@ reactor GameController(number_of_ghosts(4)) {
 
         if monsta_hit_list:
             game_over.set("Lost!")
+            #Pause the game instead of stopping it
+            # controllerpause.set(self._controllerpause)
             request_stop()
 
     =}
@@ -430,8 +440,12 @@ main reactor {
         player.sprite, 
         ghosts.sprite -> 
             display.moving_sprites
-   
-    #(player.pause)+ -> ghosts.pause
+            
+    #Send pause player to game controller and ghosts
+    #(player.pause)+ -> controller.pause, ghosts.pause
+    
+    #Send pause controller to player and ghosts
+    # (controller.controllerpause)+ -> player.controllerpause, ghosts.controllerpause
 
     controller.game_over -> display.game_over
     
