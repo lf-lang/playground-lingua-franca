@@ -248,7 +248,7 @@ class _Player:
         self._gate_list = gate_list.value
             
         return 0
-    def reaction_function_3(self, sprite):
+    def reaction_function_3(self, sprite, playerpause):
         
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:

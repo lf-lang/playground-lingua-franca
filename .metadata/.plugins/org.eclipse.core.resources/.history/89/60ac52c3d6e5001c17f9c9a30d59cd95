@@ -228,7 +228,7 @@ reactor Player extends BaseCharacter {
     
     output playerpause
     
-    reaction(pygame_event) -> sprite, playerpause {=
+    reaction(pygame_event) -> sprite {=
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
@@ -280,7 +280,7 @@ reactor Ghost (directions({=()=})) extends BaseCharacter {
     state steps(0)
     
     reaction(playerpause) {=
-        self._pause = playerpause.value
+        self._pause = playerpause
     =}
 
     reaction(tick) -> sprite {=

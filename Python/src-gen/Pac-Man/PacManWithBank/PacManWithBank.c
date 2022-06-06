@@ -749,6 +749,7 @@ void playerreaction_function_3(void* instance_args){
     #pragma GCC diagnostic ignored "-Wunused-variable"
     player_self_t* self = (player_self_t*)instance_args;
     player_sprite_t* sprite = &self->_lf_sprite;
+    player_playerpause_t* playerpause = &self->_lf_playerpause;
     #pragma GCC diagnostic pop
     #line 232 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
@@ -757,7 +758,7 @@ void playerreaction_function_3(void* instance_args){
     LF_PRINT_DEBUG("Calling reaction function Player.reaction_function_3");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_3, 
-        Py_BuildValue("(O)", convert_C_port_to_py(sprite, -2))
+        Py_BuildValue("(OO)", convert_C_port_to_py(sprite, -2), convert_C_port_to_py(playerpause, -2))
     );
     if (rValue == NULL) {
         error_print("FATAL: Calling reaction Player.reaction_function_3 failed.");
@@ -1957,10 +1958,10 @@ void _lf_initialize_trigger_objects() {
     // Initialize the _lf_clock
     lf_initialize_clock();
     // Create the array that will contain pointers to is_present fields to reset on each step.
-    _lf_is_present_fields_size = 21;
-    _lf_is_present_fields = (bool**)calloc(21, sizeof(bool*));
+    _lf_is_present_fields_size = 22;
+    _lf_is_present_fields = (bool**)calloc(22, sizeof(bool*));
     if (_lf_is_present_fields == NULL) error_print_and_exit("Out of memory!");
-    _lf_is_present_fields_abbreviated = (bool**)calloc(21, sizeof(bool*));
+    _lf_is_present_fields_abbreviated = (bool**)calloc(22, sizeof(bool*));
     if (_lf_is_present_fields_abbreviated == NULL) error_print_and_exit("Out of memory!");
     _lf_is_present_fields_abbreviated_size = 0;
     
@@ -2505,22 +2506,25 @@ void _lf_initialize_trigger_objects() {
             // ** End initialization for reaction 2 of PacManWithBank.player
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_3 of PacManWithBank.player.
-            pacmanwithbank_player_self[0]->_lf__reaction_3.num_outputs = 1;
+            pacmanwithbank_player_self[0]->_lf__reaction_3.num_outputs = 2;
             // Allocate memory for triggers[] and triggered_sizes[] on the reaction_t
             // struct for this reaction.
             pacmanwithbank_player_self[0]->_lf__reaction_3.triggers = (trigger_t***)_lf_allocate(
-                    1, sizeof(trigger_t**),
+                    2, sizeof(trigger_t**),
                     &pacmanwithbank_player_self[0]->base.allocations);
             pacmanwithbank_player_self[0]->_lf__reaction_3.triggered_sizes = (int*)_lf_allocate(
-                    1, sizeof(int),
+                    2, sizeof(int),
                     &pacmanwithbank_player_self[0]->base.allocations);
             pacmanwithbank_player_self[0]->_lf__reaction_3.output_produced = (bool**)_lf_allocate(
-                    1, sizeof(bool*),
+                    2, sizeof(bool*),
                     &pacmanwithbank_player_self[0]->base.allocations);
             {
                 int count = 0;
                 {
                     pacmanwithbank_player_self[0]->_lf__reaction_3.output_produced[count++] = &pacmanwithbank_player_self[0]->_lf_sprite.is_present;
+                }
+                {
+                    pacmanwithbank_player_self[0]->_lf__reaction_3.output_produced[count++] = &pacmanwithbank_player_self[0]->_lf_playerpause.is_present;
                 }
             }
             
@@ -3227,6 +3231,22 @@ void _lf_initialize_trigger_objects() {
                     &pacmanwithbank_player_self[src_runtime]->base.allocations); 
             pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime]++] = trigger_array;
         }
+        // Iterate over range PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)].
+        {
+            int src_runtime = 0; // Runtime index.
+            int src_channel = 0; // Channel index.
+            int src_bank = 0; // Bank index.
+            int range_count = 0;
+            // Reaction 3 of PacManWithBank.player triggers 4 downstream reactions
+            // through port PacManWithBank.player.playerpause.
+            pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggered_sizes[triggers_index[src_runtime]] = 4;
+            // For reaction 3 of PacManWithBank.player, allocate an
+            // array of trigger pointers for downstream reactions through port PacManWithBank.player.playerpause
+            trigger_t** trigger_array = (trigger_t**)_lf_allocate(
+                    4, sizeof(trigger_t*),
+                    &pacmanwithbank_player_self[src_runtime]->base.allocations); 
+            pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime]++] = trigger_array;
+        }
         for (int i = 0; i < 1; i++) triggers_index[i] = 0;
         // Iterate over ranges PacManWithBank.player.sprite(0,1)->[PacManWithBank.display.moving_sprites(1,1), PacManWithBank.controller.pacman_sprite(0,1)] and PacManWithBank.display.moving_sprites(1,1).
         {
@@ -3256,6 +3276,67 @@ void _lf_initialize_trigger_objects() {
                 int range_count = 0;
                 // Point to destination port PacManWithBank.controller.pacman_sprite's trigger struct.
                 pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime] + src_channel][1] = &pacmanwithbank_controller_self[dst_runtime]->_lf__pacman_sprite;
+            }
+        }
+        for (int i = 0; i < 1; i++) triggers_index[i] = 1;
+        // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(0,1).
+        {
+            int src_runtime = 0; // Runtime index.
+            int src_channel = 0; // Channel index.
+            int src_bank = 0; // Bank index.
+            // Iterate over range PacManWithBank.ghosts.playerpause(0,1).
+            {
+                int dst_runtime = 0; // Runtime index.
+                int dst_channel = 0; // Channel index.
+                int dst_bank = 0; // Bank index.
+                int range_count = 0;
+                // Point to destination port PacManWithBank.ghosts.playerpause's trigger struct.
+                pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime] + src_channel][0] = &pacmanwithbank_ghosts_self[dst_runtime]->_lf__playerpause;
+            }
+        }
+        // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(3,1).
+        {
+            int src_runtime = 0; // Runtime index.
+            int src_channel = 0; // Channel index.
+            int src_bank = 0; // Bank index.
+            // Iterate over range PacManWithBank.ghosts.playerpause(3,1).
+            {
+                int dst_runtime = 3; // Runtime index.
+                int dst_channel = 0; // Channel index.
+                int dst_bank = 3; // Bank index.
+                int range_count = 0;
+                // Point to destination port PacManWithBank.ghosts.playerpause's trigger struct.
+                pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime] + src_channel][1] = &pacmanwithbank_ghosts_self[dst_runtime]->_lf__playerpause;
+            }
+        }
+        // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(2,1).
+        {
+            int src_runtime = 0; // Runtime index.
+            int src_channel = 0; // Channel index.
+            int src_bank = 0; // Bank index.
+            // Iterate over range PacManWithBank.ghosts.playerpause(2,1).
+            {
+                int dst_runtime = 2; // Runtime index.
+                int dst_channel = 0; // Channel index.
+                int dst_bank = 2; // Bank index.
+                int range_count = 0;
+                // Point to destination port PacManWithBank.ghosts.playerpause's trigger struct.
+                pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime] + src_channel][2] = &pacmanwithbank_ghosts_self[dst_runtime]->_lf__playerpause;
+            }
+        }
+        // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(1,1).
+        {
+            int src_runtime = 0; // Runtime index.
+            int src_channel = 0; // Channel index.
+            int src_bank = 0; // Bank index.
+            // Iterate over range PacManWithBank.ghosts.playerpause(1,1).
+            {
+                int dst_runtime = 1; // Runtime index.
+                int dst_channel = 0; // Channel index.
+                int dst_bank = 1; // Bank index.
+                int range_count = 0;
+                // Point to destination port PacManWithBank.ghosts.playerpause's trigger struct.
+                pacmanwithbank_player_self[src_runtime]->_lf__reaction_3.triggers[triggers_index[src_runtime] + src_channel][3] = &pacmanwithbank_ghosts_self[dst_runtime]->_lf__playerpause;
             }
         }
     }
@@ -4069,6 +4150,66 @@ void _lf_initialize_trigger_objects() {
             pacmanwithbank_display_self[dst_runtime]->_lf_icon_name[dst_channel] = (display_icon_name_t*)&pacmanwithbank_player_self[src_runtime]->_lf_icon_name;
         }
     }
+    // Connect PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] to port PacManWithBank.ghosts.playerpause(0,1)
+    // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(0,1).
+    {
+        int src_runtime = 0; // Runtime index.
+        int src_channel = 0; // Channel index.
+        int src_bank = 0; // Bank index.
+        // Iterate over range PacManWithBank.ghosts.playerpause(0,1).
+        {
+            int dst_runtime = 0; // Runtime index.
+            int dst_channel = 0; // Channel index.
+            int dst_bank = 0; // Bank index.
+            int range_count = 0;
+            pacmanwithbank_ghosts_self[dst_runtime]->_lf_playerpause = (ghost_playerpause_t*)&pacmanwithbank_player_self[src_runtime]->_lf_playerpause;
+        }
+    }
+    // Connect PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] to port PacManWithBank.ghosts.playerpause(3,1)
+    // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(3,1).
+    {
+        int src_runtime = 0; // Runtime index.
+        int src_channel = 0; // Channel index.
+        int src_bank = 0; // Bank index.
+        // Iterate over range PacManWithBank.ghosts.playerpause(3,1).
+        {
+            int dst_runtime = 3; // Runtime index.
+            int dst_channel = 0; // Channel index.
+            int dst_bank = 3; // Bank index.
+            int range_count = 0;
+            pacmanwithbank_ghosts_self[dst_runtime]->_lf_playerpause = (ghost_playerpause_t*)&pacmanwithbank_player_self[src_runtime]->_lf_playerpause;
+        }
+    }
+    // Connect PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] to port PacManWithBank.ghosts.playerpause(2,1)
+    // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(2,1).
+    {
+        int src_runtime = 0; // Runtime index.
+        int src_channel = 0; // Channel index.
+        int src_bank = 0; // Bank index.
+        // Iterate over range PacManWithBank.ghosts.playerpause(2,1).
+        {
+            int dst_runtime = 2; // Runtime index.
+            int dst_channel = 0; // Channel index.
+            int dst_bank = 2; // Bank index.
+            int range_count = 0;
+            pacmanwithbank_ghosts_self[dst_runtime]->_lf_playerpause = (ghost_playerpause_t*)&pacmanwithbank_player_self[src_runtime]->_lf_playerpause;
+        }
+    }
+    // Connect PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] to port PacManWithBank.ghosts.playerpause(1,1)
+    // Iterate over ranges PacManWithBank.player.playerpause(0,1)->[PacManWithBank.ghosts.playerpause(0,1), PacManWithBank.ghosts.playerpause(3,1), PacManWithBank.ghosts.playerpause(2,1), PacManWithBank.ghosts.playerpause(1,1)] and PacManWithBank.ghosts.playerpause(1,1).
+    {
+        int src_runtime = 0; // Runtime index.
+        int src_channel = 0; // Channel index.
+        int src_bank = 0; // Bank index.
+        // Iterate over range PacManWithBank.ghosts.playerpause(1,1).
+        {
+            int dst_runtime = 1; // Runtime index.
+            int dst_channel = 0; // Channel index.
+            int dst_bank = 1; // Bank index.
+            int range_count = 0;
+            pacmanwithbank_ghosts_self[dst_runtime]->_lf_playerpause = (ghost_playerpause_t*)&pacmanwithbank_player_self[src_runtime]->_lf_playerpause;
+        }
+    }
     // Connect inputs and outputs for reactor PacManWithBank.ghosts.
     // Connect PacManWithBank.ghosts.sprite(0,4)->[PacManWithBank.display.moving_sprites(2,4), PacManWithBank.controller.ghost_sprites(0,4)] to port PacManWithBank.display.moving_sprites(2,4)
     // Iterate over ranges PacManWithBank.ghosts.sprite(0,4)->[PacManWithBank.display.moving_sprites(2,4), PacManWithBank.controller.ghost_sprites(0,4)] and PacManWithBank.display.moving_sprites(2,4).
@@ -4371,6 +4512,9 @@ void _lf_initialize_trigger_objects() {
             // Add port PacManWithBank.player.icon_name to array of is_present fields.
             _lf_is_present_fields[5 + count] = &pacmanwithbank_player_self[0]->_lf_icon_name.is_present;
             count++;
+            // Add port PacManWithBank.player.playerpause to array of is_present fields.
+            _lf_is_present_fields[5 + count] = &pacmanwithbank_player_self[0]->_lf_playerpause.is_present;
+            count++;
         }
     }
     {
@@ -4378,10 +4522,10 @@ void _lf_initialize_trigger_objects() {
         // Reactor is a bank. Iterate over bank members.
         for (int pacmanwithbank_ghosts_i = 0; pacmanwithbank_ghosts_i < 4; pacmanwithbank_ghosts_i++) {
             // Add port PacManWithBank.ghosts.sprite to array of is_present fields.
-            _lf_is_present_fields[7 + count] = &pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf_sprite.is_present;
+            _lf_is_present_fields[8 + count] = &pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf_sprite.is_present;
             count++;
             // Add port PacManWithBank.ghosts.icon_name to array of is_present fields.
-            _lf_is_present_fields[7 + count] = &pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf_icon_name.is_present;
+            _lf_is_present_fields[8 + count] = &pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf_icon_name.is_present;
             count++;
         }
     }
@@ -4389,12 +4533,12 @@ void _lf_initialize_trigger_objects() {
         int count = 0;
         {
             // Add port PacManWithBank.display.tick to array of is_present fields.
-            _lf_is_present_fields[15 + count] = &pacmanwithbank_display_self[0]->_lf_tick.is_present;
+            _lf_is_present_fields[16 + count] = &pacmanwithbank_display_self[0]->_lf_tick.is_present;
             count++;
             // Add port PacManWithBank.display.icon to array of is_present fields.
             // Port PacManWithBank.display.icon is a multiport. Iterate over its channels.
             for (int pacmanwithbank_display_icon_c = 0; pacmanwithbank_display_icon_c < 5; pacmanwithbank_display_icon_c++) {
-                _lf_is_present_fields[15 + count] = &pacmanwithbank_display_self[0]->_lf_icon[pacmanwithbank_display_icon_c].is_present;
+                _lf_is_present_fields[16 + count] = &pacmanwithbank_display_self[0]->_lf_icon[pacmanwithbank_display_icon_c].is_present;
                 count++;
             }
         }
@@ -4473,13 +4617,13 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_2.index = 0x7fffffffffff0003LL;
             pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_3.chain_id = 1;
-            // index is the OR of level 4 and 
-            // deadline 140737488355327 shifted left 16 bits.
-            pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_3.index = 0x7fffffffffff0004LL;
-            pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_4.chain_id = 1;
             // index is the OR of level 5 and 
             // deadline 140737488355327 shifted left 16 bits.
-            pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_4.index = 0x7fffffffffff0005LL;
+            pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_3.index = 0x7fffffffffff0005LL;
+            pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_4.chain_id = 1;
+            // index is the OR of level 6 and 
+            // deadline 140737488355327 shifted left 16 bits.
+            pacmanwithbank_ghosts_self[pacmanwithbank_ghosts_i]->_lf__reaction_4.index = 0x7fffffffffff0006LL;
         }
         
         
