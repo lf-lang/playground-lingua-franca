@@ -387,7 +387,6 @@ reactor GameController(number_of_ghosts(4)) {
             game_over.set("Won!")
             #pause isntead of stop game
             #controllerpause.set(True)
-            request_stop() #remove once above finished
             
 
     
@@ -407,7 +406,7 @@ reactor GameController(number_of_ghosts(4)) {
             game_over.set("Lost!")
             #Pause the game instead of stopping it
             #controllerpause.set(self._controllerpause)
-            request_stop() #remove once above finished
+            
 
     =}
 
