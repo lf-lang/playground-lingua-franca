@@ -142,6 +142,11 @@ class Player(pygame.sprite.Sprite):
     def changespeed(self,x,y):
         self.change_x+=x
         self.change_y+=y
+        
+    # Make the player speed 0
+    def speedzero(self):
+        self.change_x = 0
+        self.change_y = 0
           
     # Find a new position for the player
     def update(self,walls,gate):

@@ -160,6 +160,7 @@ class _GameController:
             game_over.set("Won!")
             #pause isntead of stop game
             #controllerpause.set(True)
+            request_stop() #remove once above finished
             
         
             
@@ -180,7 +181,7 @@ class _GameController:
             game_over.set("Lost!")
             #Pause the game instead of stopping it
             #controllerpause.set(self._controllerpause)
-            
+            request_stop() #remove once above finished
         
             
         return 0
@@ -358,7 +359,7 @@ class _Ghost:
         return 0
     def reaction_function_4(self, tick, sprite):
         
-        if tick.is_present: # and self._state is False
+        if self._pause is False:
             returned = self.character_instance.changespeed(
                 self.directions,
                 False,

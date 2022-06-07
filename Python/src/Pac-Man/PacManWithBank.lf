@@ -189,7 +189,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input icon
-    #input controllerpause # from controller to pause at end
+    input controllerpause # from controller to pause at end
 
     output sprite
     output icon_name
@@ -284,7 +284,7 @@ reactor Ghost (directions({=()=})) extends BaseCharacter {
     =}
 
     reaction(tick) -> sprite {=
-        if tick.is_present: # and self._state is False
+        if self._pause is False:
             returned = self.character_instance.changespeed(
                 self.directions,
                 False,
@@ -317,7 +317,7 @@ reactor GameController(number_of_ghosts(4)) {
     output block_list # List of yummy dots for Pac-Man
     output score # The game score
     output game_over
-    #output controllerpause #
+    output controllerpause 
 
     input[number_of_ghosts] ghost_sprites
     input pacman_sprite
@@ -330,7 +330,7 @@ reactor GameController(number_of_ghosts(4)) {
     state _score(0)
     state _pacman_sprite
     state _pacman_collide({=pacman.pygame.sprite.RenderPlain()=})
-    # state _controllerpause({=True=}) #not necessary
+    state _controllerpause({=True=}) #not necessary
     
     reaction(startup) -> wall_list, gate {=
         _all_sprites_list = pacman.pygame.sprite.RenderPlain()
@@ -466,7 +466,7 @@ main reactor {
     (player.playerpause)+ -> ghosts.playerpause
     
     #Send pause controller to player and ghosts
-    #(controller.controllerpause)+ -> player.controllerpause, ghosts.controllerpause
+    (controller.controllerpause)+ -> player.controllerpause, ghosts.controllerpause
     
     player.sprite -> controller.pacman_sprite
  
