@@ -34,6 +34,7 @@ target Python {
 
 preamble {=
     import os
+    import pyautogui
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
     import hbpacman as pacman
@@ -79,6 +80,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     input game_over
     input score
     input[5] icon_name
+    #input controllerpause
 
     output tick
     output[5] icon
@@ -88,6 +90,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     state _clock
     state _static_sprites({=pacman.pygame.sprite.RenderPlain()=})
     state _top_corner_text
+    state _active(True)
 
     reaction(startup) {=
         dirname = os.path.dirname(__file__)
@@ -125,21 +128,24 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     =}
 
     reaction(static_sprites) {=
-        for sprite in static_sprites:
-            if sprite.is_present and isinstance(sprite.value, pacman.pygame.sprite.Group):
-                self._static_sprites.add(sprite.value.sprites())
-            elif isinstance(sprite.value, pacman.pygame.sprite.Sprite):
-                self._static_sprites.add(sprite.value)
-
-        self._static_sprites.draw(self._screen)
+       # if self._active:
+       for sprite in static_sprites:
+           if sprite.is_present and isinstance(sprite.value, pacman.pygame.sprite.Group):
+               self._static_sprites.add(sprite.value.sprites())
+           elif isinstance(sprite.value, pacman.pygame.sprite.Sprite):
+               self._static_sprites.add(sprite.value)
+    
+       self._static_sprites.draw(self._screen)
     =}
     
     reaction(score) {=
+        #if self._active:
         self._top_corner_text=self._font.render("Score: "+str(score.value), True, pacman.red)
         self._screen.blit(self._top_corner_text, [10, 10])
     =}
 
     reaction(moving_sprites) {=
+        #if self._active:
         self._screen.fill(pacman.black)
         sprite_list = pacman.pygame.sprite.RenderPlain()
         for sprite in moving_sprites:
@@ -147,39 +153,34 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
                 sprite.value.draw(self._screen)
             elif isinstance(sprite.value, pacman.pygame.sprite.Sprite):
                 sprite_list.add(sprite.value)
-
+    
         sprite_list.draw(self._screen)
         self._static_sprites.draw(self._screen)
         self._screen.blit(self._top_corner_text, [10, 10])
     =}
     
-    reaction(pygame_tick, game_over) {= 
+    reaction(game_over) {=
+        #self._active = False
+    =}
+    
+    reaction(game_over) {= 
         #Grey background
-        if game_over.is_present:
-            w = pacman.pygame.Surface((400,200))  # the size of your rect
-            w.set_alpha(10)                # alpha level
-            w.fill((128,128,128))           # this fills the entire surface
-            self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
-        
-            #Won or lost
-            text1=self._font.render(game_over.value, True, pacman.white)
-            self._screen.blit(text1, [235, 233])
-        
-            text2=self._font.render("To play again, press ENTER.", True, pacman.white)
-            self._screen.blit(text2, [135, 303])
-            text3=self._font.render("To quit, press ESCAPE.", True, pacman.white)
-            self._screen.blit(text3, [165, 333])
-                
-            for event in pacman.pygame.event.get():
-                if event == pacman.pygame.KEYDOWN:
-                    if event == pacman.pygame.K_RETURN:
-                        print("Not yet implemented, please escape")
-                        
-                    if event == pacman.pygame.K_ESCAPE:
-                        print(1)
-                        request_stop()
-        
-            pacman.pygame.display.flip()
+        print("The display is ", self._active)
+        w = pacman.pygame.Surface((400,200))  # the size of your rect
+        w.set_alpha(10)                # alpha level
+        w.fill((128,128,128))           # this fills the entire surface
+        self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
+
+        #Won or lost
+        text1=self._font.render(game_over.value, True, pacman.white)
+        self._screen.blit(text1, [235, 233])
+
+        text2=font.render("To play again, press ENTER.", True, white)
+        screen.blit(text2, [135, 303])
+        text3=font.render("To quit, press ESCAPE.", True, white)
+        screen.blit(text3, [165, 333])
+
+        pacman.pygame.display.flip()
     =}
 }
 
@@ -189,7 +190,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input icon
-    input controllerpause # from controller to pause at end
+    #input controllerpause # from controller to pause at end
 
     output sprite
     output icon_name
@@ -225,8 +226,17 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 # Should be replacable with an AI
 reactor Player extends BaseCharacter {
     timer pygame_event(0, 100 msec)
+    state _active(True)
+    
+    #input game_over
     
     output playerpause
+    
+    /*reaction(game_over) -> playerpause {=
+        self._active(False)
+        self._pause = True
+        playerpause.set(self._pause)
+    =}*/
     
     reaction(pygame_event) -> sprite, playerpause {=
         keyboard_events = pacman.pygame.event.get()
@@ -234,13 +244,13 @@ reactor Player extends BaseCharacter {
             if event.type == pacman.pygame.QUIT:
                 request_stop()
             if event.type == pacman.pygame.KEYDOWN:
-                if event.key == pacman.pygame.K_SPACE:
+                if event.key == pacman.pygame.K_SPACE and self._active:
                     if self._pause is False:
                         self._pause = True
                     else:
                         self._pause = False
                     print(self._pause)
-                elif self._pause is False: 
+                elif self._pause is False and self._active: 
                     if event.key == pacman.pygame.K_LEFT:
                         self.character_instance.changespeed(-30, 0)
                     if event.key == pacman.pygame.K_RIGHT:
@@ -251,7 +261,7 @@ reactor Player extends BaseCharacter {
                         self.character_instance.changespeed(0, 30)
            
 
-            if event.type == pacman.pygame.KEYUP and self._pause is False: 
+            if event.type == pacman.pygame.KEYUP and self._pause is False and self._active: 
                 if event.key == pacman.pygame.K_LEFT:
                     self.character_instance.changespeed(30, 0)
                 if event.key == pacman.pygame.K_RIGHT:
@@ -260,7 +270,7 @@ reactor Player extends BaseCharacter {
                     self.character_instance.changespeed(0, 30)
                 if event.key == pacman.pygame.K_DOWN:
                     self.character_instance.changespeed(0, -30)
-        if self._pause is False:
+        if self._pause is False and self._active:
             self.character_instance.update(
                 self._wall_list,
                 self._gate_list
@@ -280,7 +290,10 @@ reactor Ghost (directions({=()=})) extends BaseCharacter {
     state steps(0)
     
     reaction(playerpause) {=
-        self._pause = playerpause.value
+       # if controllerpause.is_present:
+       #     self._pause = controllerpause.value
+       if playerpause.is_present:
+           self._pause = playerpause.value
     =}
 
     reaction(tick) -> sprite {=
@@ -317,7 +330,7 @@ reactor GameController(number_of_ghosts(4)) {
     output block_list # List of yummy dots for Pac-Man
     output score # The game score
     output game_over
-    output controllerpause 
+    #output controllerpause 
 
     input[number_of_ghosts] ghost_sprites
     input pacman_sprite
@@ -330,7 +343,7 @@ reactor GameController(number_of_ghosts(4)) {
     state _score(0)
     state _pacman_sprite
     state _pacman_collide({=pacman.pygame.sprite.RenderPlain()=})
-    state _controllerpause({=True=}) #not necessary
+   # state _controllerpause({=False=}) #not necessary
     
     reaction(startup) -> wall_list, gate {=
         _all_sprites_list = pacman.pygame.sprite.RenderPlain()
@@ -385,11 +398,13 @@ reactor GameController(number_of_ghosts(4)) {
 
         if self._score == self._score_to_win:
             game_over.set("Won!")
+            pyautogui.keyDown(' ')
+            #print("Won")
+            #self._controllerpause = True
             #pause isntead of stop game
             #controllerpause.set(True)
-            request_stop() #remove once above finished
+            #request_stop() #remove once above finished
             
-
     
         score.set(self._score)
     =}
@@ -405,9 +420,13 @@ reactor GameController(number_of_ghosts(4)) {
 
         if monsta_hit_list:
             game_over.set("Lost!")
+            print("Lost")
+            pyautogui.keyDown(' ')
+            #print("Lost")
+            #self._controllerpause = True
             #Pause the game instead of stopping it
-            #controllerpause.set(self._controllerpause)
-            request_stop() #remove once above finished
+            #controllerpause.set(True)
+            #request_stop() #remove once above finished
 
     =}
 
@@ -450,10 +469,6 @@ main reactor {
         player.sprite, 
         ghosts.sprite -> 
             display.moving_sprites
-            
-    
-
-    controller.game_over -> display.game_over
     
     (controller.wall_list, controller.gate)+ -> 
         player.wall_list, player.gate_list, display.static_sprites
@@ -466,7 +481,7 @@ main reactor {
     (player.playerpause)+ -> ghosts.playerpause
     
     #Send pause controller to player and ghosts
-    (controller.controllerpause)+ -> player.controllerpause, ghosts.controllerpause
+    #controller.controllerpause -> player.controllerpause
     
     player.sprite -> controller.pacman_sprite
  
@@ -477,5 +492,8 @@ main reactor {
     ghosts.icon_name, player.icon_name -> display.icon_name
 
     display.icon -> ghosts.icon, player.icon
+    
+    #sending game_over to player causes problem
+    controller.game_over -> display.game_over
     
 }
