@@ -58,12 +58,14 @@ reactor PendulumSimulation(
     state x(0.0, 0.0, 0.0, 0.0)
     state first(True)
     state latest_u(0.0)
-    
+    state elapsed_time(0)
+
     timer t(0, sample_period)
-    
-    reaction(t) -> theta, d_theta, phi, d_phi {=
-        if not(self.first):
-            # Update the state.
+
+    # Method used to update the state
+    method update_state() {=
+        # Define the function h such that x' = f(x)
+        def f(x):
             x0_dot = self.x[1]
             x1_dot = (1.0/(
                     self.alpha * self.beta
@@ -130,33 +132,63 @@ reactor PendulumSimulation(
                     * self.latest_u
                 )
             )
-            sample_period = self.sample_period * 1e-9
-            self.x[0] += x0_dot * sample_period
-            self.x[1] += x1_dot * sample_period
-            self.x[2] += x2_dot * sample_period
-            self.x[3] += x3_dot * sample_period
-        else:
-            self.x[0] = self.initial_theta
-            self.first = False
+            return [x0_dot, x1_dot, x2_dot, x3_dot]
         
-        # Output the state.
+        # The time interval is defined as the time elapsed 
+        # since last time we output the state
+        time_interval = (lf.time.logical_elapsed() - self.elapsed_time) * 1e-9
+
+        # RK4 Operation, return the updated x
+        def RK4_ODE(x):
+            h = time_interval
+            k1 = f(x)
+            for i in range(len(x)):
+                x[i] += k1[i] * h/2.
+            k2 = f(x)
+            for i in range(len(x)):
+                x[i] += k2[i] * h/2.
+            k3 = f(x)
+            for i in range(len(x)):
+                x[i] += k3[i] * h
+            k4 = f(x)
+            for i in range(len(x)):
+                x[i] += (h/6.)*(k1[i] + 2*k2[i] + 2*k3[i] + k4[i])
+            return x
+
+        # Performe the ODE
+        self.x = RK4_ODE(self.x)
+    =}
+
+    # Method used to output the state
+    method output_state(theta, d_theta, phi, d_phi) {=
         theta.set(self.x[0])
         d_theta.set(self.x[1])
         phi.set(self.x[2])
         d_phi.set(self.x[3])
+        self.elapsed_time = lf.time.logical_elapsed()
     =}
-
-    reaction(d) {=
-        # NOTE: Here, we effectively shift the disturbance to be
-        # simultaneous with the next sample. A more accurate model
-        # would apply the disturbance immediately.
-        # The update of the state vector in the reaction below
-        # should first be factored out to a method, when methods
-        # are implemented in C.
-        self.x[1] = self.x[1] + d.value;
+    
+    # The update will be triggered when either a disturbance is introduced or a sample
+    # period of time has elapsed. It will only be triggered once even if both happen 
+    # at the same time.
+    reaction(d, t) -> theta, d_theta, phi, d_phi {=
+        if not(self.first):
+            # Update the state.
+            if d.is_present:
+                self.x[1] += d.value
+                self.update_state()
+            else:
+                self.update_state()
+        else:
+            self.x[0] = self.initial_theta
+            self.first = False
+            
+        # Output the state.
+        self.output_state(theta, d_theta, phi, d_phi)
     =}
 
     reaction(u) {=
         self.latest_u = u.value
     =}
+    
 }
