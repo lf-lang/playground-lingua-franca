@@ -1,0 +1,64 @@
+/**
+ * This program is a simple chat application for two users.
+ *
+ * @author Byeonggil Jun (junbg@hanyang.ac.kr)
+ * @author Hokeun Kim (hokeunkim@berkeley.edu)
+ */
+target TypeScript{
+};
+
+reactor InputHandler {
+    output response:string;
+    physical action b;
+  
+    preamble {=
+        import * as readline from "readline";
+    =}
+  
+    reaction(startup, b) -> response, b {=
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        if (b !== undefined) {
+            response = b as string;
+        }
+  
+        rl.question("Enter message to send: ", (buf) => {
+            console.log(`Message: ${buf}`);
+            actions.b.schedule(0,buf as string);
+            rl.close();
+        });
+    =}
+ }
+
+reactor Chatreplica {
+    input in_mes:string;
+    physical action a;
+
+    reaction(in_mes) {=
+        console.log("Message received: " + in_mes);
+    =}
+}
+
+reactor ChatHandler {
+    input RecieveMes:string;
+    output SendMes:string;
+    u = new InputHandler();
+    r = new Chatreplica();
+    
+    reaction(u.response) -> SendMes {=
+        SendMes = u.response;
+    =}
+    reaction(RecieveMes) -> r.in_mes {=
+        r.in_mes = RecieveMes;
+    =}
+}
+
+federated reactor SimpleChat {
+    a = new ChatHandler();
+    b = new ChatHandler();
+    b.SendMes -> a.RecieveMes;
+    a.SendMes -> b.RecieveMes;
+}
