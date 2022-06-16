@@ -575,6 +575,7 @@ reactor GameController(number_of_ghosts(4)) {
          
         reaction(restart) -> One {=
             if restart.value:
+                self._block_list = pacman.pygame.sprite.RenderPlain()
                 for row in range(19):
                     for column in range(19):
                         if (row == 7 or row == 8) and (column == 8 or column == 9 or column == 10):
