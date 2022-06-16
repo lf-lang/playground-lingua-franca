@@ -212,7 +212,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             text1=self._font.render(game_over.value, True, pacman.white)
             self._screen.blit(text1, [235, 233])
     
-            text2=self._font.render("To play again, press ENTER or SPACE.", True, pacman.white)
+            text2=self._font.render("To play again, press ENTER or R.", True, pacman.white)
             self._screen.blit(text2, [135, 303])
             text3=self._font.render("To quit, press ESCAPE.", True, pacman.white)
             self._screen.blit(text3, [165, 333])
@@ -223,11 +223,12 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
              #   if event.type == pacman.pygame.KEYDOWN:
               #      print(1)
     =}
-    #reaction(restart) {=
+    reaction(restart) {=
         #if restart.value:
        #     self._active = True
       #      pyautogui.keyUp(' ')
-    #=}
+        self._game_over = False
+    =}
 
 
 }
