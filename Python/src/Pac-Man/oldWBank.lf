@@ -449,6 +449,8 @@ reactor Ghost (directions({=()=}), name("Stinky")) extends BaseCharacter {
     reaction(restart) {=
         self._resetting = True
         self._active = True
+        self.turn = 0
+        self.steps = 0
         self.character_instance.resetpos(self.name)
     =}
     
