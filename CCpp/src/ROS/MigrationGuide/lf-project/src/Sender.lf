@@ -1,0 +1,36 @@
+// src/Sender.lf
+target CCpp {
+cmake-include: "include/composition.cmake"
+};
+
+preamble {=
+    #include <memory>
+    #include "publisher_member_function.cpp"
+    #include "rclcpp/rclcpp.hpp"
+    #include "std_msgs/msg/string.hpp"
+=}
+
+reactor Sender {
+    // Instantiate the publisher node as a sate variable
+    state publisher_node : std::shared_ptr<MinimalPublisher>;
+    output out:std::shared_ptr<std_msgs::msg::String>;
+    timer t(0, 1 sec);
+    state count:int(0);
+
+    reaction(startup) {=
+        // Initialize rclcpp
+        rclcpp::init(0, NULL);
+        // Instantiate the ROS node
+        self->publisher_node = std::make_shared<MinimalPublisher>();
+    =}
+
+    reaction(t) -> out {=
+        auto message = std::make_shared<std_msgs::msg::String>();
+        message->data = "Hello, world! " + std::to_string(self->count++);
+        lf_set(out, message);
+    =}
+
+    reaction(shutdown) {=
+        rclcpp::shutdown();
+    =}
+}

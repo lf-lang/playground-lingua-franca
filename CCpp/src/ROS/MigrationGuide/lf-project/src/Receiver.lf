@@ -1,0 +1,33 @@
+// src/Receiver.lf
+target CCpp {
+cmake-include: "include/composition.cmake"
+};
+
+preamble {=
+    #include <memory>
+    #include "subscriber_member_function.cpp"
+    #include "rclcpp/rclcpp.hpp"
+    #include "std_msgs/msg/string.hpp"
+=}
+
+reactor Receiver {
+    // Instantiate the subscriber node as a sate variable
+    state subscriber_node : std::shared_ptr<MinimalSubscriber>;
+    input in:std::shared_ptr<std_msgs::msg::String>;
+
+    reaction(startup) {=
+        // Initialize rclcpp
+        rclcpp::init(0, NULL);
+        // Instantiate the ROS node
+        self->subscriber_node = std::make_shared<MinimalSubscriber>();
+    =}
+
+    reaction(in) {=
+        lf_print("Received %s", in->value->data.c_str());
+        self->subscriber_node->topic_callback(in->value);
+    =}
+
+    reaction(shutdown) {=
+        rclcpp::shutdown();
+    =}
+}
