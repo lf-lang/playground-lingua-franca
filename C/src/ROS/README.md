@@ -12,10 +12,3 @@ overview of the current examples:
 - PTIDES-ROS: Similar to BasicROS but the content of the message is an Int64 which is the current logical time of
   the sender + 25 msec. If 25 msec is sufficiently larger, the timestamp will be preserved between the
   sender reactor and the receiver reactor. This is an implementation of a poor-person's Ptides.
-
-- ROSBuiltInSerialization: A two reactor sender-receiver example that demonstrates the built-in capability to serialize 
-  and deserialize ROS 2 messages in federated programs using the CCpp target.
-  
-- ROSSerialization: Similar to ROSBuiltInSerialization but the inner-workings of serialization and deserialization are
-  exposed in reaction bodies.
-
