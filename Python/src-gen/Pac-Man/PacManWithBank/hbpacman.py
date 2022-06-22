@@ -147,7 +147,10 @@ class Player(pygame.sprite.Sprite):
     def speedzero(self):
         self.change_x = 0
         self.change_y = 0
-          
+    
+    def resetpos(self):
+        self.rect.left = w
+        self.rect.top = p_h
     # Find a new position for the player
     def update(self,walls,gate):
         # Get the old position, in case we need to go back to it
@@ -217,6 +220,22 @@ class Ghost(Player):
         return [turn,steps]
       except IndexError:
          return [0,0]
+     
+    def resetpos(self, name):
+        self.steps = 0
+        self.turn = 0
+        self.rect.left = w
+        self.rect.top = m_h
+        if name == "Clyde":
+            self.rect.left = c_w
+        elif name == "Inky":
+            self.rect.left = i_w
+        elif name == "Blinky":
+            self.rect.top = b_h
+    # def resetdir(self, name):
+    #     if name == "Pinky":
+    #
+
 
 Pinky_directions = [
 [0,-30,4],

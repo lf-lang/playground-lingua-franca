@@ -11,21 +11,21 @@ int main(int argc, char* argv[]) {
     return lf_reactor_c_main(argc, argv);
 }
 // =============== START reactor class GameController
-#line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_ghost_sprites_t;
-#line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_pacman_sprite_t;
-#line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_tick_t;
-#line 315 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 329 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_wall_list_t;
-#line 316 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 330 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_gate_t;
-#line 317 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 331 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_block_list_t;
-#line 318 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 332 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_score_t;
-#line 319 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 333 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct gamecontroller_game_over_t;
 typedef struct {
     struct self_base_t base;
@@ -37,101 +37,101 @@ typedef struct {
     PyObject* _lf_py_reaction_function_4;
     PyObject* _lf_py_reaction_function_5;
     PyObject* _lf_py_reaction_function_6;
-    #line 314 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* number_of_ghosts;
-    #line 326 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _wall_list;
-    #line 327 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _gate;
     #line 328 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* number_of_ghosts;
+    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _wall_list;
+    #line 341 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _gate;
+    #line 342 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* _block_list;
-    #line 329 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 343 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* _score_to_win;
-    #line 330 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* _score;
-    #line 331 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _pacman_sprite;
-    #line 332 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _pacman_collide;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Multiport input array will be malloc'd later.
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_ghost_sprites_t** _lf_ghost_sprites;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_ghost_sprites_width;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_ghost_sprites_t _lf_default__ghost_sprites;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_pacman_sprite_t* _lf_pacman_sprite;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // width of -2 indicates that it is not a multiport.
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_pacman_sprite_width;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_pacman_sprite_t _lf_default__pacman_sprite;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_tick_t* _lf_tick;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // width of -2 indicates that it is not a multiport.
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_tick_width;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_tick_t _lf_default__tick;
-    #line 315 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_wall_list_t _lf_wall_list;
-    #line 315 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_wall_list_width;
-    #line 316 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_gate_t _lf_gate;
-    #line 316 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_gate_width;
-    #line 317 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_block_list_t _lf_block_list;
-    #line 317 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_block_list_width;
-    #line 318 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_score_t _lf_score;
-    #line 318 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_score_width;
-    #line 319 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    gamecontroller_game_over_t _lf_game_over;
-    #line 319 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_game_over_width;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t _lf__reaction_0;
     #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _pacman_sprite;
+    #line 346 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _pacman_collide;
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Multiport input array will be malloc'd later.
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_ghost_sprites_t** _lf_ghost_sprites;
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_ghost_sprites_width;
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_ghost_sprites_t _lf_default__ghost_sprites;
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_pacman_sprite_t* _lf_pacman_sprite;
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // width of -2 indicates that it is not a multiport.
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_pacman_sprite_width;
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_pacman_sprite_t _lf_default__pacman_sprite;
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_tick_t* _lf_tick;
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // width of -2 indicates that it is not a multiport.
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_tick_width;
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_tick_t _lf_default__tick;
+    #line 329 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_wall_list_t _lf_wall_list;
+    #line 329 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_wall_list_width;
+    #line 330 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_gate_t _lf_gate;
+    #line 330 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_gate_width;
+    #line 331 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_block_list_t _lf_block_list;
+    #line 331 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_block_list_width;
+    #line 332 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_score_t _lf_score;
+    #line 332 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_score_width;
+    #line 333 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    gamecontroller_game_over_t _lf_game_over;
+    #line 333 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_game_over_width;
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t _lf__reaction_0;
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_1;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_2;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_3;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_4;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_5;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_6;
     trigger_t _lf__startup;
     reaction_t* _lf__startup_reactions[2];
     trigger_t _lf__shutdown;
     reaction_t* _lf__shutdown_reactions[1];
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__ghost_sprites;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__ghost_sprites_reactions[1];
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__pacman_sprite;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__pacman_sprite_reactions[2];
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__tick;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__tick_reactions[1];
 } gamecontroller_self_t;
 #include "ctarget/set.h"
@@ -142,7 +142,7 @@ void gamecontrollerreaction_function_0(void* instance_args){
     gamecontroller_wall_list_t* wall_list = &self->_lf_wall_list;
     gamecontroller_gate_t* gate = &self->_lf_gate;
     #pragma GCC diagnostic pop
-    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 350 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -177,7 +177,7 @@ void gamecontrollerreaction_function_1(void* instance_args){
     gamecontroller_pacman_sprite_t* pacman_sprite = self->_lf_pacman_sprite;
     int pacman_sprite_width = self->_lf_pacman_sprite_width;
     #pragma GCC diagnostic pop
-    #line 346 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 360 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -210,7 +210,7 @@ void gamecontrollerreaction_function_2(void* instance_args){
     gamecontroller_self_t* self = (gamecontroller_self_t*)instance_args;
     gamecontroller_block_list_t* block_list = &self->_lf_block_list;
     #pragma GCC diagnostic pop
-    #line 352 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 366 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -247,7 +247,7 @@ void gamecontrollerreaction_function_3(void* instance_args){
     gamecontroller_score_t* score = &self->_lf_score;
     gamecontroller_game_over_t* game_over = &self->_lf_game_over;
     #pragma GCC diagnostic pop
-    #line 380 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 394 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -282,7 +282,7 @@ void gamecontrollerreaction_function_4(void* instance_args){
     int ghost_sprites_width = self->_lf_ghost_sprites_width;
     gamecontroller_game_over_t* game_over = &self->_lf_game_over;
     #pragma GCC diagnostic pop
-    #line 398 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 414 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -317,7 +317,7 @@ void gamecontrollerreaction_function_5(void* instance_args){
     int tick_width = self->_lf_tick_width;
     gamecontroller_block_list_t* block_list = &self->_lf_block_list;
     #pragma GCC diagnostic pop
-    #line 416 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 436 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -350,7 +350,7 @@ void gamecontrollerreaction_function_6(void* instance_args){
     gamecontroller_self_t* self = (gamecontroller_self_t*)instance_args;
     
     #pragma GCC diagnostic pop
-    #line 421 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 441 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -379,111 +379,111 @@ void gamecontrollerreaction_function_6(void* instance_args){
 #include "ctarget/set_undef.h"
 gamecontroller_self_t* new_GameController() {
     gamecontroller_self_t* self = (gamecontroller_self_t*)_lf_new_reactor(sizeof(gamecontroller_self_t));
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_pacman_sprite = &self->_lf_default__pacman_sprite;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_tick = &self->_lf_default__tick;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.number = 0;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.function = gamecontrollerreaction_function_0;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.self = self;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.deadline_violation_handler = NULL;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.STP_handler = NULL;
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.name = "?";
-    #line 335 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 349 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.mode = NULL;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.number = 1;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.function = gamecontrollerreaction_function_1;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.self = self;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.deadline_violation_handler = NULL;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.STP_handler = NULL;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.name = "?";
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 359 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.mode = NULL;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.number = 2;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.function = gamecontrollerreaction_function_2;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.self = self;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.deadline_violation_handler = NULL;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.STP_handler = NULL;
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.name = "?";
-    #line 351 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 365 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.mode = NULL;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.number = 3;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.function = gamecontrollerreaction_function_3;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.self = self;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.deadline_violation_handler = NULL;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.STP_handler = NULL;
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.name = "?";
-    #line 379 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 393 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.mode = NULL;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.number = 4;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.function = gamecontrollerreaction_function_4;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.self = self;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.deadline_violation_handler = NULL;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.STP_handler = NULL;
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.name = "?";
-    #line 397 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 413 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.mode = NULL;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.number = 5;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.function = gamecontrollerreaction_function_5;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.self = self;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.deadline_violation_handler = NULL;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.STP_handler = NULL;
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.name = "?";
-    #line 415 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 435 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.mode = NULL;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.number = 6;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.function = gamecontrollerreaction_function_6;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.self = self;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.deadline_violation_handler = NULL;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.STP_handler = NULL;
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.name = "?";
-    #line 420 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 440 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.mode = NULL;
     self->_lf__startup_reactions[0] = &self->_lf__reaction_0;
     self->_lf__startup_reactions[1] = &self->_lf__reaction_2;
@@ -496,37 +496,37 @@ gamecontroller_self_t* new_GameController() {
     self->_lf__shutdown.reactions = &self->_lf__shutdown_reactions[0];
     self->_lf__shutdown.number_of_reactions = 1;
     self->_lf__shutdown.is_timer = false;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__ghost_sprites.last = NULL;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__ghost_sprites_reactions[0] = &self->_lf__reaction_4;
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__ghost_sprites.reactions = &self->_lf__ghost_sprites_reactions[0];
-    #line 322 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 336 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__ghost_sprites.number_of_reactions = 1;
     self->_lf__ghost_sprites.element_size = sizeof(PyObject);
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pacman_sprite.last = NULL;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pacman_sprite_reactions[0] = &self->_lf__reaction_1;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pacman_sprite_reactions[1] = &self->_lf__reaction_3;
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pacman_sprite.reactions = &self->_lf__pacman_sprite_reactions[0];
-    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 337 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pacman_sprite.number_of_reactions = 2;
     self->_lf__pacman_sprite.element_size = sizeof(PyObject);
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick.last = NULL;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick_reactions[0] = &self->_lf__reaction_5;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick.reactions = &self->_lf__tick_reactions[0];
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 338 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick.number_of_reactions = 1;
     self->_lf__tick.element_size = sizeof(PyObject);
     return self;
@@ -534,17 +534,17 @@ gamecontroller_self_t* new_GameController() {
 // =============== END reactor class GameController
 
 // =============== START reactor class Player
-#line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct player_wall_list_t;
 #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct player_gate_list_t;
+typedef generic_port_instance_struct player_wall_list_t;
 #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+typedef generic_port_instance_struct player_gate_list_t;
+#line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct player_icon_t;
-#line 194 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct player_sprite_t;
 #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+typedef generic_port_instance_struct player_sprite_t;
+#line 196 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct player_icon_name_t;
-#line 229 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 233 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct player_playerpause_t;
 typedef struct {
     struct self_base_t base;
@@ -553,89 +553,91 @@ typedef struct {
     PyObject* _lf_py_reaction_function_1;
     PyObject* _lf_py_reaction_function_2;
     PyObject* _lf_py_reaction_function_3;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* width;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* height;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* image;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* character_class;
-    #line 197 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* character_instance;
     #line 198 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _wall_list;
+    PyObject* character_instance;
     #line 199 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _gate_list;
+    PyObject* _wall_list;
     #line 200 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _gate_list;
+    #line 201 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* _pause;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 229 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _active;
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_wall_list_t* _lf_wall_list;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // width of -2 indicates that it is not a multiport.
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_wall_list_width;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Default input (in case it does not get connected)
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_wall_list_t _lf_default__wall_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_gate_list_t* _lf_gate_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // width of -2 indicates that it is not a multiport.
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_gate_list_width;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Default input (in case it does not get connected)
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_gate_list_t _lf_default__gate_list;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_icon_t* _lf_icon;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // width of -2 indicates that it is not a multiport.
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_icon_width;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Default input (in case it does not get connected)
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_icon_t _lf_default__icon;
-    #line 194 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_sprite_t _lf_sprite;
-    #line 194 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_sprite_width;
-    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 196 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_icon_name_t _lf_icon_name;
-    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 196 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_icon_name_width;
-    #line 229 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 233 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     player_playerpause_t _lf_playerpause;
-    #line 229 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 233 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_playerpause_width;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_0;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_1;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_2;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_3;
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__pygame_event;
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__pygame_event_reactions[1];
     trigger_t _lf__startup;
     reaction_t* _lf__startup_reactions[1];
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__wall_list;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__wall_list_reactions[1];
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__gate_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__gate_list_reactions[1];
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__icon;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__icon_reactions[1];
 } player_self_t;
 #include "ctarget/set.h"
@@ -645,7 +647,7 @@ void playerreaction_function_0(void* instance_args){
     player_self_t* self = (player_self_t*)instance_args;
     player_icon_name_t* icon_name = &self->_lf_icon_name;
     #pragma GCC diagnostic pop
-    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 204 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -681,7 +683,7 @@ void playerreaction_function_1(void* instance_args){
     int icon_width = self->_lf_icon_width;
     player_sprite_t* sprite = &self->_lf_sprite;
     #pragma GCC diagnostic pop
-    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 209 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -717,7 +719,7 @@ void playerreaction_function_2(void* instance_args){
     player_gate_list_t* gate_list = self->_lf_gate_list;
     int gate_list_width = self->_lf_gate_list_width;
     #pragma GCC diagnostic pop
-    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 214 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -751,7 +753,7 @@ void playerreaction_function_3(void* instance_args){
     player_sprite_t* sprite = &self->_lf_sprite;
     player_playerpause_t* playerpause = &self->_lf_playerpause;
     #pragma GCC diagnostic pop
-    #line 232 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 242 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -779,82 +781,82 @@ void playerreaction_function_3(void* instance_args){
 #include "ctarget/set_undef.h"
 player_self_t* new_Player() {
     player_self_t* self = (player_self_t*)_lf_new_reactor(sizeof(player_self_t));
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_wall_list = &self->_lf_default__wall_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_gate_list = &self->_lf_default__gate_list;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_icon = &self->_lf_default__icon;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.number = 0;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.function = playerreaction_function_0;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.self = self;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.deadline_violation_handler = NULL;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.STP_handler = NULL;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.name = "?";
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.mode = NULL;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.number = 1;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.function = playerreaction_function_1;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.self = self;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.deadline_violation_handler = NULL;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.STP_handler = NULL;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.name = "?";
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.mode = NULL;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.number = 2;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.function = playerreaction_function_2;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.self = self;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.deadline_violation_handler = NULL;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.STP_handler = NULL;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.name = "?";
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.mode = NULL;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.number = 3;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.function = playerreaction_function_3;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.self = self;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.deadline_violation_handler = NULL;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.STP_handler = NULL;
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.name = "?";
-    #line 231 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 241 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.mode = NULL;
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_event.last = NULL;
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_event_reactions[0] = &self->_lf__reaction_3;
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_event.reactions = &self->_lf__pygame_event_reactions[0];
-    #line 227 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 228 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_event.number_of_reactions = 1;
     self->_lf__pygame_event.is_timer = true;
     self->_lf__startup_reactions[0] = &self->_lf__reaction_0;
@@ -862,34 +864,34 @@ player_self_t* new_Player() {
     self->_lf__startup.reactions = &self->_lf__startup_reactions[0];
     self->_lf__startup.number_of_reactions = 1;
     self->_lf__startup.is_timer = false;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list.last = NULL;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list_reactions[0] = &self->_lf__reaction_2;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list.reactions = &self->_lf__wall_list_reactions[0];
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list.number_of_reactions = 1;
     self->_lf__wall_list.element_size = sizeof(PyObject);
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list.last = NULL;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list_reactions[0] = &self->_lf__reaction_2;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list.reactions = &self->_lf__gate_list_reactions[0];
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list.number_of_reactions = 1;
     self->_lf__gate_list.element_size = sizeof(PyObject);
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon.last = NULL;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon_reactions[0] = &self->_lf__reaction_1;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon.reactions = &self->_lf__icon_reactions[0];
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon.number_of_reactions = 1;
     self->_lf__icon.element_size = sizeof(PyObject);
     return self;
@@ -897,19 +899,19 @@ player_self_t* new_Player() {
 // =============== END reactor class Player
 
 // =============== START reactor class Ghost
-#line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct ghost_wall_list_t;
 #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct ghost_gate_list_t;
+typedef generic_port_instance_struct ghost_wall_list_t;
 #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+typedef generic_port_instance_struct ghost_gate_list_t;
+#line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct ghost_icon_t;
-#line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct ghost_tick_t;
-#line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct ghost_playerpause_t;
-#line 194 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct ghost_sprite_t;
 #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+typedef generic_port_instance_struct ghost_sprite_t;
+#line 196 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct ghost_icon_name_t;
 typedef struct {
     struct self_base_t base;
@@ -919,117 +921,117 @@ typedef struct {
     PyObject* _lf_py_reaction_function_2;
     PyObject* _lf_py_reaction_function_3;
     PyObject* _lf_py_reaction_function_4;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* width;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* height;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* image;
-    #line 188 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* character_class;
-    #line 275 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 285 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* directions;
-    #line 197 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* character_instance;
     #line 198 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _wall_list;
+    PyObject* character_instance;
     #line 199 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _gate_list;
+    PyObject* _wall_list;
     #line 200 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _gate_list;
+    #line 201 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* _pause;
-    #line 279 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 289 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* turn;
-    #line 280 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 290 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* steps;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     ghost_wall_list_t* _lf_wall_list;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // width of -2 indicates that it is not a multiport.
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_wall_list_width;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Default input (in case it does not get connected)
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     ghost_wall_list_t _lf_default__wall_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     ghost_gate_list_t* _lf_gate_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // width of -2 indicates that it is not a multiport.
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_gate_list_width;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Default input (in case it does not get connected)
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     ghost_gate_list_t _lf_default__gate_list;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     ghost_icon_t* _lf_icon;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // width of -2 indicates that it is not a multiport.
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     int _lf_icon_width;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Default input (in case it does not get connected)
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     ghost_icon_t _lf_default__icon;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    ghost_tick_t* _lf_tick;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // width of -2 indicates that it is not a multiport.
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_tick_width;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    ghost_tick_t _lf_default__tick;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    ghost_playerpause_t* _lf_playerpause;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // width of -2 indicates that it is not a multiport.
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_playerpause_width;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    ghost_playerpause_t _lf_default__playerpause;
-    #line 194 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    ghost_sprite_t _lf_sprite;
-    #line 194 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_sprite_width;
-    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    ghost_icon_name_t _lf_icon_name;
-    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_icon_name_width;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t _lf__reaction_0;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t _lf__reaction_1;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t _lf__reaction_2;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t _lf__reaction_3;
     #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    ghost_tick_t* _lf_tick;
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // width of -2 indicates that it is not a multiport.
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_tick_width;
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    ghost_tick_t _lf_default__tick;
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    ghost_playerpause_t* _lf_playerpause;
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // width of -2 indicates that it is not a multiport.
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_playerpause_width;
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    ghost_playerpause_t _lf_default__playerpause;
+    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    ghost_sprite_t _lf_sprite;
+    #line 195 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_sprite_width;
+    #line 196 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    ghost_icon_name_t _lf_icon_name;
+    #line 196 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_icon_name_width;
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t _lf__reaction_0;
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t _lf__reaction_1;
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t _lf__reaction_2;
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t _lf__reaction_3;
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_4;
     trigger_t _lf__startup;
     reaction_t* _lf__startup_reactions[1];
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__wall_list;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__wall_list_reactions[1];
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__gate_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__gate_list_reactions[1];
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__icon;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__icon_reactions[1];
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__tick;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__tick_reactions[1];
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__playerpause;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__playerpause_reactions[1];
 } ghost_self_t;
 #include "ctarget/set.h"
@@ -1039,7 +1041,7 @@ void ghostreaction_function_0(void* instance_args){
     ghost_self_t* self = (ghost_self_t*)instance_args;
     ghost_icon_name_t* icon_name = &self->_lf_icon_name;
     #pragma GCC diagnostic pop
-    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 204 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1075,7 +1077,7 @@ void ghostreaction_function_1(void* instance_args){
     int icon_width = self->_lf_icon_width;
     ghost_sprite_t* sprite = &self->_lf_sprite;
     #pragma GCC diagnostic pop
-    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 209 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1111,7 +1113,7 @@ void ghostreaction_function_2(void* instance_args){
     ghost_gate_list_t* gate_list = self->_lf_gate_list;
     int gate_list_width = self->_lf_gate_list_width;
     #pragma GCC diagnostic pop
-    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 214 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1145,7 +1147,7 @@ void ghostreaction_function_3(void* instance_args){
     ghost_playerpause_t* playerpause = self->_lf_playerpause;
     int playerpause_width = self->_lf_playerpause_width;
     #pragma GCC diagnostic pop
-    #line 283 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 293 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1180,7 +1182,7 @@ void ghostreaction_function_4(void* instance_args){
     int tick_width = self->_lf_tick_width;
     ghost_sprite_t* sprite = &self->_lf_sprite;
     #pragma GCC diagnostic pop
-    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 300 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1208,149 +1210,149 @@ void ghostreaction_function_4(void* instance_args){
 #include "ctarget/set_undef.h"
 ghost_self_t* new_Ghost() {
     ghost_self_t* self = (ghost_self_t*)_lf_new_reactor(sizeof(ghost_self_t));
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_wall_list = &self->_lf_default__wall_list;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_gate_list = &self->_lf_default__gate_list;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_icon = &self->_lf_default__icon;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_tick = &self->_lf_default__tick;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_playerpause = &self->_lf_default__playerpause;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.number = 0;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.function = ghostreaction_function_0;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.self = self;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.deadline_violation_handler = NULL;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.STP_handler = NULL;
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.name = "?";
-    #line 202 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 203 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.mode = NULL;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.number = 1;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.function = ghostreaction_function_1;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.self = self;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.deadline_violation_handler = NULL;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.STP_handler = NULL;
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.name = "?";
-    #line 207 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 208 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.mode = NULL;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.number = 2;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.function = ghostreaction_function_2;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.self = self;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.deadline_violation_handler = NULL;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.STP_handler = NULL;
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.name = "?";
-    #line 212 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 213 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.mode = NULL;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.number = 3;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.function = ghostreaction_function_3;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.self = self;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.deadline_violation_handler = NULL;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.STP_handler = NULL;
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.name = "?";
-    #line 282 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 292 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.mode = NULL;
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.number = 4;
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.function = ghostreaction_function_4;
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.self = self;
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.deadline_violation_handler = NULL;
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.STP_handler = NULL;
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.name = "?";
-    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 299 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.mode = NULL;
     self->_lf__startup_reactions[0] = &self->_lf__reaction_0;
     self->_lf__startup.last = NULL;
     self->_lf__startup.reactions = &self->_lf__startup_reactions[0];
     self->_lf__startup.number_of_reactions = 1;
     self->_lf__startup.is_timer = false;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list.last = NULL;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list_reactions[0] = &self->_lf__reaction_2;
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list.reactions = &self->_lf__wall_list_reactions[0];
-    #line 189 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__wall_list.number_of_reactions = 1;
     self->_lf__wall_list.element_size = sizeof(PyObject);
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list.last = NULL;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list_reactions[0] = &self->_lf__reaction_2;
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list.reactions = &self->_lf__gate_list_reactions[0];
-    #line 190 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__gate_list.number_of_reactions = 1;
     self->_lf__gate_list.element_size = sizeof(PyObject);
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon.last = NULL;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon_reactions[0] = &self->_lf__reaction_1;
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon.reactions = &self->_lf__icon_reactions[0];
-    #line 191 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 192 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon.number_of_reactions = 1;
     self->_lf__icon.element_size = sizeof(PyObject);
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick.last = NULL;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick_reactions[0] = &self->_lf__reaction_4;
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick.reactions = &self->_lf__tick_reactions[0];
-    #line 276 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 286 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__tick.number_of_reactions = 1;
     self->_lf__tick.element_size = sizeof(PyObject);
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__playerpause.last = NULL;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__playerpause_reactions[0] = &self->_lf__reaction_3;
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__playerpause.reactions = &self->_lf__playerpause_reactions[0];
-    #line 277 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 287 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__playerpause.number_of_reactions = 1;
     self->_lf__playerpause.element_size = sizeof(PyObject);
     return self;
@@ -1358,19 +1360,19 @@ ghost_self_t* new_Ghost() {
 // =============== END reactor class Ghost
 
 // =============== START reactor class Display
-#line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct display_moving_sprites_t;
 #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct display_static_sprites_t;
+typedef generic_port_instance_struct display_moving_sprites_t;
 #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct display_game_over_t;
+typedef generic_port_instance_struct display_static_sprites_t;
 #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-typedef generic_port_instance_struct display_score_t;
+typedef generic_port_instance_struct display_game_over_t;
 #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+typedef generic_port_instance_struct display_score_t;
+#line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct display_icon_name_t;
-#line 83 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 85 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct display_tick_t;
-#line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+#line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
 typedef generic_port_instance_struct display_icon_t;
 typedef struct {
     struct self_base_t base;
@@ -1382,135 +1384,140 @@ typedef struct {
     PyObject* _lf_py_reaction_function_4;
     PyObject* _lf_py_reaction_function_5;
     PyObject* _lf_py_reaction_function_6;
-    #line 76 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _lf_py_reaction_function_7;
+    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* num_moving_sprites;
-    #line 76 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* num_static_sprites;
-    #line 76 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     PyObject* nav_icon;
-    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _screen;
-    #line 87 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _font;
     #line 88 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _clock;
+    PyObject* _screen;
     #line 89 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _static_sprites;
+    PyObject* _font;
     #line 90 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    PyObject* _top_corner_text;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Multiport input array will be malloc'd later.
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_moving_sprites_t** _lf_moving_sprites;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_moving_sprites_width;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_moving_sprites_t _lf_default__moving_sprites;
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Multiport input array will be malloc'd later.
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_static_sprites_t** _lf_static_sprites;
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_static_sprites_width;
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_static_sprites_t _lf_default__static_sprites;
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_game_over_t* _lf_game_over;
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // width of -2 indicates that it is not a multiport.
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_game_over_width;
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_game_over_t _lf_default__game_over;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_score_t* _lf_score;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // width of -2 indicates that it is not a multiport.
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_score_width;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_score_t _lf_default__score;
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Multiport input array will be malloc'd later.
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_icon_name_t** _lf_icon_name;
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_icon_name_width;
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Default input (in case it does not get connected)
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_icon_name_t _lf_default__icon_name;
-    #line 83 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_tick_t _lf_tick;
-    #line 83 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_tick_width;
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // Array of output ports.
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_icon_t* _lf_icon;
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    int _lf_icon_width;
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // An array of pointers to the individual ports. Useful
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // for the lf_set macros to work out-of-the-box for
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // multiports in the body of reactions because their 
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // value can be accessed via a -> operator (e.g.,foo[i]->value).
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // So we have to handle multiports specially here a construct that
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    // array of pointers.
-    #line 84 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    display_icon_t** _lf_icon_pointers;
+    PyObject* _clock;
+    #line 91 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _static_sprites;
     #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _top_corner_text;
+    #line 93 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    PyObject* _active;
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Multiport input array will be malloc'd later.
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_moving_sprites_t** _lf_moving_sprites;
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_moving_sprites_width;
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_moving_sprites_t _lf_default__moving_sprites;
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Multiport input array will be malloc'd later.
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_static_sprites_t** _lf_static_sprites;
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_static_sprites_width;
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_static_sprites_t _lf_default__static_sprites;
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_game_over_t* _lf_game_over;
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // width of -2 indicates that it is not a multiport.
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_game_over_width;
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_game_over_t _lf_default__game_over;
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_score_t* _lf_score;
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // width of -2 indicates that it is not a multiport.
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_score_width;
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_score_t _lf_default__score;
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Multiport input array will be malloc'd later.
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_icon_name_t** _lf_icon_name;
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_icon_name_width;
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Default input (in case it does not get connected)
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_icon_name_t _lf_default__icon_name;
+    #line 85 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_tick_t _lf_tick;
+    #line 85 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_tick_width;
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Array of output ports.
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_icon_t* _lf_icon;
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    int _lf_icon_width;
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // An array of pointers to the individual ports. Useful
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // for the lf_set macros to work out-of-the-box for
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // multiports in the body of reactions because their 
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // value can be accessed via a -> operator (e.g.,foo[i]->value).
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // So we have to handle multiports specially here a construct that
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // array of pointers.
+    #line 86 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    display_icon_t** _lf_icon_pointers;
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_0;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_1;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_2;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_3;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_4;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_5;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t _lf__reaction_6;
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t _lf__reaction_7;
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__pygame_tick;
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t* _lf__pygame_tick_reactions[2];
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t* _lf__pygame_tick_reactions[1];
     trigger_t _lf__startup;
     reaction_t* _lf__startup_reactions[1];
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__moving_sprites;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__moving_sprites_reactions[1];
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__static_sprites;
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__static_sprites_reactions[1];
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__game_over;
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    reaction_t* _lf__game_over_reactions[1];
     #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    reaction_t* _lf__game_over_reactions[2];
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__score;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__score_reactions[1];
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     trigger_t _lf__icon_name;
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     reaction_t* _lf__icon_name_reactions[1];
 } display_self_t;
 #include "ctarget/set.h"
@@ -1520,7 +1527,7 @@ void displayreaction_function_0(void* instance_args){
     display_self_t* self = (display_self_t*)instance_args;
     
     #pragma GCC diagnostic pop
-    #line 93 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 96 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1557,7 +1564,7 @@ void displayreaction_function_1(void* instance_args){
     int icon_width = self->_lf_icon_width;
     display_icon_t** icon = self->_lf_icon_pointers;
     #pragma GCC diagnostic pop
-    #line 115 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 118 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1590,7 +1597,7 @@ void displayreaction_function_2(void* instance_args){
     display_self_t* self = (display_self_t*)instance_args;
     display_tick_t* tick = &self->_lf_tick;
     #pragma GCC diagnostic pop
-    #line 122 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 125 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1624,7 +1631,7 @@ void displayreaction_function_3(void* instance_args){
     display_static_sprites_t** static_sprites = self->_lf_static_sprites;
     int static_sprites_width = self->_lf_static_sprites_width;
     #pragma GCC diagnostic pop
-    #line 128 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 131 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1658,7 +1665,7 @@ void displayreaction_function_4(void* instance_args){
     display_score_t* score = self->_lf_score;
     int score_width = self->_lf_score_width;
     #pragma GCC diagnostic pop
-    #line 138 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1692,7 +1699,7 @@ void displayreaction_function_5(void* instance_args){
     display_moving_sprites_t** moving_sprites = self->_lf_moving_sprites;
     int moving_sprites_width = self->_lf_moving_sprites_width;
     #pragma GCC diagnostic pop
-    #line 143 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 148 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1726,7 +1733,7 @@ void displayreaction_function_6(void* instance_args){
     display_game_over_t* game_over = self->_lf_game_over;
     int game_over_width = self->_lf_game_over_width;
     #pragma GCC diagnostic pop
-    #line 157 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 163 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -1752,180 +1759,228 @@ void displayreaction_function_6(void* instance_args){
     PyGILState_Release(gstate);
 }
 #include "ctarget/set_undef.h"
+#include "ctarget/set.h"
+void displayreaction_function_7(void* instance_args){
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-variable"
+    display_self_t* self = (display_self_t*)instance_args;
+    display_game_over_t* game_over = self->_lf_game_over;
+    int game_over_width = self->_lf_game_over_width;
+    #pragma GCC diagnostic pop
+    #line 167 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+    LF_PRINT_DEBUG("Calling reaction function Display.reaction_function_7");
+    PyObject *rValue = PyObject_CallObject(
+        self->_lf_py_reaction_function_7, 
+        Py_BuildValue("(O)", convert_C_port_to_py(game_over, game_over_width))
+    );
+    if (rValue == NULL) {
+        error_print("FATAL: Calling reaction Display.reaction_function_7 failed.");
+        if (PyErr_Occurred()) {
+            PyErr_PrintEx(0);
+            PyErr_Clear(); // this will reset the error indicator so we can run Python code again
+        }
+        /* Release the thread. No Python API allowed beyond this point. */
+    PyGILState_Release(gstate);
+        Py_FinalizeEx();
+        exit(1);
+    }
+    
+    /* Release the thread. No Python API allowed beyond this point. */
+    /* Release the thread. No Python API allowed beyond this point. */
+    PyGILState_Release(gstate);
+}
+#include "ctarget/set_undef.h"
 display_self_t* new_Display() {
     display_self_t* self = (display_self_t*)_lf_new_reactor(sizeof(display_self_t));
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_game_over = &self->_lf_default__game_over;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     // Set input by default to an always absent default input.
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf_score = &self->_lf_default__score;
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.number = 0;
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.function = displayreaction_function_0;
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.self = self;
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.deadline_violation_handler = NULL;
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.STP_handler = NULL;
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.name = "?";
-    #line 92 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 95 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_0.mode = NULL;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.number = 1;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.function = displayreaction_function_1;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.self = self;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.deadline_violation_handler = NULL;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.STP_handler = NULL;
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.name = "?";
-    #line 114 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 117 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_1.mode = NULL;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.number = 2;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.function = displayreaction_function_2;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.self = self;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.deadline_violation_handler = NULL;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.STP_handler = NULL;
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.name = "?";
-    #line 121 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 124 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_2.mode = NULL;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.number = 3;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.function = displayreaction_function_3;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.self = self;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.deadline_violation_handler = NULL;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.STP_handler = NULL;
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.name = "?";
-    #line 127 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 130 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_3.mode = NULL;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.number = 4;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.function = displayreaction_function_4;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.self = self;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.deadline_violation_handler = NULL;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.STP_handler = NULL;
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.name = "?";
-    #line 137 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 141 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_4.mode = NULL;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.number = 5;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.function = displayreaction_function_5;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.self = self;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.deadline_violation_handler = NULL;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.STP_handler = NULL;
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.name = "?";
-    #line 142 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_5.mode = NULL;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.number = 6;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.function = displayreaction_function_6;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.self = self;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.deadline_violation_handler = NULL;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.STP_handler = NULL;
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.name = "?";
-    #line 156 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 162 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__reaction_6.mode = NULL;
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.number = 7;
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.function = displayreaction_function_7;
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.self = self;
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.deadline_violation_handler = NULL;
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.STP_handler = NULL;
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.name = "?";
+    #line 166 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__reaction_7.mode = NULL;
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_tick.last = NULL;
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_tick_reactions[0] = &self->_lf__reaction_2;
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    self->_lf__pygame_tick_reactions[1] = &self->_lf__reaction_6;
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__pygame_tick.reactions = &self->_lf__pygame_tick_reactions[0];
-    #line 120 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    self->_lf__pygame_tick.number_of_reactions = 2;
+    #line 123 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__pygame_tick.number_of_reactions = 1;
     self->_lf__pygame_tick.is_timer = true;
     self->_lf__startup_reactions[0] = &self->_lf__reaction_0;
     self->_lf__startup.last = NULL;
     self->_lf__startup.reactions = &self->_lf__startup_reactions[0];
     self->_lf__startup.number_of_reactions = 1;
     self->_lf__startup.is_timer = false;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__moving_sprites.last = NULL;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__moving_sprites_reactions[0] = &self->_lf__reaction_5;
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__moving_sprites.reactions = &self->_lf__moving_sprites_reactions[0];
-    #line 77 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__moving_sprites.number_of_reactions = 1;
     self->_lf__moving_sprites.element_size = sizeof(PyObject);
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__static_sprites.last = NULL;
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__static_sprites_reactions[0] = &self->_lf__reaction_3;
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__static_sprites.reactions = &self->_lf__static_sprites_reactions[0];
-    #line 78 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__static_sprites.number_of_reactions = 1;
     self->_lf__static_sprites.element_size = sizeof(PyObject);
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__game_over.last = NULL;
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__game_over_reactions[0] = &self->_lf__reaction_6;
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__game_over_reactions[1] = &self->_lf__reaction_7;
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__game_over.reactions = &self->_lf__game_over_reactions[0];
-    #line 79 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    self->_lf__game_over.number_of_reactions = 1;
+    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    self->_lf__game_over.number_of_reactions = 2;
     self->_lf__game_over.element_size = sizeof(PyObject);
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__score.last = NULL;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__score_reactions[0] = &self->_lf__reaction_4;
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__score.reactions = &self->_lf__score_reactions[0];
-    #line 80 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__score.number_of_reactions = 1;
     self->_lf__score.element_size = sizeof(PyObject);
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon_name.last = NULL;
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon_name_reactions[0] = &self->_lf__reaction_1;
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon_name.reactions = &self->_lf__icon_name_reactions[0];
-    #line 81 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
+    #line 82 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacManWithBank.lf"
     self->_lf__icon_name.number_of_reactions = 1;
     self->_lf__icon_name.element_size = sizeof(PyObject);
     return self;
@@ -2248,6 +2303,14 @@ void _lf_initialize_trigger_objects() {
             "reaction_function_6");
         if(pacmanwithbank_display_self[0]->_lf_py_reaction_function_6 == NULL) {
             error_print_and_exit("Could not load function reaction_function_6");
+        }
+        pacmanwithbank_display_self[0]->_lf_py_reaction_function_7 = 
+        get_python_function("__main__", 
+            pacmanwithbank_display_self[0]->_lf_name,
+            0,
+            "reaction_function_7");
+        if(pacmanwithbank_display_self[0]->_lf_py_reaction_function_7 == NULL) {
+            error_print_and_exit("Could not load function reaction_function_7");
         }
         // width of -2 indicates that it is not a multiport.
         pacmanwithbank_display_self[0]->_lf_tick_width = -2;
@@ -2712,6 +2775,14 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 6 of PacManWithBank.display
+            // Total number of outputs (single ports and multiport channels)
+            // produced by reaction_7 of PacManWithBank.display.
+            pacmanwithbank_display_self[0]->_lf__reaction_7.num_outputs = 0;
+            {
+                int count = 0;
+            }
+            
+            // ** End initialization for reaction 7 of PacManWithBank.display
             
         }
         // **** End of deferred initialize for PacManWithBank.display
@@ -4657,6 +4728,10 @@ void _lf_initialize_trigger_objects() {
             // index is the OR of level 11 and 
             // deadline 140737488355327 shifted left 16 bits.
             pacmanwithbank_display_self[0]->_lf__reaction_6.index = 0x7fffffffffff000bLL;
+            pacmanwithbank_display_self[0]->_lf__reaction_7.chain_id = 1;
+            // index is the OR of level 12 and 
+            // deadline 140737488355327 shifted left 16 bits.
+            pacmanwithbank_display_self[0]->_lf__reaction_7.index = 0x7fffffffffff000cLL;
         }
         
     }

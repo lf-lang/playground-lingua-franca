@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
-		<item key="selection" value="controllerpause"/>
+		<item key="selection" value="blocks_hit_list"/>
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
-			<item value="controllerpause"/>
-			<item value="controller pause"/>
-			<item value="state _controllerpause"/>
-			<item value="playerpause"/>
-			<item value="reactor game"/>
-			<item value="pygame_tick"/>
-			<item value="pygame_event"/>
+			<item value="blocks_hit_list"/>
+			<item value="do not "/>
 			<item value="game_over"/>
-			<item value="request_sto"/>
-			<item value="request_stop"/>
-			<item value="requ"/>
-			<item value="while looper"/>
-			<item value="K_LEFT"/>
-			<item value="while true"/>
-			<item value="(pacman_sprite"/>
+			<item value="if game_over"/>
+			<item value="resetpos"/>
+			<item value="self._score_to"/>
+			<item value="initial mode"/>
+			<item value="self._active"/>
+			<item value="K_r"/>
+			<item value="self.character_instance.resetpos"/>
+			<item value="name"/>
+			<item value=".changespe"/>
+			<item value="_all_spr"/>
+			<item value="_allspriteslist"/>
+			<item value="icon_name.set"/>
 		</list>
 		<list key="replacehistory">
 		</list>

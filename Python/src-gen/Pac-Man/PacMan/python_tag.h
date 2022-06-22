@@ -43,12 +43,4 @@ typedef struct {
     tag_t tag;
 } py_tag_t;
 
-/**
- * @brief Convert C tag to `py_tag_t`
- * 
- * @param c_tag The tag in C.
- * @return py_tag_t* The tag in Python.
- */
-py_tag_t* convert_C_tag_to_py(tag_t c_tag);
-
 #endif

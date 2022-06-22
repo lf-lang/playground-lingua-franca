@@ -422,7 +422,7 @@ main reactor (
  * for a simulator such as Carla.
  */
 reactor Simulator(
-    interval(1 sec),  // Note: For demonstration purposes, 
+    interval(16 msec),  // Note: For demonstration purposes, 
                       // this interval is set to a very low frequency.
                       // Set the interval to 16 msecs for a more
                       // realistic simulation.

@@ -59,7 +59,7 @@ typedef struct {
     int length;
     void (*destructor) (void* value);
     void* (*copy_constructor) (void* value);
-    FEDERATED_GENERIC_EXTENSION
+    FEDERATED_CAPSULE_EXTENSION
 } generic_port_instance_struct;
 
 

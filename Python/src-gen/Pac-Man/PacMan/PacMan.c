@@ -3,14 +3,13 @@
 #define LOG_LEVEL 2
 #define TARGET_FILES_DIRECTORY "/home/zero/lf-workspace/experimental-lingua-franca/Python/src-gen/Pac-Man/PacMan"
 #define _LF_GARBAGE_COLLECTED
-#include "include/ctarget/ctarget.h"
+#include "ctarget/ctarget.h"
 #include "core/reactor.c"
 #include "core/mixed_radix.h"
 #include "pythontarget.c"
 int main(int argc, char* argv[]) {
     return lf_reactor_c_main(argc, argv);
 }
-void _lf_set_default_command_line_options() {}
 // =============== START reactor class GameController
 #line 253 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
 typedef generic_port_instance_struct gamecontroller_ghost_sprites_t;
@@ -112,11 +111,11 @@ typedef struct {
     reaction_t _lf__reaction_2;
     #line 309 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t _lf__reaction_3;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t _lf__reaction_4;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t _lf__reaction_5;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t _lf__reaction_6;
     trigger_t _lf__startup;
     reaction_t* _lf__startup_reactions[2];
@@ -135,7 +134,7 @@ typedef struct {
     #line 255 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t* _lf__tick_reactions[1];
 } gamecontroller_self_t;
-#include "include/ctarget/set.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_0(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -147,13 +146,14 @@ void gamecontrollerreaction_function_0(void* instance_args){
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
+    
     LF_PRINT_DEBUG("Calling reaction function GameController.reaction_function_0");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_0, 
         Py_BuildValue("(OO)", convert_C_port_to_py(wall_list, -2), convert_C_port_to_py(gate, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_0 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_0 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -168,8 +168,8 @@ void gamecontrollerreaction_function_0(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_1(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -187,7 +187,7 @@ void gamecontrollerreaction_function_1(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(pacman_sprite, pacman_sprite_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_1 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_1 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -202,8 +202,8 @@ void gamecontrollerreaction_function_1(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_2(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -214,13 +214,14 @@ void gamecontrollerreaction_function_2(void* instance_args){
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
+    
     LF_PRINT_DEBUG("Calling reaction function GameController.reaction_function_2");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_2, 
         Py_BuildValue("(O)", convert_C_port_to_py(block_list, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_2 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_2 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -235,8 +236,8 @@ void gamecontrollerreaction_function_2(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_3(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -256,7 +257,7 @@ void gamecontrollerreaction_function_3(void* instance_args){
         Py_BuildValue("(OOO)", convert_C_port_to_py(pacman_sprite, pacman_sprite_width), convert_C_port_to_py(score, -2), convert_C_port_to_py(game_over, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_3 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_3 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -271,8 +272,8 @@ void gamecontrollerreaction_function_3(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_4(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -281,7 +282,7 @@ void gamecontrollerreaction_function_4(void* instance_args){
     int ghost_sprites_width = self->_lf_ghost_sprites_width;
     gamecontroller_game_over_t* game_over = &self->_lf_game_over;
     #pragma GCC diagnostic pop
-    #line 325 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -291,7 +292,7 @@ void gamecontrollerreaction_function_4(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(ghost_sprites, ghost_sprites_width), convert_C_port_to_py(game_over, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_4 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_4 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -306,8 +307,8 @@ void gamecontrollerreaction_function_4(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_5(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -316,7 +317,7 @@ void gamecontrollerreaction_function_5(void* instance_args){
     int tick_width = self->_lf_tick_width;
     gamecontroller_block_list_t* block_list = &self->_lf_block_list;
     #pragma GCC diagnostic pop
-    #line 341 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
@@ -326,7 +327,7 @@ void gamecontrollerreaction_function_5(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(tick, tick_width), convert_C_port_to_py(block_list, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_5 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_5 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -341,24 +342,26 @@ void gamecontrollerreaction_function_5(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void gamecontrollerreaction_function_6(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
     gamecontroller_self_t* self = (gamecontroller_self_t*)instance_args;
+    
     #pragma GCC diagnostic pop
-    #line 346 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
+    
     LF_PRINT_DEBUG("Calling reaction function GameController.reaction_function_6");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_6, 
         Py_BuildValue("()")
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction GameController.reaction_function_6 failed.");
+        error_print("FATAL: Calling reaction GameController.reaction_function_6 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -373,7 +376,7 @@ void gamecontrollerreaction_function_6(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
+#include "ctarget/set_undef.h"
 gamecontroller_self_t* new_GameController() {
     gamecontroller_self_t* self = (gamecontroller_self_t*)_lf_new_reactor(sizeof(gamecontroller_self_t));
     #line 254 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
@@ -440,47 +443,47 @@ gamecontroller_self_t* new_GameController() {
     self->_lf__reaction_3.name = "?";
     #line 309 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_3.mode = NULL;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.number = 4;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.function = gamecontrollerreaction_function_4;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.self = self;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.deadline_violation_handler = NULL;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.STP_handler = NULL;
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.name = "?";
-    #line 324 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 323 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_4.mode = NULL;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.number = 5;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.function = gamecontrollerreaction_function_5;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.self = self;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.deadline_violation_handler = NULL;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.STP_handler = NULL;
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.name = "?";
-    #line 340 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 339 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_5.mode = NULL;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.number = 6;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.function = gamecontrollerreaction_function_6;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.self = self;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.deadline_violation_handler = NULL;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.STP_handler = NULL;
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.name = "?";
-    #line 345 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
+    #line 344 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     self->_lf__reaction_6.mode = NULL;
     self->_lf__startup_reactions[0] = &self->_lf__reaction_0;
     self->_lf__startup_reactions[1] = &self->_lf__reaction_2;
@@ -529,6 +532,7 @@ gamecontroller_self_t* new_GameController() {
     return self;
 }
 // =============== END reactor class GameController
+
 // =============== START reactor class Player
 #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
 typedef generic_port_instance_struct player_wall_list_t;
@@ -626,7 +630,7 @@ typedef struct {
     #line 149 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t* _lf__icon_reactions[1];
 } player_self_t;
-#include "include/ctarget/set.h"
+#include "ctarget/set.h"
 void playerreaction_function_0(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -637,13 +641,14 @@ void playerreaction_function_0(void* instance_args){
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
+    
     LF_PRINT_DEBUG("Calling reaction function Player.reaction_function_0");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_0, 
         Py_BuildValue("(O)", convert_C_port_to_py(icon_name, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Player.reaction_function_0 failed.");
+        error_print("FATAL: Calling reaction Player.reaction_function_0 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -658,8 +663,8 @@ void playerreaction_function_0(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void playerreaction_function_1(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -678,7 +683,7 @@ void playerreaction_function_1(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(icon, icon_width), convert_C_port_to_py(sprite, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Player.reaction_function_1 failed.");
+        error_print("FATAL: Calling reaction Player.reaction_function_1 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -693,8 +698,8 @@ void playerreaction_function_1(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void playerreaction_function_2(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -714,7 +719,7 @@ void playerreaction_function_2(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(wall_list, wall_list_width), convert_C_port_to_py(gate_list, gate_list_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Player.reaction_function_2 failed.");
+        error_print("FATAL: Calling reaction Player.reaction_function_2 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -729,8 +734,8 @@ void playerreaction_function_2(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void playerreaction_function_3(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -747,7 +752,7 @@ void playerreaction_function_3(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(sprite, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Player.reaction_function_3 failed.");
+        error_print("FATAL: Calling reaction Player.reaction_function_3 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -762,7 +767,7 @@ void playerreaction_function_3(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
+#include "ctarget/set_undef.h"
 player_self_t* new_Player() {
     player_self_t* self = (player_self_t*)_lf_new_reactor(sizeof(player_self_t));
     #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
@@ -881,6 +886,7 @@ player_self_t* new_Player() {
     return self;
 }
 // =============== END reactor class Player
+
 // =============== START reactor class Ghost
 #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
 typedef generic_port_instance_struct ghost_wall_list_t;
@@ -996,7 +1002,7 @@ typedef struct {
     #line 215 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t* _lf__tick_reactions[1];
 } ghost_self_t;
-#include "include/ctarget/set.h"
+#include "ctarget/set.h"
 void ghostreaction_function_0(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1007,13 +1013,14 @@ void ghostreaction_function_0(void* instance_args){
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
+    
     LF_PRINT_DEBUG("Calling reaction function Ghost.reaction_function_0");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_0, 
         Py_BuildValue("(O)", convert_C_port_to_py(icon_name, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Ghost.reaction_function_0 failed.");
+        error_print("FATAL: Calling reaction Ghost.reaction_function_0 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1028,8 +1035,8 @@ void ghostreaction_function_0(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void ghostreaction_function_1(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1048,7 +1055,7 @@ void ghostreaction_function_1(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(icon, icon_width), convert_C_port_to_py(sprite, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Ghost.reaction_function_1 failed.");
+        error_print("FATAL: Calling reaction Ghost.reaction_function_1 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1063,8 +1070,8 @@ void ghostreaction_function_1(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void ghostreaction_function_2(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1084,7 +1091,7 @@ void ghostreaction_function_2(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(wall_list, wall_list_width), convert_C_port_to_py(gate_list, gate_list_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Ghost.reaction_function_2 failed.");
+        error_print("FATAL: Calling reaction Ghost.reaction_function_2 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1099,8 +1106,8 @@ void ghostreaction_function_2(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void ghostreaction_function_3(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1119,7 +1126,7 @@ void ghostreaction_function_3(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(tick, tick_width), convert_C_port_to_py(sprite, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Ghost.reaction_function_3 failed.");
+        error_print("FATAL: Calling reaction Ghost.reaction_function_3 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1134,7 +1141,7 @@ void ghostreaction_function_3(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
+#include "ctarget/set_undef.h"
 ghost_self_t* new_Ghost() {
     ghost_self_t* self = (ghost_self_t*)_lf_new_reactor(sizeof(ghost_self_t));
     #line 147 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
@@ -1257,6 +1264,7 @@ ghost_self_t* new_Ghost() {
     return self;
 }
 // =============== END reactor class Ghost
+
 // =============== START reactor class Display
 #line 44 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
 typedef generic_port_instance_struct display_moving_sprites_t;
@@ -1413,23 +1421,25 @@ typedef struct {
     #line 48 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     reaction_t* _lf__icon_name_reactions[1];
 } display_self_t;
-#include "include/ctarget/set.h"
+#include "ctarget/set.h"
 void displayreaction_function_0(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
     display_self_t* self = (display_self_t*)instance_args;
+    
     #pragma GCC diagnostic pop
     #line 60 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
     // Acquire the GIL (Global Interpreter Lock) to be able to call Python APIs.
     PyGILState_STATE gstate;
     gstate = PyGILState_Ensure();
+    
     LF_PRINT_DEBUG("Calling reaction function Display.reaction_function_0");
     PyObject *rValue = PyObject_CallObject(
         self->_lf_py_reaction_function_0, 
         Py_BuildValue("()")
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_0 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_0 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1444,8 +1454,8 @@ void displayreaction_function_0(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void displayreaction_function_1(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1465,7 +1475,7 @@ void displayreaction_function_1(void* instance_args){
         Py_BuildValue("(OO)", convert_C_port_to_py(icon_name, icon_name_width), convert_C_port_to_py(icon, icon_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_1 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_1 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1480,8 +1490,8 @@ void displayreaction_function_1(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void displayreaction_function_2(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1498,7 +1508,7 @@ void displayreaction_function_2(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(tick, -2))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_2 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_2 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1513,8 +1523,8 @@ void displayreaction_function_2(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void displayreaction_function_3(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1532,7 +1542,7 @@ void displayreaction_function_3(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(static_sprites, static_sprites_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_3 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_3 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1547,8 +1557,8 @@ void displayreaction_function_3(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void displayreaction_function_4(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1566,7 +1576,7 @@ void displayreaction_function_4(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(score, score_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_4 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_4 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1581,8 +1591,8 @@ void displayreaction_function_4(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void displayreaction_function_5(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1600,7 +1610,7 @@ void displayreaction_function_5(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(moving_sprites, moving_sprites_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_5 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_5 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1615,8 +1625,8 @@ void displayreaction_function_5(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
-#include "include/ctarget/set.h"
+#include "ctarget/set_undef.h"
+#include "ctarget/set.h"
 void displayreaction_function_6(void* instance_args){
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -1634,7 +1644,7 @@ void displayreaction_function_6(void* instance_args){
         Py_BuildValue("(O)", convert_C_port_to_py(game_over, game_over_width))
     );
     if (rValue == NULL) {
-        lf_print_error("FATAL: Calling reaction Display.reaction_function_6 failed.");
+        error_print("FATAL: Calling reaction Display.reaction_function_6 failed.");
         if (PyErr_Occurred()) {
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so we can run Python code again
@@ -1649,7 +1659,7 @@ void displayreaction_function_6(void* instance_args){
     /* Release the thread. No Python API allowed beyond this point. */
     PyGILState_Release(gstate);
 }
-#include "include/ctarget/set_undef.h"
+#include "ctarget/set_undef.h"
 display_self_t* new_Display() {
     display_self_t* self = (display_self_t*)_lf_new_reactor(sizeof(display_self_t));
     #line 46 "file:/home/zero/lf-workspace/experimental-lingua-franca/Python/src/Pac-Man/PacMan.lf"
@@ -1826,6 +1836,7 @@ display_self_t* new_Display() {
     return self;
 }
 // =============== END reactor class Display
+
 // =============== START reactor class PacMan
 typedef struct {
     struct self_base_t base;
@@ -1833,16 +1844,18 @@ typedef struct {
 } pacman_self_t;
 pacman_self_t* new_PacMan() {
     pacman_self_t* self = (pacman_self_t*)_lf_new_reactor(sizeof(pacman_self_t));
+    
     return self;
 }
 // =============== END reactor class PacMan
+
+void _lf_set_default_command_line_options() {}
 // Array of pointers to timer triggers to be scheduled in _lf_initialize_timers().
 trigger_t* _lf_timer_triggers[2];
 int _lf_timer_triggers_size = 2;
 // Array of pointers to shutdown triggers.
 reaction_t* _lf_shutdown_reactions[1];
 int _lf_shutdown_reactions_size = 1;
-
 trigger_t* _lf_action_for_port(int port_id) {
         return NULL;
 }
@@ -1852,10 +1865,11 @@ void _lf_initialize_trigger_objects() {
     // Create the array that will contain pointers to is_present fields to reset on each step.
     _lf_is_present_fields_size = 21;
     _lf_is_present_fields = (bool**)calloc(21, sizeof(bool*));
-    if (_lf_is_present_fields == NULL) lf_print_error_and_exit("Out of memory!");
+    if (_lf_is_present_fields == NULL) error_print_and_exit("Out of memory!");
     _lf_is_present_fields_abbreviated = (bool**)calloc(21, sizeof(bool*));
-    if (_lf_is_present_fields_abbreviated == NULL) lf_print_error_and_exit("Out of memory!");
+    if (_lf_is_present_fields_abbreviated == NULL) error_print_and_exit("Out of memory!");
     _lf_is_present_fields_abbreviated_size = 0;
+    
     _lf_startup_reactions = (reaction_t**)calloc(8, sizeof(reaction_t*));
     _lf_startup_reactions_size = 8;
     int _lf_startup_reactions_count = 0;
@@ -1873,6 +1887,7 @@ void _lf_initialize_trigger_objects() {
     // ***** Start initializing PacMan of class PacMan
     pacman_self[0] = new_PacMan();
     pacman_self[0]->_lf_name = "pacman_lf";
+    
     {
         // ***** Start initializing PacMan.controller of class GameController
         pacman_controller_self[0] = new_GameController();
@@ -1883,7 +1898,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_controller_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_controller_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -1891,7 +1906,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_controller_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_controller_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -1899,7 +1914,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_controller_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_controller_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -1907,7 +1922,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_controller_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         pacman_controller_self[0]->_lf_py_reaction_function_4 = 
         get_python_function("__main__", 
@@ -1915,7 +1930,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_4");
         if(pacman_controller_self[0]->_lf_py_reaction_function_4 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_4");
+            error_print_and_exit("Could not load function reaction_function_4");
         }
         pacman_controller_self[0]->_lf_py_reaction_function_5 = 
         get_python_function("__main__", 
@@ -1923,7 +1938,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_5");
         if(pacman_controller_self[0]->_lf_py_reaction_function_5 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_5");
+            error_print_and_exit("Could not load function reaction_function_5");
         }
         pacman_controller_self[0]->_lf_py_reaction_function_6 = 
         get_python_function("__main__", 
@@ -1931,7 +1946,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_6");
         if(pacman_controller_self[0]->_lf_py_reaction_function_6 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_6");
+            error_print_and_exit("Could not load function reaction_function_6");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_controller_self[0]->_lf_wall_list_width = -2;
@@ -1959,6 +1974,7 @@ void _lf_initialize_trigger_objects() {
         _lf_startup_reactions[_lf_startup_reactions_count++] = &pacman_controller_self[0]->_lf__reaction_0;
         _lf_startup_reactions[_lf_startup_reactions_count++] = &pacman_controller_self[0]->_lf__reaction_2;
         _lf_shutdown_reactions[_lf_shutdown_reactions_count++] = &pacman_controller_self[0]->_lf__reaction_6;
+        
         //***** End initializing PacMan.controller
     }
     {
@@ -1971,7 +1987,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_player_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_player_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -1979,7 +1995,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_player_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_player_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -1987,7 +2003,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_player_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_player_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -1995,7 +2011,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_player_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_player_self[0]->_lf_sprite_width = -2;
@@ -2013,6 +2029,7 @@ void _lf_initialize_trigger_objects() {
         pacman_player_self[0]->_lf__pygame_event.period = MSEC(100);
         _lf_timer_triggers[_lf_timer_triggers_count++] = &pacman_player_self[0]->_lf__pygame_event;
         pacman_player_self[0]->_lf__pygame_event.mode = NULL;
+        
         //***** End initializing PacMan.player
     }
     {
@@ -2025,7 +2042,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_pinky_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_pinky_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -2033,7 +2050,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_pinky_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_pinky_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -2041,7 +2058,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_pinky_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_pinky_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -2049,7 +2066,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_pinky_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_pinky_self[0]->_lf_sprite_width = -2;
@@ -2064,6 +2081,7 @@ void _lf_initialize_trigger_objects() {
         // width of -2 indicates that it is not a multiport.
         pacman_pinky_self[0]->_lf_tick_width = -2;
         _lf_startup_reactions[_lf_startup_reactions_count++] = &pacman_pinky_self[0]->_lf__reaction_0;
+        
         //***** End initializing PacMan.pinky
     }
     {
@@ -2076,7 +2094,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_blinky_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_blinky_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -2084,7 +2102,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_blinky_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_blinky_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -2092,7 +2110,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_blinky_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_blinky_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -2100,7 +2118,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_blinky_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_blinky_self[0]->_lf_sprite_width = -2;
@@ -2115,6 +2133,7 @@ void _lf_initialize_trigger_objects() {
         // width of -2 indicates that it is not a multiport.
         pacman_blinky_self[0]->_lf_tick_width = -2;
         _lf_startup_reactions[_lf_startup_reactions_count++] = &pacman_blinky_self[0]->_lf__reaction_0;
+        
         //***** End initializing PacMan.blinky
     }
     {
@@ -2127,7 +2146,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_inky_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_inky_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -2135,7 +2154,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_inky_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_inky_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -2143,7 +2162,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_inky_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_inky_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -2151,7 +2170,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_inky_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_inky_self[0]->_lf_sprite_width = -2;
@@ -2166,6 +2185,7 @@ void _lf_initialize_trigger_objects() {
         // width of -2 indicates that it is not a multiport.
         pacman_inky_self[0]->_lf_tick_width = -2;
         _lf_startup_reactions[_lf_startup_reactions_count++] = &pacman_inky_self[0]->_lf__reaction_0;
+        
         //***** End initializing PacMan.inky
     }
     {
@@ -2178,7 +2198,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_clyde_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_clyde_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -2186,7 +2206,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_clyde_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_clyde_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -2194,7 +2214,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_clyde_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_clyde_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -2202,7 +2222,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_clyde_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_clyde_self[0]->_lf_sprite_width = -2;
@@ -2217,6 +2237,7 @@ void _lf_initialize_trigger_objects() {
         // width of -2 indicates that it is not a multiport.
         pacman_clyde_self[0]->_lf_tick_width = -2;
         _lf_startup_reactions[_lf_startup_reactions_count++] = &pacman_clyde_self[0]->_lf__reaction_0;
+        
         //***** End initializing PacMan.clyde
     }
     {
@@ -2229,7 +2250,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_0");
         if(pacman_display_self[0]->_lf_py_reaction_function_0 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_0");
+            error_print_and_exit("Could not load function reaction_function_0");
         }
         pacman_display_self[0]->_lf_py_reaction_function_1 = 
         get_python_function("__main__", 
@@ -2237,7 +2258,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_1");
         if(pacman_display_self[0]->_lf_py_reaction_function_1 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_1");
+            error_print_and_exit("Could not load function reaction_function_1");
         }
         pacman_display_self[0]->_lf_py_reaction_function_2 = 
         get_python_function("__main__", 
@@ -2245,7 +2266,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_2");
         if(pacman_display_self[0]->_lf_py_reaction_function_2 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_2");
+            error_print_and_exit("Could not load function reaction_function_2");
         }
         pacman_display_self[0]->_lf_py_reaction_function_3 = 
         get_python_function("__main__", 
@@ -2253,7 +2274,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_3");
         if(pacman_display_self[0]->_lf_py_reaction_function_3 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_3");
+            error_print_and_exit("Could not load function reaction_function_3");
         }
         pacman_display_self[0]->_lf_py_reaction_function_4 = 
         get_python_function("__main__", 
@@ -2261,7 +2282,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_4");
         if(pacman_display_self[0]->_lf_py_reaction_function_4 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_4");
+            error_print_and_exit("Could not load function reaction_function_4");
         }
         pacman_display_self[0]->_lf_py_reaction_function_5 = 
         get_python_function("__main__", 
@@ -2269,7 +2290,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_5");
         if(pacman_display_self[0]->_lf_py_reaction_function_5 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_5");
+            error_print_and_exit("Could not load function reaction_function_5");
         }
         pacman_display_self[0]->_lf_py_reaction_function_6 = 
         get_python_function("__main__", 
@@ -2277,7 +2298,7 @@ void _lf_initialize_trigger_objects() {
             0,
             "reaction_function_6");
         if(pacman_display_self[0]->_lf_py_reaction_function_6 == NULL) {
-            lf_print_error_and_exit("Could not load function reaction_function_6");
+            error_print_and_exit("Could not load function reaction_function_6");
         }
         // width of -2 indicates that it is not a multiport.
         pacman_display_self[0]->_lf_tick_width = -2;
@@ -2331,13 +2352,19 @@ void _lf_initialize_trigger_objects() {
         pacman_display_self[0]->_lf__pygame_tick.period = MSEC(100);
         _lf_timer_triggers[_lf_timer_triggers_count++] = &pacman_display_self[0]->_lf__pygame_tick;
         pacman_display_self[0]->_lf__pygame_tick.mode = NULL;
+        
         //***** End initializing PacMan.display
     }
     //***** End initializing PacMan
+    
     // **** Start deferred initialize for PacMan
     {
+        
+        
+        
         // **** Start deferred initialize for PacMan.controller
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.controller.
             pacman_controller_self[0]->_lf__reaction_0.num_outputs = 2;
@@ -2470,10 +2497,12 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 6 of PacMan.controller
+            
         }
         // **** End of deferred initialize for PacMan.controller
         // **** Start deferred initialize for PacMan.player
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.player.
             pacman_player_self[0]->_lf__reaction_0.num_outputs = 1;
@@ -2548,10 +2577,12 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 3 of PacMan.player
+            
         }
         // **** End of deferred initialize for PacMan.player
         // **** Start deferred initialize for PacMan.pinky
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.pinky.
             pacman_pinky_self[0]->_lf__reaction_0.num_outputs = 1;
@@ -2626,10 +2657,12 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 3 of PacMan.pinky
+            
         }
         // **** End of deferred initialize for PacMan.pinky
         // **** Start deferred initialize for PacMan.blinky
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.blinky.
             pacman_blinky_self[0]->_lf__reaction_0.num_outputs = 1;
@@ -2704,10 +2737,12 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 3 of PacMan.blinky
+            
         }
         // **** End of deferred initialize for PacMan.blinky
         // **** Start deferred initialize for PacMan.inky
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.inky.
             pacman_inky_self[0]->_lf__reaction_0.num_outputs = 1;
@@ -2782,10 +2817,12 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 3 of PacMan.inky
+            
         }
         // **** End of deferred initialize for PacMan.inky
         // **** Start deferred initialize for PacMan.clyde
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.clyde.
             pacman_clyde_self[0]->_lf__reaction_0.num_outputs = 1;
@@ -2860,10 +2897,12 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 3 of PacMan.clyde
+            
         }
         // **** End of deferred initialize for PacMan.clyde
         // **** Start deferred initialize for PacMan.display
         {
+            
             // Total number of outputs (single ports and multiport channels)
             // produced by reaction_0 of PacMan.display.
             pacman_display_self[0]->_lf__reaction_0.num_outputs = 0;
@@ -2952,12 +2991,17 @@ void _lf_initialize_trigger_objects() {
             }
             
             // ** End initialization for reaction 6 of PacMan.display
+            
         }
         // **** End of deferred initialize for PacMan.display
     }
     // **** End of deferred initialize for PacMan
     // **** Start non-nested deferred initialize for PacMan
+    
+    
+    
     // **** Start non-nested deferred initialize for PacMan.controller
+    
     // For reference counting, set num_destinations for port PacMan.controller.wall_list.
     // Iterate over range PacMan.controller.wall_list(0,1)->[PacMan.pinky.wall_list(0,1), PacMan.display.static_sprites(0,1), PacMan.player.wall_list(0,1), PacMan.clyde.wall_list(0,1), PacMan.inky.wall_list(0,1), PacMan.blinky.wall_list(0,1)].
     {
@@ -3332,8 +3376,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.controller
     // **** Start non-nested deferred initialize for PacMan.player
+    
     // For reference counting, set num_destinations for port PacMan.player.sprite.
     // Iterate over range PacMan.player.sprite(0,1)->[PacMan.display.moving_sprites(1,1), PacMan.controller.pacman_sprite(0,1)].
     {
@@ -3487,8 +3533,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.player
     // **** Start non-nested deferred initialize for PacMan.pinky
+    
     // For reference counting, set num_destinations for port PacMan.pinky.sprite.
     // Iterate over range PacMan.pinky.sprite(0,1)->[PacMan.display.moving_sprites(2,1), PacMan.controller.ghost_sprites(0,1)].
     {
@@ -3642,8 +3690,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.pinky
     // **** Start non-nested deferred initialize for PacMan.blinky
+    
     // For reference counting, set num_destinations for port PacMan.blinky.sprite.
     // Iterate over range PacMan.blinky.sprite(0,1)->[PacMan.display.moving_sprites(3,1), PacMan.controller.ghost_sprites(1,1)].
     {
@@ -3797,8 +3847,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.blinky
     // **** Start non-nested deferred initialize for PacMan.inky
+    
     // For reference counting, set num_destinations for port PacMan.inky.sprite.
     // Iterate over range PacMan.inky.sprite(0,1)->[PacMan.display.moving_sprites(4,1), PacMan.controller.ghost_sprites(2,1)].
     {
@@ -3952,8 +4004,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.inky
     // **** Start non-nested deferred initialize for PacMan.clyde
+    
     // For reference counting, set num_destinations for port PacMan.clyde.sprite.
     // Iterate over range PacMan.clyde.sprite(0,1)->[PacMan.display.moving_sprites(5,1), PacMan.controller.ghost_sprites(3,1)].
     {
@@ -4107,8 +4161,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.clyde
     // **** Start non-nested deferred initialize for PacMan.display
+    
     // For reference counting, set num_destinations for port PacMan.display.tick.
     // Iterate over range PacMan.display.tick(0,1)->[PacMan.controller.tick(0,1), PacMan.clyde.tick(0,1), PacMan.inky.tick(0,1), PacMan.blinky.tick(0,1), PacMan.pinky.tick(0,1)].
     {
@@ -4417,6 +4473,7 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // **** End of non-nested deferred initialize for PacMan.display
     // **** End of non-nested deferred initialize for PacMan
     // Connect inputs and outputs for reactor PacMan.
@@ -5070,8 +5127,10 @@ void _lf_initialize_trigger_objects() {
             }
         }
     }
+    
     // Set reaction priorities for ReactorInstance PacMan
     {
+        
         // Set reaction priorities for ReactorInstance PacMan.controller
         {
             pacman_controller_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5103,6 +5162,8 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_controller_self[0]->_lf__reaction_6.index = 0x7fffffffffff000aLL;
         }
+        
+        
         // Set reaction priorities for ReactorInstance PacMan.player
         {
             pacman_player_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5122,6 +5183,8 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_player_self[0]->_lf__reaction_3.index = 0x7fffffffffff0004LL;
         }
+        
+        
         // Set reaction priorities for ReactorInstance PacMan.pinky
         {
             pacman_pinky_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5141,6 +5204,8 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_pinky_self[0]->_lf__reaction_3.index = 0x7fffffffffff0004LL;
         }
+        
+        
         // Set reaction priorities for ReactorInstance PacMan.blinky
         {
             pacman_blinky_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5160,6 +5225,8 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_blinky_self[0]->_lf__reaction_3.index = 0x7fffffffffff0004LL;
         }
+        
+        
         // Set reaction priorities for ReactorInstance PacMan.inky
         {
             pacman_inky_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5179,6 +5246,8 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_inky_self[0]->_lf__reaction_3.index = 0x7fffffffffff0004LL;
         }
+        
+        
         // Set reaction priorities for ReactorInstance PacMan.clyde
         {
             pacman_clyde_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5198,6 +5267,8 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_clyde_self[0]->_lf__reaction_3.index = 0x7fffffffffff0004LL;
         }
+        
+        
         // Set reaction priorities for ReactorInstance PacMan.display
         {
             pacman_display_self[0]->_lf__reaction_0.chain_id = 1;
@@ -5229,7 +5300,10 @@ void _lf_initialize_trigger_objects() {
             // deadline 140737488355327 shifted left 16 bits.
             pacman_display_self[0]->_lf__reaction_6.index = 0x7fffffffffff000bLL;
         }
+        
     }
+    
+    
 }
 void _lf_trigger_startup_reactions() {
     for (int i = 0; i < _lf_startup_reactions_size; i++) {
@@ -5266,3 +5340,4 @@ bool _lf_trigger_shutdown_reactions() {
     return (_lf_shutdown_reactions_size > 0);
 }
 void terminate_execution() {}
+

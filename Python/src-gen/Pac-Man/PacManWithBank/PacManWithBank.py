@@ -25,6 +25,7 @@ import copy
 
 # From the preamble, verbatim:
 import os
+import pyautogui
 curr_dirname = os.path.dirname(__file__)
 sys.path.append(curr_dirname)
 import hbpacman as pacman
@@ -158,11 +159,13 @@ class _GameController:
         
         if self._score == self._score_to_win:
             game_over.set("Won!")
+            pyautogui.keyDown(' ')
+            #print("Won")
+            #self._controllerpause = True
             #pause isntead of stop game
             #controllerpause.set(True)
-            request_stop() #remove once above finished
+            #request_stop() #remove once above finished
             
-        
             
         score.set(self._score)
             
@@ -179,9 +182,13 @@ class _GameController:
         
         if monsta_hit_list:
             game_over.set("Lost!")
+            print("Lost")
+            pyautogui.keyDown(' ')
+            #print("Lost")
+            #self._controllerpause = True
             #Pause the game instead of stopping it
-            #controllerpause.set(self._controllerpause)
-            request_stop() #remove once above finished
+            #controllerpause.set(True)
+            #request_stop() #remove once above finished
         
             
         return 0
@@ -212,6 +219,7 @@ class _Player:
         self._wall_list = None
         self._gate_list = None
         self._pause = False
+        self._active = True
     @property
     def width(self):
         return self._width # pylint: disable=no-member
@@ -256,13 +264,13 @@ class _Player:
             if event.type == pacman.pygame.QUIT:
                 request_stop()
             if event.type == pacman.pygame.KEYDOWN:
-                if event.key == pacman.pygame.K_SPACE:
+                if event.key == pacman.pygame.K_SPACE and self._active:
                     if self._pause is False:
                         self._pause = True
                     else:
                         self._pause = False
                     print(self._pause)
-                elif self._pause is False: 
+                elif self._pause is False and self._active: 
                     if event.key == pacman.pygame.K_LEFT:
                         self.character_instance.changespeed(-30, 0)
                     if event.key == pacman.pygame.K_RIGHT:
@@ -273,7 +281,7 @@ class _Player:
                         self.character_instance.changespeed(0, 30)
            
         
-            if event.type == pacman.pygame.KEYUP and self._pause is False: 
+            if event.type == pacman.pygame.KEYUP and self._pause is False and self._active: 
                 if event.key == pacman.pygame.K_LEFT:
                     self.character_instance.changespeed(30, 0)
                 if event.key == pacman.pygame.K_RIGHT:
@@ -282,7 +290,7 @@ class _Player:
                     self.character_instance.changespeed(0, 30)
                 if event.key == pacman.pygame.K_DOWN:
                     self.character_instance.changespeed(0, -30)
-        if self._pause is False:
+        if self._pause is False and self._active:
             self.character_instance.update(
                 self._wall_list,
                 self._gate_list
@@ -354,11 +362,15 @@ class _Ghost:
         return 0
     def reaction_function_3(self, playerpause):
         
-        self._pause = playerpause.value
+        # if controllerpause.is_present:
+        #     self._pause = controllerpause.value
+        if playerpause.is_present:
+            self._pause = playerpause.value
             
         return 0
     def reaction_function_4(self, tick, sprite):
         
+        print(self.turn, self.steps, self.image)
         if self._pause is False:
             returned = self.character_instance.changespeed(
                 self.directions,
@@ -400,6 +412,7 @@ class _Display:
         self._clock = None
         self._static_sprites = pacman.pygame.sprite.RenderPlain()
         self._top_corner_text = None
+        self._active = True
     @property
     def num_moving_sprites(self):
         return self._num_moving_sprites # pylint: disable=no-member
@@ -454,23 +467,26 @@ class _Display:
         return 0
     def reaction_function_3(self, static_sprites):
         
+        # if self._active:
         for sprite in static_sprites:
             if sprite.is_present and isinstance(sprite.value, pacman.pygame.sprite.Group):
                 self._static_sprites.add(sprite.value.sprites())
             elif isinstance(sprite.value, pacman.pygame.sprite.Sprite):
                 self._static_sprites.add(sprite.value)
-        
+            
         self._static_sprites.draw(self._screen)
             
         return 0
     def reaction_function_4(self, score):
         
+        #if self._active:
         self._top_corner_text=self._font.render("Score: "+str(score.value), True, pacman.red)
         self._screen.blit(self._top_corner_text, [10, 10])
             
         return 0
     def reaction_function_5(self, moving_sprites):
         
+        #if self._active:
         self._screen.fill(pacman.black)
         sprite_list = pacman.pygame.sprite.RenderPlain()
         for sprite in moving_sprites:
@@ -478,7 +494,7 @@ class _Display:
                 sprite.value.draw(self._screen)
             elif isinstance(sprite.value, pacman.pygame.sprite.Sprite):
                 sprite_list.add(sprite.value)
-        
+            
         sprite_list.draw(self._screen)
         self._static_sprites.draw(self._screen)
         self._screen.blit(self._top_corner_text, [10, 10])
@@ -486,32 +502,28 @@ class _Display:
         return 0
     def reaction_function_6(self, game_over):
         
+        #self._active = False
+            
+        return 0
+    def reaction_function_7(self, game_over):
+        
         #Grey background
-        if game_over.is_present:
-            w = pacman.pygame.Surface((400,200))  # the size of your rect
-            w.set_alpha(10)                # alpha level
-            w.fill((128,128,128))           # this fills the entire surface
-            self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
+        print("The display is ", self._active)
+        w = pacman.pygame.Surface((400,200))  # the size of your rect
+        w.set_alpha(10)                # alpha level
+        w.fill((128,128,128))           # this fills the entire surface
+        self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
         
-            #Won or lost
-            text1=self._font.render(game_over.value, True, pacman.white)
-            self._screen.blit(text1, [235, 233])
+        #Won or lost
+        text1=self._font.render(game_over.value, True, pacman.white)
+        self._screen.blit(text1, [235, 233])
         
-            text2=self._font.render("To play again, press ENTER.", True, pacman.white)
-            self._screen.blit(text2, [135, 303])
-            text3=self._font.render("To quit, press ESCAPE.", True, pacman.white)
-            self._screen.blit(text3, [165, 333])
-                
-            for event in pacman.pygame.event.get():
-                if event == pacman.pygame.KEYDOWN:
-                    if event == pacman.pygame.K_RETURN:
-                        print("Not yet implemented, please escape")
-                        
-                    if event == pacman.pygame.K_ESCAPE:
-                        print(1)
-                        request_stop()
+        text2=font.render("To play again, press ENTER.", True, white)
+        screen.blit(text2, [135, 303])
+        text3=font.render("To quit, press ESCAPE.", True, white)
+        screen.blit(text3, [165, 333])
         
-            pacman.pygame.display.flip()
+        pacman.pygame.display.flip()
             
         return 0
 

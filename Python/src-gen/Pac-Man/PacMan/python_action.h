@@ -55,7 +55,7 @@ typedef struct {
     bool is_present;
     bool has_value;
     lf_token_t* token;
-    FEDERATED_GENERIC_EXTENSION
+    FEDERATED_CAPSULE_EXTENSION
 } generic_action_instance_struct;
 
 /**
