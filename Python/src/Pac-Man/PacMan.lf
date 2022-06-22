@@ -308,7 +308,6 @@ reactor GameController(number_of_ghosts(4)) {
 
     reaction(pacman_sprite) -> score, game_over {=
         blocks_hit_list = pacman.pygame.sprite.spritecollide(self._pacman_sprite, self._block_list, True)
-    
         # Check the list of collisions.
         if len(blocks_hit_list) > 0:
             self._score +=len(blocks_hit_list)

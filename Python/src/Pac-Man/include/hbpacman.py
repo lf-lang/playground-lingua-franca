@@ -232,6 +232,10 @@ class Ghost(Player):
             self.rect.left = i_w
         elif name == "Blinky":
             self.rect.top = b_h
+            
+    def moveoffgrid(self):
+        self.rect.left = 1000
+        self.rect.top = 1000
     # def resetdir(self, name):
     #     if name == "Pinky":
     #

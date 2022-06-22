@@ -252,7 +252,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 
     reaction(startup) -> icon_name {=
         dirname = os.path.dirname(__file__)
-        icon_name.set(os.path.join(dirname, self.image))
+        icon_name.set(os.path.join(dirname, "images/" + self.name + ".png"))
     =}
 
     reaction(icon) -> sprite {=
@@ -279,23 +279,17 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     state _active(True)
     
     input game_over
-//    logical action ending
+    input frenzy
     output playerpause
     output restart
     
     state _speed(30)
-    state _boosted(False)
+    state _frenzy(False)
     
-    
-//    
-//    reaction(ending) {=
-//        print(1)
-//    =}
 
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input icon
-    #input controllerpause # from controller to pause at end
 
     output sprite
     output icon_name
@@ -337,12 +331,6 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
                     self._pause = False
                     self._active = True
                     print(self.character_instance.rect.left)
-                if event.key == pacman.pygame.K_b and self._boosted == False:
-                    self._speed += 15
-                    self._boosted = True
-                elif event.key == pacman.pygame.K_b and self._boosted == True:
-                    self._speed -= 15
-                    self._boosted = False
                     
                 if event.key == pacman.pygame.K_SPACE and self._active:
                     if self._pause is False:
@@ -350,10 +338,6 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
                     else:
                         self._pause = False
                     print(self._pause)
-                elif event.key == pacman.pygame.K_SPACE and not self._active:
-                    #self.character_instance.resetpos()
-                    #restart.set(True)
-                    print("do not remove comments")
                 elif self._pause is False: 
                     if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
                         self.character_instance.changespeed(self._speed * -1, 0)
@@ -392,6 +376,9 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 #        ending.schedule(MSEC(500))
     =}
     
+    reaction(frenzy) {=
+        self._frenzy = frenzy.value
+    =}
 }
 
 ## Ghosts
@@ -401,11 +388,17 @@ reactor Ghost (directions({=()=}), name("Stinky")) extends BaseCharacter {
     input playerpause # pause from player
     input game_over
     input restart
+    input frenzy
     
     state turn(0)
     state steps(0)
     state _active(True)
     state _resetting(False)
+    state _frenzy(False)
+    
+    #reaction(startup) {=
+     #   self.image = "images/pacman.png"
+    #=}
     
     reaction(playerpause) {=
        # if controllerpause.is_present:
@@ -456,6 +449,10 @@ reactor Ghost (directions({=()=}), name("Stinky")) extends BaseCharacter {
         self.character_instance.resetpos(self.name)
     =}
     
+    reaction(frenzy) {=
+        self._frenzy = frenzy.value
+    =}
+    
 }
 
 #### Controller
@@ -473,6 +470,8 @@ reactor GameController(number_of_ghosts(4)) {
     input tick # The game tick
     input restart
     
+    logical action end_frenzy
+    
     state _wall_list 
     state _gate 
     state _block_list({=pacman.pygame.sprite.RenderPlain()=}) 
@@ -482,6 +481,7 @@ reactor GameController(number_of_ghosts(4)) {
     state _pacman_collide({=pacman.pygame.sprite.RenderPlain()=})
     state _energizer_list({=pacman.pygame.sprite.RenderPlain()=})
     state _energizer_indices({=[0, 0]=})
+    state _frenzy(False)
    # state _controllerpause({=False=}) #not necessary
    
    # initial mode One {
@@ -536,14 +536,13 @@ reactor GameController(number_of_ghosts(4)) {
             print(self._score_to_win)
         =}
     
-        reaction(pacman_sprite) -> score, game_over, frenzy {=
+        reaction(pacman_sprite) -> score, game_over, frenzy, end_frenzy {=
             blocks_hit_list = pacman.pygame.sprite.spritecollide(self._pacman_sprite, self._block_list, True)
             energizer_hit_list = pacman.pygame.sprite.RenderPlain()
             #FIXME: can also make this more efficient
             for block in blocks_hit_list:
                 if block.rect.width == 10:
                     energizer_hit_list.add(block)
-                    print(len(energizer_hit_list))
                     
             # Check the list of collisions.
             if len(blocks_hit_list) > 0:
@@ -557,9 +556,12 @@ reactor GameController(number_of_ghosts(4)) {
                 #pause isntead of stop game
                 #controllerpause.set(True)
                 #request_stop() #remove once above finished
-            elif len(energizer_hit_list) >= 1:
-                print("frenzy time")
-                frenzy.set(True)
+            elif len(energizer_hit_list) > 0:
+                self._frenzy = True
+                print(self._frenzy)
+                frenzy.set(self._frenzy)
+                delay = randint(3, 7)
+                end_frenzy.schedule(SEC(delay))
         
             score.set(self._score)
         =}
@@ -573,15 +575,11 @@ reactor GameController(number_of_ghosts(4)) {
             
             monsta_hit_list = pacman.pygame.sprite.spritecollide(self._pacman_sprite, monsta_list, False)
     
-            if monsta_hit_list:
+            if monsta_hit_list and not self._frenzy:
                 game_over.set("Lost!")
-                #print("Lost")
-                #pyautogui.keyDown(' ')
-                #print("Lost")
-                #self._controllerpause = True
-                #Pause the game instead of stopping it
-                #controllerpause.set(True)
-                #request_stop() #remove once above finished
+            elif monsta_hit_list and self._frenzy:
+                for monsta in monsta_hit_list:
+                    monsta.moveoffgrid()
     
         =}
     
@@ -620,7 +618,14 @@ reactor GameController(number_of_ghosts(4)) {
                         self._block_list.add(block)
                 self._score_to_win = len(self._block_list)
                 print(self._energizer_list)
+                self._frenzy = False
                 self._score = 0
+        =}
+        
+        reaction(end_frenzy) -> frenzy {=
+            self._frenzy = False
+            print(self._frenzy, " and times up")
+            frenzy.set(self._frenzy)
         =}
         
         reaction(shutdown) {=
@@ -641,11 +646,11 @@ main reactor {
     ghosts = new[4] Ghost(
         width  = {= ghost_specs[bank_index]["width"] =}, 
         height = {= ghost_specs[bank_index]["height"] =}, 
-        image  = {= ghost_specs[bank_index]["image"] =},
         directions = {= ghost_specs[bank_index]["directions"] =},   
         name = {= ghost_specs[bank_index]["name"] =},
         character_class = ({=pacman.Ghost=})
     )
+    # image  = {= ghost_specs[bank_index]["image"] =}
 
     ### View
     display = new Display( num_moving_sprites = 6, num_static_sprites = 2 )
@@ -686,8 +691,9 @@ main reactor {
     #sending game_over to player causes problem
     (controller.game_over)+ -> display.game_over, player.game_over, ghosts.game_over
     
-    
     (player.restart)+ -> controller.restart, display.restart, ghosts.restart
+    
+    (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
     
 }
  
