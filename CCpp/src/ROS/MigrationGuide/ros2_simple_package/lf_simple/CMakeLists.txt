@@ -22,30 +22,16 @@ find_package(std_msgs REQUIRED)
 
 include_directories(include)
 
-add_library(talker src/publisher_member_function.cpp)
+add_executable(talker src/publisher_member_function.cpp)
 ament_target_dependencies(talker rclcpp std_msgs)
 
-add_library(listener src/subscriber_member_function.cpp)
+add_executable(listener src/subscriber_member_function.cpp)
 ament_target_dependencies(listener rclcpp std_msgs)
 
-
-ament_export_targets(export_targets HAS_LIBRARY_TARGET)
-ament_export_dependencies(rclcpp std_msgs)
-
-install(
-  DIRECTORY include/
-  DESTINATION include
-)
-
-install(
-  TARGETS talker listener
-  EXPORT export_targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include
-)
-
+install(TARGETS
+  talker
+  listener
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

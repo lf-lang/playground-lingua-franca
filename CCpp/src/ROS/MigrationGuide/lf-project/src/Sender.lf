@@ -1,13 +1,10 @@
 // src/Sender.lf
 target CCpp {
-cmake-include: "include/composition.cmake"
+    cmake-include: "include/composition.cmake"
 };
 
 preamble {=
-    #include <memory>
-    #include "publisher_member_function.cpp"
-    #include "rclcpp/rclcpp.hpp"
-    #include "std_msgs/msg/string.hpp"
+    #include "publisher_member_function.h"
 =}
 
 reactor Sender {
@@ -25,6 +22,7 @@ reactor Sender {
     =}
 
     reaction(t) -> out {=
+        lf_print("[LF sender] Send message");
         auto message = std::make_shared<std_msgs::msg::String>();
         message->data = "Hello, world! " + std::to_string(self->count++);
         lf_set(out, message);

@@ -15,3 +15,11 @@ void MinimalPublisher::timer_callback()
   RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
   publisher_->publish(message);
 }
+
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<MinimalPublisher>());
+  rclcpp::shutdown();
+  return 0;
+}

@@ -1,13 +1,10 @@
 // src/Receiver.lf
 target CCpp {
-cmake-include: "include/composition.cmake"
+    cmake-include: "include/composition.cmake"
 };
 
 preamble {=
-    #include <memory>
-    #include "subscriber_member_function.cpp"
-    #include "rclcpp/rclcpp.hpp"
-    #include "std_msgs/msg/string.hpp"
+    #include "subscriber_member_function.h"
 =}
 
 reactor Receiver {
@@ -23,7 +20,8 @@ reactor Receiver {
     =}
 
     reaction(in) {=
-        lf_print("Received %s", in->value->data.c_str());
+
+        lf_print("[LF receiver] Received %s", in->value->data.c_str());
         self->subscriber_node->topic_callback(in->value);
     =}
 
