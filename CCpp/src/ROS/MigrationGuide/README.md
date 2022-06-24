@@ -30,26 +30,55 @@ Make sure that RTI has installed succesfully by running `which RTI`
 
 Follow the instructions on ROS2 website.
 
-## Build Instructions 
-
-### Change Directory
+## Change Directory
 
 ```
 git clone https://github.com/lf-lang/examples-lingua-franca.git
 cd examples-lingua-franca/CCpp/src/ROS/MigrationGuide
 ```
 If you have already cloned the repository, only changing directory to `MigrationGuide` is required.
-### Build ROS2 Package 
 
+
+## Modify the Executable to Library 
+**NOTE** : This step has been completed if cloned from the repo
+1. Open CMakeList.txt under the ROS package
+2. Modify all add_executable to add_library
 ```
-source [path/to/ros2/environment]
-cd lf_simple_package && colcon build
+ add_executable(talker src/publisher_member_function.cpp)
+ -> add_library(talker src/publisher_member_function.cpp)
+```
+```
+ add_executable(listener src/subscriber_member_function.cpp)
+ -> add_library(listener src/subscriber_member_function.cpp)
+```
+3. Replace the orignial install commands with the code below 
+```
+install(TARGETS
+  talker
+  listener
+  DESTINATION lib/${PROJECT_NAME})
+```
+```
+ament_export_targets(export_targets HAS_LIBRARY_TARGET)
+ament_export_dependencies(rclcpp std_msgs) #add all dependecies here
+
+install(
+  DIRECTORY include/
+  DESTINATION include
+)
+
+install(
+  TARGETS talker listener
+  EXPORT export_targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
+)
 ```
 
-> **INFO** After ROS2 package is built successfully, we need to delete the `int main()` function in both publisher and subscriber files. Having the main functions in `publisher_member_function.cpp` and `subscriber_member_function.cpp` will lead to redefinition errors when we compile Lingua Franca code. 
-
-1. Open the file `lf_simple_package/lf_simple/src/publisher_member_function.cpp`
-2. Remove main function shown below:
+4. Open the file `lf_simple_package/lf_simple/src/publisher_member_function.cpp`
+5. Remove main function shown below:
 ```
 int main(int argc, char * argv[])
 {
@@ -60,8 +89,8 @@ int main(int argc, char * argv[])
 }
 ```
 
-3. Open the file `lf_simple_package/lf_simple/src/subscriber_member_function.cpp`
-4. Remove main function shown below:
+6. Open the file `lf_simple_package/lf_simple/src/subscriber_member_function.cpp`
+7. Remove main function shown below:
 ```
 int main(int argc, char * argv[])
 {
@@ -71,6 +100,15 @@ int main(int argc, char * argv[])
   return 0;
 }
 ```
+
+## Build Instructions 
+
+### Build ROS2 Library
+```
+source [path/to/ros2/environment]
+cd lf_simple_package && colcon build
+```
+
 ### Build Lingua Franca program
 
 ```
