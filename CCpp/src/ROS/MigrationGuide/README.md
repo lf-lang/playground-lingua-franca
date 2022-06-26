@@ -2,10 +2,8 @@
 The examples here are used in the [ROS 2 migration guide](https://www.lf-lang.org/docs/handbook/ros-migration-guide).
 
 There are two main components here:
-- `lf_simple` ROS 2 package, which is a generic ROS 2 C++ package that consists of a simple publisher and a simple subscriber.
-- `lf-project` Lingua Franca package, which represents the ported `lf_simple` ROS 2 package to Lingua Franca.
-
-To see how `lf_simple` has been ported to `lf-project`, refer to the [ROS 2 migration guide](https://www.lf-lang.org/docs/handbook/ros-migration-guide).
+- `lf_simple`, which is a generic ROS 2 C++ package that consists of a simple publisher and a simple subscriber.
+- `lf-project`, which is a Lingua Franca project that contains the ported version of `lf_simple` to Lingua Franca. To see how `lf_simple` has been ported to `lf-project`, refer to the [ROS 2 migration guide](https://www.lf-lang.org/docs/handbook/ros-migration-guide).
 
 To use the ported `lf-project` example, you would need to build the ROS 2 package in `ros2_simple_package/lf_simple`, make sure that the `lf_simple` ROS 2 package is properly sourced, and build the Lingua Franca program `lf_project/Main.lf`.
 
