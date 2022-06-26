@@ -1,34 +1,54 @@
-# Replace ROS2 Communication Channels with Lingua Franca
 
-## Prerequisites 
+The examples here are used in the [ROS 2 migration guide](https://www.lf-lang.org/docs/handbook/ros-migration-guide).
 
-### 1. install Lingua Franca lfc (command line compiler)
+There are two main components here:
+- `lf_simple` ROS 2 package, which is a generic ROS 2 C++ package that consists of a simple publisher and a simple subscriber.
+- `lf-project` Lingua Franca package, which represents the ported `lf_simple` ROS 2 package to Lingua Franca.
+
+To see how `lf_simple` has been ported to `lf-project`, refer to the [ROS 2 migration guide](https://www.lf-lang.org/docs/handbook/ros-migration-guide).
+
+To use the ported `lf-project` example, you would need to build the ROS 2 package in `ros2_simple_package/lf_simple`, make sure that the `lf_simple` ROS 2 package is properly sourced, and build the Lingua Franca program `lf_project/Main.lf`.
+
+## Building and Running the `lf_simple`
+
+1. Install [ROS 2](https://docs.ros.org/en/humble/Installation.html). Make sure that your environment is [configured](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html) for ROS 2.
+2. Use `colcon` to build `lf_simple`. For example, on Ubuntu, you could do so by:
+```bash
+cd `ros2_simple_package/lf_simple`
+colcon build
 ```
-git clone https://github.com/lf-lang/lingua-franca.git
-cd lingua-franca/
-./gradlew buildLfc
-cd bin
-pwd
+3. For the purposes of this tutorial, source the appropriate setup file for `lf_simple`. For example, for bash, use:
+```
+. install/setup.bash
 ```
 
-After lfc is built successfully, add the path to lfc shown from the last command to the environment. Reopen the terminal and enter `lfc --version` to make sure lfc is installed.
-
-### 2. install Linuga Franca RTI (runtime infrastructure)
-
+4. (Optional) You could verify that `lf_simple` is properly built and installed by running the nodes:
+```bash
+ros2 run lf_simple talker &
+ros2 run lf_simple listener
 ```
-cd .. #Going back to the lingua-franca repo folder
-git submodule update --init
-cd org.lflang/src/lib/c/reactor-c/core/federated/RTI
-mkdir build && cd build
-cmake ..
-make
-sudo make install
-```
-Make sure that RTI has installed succesfully by running `which RTI`
 
-### 3. install ROS2 foxy
+## Building and Running the `lf-project`
 
-Follow the instructions on ROS2 website.
+Next, we will provide detailed steps to 
+
+1. Install [lfc (Lingua Franca command-line compiler)](https://www.lf-lang.org/docs/handbook/command-line-tools)'s nightly build.
+
+   **Note:** After lfc is installed successfully, add the path to lfc to the environment. Reopen the terminal and enter `lfc --version` to make sure lfc is installed.
+
+2. Since the ported example utilizes the [federated execution](https://www.lf-lang.org/docs/handbook/distributed-execution), you would need to install the [RTI (Run-Time Infrastructure)](https://www.lf-lang.org/docs/handbook/distributed-execution#installation-of-the-rti).
+
+    Note: Make sure that the RTI is installed succesfully by running `which RTI`.
+
+3. Build `lf_project/src/Main.lf`:
+    ```bash
+    lfc lf_project/Main.lf
+    ```
+
+4. You can run the federated program by using the generated bash script in `lf_project/bin`:
+    ```bash
+    ./lf_project/bin/Main
+    ```
 
 ## Change Directory
 
