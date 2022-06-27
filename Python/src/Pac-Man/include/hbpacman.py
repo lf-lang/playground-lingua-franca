@@ -2,6 +2,7 @@
 #https://github.com/hbokmann/Pacman
   
 import pygame
+import AIPacSupport as ai
   
 black = (0,0,0)
 white = (255,255,255)
@@ -196,6 +197,15 @@ class Player(pygame.sprite.Sprite):
           if gate_hit:
             self.rect.left=old_x
             self.rect.top=old_y
+
+    def ai_eat(self, layout, ghosts, blocks):
+          path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
+          #TODO: make more efficient by saving previous moves
+          #change if not resetting speed
+          self.rect.left += path[0][0]
+          self.rect.top += path[0][1]
+
+
 
 #Inheritime Player klassist
 class Ghost(Player):

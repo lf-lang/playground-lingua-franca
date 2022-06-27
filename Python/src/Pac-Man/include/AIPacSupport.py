@@ -1,47 +1,37 @@
 ### File for AI Pac-Man moves 
-# -
-# Licensing Information:  You are free to use or extend these projects for
-# educational purposes provided that (1) you do not distribute or publish
-# solutions, (2) you retain this notice, and (3) you provide clear
-# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
-# Attribution Information: The Pacman AI projects were developed at UC Berkeley.
-# The core projects and autograders were primarily created by John DeNero
-# (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# Student side autograding was added by Brad Miller, Nick Hay, and
-# Pieter Abbeel (pabbeel@cs.berkeley.edu).
-#
-# Additional contributors: Benjamin Asch
+# Benjamin Asch
 
 import sys
 
 class Movefinders:
-
-    def closestpillpath(self, layout, ghosts, x, y, blocks):
+    #TODO: make so doesn't look in opposite direction of past move
+    def closestpillpath(layout, ghosts, x, y, blocks):
         paths = []
         def pathfinder(layout, ghosts, x, y, blocks, temp = []):
             oncurrpath = False
             for name, change in Movefinders.possiblepacmoves(layout, ghosts, x, y).items():
-                new_x = x + change[0]
-                new_y = y + change[1]
-                for block in blocks:
-                    x_condition = x >= block.rect.left - block.rect.width and x <= block.rect.left + block.rect.width
-                    y_condition = y >= block.rect.top - block.rect.width and y <= block.rect.bottom + block.rect.width
-                    if x_condition and y_condition:
-                        temp.append(name)
-                        paths.append(temp)
-                        oncurrpath = True
+                if len(temp) < 1 or change is not temp[len(temp) - 1]:
+                    new_x = x + change[0]
+                    new_y = y + change[1]
+                    for block in blocks:
+                        x_condition = x >= block.rect.left - block.rect.width and x <= block.rect.left + block.rect.width
+                        y_condition = y >= block.rect.top - block.rect.width and y <= block.rect.bottom + block.rect.width
+                        if x_condition and y_condition:
+                            temp.append(change)
+                            paths.append(temp)
+                            oncurrpath = True
+                            break
+                    if oncurrpath:
+                        oncurrpath = False
                         break
-                if oncurrpath:
-                    oncurrpath = False
-                    break
-                else:
-                    pathfinder(layout, ghosts, new_x, new_y, blocks, [*temp, name])
+                    else:
+                        pathfinder(layout, ghosts, new_x, new_y, blocks, [*temp, change])
         pathfinder(layout, ghosts, x, y, blocks)
         return min(paths, key=len)
 
-
-    def possiblepacmoves(self, layout, ghosts, x, y, cond=True):
+    #TODO: makemore efficient by changing wall list to save by section
+    # and only check nearby walls
+    def possiblepacmoves(layout, ghosts, x, y, cond=True):
             moves = {
                 "LEFT": [30, 0], 
                 "RIGHT": [-30, 0], 
@@ -74,10 +64,10 @@ class Movefinders:
                 else:
                     add = True
             return possible
-    
-    def closeghostdist(self, layout, ghosts, x, y):
+    #TODO: make more efficient by stopping once length of single path htis threshold
+    def closeghostdist(layout, ghosts, x, y):
         paths = []
-        def ghostfinder(layout, ghosts, x, y, blocks, temp = []):
+        def ghostfinder(layout, ghosts, x, y, temp = []):
             oncurrpath = False
             for name, change in Movefinders.possiblepacmoves(layout, ghosts, x, y, False).items():
                 new_x = x + change[0]
@@ -94,7 +84,7 @@ class Movefinders:
                     oncurrpath = False
                     break
                 else:
-                    ghostfinder(layout, ghosts, new_x, new_y, blocks, [*temp, name])
+                    ghostfinder(layout, ghosts, new_x, new_y, [*temp, name])
         ghostfinder(layout, ghosts, x, y)
         return min(map(len, paths))
         

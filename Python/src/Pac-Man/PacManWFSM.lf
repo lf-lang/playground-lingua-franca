@@ -289,6 +289,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     input[4] ghost_sprites
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
+    input block_list
     input icon
     
     state character_instance
@@ -308,11 +309,15 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     wall_list -> ticker.wall_list
     icon -> ticker.icon
     gate_list -> ticker.gate_list
-    frenzy -> ticker.frenzy
+    frenzy -> c2.frenzy
     game_over -> ticker.game_over
-    (ghost_sprites)+ -> c1.ghost_sprites, a1.ghost_sprites, a2.ghost_sprites, a3.ghost_sprites
-    ticker.result -> c1.tick
+    block_list -> a1.block_list
     ticker.sprite -> sprite
+    ticker.icon_name -> icon_name 
+    ticker.playerpause -> playerpause
+    ticker.restart -> restart
+    (ghost_sprites)+ -> ticker.ghost_sprites
+    ticker.result -> c1.tick
     (c1.result)+ -> a1.tick, c2.tick
     (c2.result)+ -> a3.tick, a2.tick
     a1.result -> ticker.eat_result
@@ -621,7 +626,7 @@ main reactor {
     
     player.sprite -> controller.pacman_sprite
  
-    ghosts.sprite -> controller.ghost_sprites
+    (ghosts.sprite)+ -> controller.ghost_sprites, player.ghost_sprites
     
     controller.score -> display.score
 
@@ -636,7 +641,9 @@ main reactor {
     
     (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
     
-    ghosts.sprite -> player.ghost_sprites
+    controller.block_list -> player.block_list
+    
+    #ghosts.sprite -> player.ghost_sprites
     
 }
  

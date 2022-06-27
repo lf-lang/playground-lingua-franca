@@ -8,27 +8,29 @@ target Python {
 
 preamble {=
     # must import some file for setup functions
-    from AIPacSupport import Movefinders
+    import AIPacSupport as ai
 =}
 
 ### Ticker Reactor
 reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
-    timer tick(0, 100msec)
+    timer ticker(0, 100msec)
     
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
+    input[4] ghost_sprites
     input icon
     input eat_result
     input avoid_result
     input chase_result
-    input frenzy
     input game_over
     
     state character_instance
     state _wall_list
     state _gate_list
+    state _pause(False)
+    state _active(True)
     
-    output[2] result
+    output[7] result
     output sprite
     output icon_name
     output playerpause
@@ -49,7 +51,7 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
         self._gate_list = gate_list.value
     =}
     
-    reaction(tick) -> playerpause, restart, sprite {=
+    reaction(ticker) -> playerpause, restart, sprite {=
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
@@ -72,58 +74,85 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
                         self._pause = False
         playerpause.set(self._pause)
         sprite.set(self.character_instance)
+        for i, port in enumerate(result):
+            if i == 0:
+                port.set(True)
+            elif i == 1:
+                port.set(self.character_instance)
+            elif i == 2:
+                port.set(self._wall_list)
+            elif ghost_sprites.is_present:
+                port.set(ghost_sprites[i - 3])
+
     =}
     
-    reaction(eat_result) {=
-        
+    reaction(eat_result, chase_result, avoid_result) {=
+        if self._pause is False:
+            if avoid_result.is_present:
+                self.character_instance = avoid_result.value
+            elif chase_result.is_present:
+                self.character_instance = chase_result.value
+            elif eat_result.is_present:
+                self.character_instance = eat_result.value
     =}
     
-    reaction(chase_result) {=
-        
-    =}
-    
-    reaction(avoid_result) {=
-        
-    =}
-    
-    reaction(frenzy) {=
-        self._frenzy = frenzy.value
+    reaction(game_over) {=
+        self._active = False
+        self._pause = True
+        self.character_instance.speedzero()
     =}
 }
 
 ### Ghost Close? Condition Reactor
 reactor Close {
-    input tick
-    input[4] ghost_sprites
-    state system
-    output result
+    input[7] tick
+    input wall_list
+    state layout
+    output[7] result
     
     reaction(tick) -> result {=
-        if ghost_sprites.is_present:
-            for ghost in ghost_sprites:
-            # not yet implemented
-                nsdist = ()
-        result.set(self._system)
+        all_present = True
+        #result_bool = True
+        ghost_list = []
+        for i, port in enumerate(tick):
+            if port.is_present:
+                if i >= 3:
+                    ghost_list.append(tick[i])
+            else:
+                all_present = False
+        if all_present and ai.closestghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top) > 4:
+            for i, port in enumerate(result):
+                if i == 0:
+                    port.set(False)
+                else:
+                    port.set(tick[i])
+        else:
+            result.set(tick)
     =}
     
 }
 
 ### Ghost Scared? Condition Reactor
 reactor Scared {
-    input tick
-    state system
-    output result
+    input[7] tick
+    input frenzy
+    state frenzy(False)
+    output[7] result
     
     reaction(tick) -> result {=
         
         result.set(self._system)
     =}
+
+    reaction(frenzy) {=
+        self._frenzy = frenzy.value
+    =}
+
 }
 
 ### Chase Ghost Action Reactor
 reactor Chase {
-    input tick
-    input[4] ghost_sprites
+    input[7] tick
     state system
     output result
     
@@ -136,9 +165,7 @@ reactor Chase {
 ### Avoid Ghost Action Reactor
 
 reactor Avoid {
-    input tick
-    input[4] ghost_sprites
-    state system
+    input[7] tick
     output result
     
     reaction(tick) -> result {=
@@ -150,16 +177,30 @@ reactor Avoid {
 ### Eat Pills Action Reactor
 
 reactor Eat {
-    input tick
-    input[4] ghost_sprites
-    state system
-    state character_instance
-    
+    input[7] tick
+    input block_list
+    state _block_list
+    state character_instance    
     output result
     
     reaction(tick) -> result {=
-        
-        result.set(self._system)
+        if tick[0].is_present and not tick[0].value:
+            all_present = True
+            ghost_list = []
+            for i, port in enumerate(tick):
+                if port.is_present:
+                    if i >= 3:
+                        ghost_list.append(tick[i])
+                else:
+                    all_present = False
+            if all_present:
+                self.character_instance = tick[1].value
+                self.character_instance.ai_eat(tick[2].value, ghost_list, self._block_list)
+                result.set(self.character_instance)
+    =}
+
+    reaction(block_list) {=
+        self._block_list = block_list.value
     =}
 }
 

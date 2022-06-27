@@ -316,7 +316,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
         self._gate_list = gate_list.value
     =}
     
-    reaction(pygame_event) -> sprite, playerpause, restart, test {=
+    reaction(pygame_event) -> sprite, playerpause, restart {=
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
@@ -695,8 +695,7 @@ main reactor {
     (player.restart)+ -> controller.restart, display.restart, ghosts.restart
     
     (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
-    
-    (player.test)+ -> ghosts.test
+
     
 }
  
