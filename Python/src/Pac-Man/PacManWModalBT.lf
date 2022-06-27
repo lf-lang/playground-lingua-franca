@@ -6,7 +6,7 @@
  * To run:
  * 1- lfc src/PacMan.lf
  * 2- Follow the instructions on the terminal.
- *
+ * S  
  * TODOs
  * 1- Add more comments.
  * 2- Show a win/lose screen instead of exiting.
@@ -280,6 +280,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     
     input game_over
     input frenzy
+    input[4] ghost_sprites
     output playerpause
     output restart
     
@@ -300,85 +301,140 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     state _pause({=False=})
     state _resetting(False)
     
-
-    reaction(startup) -> icon_name {=
-        dirname = os.path.dirname(__file__)
-        icon_name.set(os.path.join(dirname, self.image))
-    =}
-
-    reaction(icon) -> sprite {=
-        self.character_instance = self.character_class(self.width, self.height, icon.value)
-        sprite.set(self.character_instance)
-    =}
-
-    reaction(wall_list, gate_list) {=
-        self._wall_list = wall_list.value
-        self._gate_list = gate_list.value
-    =}
+    initial mode eat_pills {
+        reaction(startup) -> icon_name {=
+            dirname = os.path.dirname(__file__)
+            icon_name.set(os.path.join(dirname, self.image))
+        =}
     
-    reaction(pygame_event) -> sprite, playerpause, restart, test {=
-        keyboard_events = pacman.pygame.event.get()
-        for event in keyboard_events:
-            if event.type == pacman.pygame.QUIT:
-                request_stop()
-                
-            if event.type == pacman.pygame.KEYDOWN:
-                if event.key == pacman.pygame.K_ESCAPE:
+        reaction(icon) -> sprite {=
+            self.character_instance = self.character_class(self.width, self.height, icon.value)
+            sprite.set(self.character_instance)
+        =}
+    
+        reaction(wall_list, gate_list) {=
+            self._wall_list = wall_list.value
+            self._gate_list = gate_list.value
+        =}
+        
+        reaction(pygame_event) -> sprite, playerpause, restart, avoid_ghosts {=
+            keyboard_events = pacman.pygame.event.get()
+            for event in keyboard_events:
+                if event.type == pacman.pygame.QUIT:
                     request_stop()
-                if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
-                    restart.set(True)
-                    self.character_instance.resetpos()
-                    self._pause = False
-                    self._active = True
-                    print(self.character_instance.rect.left)
                     
-                if event.key == pacman.pygame.K_SPACE and self._active:
-                    if self._pause is False:
-                        self._pause = True
-                    else:
+                if event.type == pacman.pygame.KEYDOWN:
+                    if event.key == pacman.pygame.K_ESCAPE:
+                        request_stop()
+                    if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
+                        restart.set(True)
+                        self.character_instance.resetpos()
                         self._pause = False
-                    print(self._pause)
-                elif self._pause is False: 
-                    if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
-                        self.character_instance.changespeed(self._speed * -1, 0)
-                    if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
-                        self.character_instance.changespeed(self._speed, 0)
-                    if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
-                        self.character_instance.changespeed(0, self._speed * -1)
-                    if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
-                        self.character_instance.changespeed(0, self._speed)
-           
-            if event.type == pacman.pygame.KEYUP and self._pause is False: 
-                if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
-                    self.character_instance.changespeed(self._speed, 0)
-                if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
-                    self.character_instance.changespeed(self._speed * -1, 0)
-                if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
-                    self.character_instance.changespeed(0, self._speed)
-                if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
-                    self.character_instance.changespeed(0, self._speed * -1)
-                if event.key == pacman.pygame.K_b:
-                    self._speed -= 10
+                        self._active = True
+                        print(self.character_instance.rect.left)
+                        
+                    if event.key == pacman.pygame.K_SPACE and self._active:
+                        if self._pause is False:
+                            self._pause = True
+                        else:
+                            self._pause = False
+                        print(self._pause)
+                    elif self._pause is False: 
+                        if ghost_sprites.is_present:
+                        # must implement ghostclose and specify file
+                            if not ghostclose(ghost_sprites):
+                                print("Perform eat pills here")
+                            else:
+                                print("set avoid ghosts")
+                                avoid_ghosts.set()
+                        else:
+                            print("Perform eat pills here")
+            if self._pause is False:
+                self.character_instance.update(
+                    self._wall_list,
+                    self._gate_list
+                )
+            sprite.set(self.character_instance)
+            playerpause.set(self._pause)
+        =}
+        
+        reaction(game_over) {=
+            self._active = False
+            self._pause = True
+            self.character_instance.speedzero()
+        =}
+        
+        reaction(frenzy) {=
+            self._frenzy = frenzy.value
+        =}
+
+    } mode avoid_ghosts {
+        reaction(startup) -> icon_name {=
+            dirname = os.path.dirname(__file__)
+            icon_name.set(os.path.join(dirname, self.image))
+        =}
+    
+        reaction(icon) -> sprite {=
+            self.character_instance = self.character_class(self.width, self.height, icon.value)
+            sprite.set(self.character_instance)
+        =}
+    
+        reaction(wall_list, gate_list) {=
+            self._wall_list = wall_list.value
+            self._gate_list = gate_list.value
+        =}
+        
+        reaction(pygame_event) -> sprite, playerpause, restart {=
+            keyboard_events = pacman.pygame.event.get()
+            for event in keyboard_events:
+                if event.type == pacman.pygame.QUIT:
+                    request_stop()
                     
-        if self._pause is False:
-            self.character_instance.update(
-                self._wall_list,
-                self._gate_list
-            )
-        sprite.set(self.character_instance)
-        playerpause.set(self._pause)
-    =}
-    
-    reaction(game_over) {=
-        self._active = False
-        self._pause = True
-        self.character_instance.speedzero()
-#        ending.schedule(MSEC(500))
-    =}
-    
-    reaction(frenzy) {=
-        self._frenzy = frenzy.value
-    =}
+                if event.type == pacman.pygame.KEYDOWN:
+                    if event.key == pacman.pygame.K_ESCAPE:
+                        request_stop()
+                    if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
+                        restart.set(True)
+                        self.character_instance.resetpos()
+                        self._pause = False
+                        self._active = True
+                        print(self.character_instance.rect.left)
+                        
+                    if event.key == pacman.pygame.K_SPACE and self._active:
+                        if self._pause is False:
+                            self._pause = True
+                        else:
+                            self._pause = False
+                        print(self._pause)
+                    elif self._pause is False: 
+                        if ghost_sprites.is_present:
+                        # must implement ghostclose and specify file
+                            if not ghostclose(ghost_sprites):
+                                print("Perform eat pills here")
+                            else:
+                                print("set avoid ghosts")
+                               # eat_pills.set()
+                        else:
+                            print("Perform eat pills here")
+            if self._pause is False:
+                self.character_instance.update(
+                    self._wall_list,
+                    self._gate_list
+                )
+            sprite.set(self.character_instance)
+            playerpause.set(self._pause)
+        =}
+        
+        reaction(game_over) {=
+            self._active = False
+            self._pause = True
+            self.character_instance.speedzero()
+        =}
+        
+        reaction(frenzy) {=
+            self._frenzy = frenzy.value
+        =}
+    }
 }
 
 ## Ghosts
@@ -529,7 +585,6 @@ reactor GameController(number_of_ghosts(4)) {
                     # Add the block to the list of objects
                     self._block_list.add(block)
                     block_list.set(block) # Send it to be drawn
-                    
             # print("Finished drawing blocks")
             
             self._score_to_win = len(self._block_list)
@@ -681,7 +736,7 @@ main reactor {
     
     player.sprite -> controller.pacman_sprite
  
-    ghosts.sprite -> controller.ghost_sprites
+    (ghosts.sprite)+ -> controller.ghost_sprites, player.ghost_sprites
     
     controller.score -> display.score
 
@@ -695,8 +750,6 @@ main reactor {
     (player.restart)+ -> controller.restart, display.restart, ghosts.restart
     
     (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
-    
-    (player.test)+ -> ghosts.test
     
 }
  

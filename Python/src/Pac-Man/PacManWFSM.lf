@@ -29,9 +29,14 @@
  *
 **/
 target Python {
-    files: ["include/hbpacman.py", "include/images"]
+    files: ["include/hbpacman.py", "include/images", "include/AIPacSupport.py"]
 };
-
+import Close from "ContainedPlayer.lf"
+import Eat from "ContainedPlayer.lf"
+import Scared from "ContainedPlayer.lf"
+import Avoid from "ContainedPlayer.lf"
+import Chase from "ContainedPlayer.lf"
+import Ticker from "ContainedPlayer.lf"
 preamble {=
     import os
     import pyautogui
@@ -39,6 +44,8 @@ preamble {=
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
     import hbpacman as pacman
+    
+    #may need to import additional python files to support containedplayer
 
     # Construct a table of ghost characteristics to access
     # using the bank member as the index.
@@ -272,114 +279,47 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 
 }
 
+
 ## Player
 # Should be replacable with an AI
+#)
 reactor Player(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
-    timer pygame_event(0, 100 msec)
-    state _active(True)
-    
     input game_over
     input frenzy
-    output playerpause
-    output restart
-    
-    state _speed(30)
-    state _frenzy(False)
-    
-
+    input[4] ghost_sprites
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input icon
-
+    
+    state character_instance
+    
     output sprite
     output icon_name
-
-    state character_instance
-    state _wall_list
-    state _gate_list
-    state _pause({=False=})
-    state _resetting(False)
+    output playerpause
+    output restart
+     
+    ticker = new Ticker()
+    c1 = new Close()
+    a1 = new Eat()
+    c2 = new Scared()
+    a2 = new Avoid()
+    a3 = new Chase()
     
-
-    reaction(startup) -> icon_name {=
-        dirname = os.path.dirname(__file__)
-        icon_name.set(os.path.join(dirname, self.image))
-    =}
-
-    reaction(icon) -> sprite {=
-        self.character_instance = self.character_class(self.width, self.height, icon.value)
-        sprite.set(self.character_instance)
-    =}
-
-    reaction(wall_list, gate_list) {=
-        self._wall_list = wall_list.value
-        self._gate_list = gate_list.value
-    =}
-    
-    reaction(pygame_event) -> sprite, playerpause, restart, test {=
-        keyboard_events = pacman.pygame.event.get()
-        for event in keyboard_events:
-            if event.type == pacman.pygame.QUIT:
-                request_stop()
-                
-            if event.type == pacman.pygame.KEYDOWN:
-                if event.key == pacman.pygame.K_ESCAPE:
-                    request_stop()
-                if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
-                    restart.set(True)
-                    self.character_instance.resetpos()
-                    self._pause = False
-                    self._active = True
-                    print(self.character_instance.rect.left)
-                    
-                if event.key == pacman.pygame.K_SPACE and self._active:
-                    if self._pause is False:
-                        self._pause = True
-                    else:
-                        self._pause = False
-                    print(self._pause)
-                elif self._pause is False: 
-                    if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
-                        self.character_instance.changespeed(self._speed * -1, 0)
-                    if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
-                        self.character_instance.changespeed(self._speed, 0)
-                    if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
-                        self.character_instance.changespeed(0, self._speed * -1)
-                    if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
-                        self.character_instance.changespeed(0, self._speed)
-           
-            if event.type == pacman.pygame.KEYUP and self._pause is False: 
-                if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
-                    self.character_instance.changespeed(self._speed, 0)
-                if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
-                    self.character_instance.changespeed(self._speed * -1, 0)
-                if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
-                    self.character_instance.changespeed(0, self._speed)
-                if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
-                    self.character_instance.changespeed(0, self._speed * -1)
-                if event.key == pacman.pygame.K_b:
-                    self._speed -= 10
-                    
-        if self._pause is False:
-            self.character_instance.update(
-                self._wall_list,
-                self._gate_list
-            )
-        sprite.set(self.character_instance)
-        playerpause.set(self._pause)
-    =}
-    
-    reaction(game_over) {=
-        self._active = False
-        self._pause = True
-        self.character_instance.speedzero()
-#        ending.schedule(MSEC(500))
-    =}
-    
-    reaction(frenzy) {=
-        self._frenzy = frenzy.value
-    =}
-}
+    wall_list -> ticker.wall_list
+    icon -> ticker.icon
+    gate_list -> ticker.gate_list
+    frenzy -> ticker.frenzy
+    game_over -> ticker.game_over
+    (ghost_sprites)+ -> c1.ghost_sprites, a1.ghost_sprites, a2.ghost_sprites, a3.ghost_sprites
+    ticker.result -> c1.tick
+    ticker.sprite -> sprite
+    (c1.result)+ -> a1.tick, c2.tick
+    (c2.result)+ -> a3.tick, a2.tick
+    a1.result -> ticker.eat_result
+    a2.result -> ticker.chase_result
+    a3.result -> ticker.avoid_result
+        
+} 
 
 ## Ghosts
 # FIXME: Different Ghosts should have different personalities
@@ -529,7 +469,6 @@ reactor GameController(number_of_ghosts(4)) {
                     # Add the block to the list of objects
                     self._block_list.add(block)
                     block_list.set(block) # Send it to be drawn
-                    
             # print("Finished drawing blocks")
             
             self._score_to_win = len(self._block_list)
@@ -641,7 +580,8 @@ main reactor {
     controller = new GameController()
 
     ### Model(s)
-    player = new Player(width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/pacman.png")
+    player = new Player()
+    #width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/pacman.png"
     
     # Ghosts
     ghosts = new[4] Ghost(
@@ -696,7 +636,7 @@ main reactor {
     
     (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
     
-    (player.test)+ -> ghosts.test
+    ghosts.sprite -> player.ghost_sprites
     
 }
  

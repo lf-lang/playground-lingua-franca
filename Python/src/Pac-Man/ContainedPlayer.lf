@@ -1,0 +1,166 @@
+/* Reactors used for contained version of 
+ * player AI in PacManWFSM.lf
+ */
+
+target Python {
+    files: ["include/AIPacSupport.py"]
+};
+
+preamble {=
+    # must import some file for setup functions
+    from AIPacSupport import Movefinders
+=}
+
+### Ticker Reactor
+reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+    timer tick(0, 100msec)
+    
+    input wall_list # Receive updated wall list
+    input gate_list # Receive updated gate list
+    input icon
+    input eat_result
+    input avoid_result
+    input chase_result
+    input frenzy
+    input game_over
+    
+    state character_instance
+    state _wall_list
+    state _gate_list
+    
+    output[2] result
+    output sprite
+    output icon_name
+    output playerpause
+    output restart
+    
+    reaction(startup) -> icon_name {=
+        dirname = os.path.dirname(__file__)
+        icon_name.set(os.path.join(dirname, self.image))
+    =}
+
+    reaction(icon) -> sprite {=
+        self.character_instance = self.character_class(self.width, self.height, icon.value)
+        sprite.set(self.character_instance)
+    =}
+
+    reaction(wall_list, gate_list) {=
+        self._wall_list = wall_list.value
+        self._gate_list = gate_list.value
+    =}
+    
+    reaction(tick) -> playerpause, restart, sprite {=
+        keyboard_events = pacman.pygame.event.get()
+        for event in keyboard_events:
+            if event.type == pacman.pygame.QUIT:
+                request_stop()
+                
+            if event.type == pacman.pygame.KEYDOWN:
+                if event.key == pacman.pygame.K_ESCAPE:
+                    request_stop()
+                if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
+                    restart.set(True)
+                    self.character_instance.resetpos()
+                    self._pause = False
+                    self._active = True
+                    print(self.character_instance.rect.left)
+                    
+                if event.key == pacman.pygame.K_SPACE:
+                    if self._pause is False:
+                        self._pause = True
+                    else:
+                        self._pause = False
+        playerpause.set(self._pause)
+        sprite.set(self.character_instance)
+    =}
+    
+    reaction(eat_result) {=
+        
+    =}
+    
+    reaction(chase_result) {=
+        
+    =}
+    
+    reaction(avoid_result) {=
+        
+    =}
+    
+    reaction(frenzy) {=
+        self._frenzy = frenzy.value
+    =}
+}
+
+### Ghost Close? Condition Reactor
+reactor Close {
+    input tick
+    input[4] ghost_sprites
+    state system
+    output result
+    
+    reaction(tick) -> result {=
+        if ghost_sprites.is_present:
+            for ghost in ghost_sprites:
+            # not yet implemented
+                nsdist = ()
+        result.set(self._system)
+    =}
+    
+}
+
+### Ghost Scared? Condition Reactor
+reactor Scared {
+    input tick
+    state system
+    output result
+    
+    reaction(tick) -> result {=
+        
+        result.set(self._system)
+    =}
+}
+
+### Chase Ghost Action Reactor
+reactor Chase {
+    input tick
+    input[4] ghost_sprites
+    state system
+    output result
+    
+    reaction(tick) -> result {=
+        
+        result.set(self._system)
+    =}
+}
+
+### Avoid Ghost Action Reactor
+
+reactor Avoid {
+    input tick
+    input[4] ghost_sprites
+    state system
+    output result
+    
+    reaction(tick) -> result {=
+        
+        result.set(self._system)
+    =}
+}
+
+### Eat Pills Action Reactor
+
+reactor Eat {
+    input tick
+    input[4] ghost_sprites
+    state system
+    state character_instance
+    
+    output result
+    
+    reaction(tick) -> result {=
+        
+        result.set(self._system)
+    =}
+}
+
+
