@@ -10,7 +10,46 @@ blue = (0,0,255)
 green = (0,255,0)
 red = (255,0,0)
 purple = (255,0,255)
-yellow   = ( 255, 255,   0)
+yellow   = (255, 255, 0)
+walls = [ [0,0,6,600],
+              [0,0,600,6],
+              [0,600,606,6],
+              [600,0,6,606],
+              [300,0,6,66],
+              [60,60,186,6],
+              [360,60,186,6],
+              [60,120,66,6],
+              [60,120,6,126],
+              [180,120,246,6],
+              [300,120,6,66],
+              [480,120,66,6],
+              [540,120,6,126],
+              [120,180,126,6],
+              [120,180,6,126],
+              [360,180,126,6],
+              [480,180,6,126],
+              [180,240,6,126],
+              [180,360,246,6],
+              [420,240,6,126],
+              [240,240,42,6],
+              [324,240,42,6],
+              [240,240,6,66],
+              [240,300,126,6],
+              [360,240,6,66],
+              [0,300,66,6],
+              [540,300,66,6],
+              [60,360,66,6],
+              [60,360,6,186],
+              [480,360,66,6],
+              [540,360,6,186],
+              [120,420,366,6],
+              [120,420,6,66],
+              [480,420,6,66],
+              [180,480,246,6],
+              [300,480,6,66],
+              [120,540,126,6],
+              [360,540,126,6]
+            ]
 
 # This class represents the bar at the bottom that the player controls
 class Wall(pygame.sprite.Sprite):
@@ -197,13 +236,27 @@ class Player(pygame.sprite.Sprite):
           if gate_hit:
             self.rect.left=old_x
             self.rect.top=old_y
-
+    #TODO: consolidate the following into one func based on move
+    #save potential future moves
     def ai_eat(self, layout, ghosts, blocks):
-          path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
-          #TODO: make more efficient by saving previous moves
-          #change if not resetting speed
-          self.rect.left += path[0][0]
-          self.rect.top += path[0][1]
+        path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
+        #TODO: make more efficient by saving previous moves
+        #change if not resetting speed
+        self.rect.left += path[0][0]
+        self.rect.top += path[0][1]
+    
+    def ai_chase(self, layout, ghosts, threshold):
+        path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
+
+        self.rect.left += path[0][0]
+        self.rect.top += path[0][1]
+
+    def ai_avoid(self, layout, ghosts, threshold):
+        path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        #TODO: make better solution, take into account other ghosts
+        self.rect.left += path[0][0] * -1
+        self.rect.top += path[0][1] * -1
+          
 
 
 

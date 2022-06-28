@@ -3,12 +3,13 @@
  */
 
 target Python {
-    files: ["include/AIPacSupport.py"]
+    files: ["include/AIPacSupport.py", "include/hbpacman.py"]
 };
 
 preamble {=
     # must import some file for setup functions
     import AIPacSupport as ai
+    import hbpacman as pacman
 =}
 
 ### Ticker Reactor
@@ -23,13 +24,16 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
     input avoid_result
     input chase_result
     input game_over
+    input character
     
     state character_instance
     state _wall_list
     state _gate_list
+    state _ghosts({=[]=})
     state _pause(False)
     state _active(True)
-    
+    state _layout({=pacman.walls=})
+
     output[7] result
     output sprite
     output icon_name
@@ -51,7 +55,7 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
         self._gate_list = gate_list.value
     =}
     
-    reaction(ticker) -> playerpause, restart, sprite {=
+    reaction(ticker) -> playerpause, restart, sprite, result {=
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
@@ -74,18 +78,26 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
                         self._pause = False
         playerpause.set(self._pause)
         sprite.set(self.character_instance)
+
         for i, port in enumerate(result):
             if i == 0:
                 port.set(True)
             elif i == 1:
                 port.set(self.character_instance)
             elif i == 2:
-                port.set(self._wall_list)
-            elif ghost_sprites.is_present:
-                port.set(ghost_sprites[i - 3])
+                port.set(self._layout)
+            elif (i - 3) < len(self._ghosts):
+                port.set(self._ghosts[i - 3])
 
     =}
     
+    reaction(ghost_sprites) {=
+        self._ghosts = []
+        for ghost in ghost_sprites:
+            if ghost.is_present:
+                self._ghosts.append(ghost.value)
+    =}
+
     reaction(eat_result, chase_result, avoid_result) {=
         if self._pause is False:
             if avoid_result.is_present:
@@ -106,8 +118,6 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
 ### Ghost Close? Condition Reactor
 reactor Close {
     input[7] tick
-    input wall_list
-    state layout
     output[7] result
     
     reaction(tick) -> result {=
@@ -120,16 +130,18 @@ reactor Close {
                     ghost_list.append(tick[i])
             else:
                 all_present = False
-        if all_present and ai.closestghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top) > 4:
-            for i, port in enumerate(result):
-                if i == 0:
-                    port.set(False)
-                else:
-                    port.set(tick[i])
-        else:
-            result.set(tick)
+                break
+        if all_present:
+            if ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 4) > 4:
+                for i, port in enumerate(result):
+                    if i == 0:
+                        port.set(False)
+                    else:
+                        port.set(tick[i].value)
+            else:
+                result.set(tick)
     =}
-    
+
 }
 
 ### Ghost Scared? Condition Reactor
@@ -140,8 +152,22 @@ reactor Scared {
     output[7] result
     
     reaction(tick) -> result {=
-        
-        result.set(self._system)
+        all_present = True
+        for i, port in enumerate(tick):
+            if port.is_present:
+                continue
+            else:
+                all_present = False
+                break
+        if all_present and tick[0].value:
+            if self._frenzy:
+                result.set(tick)
+            else:
+                for i, port in enumerate(result):
+                    if i == 0:
+                        port.set(False)
+                    else:
+                        port.set(tick[i].value)
     =}
 
     reaction(frenzy) {=
@@ -153,12 +179,24 @@ reactor Scared {
 ### Chase Ghost Action Reactor
 reactor Chase {
     input[7] tick
-    state system
+    state character_instance
     output result
     
     reaction(tick) -> result {=
-        
-        result.set(self._system)
+        if tick[0].is_present and tick[0].value:
+            all_present = True
+            ghost_list = []
+            for i, port in enumerate(tick):
+                if port.is_present:
+                    if i >= 3:
+                        ghost_list.append(tick[i].value)
+                else:
+                    all_present = False
+                    break
+            if all_present:
+                self.character_instance = tick[1].value
+                self.character_instance.ai_chase(tick[2].value, ghost_list, 4)
+                result.set(self.character_instance)
     =}
 }
 
@@ -166,11 +204,24 @@ reactor Chase {
 
 reactor Avoid {
     input[7] tick
+    state character_instance
     output result
     
     reaction(tick) -> result {=
-        
-        result.set(self._system)
+        if tick[0].is_present and not tick[0].value:
+            all_present = True
+            ghost_list = []
+            for i, port in enumerate(tick):
+                if port.is_present:
+                    if i >= 3:
+                        ghost_list.append(tick[i].value)
+                else:
+                    all_present = False
+                    break
+            if all_present:
+                self.character_instance = tick[1].value
+                self.character_instance.ai_avoid(tick[2].value, ghost_list, 4)
+                result.set(self.character_instance)
     =}
 }
 
@@ -179,6 +230,7 @@ reactor Avoid {
 reactor Eat {
     input[7] tick
     input block_list
+    input sprite
     state _block_list
     state character_instance    
     output result
@@ -190,13 +242,20 @@ reactor Eat {
             for i, port in enumerate(tick):
                 if port.is_present:
                     if i >= 3:
-                        ghost_list.append(tick[i])
+                        ghost_list.append(tick[i].value)
                 else:
                     all_present = False
+                    break
             if all_present:
-                self.character_instance = tick[1].value
-                self.character_instance.ai_eat(tick[2].value, ghost_list, self._block_list)
+                print(self.character_instance.rect.left, "is the x")
+                self.character_instance.ai_eat(pacman.walls, ghost_list, self._block_list)
                 result.set(self.character_instance)
+    =}
+
+
+    reaction(sprite) {=
+        print("received sprite")
+        self.character_instance = sprite.value
     =}
 
     reaction(block_list) {=
