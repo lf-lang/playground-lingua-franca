@@ -132,7 +132,8 @@ reactor Close {
                 all_present = False
                 break
         if all_present:
-            if ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 4) > 4:
+            print(len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 7)), " is dist")
+            if len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 7)) > 6:
                 for i, port in enumerate(result):
                     if i == 0:
                         port.set(False)
@@ -160,6 +161,7 @@ reactor Scared {
                 all_present = False
                 break
         if all_present and tick[0].value:
+            print("testing scared")
             if self._frenzy:
                 result.set(tick)
             else:
@@ -195,7 +197,7 @@ reactor Chase {
                     break
             if all_present:
                 self.character_instance = tick[1].value
-                self.character_instance.ai_chase(tick[2].value, ghost_list, 4)
+                self.character_instance.ai_chase(tick[2].value, ghost_list, 7)
                 result.set(self.character_instance)
     =}
 }
@@ -220,7 +222,7 @@ reactor Avoid {
                     break
             if all_present:
                 self.character_instance = tick[1].value
-                self.character_instance.ai_avoid(tick[2].value, ghost_list, 4)
+                self.character_instance.ai_avoid(tick[2].value, ghost_list, 7)
                 result.set(self.character_instance)
     =}
 }
@@ -230,12 +232,18 @@ reactor Avoid {
 reactor Eat {
     input[7] tick
     input block_list
+    input wall_list
     input sprite
+    state _wall_list
     state _block_list
     state character_instance    
     output result
+
+    reaction(wall_list) {=
+        self._wall_list = wall_list.value
+    =}
     
-    reaction(tick) -> result {=
+    reaction(tick) block_list -> result {=
         if tick[0].is_present and not tick[0].value:
             all_present = True
             ghost_list = []
@@ -246,21 +254,27 @@ reactor Eat {
                 else:
                     all_present = False
                     break
-            if all_present:
-                print(self.character_instance.rect.left, "is the x")
+            if all_present and block_list.is_present:
+                path = ai.closestpillpath(pacman.walls, ghost_list, self.character_instance.rect.left, self.character_instance.rect.top, block_list.value)
                 self.character_instance.ai_eat(pacman.walls, ghost_list, self._block_list)
+                #self.character_instance.speedzero()
+                #print(self.character_instance.change_x, " change")
+                #print("move is ", path[0])
+                #self.character_instance.changespeed(path[0][0], path[0][1])
+                #self.character_instance.update(self._wall_list)
                 result.set(self.character_instance)
     =}
 
 
     reaction(sprite) {=
-        print("received sprite")
+        #print("received sprite")
         self.character_instance = sprite.value
     =}
 
     reaction(block_list) {=
         self._block_list = block_list.value
     =}
+    
 }
 
 

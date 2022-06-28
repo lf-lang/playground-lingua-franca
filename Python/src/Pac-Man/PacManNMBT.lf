@@ -306,7 +306,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     a2 = new Avoid()
     a3 = new Chase()
     
-    wall_list -> ticker.wall_list
+    (wall_list)+ -> ticker.wall_list, a1.wall_list
     icon -> ticker.icon
     gate_list -> ticker.gate_list
     frenzy -> c2.frenzy

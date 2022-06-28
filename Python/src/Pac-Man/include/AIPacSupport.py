@@ -3,6 +3,7 @@
 
 import sys
 import hbpacman as pacman
+from random import randint
 
 # class Movefinders:
     #TODO: make so doesn't look in opposite direction of past move
@@ -10,15 +11,18 @@ def closestpillpath(layout, ghosts, x, y, blocks):
     paths = []
     def pathfinder(layout, ghosts, x, y, blocks, temp = []):
         oncurrpath = False
-        if len(temp) < 10:
+        if len(temp) < 40:
             for name, change in possiblepacmoves(layout, ghosts, x, y).items():
                 if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
                     new_x = x + change[0]
                     new_y = y + change[1]
                     for block in blocks:
-                        x_condition = x >= block.rect.left - block.rect.width and x <= block.rect.left + block.rect.width
-                        y_condition = y >= block.rect.top - block.rect.width and y <= block.rect.bottom + block.rect.width
-                        if x_condition and y_condition:
+                        #print(abs(block.rect.left - x))
+                       # x_condition = x >= block.rect.left - block.rect.width - 15 and x <= block.rect.left + block.rect.width + 15
+                       # y_condition = y >= block.rect.top - block.rect.width - 15 and y <= block.rect.bottom + block.rect.width + 15
+                        #print(x_condition, y_condition)
+                        other_cond = x == block.rect.left and y == block.rect.top
+                        if other_cond:
                             temp.append(change)
                             paths.append(temp)
                             oncurrpath = True
@@ -31,8 +35,13 @@ def closestpillpath(layout, ghosts, x, y, blocks):
         else:
             paths.append(temp)
     pathfinder(layout, ghosts, x, y, blocks)
-    print(paths, " is paths")
-    return min(paths, key=len)
+    #print(paths, " is paths")
+    smallest = []
+    for path in paths:
+        if len(path) == min(map(len, paths)):
+            smallest.append(path)
+    return smallest[randint(0, len(smallest) - 1)]
+    #return paths[0]
 
     #TODO: makemore efficient by changing wall list to save by section
     # and only check nearby walls
@@ -47,17 +56,17 @@ def possiblepacmoves(layout, ghosts, x, y, cond=True):
         add = True
         for name, change in moves.items():
             for wall in layout:
-                print(wall)
+                #print(wall)
                 wall_left = wall[0]
                 wall_right = wall_left + wall[2]
                 wall_top = wall[1]
                 wall_bottom = wall_top + wall[3]
                 new_x = x + change[0]
                 new_y = y + change[1]
-                print(wall_top, wall_bottom, new_y)
+                #print(wall_top, wall_bottom, new_y)
                 condition_x = (new_x <= 0 and new_x >= 606) or (new_x >= wall_left - 12 and new_x <= wall_right + 12) 
                 condition_y = (new_y <= 0 and new_y >= 606) or (new_y >= wall_top - 12 and new_y <= wall_bottom + 12)
-                print(condition_x, condition_y)
+                #print(condition_x, condition_y)
                 if condition_x and condition_y:
                     add = False
                     break
@@ -71,7 +80,7 @@ def possiblepacmoves(layout, ghosts, x, y, cond=True):
                 possible.update({name : change})
             else:
                 add = True
-        print(possible, " is possible")
+        #print(possible, " is possible")
         return possible
 #TODO: make more efficient by stopping once length of single path htis threshold
 def closeghostdist(layout, ghosts, x, y, threshold):
@@ -84,8 +93,8 @@ def closeghostdist(layout, ghosts, x, y, threshold):
                     new_x = x + change[0]
                     new_y = y + change[1]
                     for ghost in ghosts:
-                        x_condition = x >= ghost.value.rect.left - 15 and x <= ghost.value.rect.left + 15
-                        y_condition = y >= ghost.value.rect.top - 15 and y <= ghost.value.rect.bottom + 15
+                        x_condition = x >= ghost.value.rect.left - 16 and x <= ghost.value.rect.left + 16
+                        y_condition = y >= ghost.value.rect.top - 16 and y <= ghost.value.rect.bottom + 16
                         if x_condition and y_condition:
                             temp.append(name)
                             paths.append(temp)
@@ -98,6 +107,9 @@ def closeghostdist(layout, ghosts, x, y, threshold):
                         ghostfinder(layout, ghosts, new_x, new_y, [*temp, name])
     ghostfinder(layout, ghosts, x, y)
     if len(paths) == 0:
-        return sys.maxsize
+        longest = []
+        for i in range(threshold + 1):
+            longest.append(i)
+        return longest
     return min(paths, key=len)
         

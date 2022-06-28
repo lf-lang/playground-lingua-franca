@@ -157,6 +157,8 @@ class Player(pygame.sprite.Sprite):
     # Set speed vector
     change_x=0
     change_y=0
+    last_move = [0, 0]
+    moves_made = 0
   
     # Constructor function
     def __init__(self,x,y, _image):
@@ -192,7 +194,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.left = w
         self.rect.top = p_h
     # Find a new position for the player
-    def update(self,walls,gate):
+    def update(self,walls,gate = None):
         # Get the old position, in case we need to go back to it
         
         old_x=self.rect.left
@@ -231,19 +233,30 @@ class Player(pygame.sprite.Sprite):
                 #     self.rect.left=old_x
                 #     print('b')
 
-        if gate != False:
-          gate_hit = pygame.sprite.spritecollide(self, gate, False)
-          if gate_hit:
-            self.rect.left=old_x
-            self.rect.top=old_y
+        # if gate != False:
+        #   gate_hit = pygame.sprite.spritecollide(self, gate, False)
+        #   if gate_hit:
+        #     self.rect.left=old_x
+        #     self.rect.top=old_y
     #TODO: consolidate the following into one func based on move
     #save potential future moves
     def ai_eat(self, layout, ghosts, blocks):
         path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
+        # is_last = True
+        # while is_last:
+        #       if path[0][0] * -1 == self.last_move[0] and path[0][1] * -1 == self.last_move[1]:
+        #             path = path[1:]
+        #       else:
+        #             is_last = False
         #TODO: make more efficient by saving previous moves
         #change if not resetting speed
+        #print(path[0][0])
+        #print(path[0][1])
+        print("last move was ", self.last_move)
+        print("move is ", path[0][1])
         self.rect.left += path[0][0]
         self.rect.top += path[0][1]
+        self.last_move = path[0]
     
     def ai_chase(self, layout, ghosts, threshold):
         path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
