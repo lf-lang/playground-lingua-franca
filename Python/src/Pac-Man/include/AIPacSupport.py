@@ -4,6 +4,7 @@
 import sys
 import hbpacman as pacman
 from random import randint
+from math import sqrt
 
 # class Movefinders:
     #TODO: make so doesn't look in opposite direction of past move
@@ -12,7 +13,7 @@ def closestpillpath(layout, ghosts, x, y, blocks):
     paths = []
     def pathfinder(layout, ghosts, x, y, blocks, temp = []):
         oncurrpath = False
-        if len(temp) < 15:
+        if len(temp) < 30:
             for name, change in possiblepacmoves(layout, ghosts, x, y).items():
                 if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
                     new_x = x + change[0]
@@ -115,3 +116,34 @@ def closeghostdist(layout, ghosts, x, y, threshold):
         return longest
     return min(paths, key=len)
         
+def closestghost(layout, ghosts, x, y, threshold):
+    paths = []
+    def ghostfinder(layout, ghosts, x, y, temp = []):
+        oncurrpath = False
+        if len(temp) <= threshold:
+            for name, change in possiblepacmoves(layout, ghosts, x, y, False).items():
+                if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
+                    new_x = x + change[0]
+                    new_y = y + change[1]
+                    for ghost in ghosts:
+                        x_condition = x >= ghost.rect.left - 16 and x <= ghost.rect.left + 16
+                        y_condition = y >= ghost.rect.top - 16 and y <= ghost.rect.bottom + 16
+                        if x_condition and y_condition:
+                            temp.append(change)
+                            paths.append([len(temp), ghost.rect.left, ghost.rect.top])
+                            oncurrpath = True
+                            break
+                    if oncurrpath:
+                        oncurrpath = False
+                        break
+                    else:
+                        ghostfinder(layout, ghosts, new_x, new_y, [*temp, change])
+    ghostfinder(layout, ghosts, x, y)
+    mini = [sys.maxsize, 0, 0]
+    for item in paths:
+        if item[0] < mini[0]:
+            mini = item
+    return mini
+
+def euclid_dist(x1, y1, x2, y2):
+    return sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))

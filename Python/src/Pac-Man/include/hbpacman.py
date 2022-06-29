@@ -4,6 +4,7 @@
 import pygame
 import AIPacSupport as ai
 from random import randint
+import sys
   
 black = (0,0,0)
 white = (255,255,255)
@@ -160,6 +161,7 @@ class Player(pygame.sprite.Sprite):
     change_y=0
     last_move = [0, 0]
     num_moves = 0
+    calcpathmove = 0
     next_moves = []
     eating = False
   
@@ -244,8 +246,10 @@ class Player(pygame.sprite.Sprite):
     #TODO: consolidate the following into one func based on move
     #save potential future moves
     def ai_eat(self, layout, ghosts, blocks, num_moves):
-        if len(self.next_moves) == 0 or num_moves is not self.num_moves:
+        if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
+          # or self.num_moves + 15 > self.calcpathmove:
           path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
+          self.calcpathmove = self.num_moves + 1
           self.rect.left += path[0][0]
           self.rect.top += path[0][1]
           self.last_move = path[0]
@@ -285,14 +289,32 @@ class Player(pygame.sprite.Sprite):
                 made_move = True
         #TODO: make so doesnt accidentally bring closer to ghost
         if not made_move:
-              random = randint(0, len(possible) - 1)
+              if path[0][0] == 0:
+                    if [30, 0] in list(possible.values()):
+                          self.rect.left += 30
+                    elif [-30, 0] in list(possible.values()):
+                          self.rect.left += -30
+              elif path[0][1] == 0:
+                    if [0, 30] in list(possible.values()):
+                          self.rect.top += 30
+                    elif [0, -30] in list(possible.values()):
+                          self.rect.top += -30
+              # closeghost = ai.closestghost(layout, ghosts, self.rect.left, self.rect.top, threshold)
+              # minimum = sys.maxsize
+              # move = [0, 0]
+              # for change in list(possible.values()):
+              #       if ai.euclid_dist(self.rect.left + change[0], self.rect.top + change[1], closeghost[1], closeghost[2]) < minimum:
+              #             move = change
+              # self.rect.left += move[0]
+              # self.rect.top += move[1]
+              # random = randint(0, len(possible) - 1)
               # for i, name, change in enumerate(possible.items()):
               #       if i == random:
               #             self.rect.left += change[0]
               #             self.rect.top += change[1]
-              change = list(possible.values())[random]
-              self.rect.left += change[0]
-              self.rect.top += change[1]
+              # change = list(possible.values())[random]
+              # self.rect.left += change[0]
+              # self.rect.top += change[1]
               # self.rect.left += possible.values()[random][0]
               # self.rect.top += possible.values()[random][1]
     
