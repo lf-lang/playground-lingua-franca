@@ -158,7 +158,9 @@ class Player(pygame.sprite.Sprite):
     change_x=0
     change_y=0
     last_move = [0, 0]
-    moves_made = 0
+    num_moves = 0
+    next_moves = []
+    eating = False
   
     # Constructor function
     def __init__(self,x,y, _image):
@@ -240,35 +242,47 @@ class Player(pygame.sprite.Sprite):
         #     self.rect.top=old_y
     #TODO: consolidate the following into one func based on move
     #save potential future moves
-    def ai_eat(self, layout, ghosts, blocks):
-        path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
-        # is_last = True
-        # while is_last:
-        #       if path[0][0] * -1 == self.last_move[0] and path[0][1] * -1 == self.last_move[1]:
-        #             path = path[1:]
-        #       else:
-        #             is_last = False
+    def ai_eat(self, layout, ghosts, blocks, num_moves):
+        if len(self.next_moves) == 0 or num_moves is not self.num_moves:
+          path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
+          self.rect.left += path[0][0]
+          self.rect.top += path[0][1]
+          self.last_move = path[0]
+          self.next_moves = path[1:]
+        else:
+          self.rect.left += self.next_moves[0][0]
+          self.rect.top += self.next_moves[0][1]
+          self.last_move = self.next_moves[0]
+          self.next_moves = self.next_moves[1:]
+        
+        num_moves += 1
         #TODO: make more efficient by saving previous moves
         #change if not resetting speed
         #print(path[0][0])
         #print(path[0][1])
-        print("last move was ", self.last_move)
-        print("move is ", path[0][1])
-        self.rect.left += path[0][0]
-        self.rect.top += path[0][1]
-        self.last_move = path[0]
+        #print("last move was ", self.last_move)
+        #print("move is ", path[0])
+        
+        #self.last_move = path[0]
     
     def ai_chase(self, layout, ghosts, threshold):
         path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
 
         self.rect.left += path[0][0]
         self.rect.top += path[0][1]
+        num_moves += 1
 
     def ai_avoid(self, layout, ghosts, threshold):
         path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
         #TODO: make better solution, take into account other ghosts
         self.rect.left += path[0][0] * -1
         self.rect.top += path[0][1] * -1
+        num_moves += 1
+
+    def stop_eating(self):
+          self.eating = False
+    def get_num_moves(self):
+          return self.num_moves
           
 
 
