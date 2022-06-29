@@ -127,7 +127,8 @@ reactor Close {
         for i, port in enumerate(tick):
             if port.is_present:
                 if i >= 3:
-                    ghost_list.append(tick[i])
+                    ghost_list.append(tick[i].value)
+                    #print(tick[i].value.rect.left)
             else:
                 all_present = False
                 break

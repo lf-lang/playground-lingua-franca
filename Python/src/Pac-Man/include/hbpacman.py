@@ -3,6 +3,7 @@
   
 import pygame
 import AIPacSupport as ai
+from random import randint
   
 black = (0,0,0)
 white = (255,255,255)
@@ -255,7 +256,7 @@ class Player(pygame.sprite.Sprite):
           self.last_move = self.next_moves[0]
           self.next_moves = self.next_moves[1:]
         
-        num_moves += 1
+        self.num_moves += 1
         #TODO: make more efficient by saving previous moves
         #change if not resetting speed
         #print(path[0][0])
@@ -270,14 +271,25 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.left += path[0][0]
         self.rect.top += path[0][1]
-        num_moves += 1
+        self.num_moves += 1
 
     def ai_avoid(self, layout, ghosts, threshold):
         path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
         #TODO: make better solution, take into account other ghosts
-        self.rect.left += path[0][0] * -1
-        self.rect.top += path[0][1] * -1
-        num_moves += 1
+        made_move = False
+        possible = ai.possiblepacmoves(layout, ghosts, self.rect.left, self.rect.top, False)
+        for name, change in possible.items():
+              if change == path[0]:
+                self.rect.left += path[0][0] * -1
+                self.rect.top += path[0][1] * -1
+                made_move = True
+        #TODO: make so doesnt accidentally bring closer to ghost
+        if not made_move:
+              random = randint(0, len(possible) - 1)
+              self.rect.left += possible.values()[random][0]
+              self.rect.top += possible.values()[random][1]
+    
+        self.num_moves += 1
 
     def stop_eating(self):
           self.eating = False
