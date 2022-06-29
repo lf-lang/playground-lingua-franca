@@ -7,11 +7,12 @@ from random import randint
 
 # class Movefinders:
     #TODO: make so doesn't look in opposite direction of past move
+    #TODO: add condition that tells whether or not should be reevaluated by pacman sprite
 def closestpillpath(layout, ghosts, x, y, blocks):
     paths = []
     def pathfinder(layout, ghosts, x, y, blocks, temp = []):
         oncurrpath = False
-        if len(temp) < 29:
+        if len(temp) < 15:
             for name, change in possiblepacmoves(layout, ghosts, x, y).items():
                 if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
                     new_x = x + change[0]

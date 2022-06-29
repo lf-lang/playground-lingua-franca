@@ -279,15 +279,22 @@ class Player(pygame.sprite.Sprite):
         made_move = False
         possible = ai.possiblepacmoves(layout, ghosts, self.rect.left, self.rect.top, False)
         for name, change in possible.items():
-              if change == path[0]:
+              if change[0] == path[0][0] * -1 and change[1] == path[0][1] * -1:
                 self.rect.left += path[0][0] * -1
                 self.rect.top += path[0][1] * -1
                 made_move = True
         #TODO: make so doesnt accidentally bring closer to ghost
         if not made_move:
               random = randint(0, len(possible) - 1)
-              self.rect.left += possible.values()[random][0]
-              self.rect.top += possible.values()[random][1]
+              # for i, name, change in enumerate(possible.items()):
+              #       if i == random:
+              #             self.rect.left += change[0]
+              #             self.rect.top += change[1]
+              change = list(possible.values())[random]
+              self.rect.left += change[0]
+              self.rect.top += change[1]
+              # self.rect.left += possible.values()[random][0]
+              # self.rect.top += possible.values()[random][1]
     
         self.num_moves += 1
 
