@@ -11,9 +11,10 @@ from math import sqrt
     #TODO: add condition that tells whether or not should be reevaluated by pacman sprite
 def closestpillpath(layout, ghosts, x, y, blocks):
     paths = []
-    def pathfinder(layout, ghosts, x, y, blocks, temp = []):
+    def pathfinder(layout, ghosts, x, y, blocks, temp = [], search_len = 25, add_anyways = False):
         oncurrpath = False
-        if len(temp) < 30:
+        #search_length = search_len
+        if len(temp) < search_len:
             for name, change in possiblepacmoves(layout, ghosts, x, y).items():
                 if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
                     new_x = x + change[0]
@@ -23,7 +24,7 @@ def closestpillpath(layout, ghosts, x, y, blocks):
                        # x_condition = x >= block.rect.left - block.rect.width - 15 and x <= block.rect.left + block.rect.width + 15
                        # y_condition = y >= block.rect.top - block.rect.width - 15 and y <= block.rect.bottom + block.rect.width + 15
                         #print(x_condition, y_condition)
-                        other_cond = x + 16 == block.rect.left and y + 16 == block.rect.top
+                        other_cond = x + 16 >= block.rect.left - block.rect.width and x + 16 <= block.rect.left + block.rect.width and y + 16 >= block.rect.top - block.rect.height and y + 16 <= block.rect.top + block.rect.height
                         if other_cond:
                             temp.append(change)
                             paths.append(temp)
@@ -33,17 +34,31 @@ def closestpillpath(layout, ghosts, x, y, blocks):
                         oncurrpath = False
                         break
                     else:
-                        pathfinder(layout, ghosts, new_x, new_y, blocks, [*temp, change])
-        else:
+                        pathfinder(layout, ghosts, new_x, new_y, blocks, [*temp, change], search_len, add_anyways)
+        elif add_anyways:
+            #print("added anyways")
             paths.append(temp)
     pathfinder(layout, ghosts, x, y, blocks)
     #print(paths, " is paths")
-    smallest = []
-    for path in paths:
-        if len(path) == min(map(len, paths)):
-            smallest.append(path)
-    return smallest[randint(0, len(smallest) - 1)]
-    #return paths[0]
+    #print("this is paths")
+    if len(paths) > 0:
+        smallest = []
+        for path in paths:
+            if len(path) == min(map(len, paths)):
+                smallest.append(path)
+        return smallest[randint(0, len(smallest) - 1)]
+    else:
+        # minimum = sys.maxsize
+        # move = None
+        # for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+        #     if avg_block_dist(blocks, x + change[0], y + change[1]) < minimum:
+        #         move = [change]
+        #         minimum = avg_block_dist(blocks, x + change[0], y + change[1])
+        #         print("move is ", move)
+        #         print("minimum is ", minimum)
+        pathfinder(layout, ghosts, x, y, blocks, [], 5, True)
+        #print(paths)
+        return paths[0]
 
     #TODO: makemore efficient by changing wall list to save by section
     # and only check nearby walls
@@ -147,3 +162,10 @@ def closestghost(layout, ghosts, x, y, threshold):
 
 def euclid_dist(x1, y1, x2, y2):
     return sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
+
+def avg_block_dist(blocks, x, y):
+    num_blocks = len(blocks)
+    total = 0
+    for block in blocks:
+        total += euclid_dist(block.rect.left, block.rect.top, x, y)
+    return total / num_blocks
