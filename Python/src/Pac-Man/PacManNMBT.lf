@@ -279,11 +279,28 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 
 }
 
+reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+    input game_over
+    input frenzy
+    input[4] ghost_sprites
+    input wall_list # Receive updated wall list
+    input gate_list # Receive updated gate list
+    input block_list
+    input icon
+
+    state character_instance
+
+    output sprite
+    output icon_name
+    output playerpause
+    output restart
+
+}
 
 ## Player
 # Should be replacable with an AI
 #)
-reactor Player(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+reactor Player extends BasePlayer {
     input game_over
     input frenzy
     input[4] ghost_sprites

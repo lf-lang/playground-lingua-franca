@@ -272,9 +272,27 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 
 }
 
+reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+    input game_over
+    input frenzy
+    input[4] ghost_sprites
+    input wall_list # Receive updated wall list
+    input gate_list # Receive updated gate list
+    input block_list
+    input icon
+
+    state character_instance
+
+    output sprite
+    output icon_name
+    output playerpause
+    output restart
+
+}
+
 ## Player
 # Should be replacable with an AI
-reactor Player(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+reactor Player extends BasePlayer {
     timer pygame_event(0, 100 msec)
     state _active(True)
     
@@ -642,6 +660,7 @@ main reactor {
 
     ### Model(s)
     player = new Player(width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/pacman.png")
+    #width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/pacman.png"
     
     # Ghosts
     ghosts = new[4] Ghost(
@@ -681,7 +700,7 @@ main reactor {
     
     player.sprite -> controller.pacman_sprite
  
-    ghosts.sprite -> controller.ghost_sprites
+    (ghosts.sprite)+ -> controller.ghost_sprites, player.ghost_sprites
     
     controller.score -> display.score
 
@@ -695,7 +714,7 @@ main reactor {
     (player.restart)+ -> controller.restart, display.restart, ghosts.restart
     
     (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
-
     
+    controller.block_list -> player.block_list
 }
  

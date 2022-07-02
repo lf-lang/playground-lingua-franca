@@ -135,7 +135,7 @@ reactor Close {
                 break
         if all_present:
             #print(len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 7)), " is dist")
-            if len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 7)) > 6:
+            if len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 6)) > 5:
                 for i, port in enumerate(result):
                     if i == 0:
                         port.set(False)
