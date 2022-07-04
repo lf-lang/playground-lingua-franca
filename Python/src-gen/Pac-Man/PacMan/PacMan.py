@@ -9,6 +9,7 @@ from LinguaFrancaPacMan import (  # pylint: disable=no-name-in-module, import-er
     get_start_time, port_capsule, request_stop, schedule_copy,
     start
 )
+# pylint: disable=c-extension-no-member
 import LinguaFrancaPacMan as lf
 try:
     from LinguaFrancaBase.constants import BILLION, FOREVER, NEVER, instant_t, interval_t
@@ -33,7 +34,6 @@ import hbpacman as pacman
 
 # Python class for reactor PacMan
 class _PacMan:
-    
     # Constructor
     def __init__(self, **kwargs):
         # Define parameters and their default values
@@ -43,10 +43,8 @@ class _PacMan:
     @property
     def bank_index(self):
         return self._bank_index # pylint: disable=no-member
-    
 # Python class for reactor GameController
 class _GameController:
-    
     # Constructor
     def __init__(self, **kwargs):
         # Define parameters and their default values
@@ -69,7 +67,6 @@ class _GameController:
     def bank_index(self):
         return self._bank_index # pylint: disable=no-member
     def reaction_function_0(self, wall_list, gate):
-        
         _all_sprites_list = pacman.pygame.sprite.RenderPlain()
         self._wall_list = pacman.setupRoomOne(_all_sprites_list)
         self._gate = pacman.setupGate(_all_sprites_list)
@@ -80,14 +77,12 @@ class _GameController:
             
         return 0
     def reaction_function_1(self, pacman_sprite):
-        
         self._pacman_collide.empty()
         self._pacman_collide.add(pacman_sprite.value)
         self._pacman_sprite = pacman_sprite.value
             
         return 0
     def reaction_function_2(self, block_list):
-        
         # Draw the grid
         for row in range(19):
             for column in range(19):
@@ -116,7 +111,6 @@ class _GameController:
             
         return 0
     def reaction_function_3(self, pacman_sprite, score, game_over):
-        
         blocks_hit_list = pacman.pygame.sprite.spritecollide(self._pacman_sprite, self._block_list, True)
         # Check the list of collisions.
         if len(blocks_hit_list) > 0:
@@ -131,7 +125,6 @@ class _GameController:
             
         return 0
     def reaction_function_4(self, ghost_sprites, game_over):
-        
         # FIXME: Make this more efficient.
         monsta_list = pacman.pygame.sprite.RenderPlain()
         for ghost in ghost_sprites:
@@ -147,18 +140,15 @@ class _GameController:
             
         return 0
     def reaction_function_5(self, tick, block_list):
-        
         block_list.set(self._block_list)
             
         return 0
     def reaction_function_6(self):
-        
         pacman.pygame.quit()
             
         return 0
 # Python class for reactor Player
 class _Player:
-    
     # Constructor
     def __init__(self, **kwargs):
         # Define parameters and their default values
@@ -192,25 +182,21 @@ class _Player:
     def bank_index(self):
         return self._bank_index # pylint: disable=no-member
     def reaction_function_0(self, icon_name):
-        
         dirname = os.path.dirname(__file__)
         icon_name.set(os.path.join(dirname, self.image))
             
         return 0
     def reaction_function_1(self, icon, sprite):
-        
         self.character_instance = self.character_class(self.width, self.height, icon.value)
         sprite.set(self.character_instance)
             
         return 0
     def reaction_function_2(self, wall_list, gate_list):
-        
         self._wall_list = wall_list.value
         self._gate_list = gate_list.value
             
         return 0
     def reaction_function_3(self, sprite):
-        
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
@@ -244,7 +230,6 @@ class _Player:
         return 0
 # Python class for reactor Ghost
 class _Ghost:
-    
     # Constructor
     def __init__(self, **kwargs):
         # Define parameters and their default values
@@ -285,25 +270,21 @@ class _Ghost:
     def bank_index(self):
         return self._bank_index # pylint: disable=no-member
     def reaction_function_0(self, icon_name):
-        
         dirname = os.path.dirname(__file__)
         icon_name.set(os.path.join(dirname, self.image))
             
         return 0
     def reaction_function_1(self, icon, sprite):
-        
         self.character_instance = self.character_class(self.width, self.height, icon.value)
         sprite.set(self.character_instance)
             
         return 0
     def reaction_function_2(self, wall_list, gate_list):
-        
         self._wall_list = wall_list.value
         self._gate_list = gate_list.value
             
         return 0
     def reaction_function_3(self, tick, sprite):
-        
         returned = self.character_instance.changespeed(
             self.directions,
             False,
@@ -327,12 +308,8 @@ class _Ghost:
         sprite.set(self.character_instance)
             
         return 0
-
-
-
 # Python class for reactor Display
 class _Display:
-    
     # Constructor
     def __init__(self, **kwargs):
         # Define parameters and their default values
@@ -363,7 +340,6 @@ class _Display:
     def bank_index(self):
         return self._bank_index # pylint: disable=no-member
     def reaction_function_0(self):
-        
         dirname = os.path.dirname(__file__)
         pacman_icon=pacman.pygame.image.load(os.path.join(dirname, self.nav_icon))
         pacman.pygame.display.set_icon(pacman_icon)
@@ -386,21 +362,18 @@ class _Display:
             
         return 0
     def reaction_function_1(self, icon_name, icon):
-        
         for (idx, name) in enumerate(icon_name):
             if name.is_present:
                 icon[idx].set(pacman.pygame.image.load(name.value).convert())
             
         return 0
     def reaction_function_2(self, tick):
-        
         pacman.pygame.display.flip()
         self._clock.tick()
         tick.set(True)
             
         return 0
     def reaction_function_3(self, static_sprites):
-        
         for sprite in static_sprites:
             if sprite.is_present and isinstance(sprite.value, pacman.pygame.sprite.Group):
                 self._static_sprites.add(sprite.value.sprites())
@@ -411,13 +384,11 @@ class _Display:
             
         return 0
     def reaction_function_4(self, score):
-        
         self._top_corner_text=self._font.render("Score: "+str(score.value), True, pacman.red)
         self._screen.blit(self._top_corner_text, [10, 10])
             
         return 0
     def reaction_function_5(self, moving_sprites):
-        
         self._screen.fill(pacman.black)
         sprite_list = pacman.pygame.sprite.RenderPlain()
         
@@ -433,7 +404,6 @@ class _Display:
             
         return 0
     def reaction_function_6(self, game_over):
-        
         #Grey background
         w = pacman.pygame.Surface((400,200))  # the size of your rect
         w.set_alpha(10)                # alpha level

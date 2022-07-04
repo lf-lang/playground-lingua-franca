@@ -439,10 +439,10 @@ typedef struct trigger_t trigger_t;
 /**
  * Global STP offset uniformly applied to advancement of each 
  * time step in federated execution. This can be retrieved in 
- * user code by calling get_stp_offset() and adjusted by 
- * calling set_stp_offset(interval_t offset).
+ * user code by calling lf_get_stp_offset() and adjusted by 
+ * calling lf_set_stp_offset(interval_t offset).
  */
-extern interval_t _lf_global_time_STP_offset;
+extern interval_t _lf_fed_STA_offset;
 
 /**
  * Token type for dynamically allocated arrays and structs sent as messages.
@@ -638,19 +638,10 @@ typedef struct self_base_t {
 //  ======== Function Declarations ========  //
 
 /**
- * Return the time of the start of execution in nanoseconds.
- * This is both the starting physical and starting logical time.
- * On many platforms, this is the number of nanoseconds
- * since January 1, 1970, but it is actually platform dependent.
- * @return A time instant.
- */
-instant_t get_start_time(void);
-
-/**
  * Return the global STP offset on advancement of logical
  * time for federated execution.
  */
-interval_t get_stp_offset(void);
+interval_t lf_get_stp_offset(void);
 
 /**
  * Set the global STP offset on advancement of logical
@@ -659,13 +650,13 @@ interval_t get_stp_offset(void);
  * @param offset A positive time value to be applied
  *  as the STP offset.
  */
-void set_stp_offset(interval_t offset);
+void lf_set_stp_offset(interval_t offset);
 
 /**
  * Print a snapshot of the priority queues used during execution
  * (for debugging).
  */
-void print_snapshot(void);
+void lf_print_snapshot(void);
 
 /**
  * Request a stop to execution as soon as possible.
@@ -675,7 +666,7 @@ void print_snapshot(void);
  * a later logical time determined by the RTI so that
  * all federates stop at the same logical time.
  */
-void request_stop(void);
+void lf_request_stop(void);
 
 /**
  * Allocate zeroed-out memory and record the allocated memory on

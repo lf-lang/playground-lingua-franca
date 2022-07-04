@@ -188,3 +188,18 @@ PyTypeObject PyTagType = {
     .tp_richcompare = (richcmpfunc) Tag_richcompare,
     .tp_getset = Tag_getsetters,
 };
+
+/**
+ * @brief Convert C tag to `py_tag_t`
+ * 
+ * @param c_tag The tag in C.
+ * @return PyObject* The tag in Python.
+ */
+py_tag_t* convert_C_tag_to_py(tag_t c_tag) {
+    py_tag_t* py_tag = PyObject_GC_New(py_tag_t, &PyTagType);
+    if (py_tag == NULL) {
+        lf_print_error_and_exit("Failed to convert tag from C to Python.");
+    }
+    py_tag->tag = c_tag;
+    return py_tag;
+}

@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="ShowViewDialog">
-		<item key="ShowViewDialog.STORE_SELECTED_VIEW_ID" value="org.eclipse.jdt.ui.PackageExplorer"/>
+		<item key="ShowViewDialog.STORE_SELECTED_VIEW_ID" value="org.eclipse.ui.console.ConsoleView"/>
 		<item key="DIALOG_X_ORIGIN" value="26"/>
 		<item key="DIALOG_Y_ORIGIN" value="23"/>
 		<item key="DIALOG_WIDTH" value="373"/>
 		<item key="DIALOG_HEIGHT" value="415"/>
 		<item key="DIALOG_FONT_NAME" value="1|Ubuntu|11.0|0|GTK|1|"/>
 		<list key="ShowViewDialog.STORE_EXPANDED_CATEGORIES_ID">
-			<item value="Java"/>
-			<item value="Java Browsing"/>
-			<item value="PyDev"/>
+			<item value="General"/>
+			<item value="Debug"/>
 		</list>
 	</section>
 </section>

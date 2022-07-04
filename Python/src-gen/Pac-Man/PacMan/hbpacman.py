@@ -2,6 +2,9 @@
 #https://github.com/hbokmann/Pacman
   
 import pygame
+import AIPacSupport as ai
+from random import randint
+import sys
   
 black = (0,0,0)
 white = (255,255,255)
@@ -9,7 +12,46 @@ blue = (0,0,255)
 green = (0,255,0)
 red = (255,0,0)
 purple = (255,0,255)
-yellow   = ( 255, 255,   0)
+yellow   = (255, 255, 0)
+walls = [ [0,0,6,600],
+              [0,0,600,6],
+              [0,600,606,6],
+              [600,0,6,606],
+              [300,0,6,66],
+              [60,60,186,6],
+              [360,60,186,6],
+              [60,120,66,6],
+              [60,120,6,126],
+              [180,120,246,6],
+              [300,120,6,66],
+              [480,120,66,6],
+              [540,120,6,126],
+              [120,180,126,6],
+              [120,180,6,126],
+              [360,180,126,6],
+              [480,180,6,126],
+              [180,240,6,126],
+              [180,360,246,6],
+              [420,240,6,126],
+              [240,240,42,6],
+              [324,240,42,6],
+              [240,240,6,66],
+              [240,300,126,6],
+              [360,240,6,66],
+              [0,300,66,6],
+              [540,300,66,6],
+              [60,360,66,6],
+              [60,360,6,186],
+              [480,360,66,6],
+              [540,360,6,186],
+              [120,420,366,6],
+              [120,420,6,66],
+              [480,420,6,66],
+              [180,480,246,6],
+              [300,480,6,66],
+              [120,540,126,6],
+              [360,540,126,6]
+            ]
 
 # This class represents the bar at the bottom that the player controls
 class Wall(pygame.sprite.Sprite):
@@ -117,6 +159,11 @@ class Player(pygame.sprite.Sprite):
     # Set speed vector
     change_x=0
     change_y=0
+    last_move = [0, 0]
+    num_moves = 0
+    calcpathmove = 0
+    next_moves = []
+    eating = False
   
     # Constructor function
     def __init__(self,x,y, _image):
@@ -152,7 +199,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.left = w
         self.rect.top = p_h
     # Find a new position for the player
-    def update(self,walls,gate):
+    def update(self,walls,gate = None):
         # Get the old position, in case we need to go back to it
         
         old_x=self.rect.left
@@ -191,11 +238,95 @@ class Player(pygame.sprite.Sprite):
                 #     self.rect.left=old_x
                 #     print('b')
 
-        if gate != False:
-          gate_hit = pygame.sprite.spritecollide(self, gate, False)
-          if gate_hit:
-            self.rect.left=old_x
-            self.rect.top=old_y
+        # if gate != False:
+        #   gate_hit = pygame.sprite.spritecollide(self, gate, False)
+        #   if gate_hit:
+        #     self.rect.left=old_x
+        #     self.rect.top=old_y
+    #TODO: consolidate the following into one func based on move
+    #save potential future moves
+    def ai_eat(self, layout, ghosts, blocks, num_moves):
+        if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
+          # or self.num_moves + 15 > self.calcpathmove:
+          path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
+          self.calcpathmove = self.num_moves + 1
+          self.rect.left += path[0][0]
+          self.rect.top += path[0][1]
+          self.last_move = path[0]
+          self.next_moves = path[1:]
+        else:
+          self.rect.left += self.next_moves[0][0]
+          self.rect.top += self.next_moves[0][1]
+          self.last_move = self.next_moves[0]
+          self.next_moves = self.next_moves[1:]
+        
+        self.num_moves += 1
+        #TODO: make more efficient by saving previous moves
+        #change if not resetting speed
+        #print(path[0][0])
+        #print(path[0][1])
+        #print("last move was ", self.last_move)
+        #print("move is ", path[0])
+        
+        #self.last_move = path[0]
+    
+    def ai_chase(self, layout, ghosts, threshold):
+        path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
+
+        self.rect.left += path[0][0]
+        self.rect.top += path[0][1]
+        self.num_moves += 1
+
+    def ai_avoid(self, layout, ghosts, threshold):
+        path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        #TODO: make better solution, take into account other ghosts
+        made_move = False
+        possible = ai.possiblepacmoves(layout, ghosts, self.rect.left, self.rect.top, False)
+        for name, change in possible.items():
+              if change[0] == path[0][0] * -1 and change[1] == path[0][1] * -1:
+                self.rect.left += path[0][0] * -1
+                self.rect.top += path[0][1] * -1
+                made_move = True
+        #TODO: make so doesnt accidentally bring closer to ghost
+        if not made_move:
+              if path[0][0] == 0:
+                    if [30, 0] in list(possible.values()):
+                          self.rect.left += 30
+                    elif [-30, 0] in list(possible.values()):
+                          self.rect.left += -30
+              elif path[0][1] == 0:
+                    if [0, 30] in list(possible.values()):
+                          self.rect.top += 30
+                    elif [0, -30] in list(possible.values()):
+                          self.rect.top += -30
+              # closeghost = ai.closestghost(layout, ghosts, self.rect.left, self.rect.top, threshold)
+              # minimum = sys.maxsize
+              # move = [0, 0]
+              # for change in list(possible.values()):
+              #       if ai.euclid_dist(self.rect.left + change[0], self.rect.top + change[1], closeghost[1], closeghost[2]) < minimum:
+              #             move = change
+              # self.rect.left += move[0]
+              # self.rect.top += move[1]
+              # random = randint(0, len(possible) - 1)
+              # for i, name, change in enumerate(possible.items()):
+              #       if i == random:
+              #             self.rect.left += change[0]
+              #             self.rect.top += change[1]
+              # change = list(possible.values())[random]
+              # self.rect.left += change[0]
+              # self.rect.top += change[1]
+              # self.rect.left += possible.values()[random][0]
+              # self.rect.top += possible.values()[random][1]
+    
+        self.num_moves += 1
+
+    def stop_eating(self):
+          self.eating = False
+    def get_num_moves(self):
+          return self.num_moves
+          
+
+
 
 #Inheritime Player klassist
 class Ghost(Player):
@@ -232,6 +363,10 @@ class Ghost(Player):
             self.rect.left = i_w
         elif name == "Blinky":
             self.rect.top = b_h
+            
+    def moveoffgrid(self):
+        self.rect.left = 1000
+        self.rect.top = 1000
     # def resetdir(self, name):
     #     if name == "Pinky":
     #

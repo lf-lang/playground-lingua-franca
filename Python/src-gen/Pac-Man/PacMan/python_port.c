@@ -76,7 +76,7 @@ PyObject* py_port_set(PyObject *self, PyObject *args) {
     generic_port_instance_struct* port = 
         PyCapsule_GetPointer(p->port, "port");
     if (port == NULL) {
-        error_print("Null pointer received.");
+        lf_print_error("Null pointer received.");
         exit(1);
     }
     
@@ -183,7 +183,7 @@ PyObject *py_port_iter_next(PyObject *self) {
     generic_port_instance_struct **cport = 
         (generic_port_instance_struct **)PyCapsule_GetPointer(port->port,"port");
     if (cport == NULL) {
-        error_print_and_exit("Null pointer received.");
+        lf_print_error_and_exit("Null pointer received.");
     }
 
     // Py_XINCREF(cport[index]->value);
@@ -191,6 +191,7 @@ PyObject *py_port_iter_next(PyObject *self) {
     pyport->value = cport[port->current_index]->value;
     pyport->is_present = cport[port->current_index]->is_present;
     pyport->width = -2;
+    FEDERATED_ASSIGN_FIELDS(pyport, cport[port->current_index]);
 
     port->current_index++;
 
@@ -246,7 +247,7 @@ PyObject *py_port_capsule_get_item(PyObject *self, PyObject *key) {
     generic_port_instance_struct **cport = 
         (generic_port_instance_struct **)PyCapsule_GetPointer(port->port,"port");
     if (cport == NULL) {
-        error_print_and_exit("Null pointer received.");
+        lf_print_error_and_exit("Null pointer received.");
     }
 
     // Py_INCREF(cport[index]->value);
@@ -254,6 +255,7 @@ PyObject *py_port_capsule_get_item(PyObject *self, PyObject *key) {
     pyport->value = cport[index]->value;
     pyport->is_present = cport[index]->is_present;
     pyport->width = -2;
+    FEDERATED_ASSIGN_FIELDS(pyport, cport[index]);
 
 
     LF_PRINT_LOG("Getting item index %d. Is present is %d.", index, pyport->is_present);
@@ -359,7 +361,8 @@ PyMemberDef py_port_capsule_members[] = {
     {"port", T_OBJECT, offsetof(generic_port_capsule_struct, port), READONLY, ""},
     {"value", T_OBJECT, offsetof(generic_port_capsule_struct, value), READONLY, "Value of the port"},
     {"is_present", T_BOOL, offsetof(generic_port_capsule_struct, is_present), READONLY, "Check if value is present at current logical time"},
-    {"width", T_INT, offsetof(generic_port_capsule_struct, width), READONLY, "Width of the multiport"},    
+    {"width", T_INT, offsetof(generic_port_capsule_struct, width), READONLY, "Width of the multiport"},
+    FEDERATED_CAPSULE_MEMBER
     {NULL}  /* Sentinel */
 };
 

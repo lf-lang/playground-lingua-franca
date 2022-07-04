@@ -74,7 +74,7 @@ static PyObject* py_schedule(PyObject *self, PyObject *args) {
     
     void* action = PyCapsule_GetPointer(act->action,"action");
     if (action == NULL) {
-        error_print("Null pointer received.");
+        lf_print_error("Null pointer received.");
         exit(1);
     }
 
@@ -120,7 +120,7 @@ static PyObject* py_schedule_copy(PyObject *self, PyObject *args) {
 
     void* action = PyCapsule_GetPointer(act->action,"action");
     if (action == NULL) {
-        error_print("Null pointer received.");
+        lf_print_error("Null pointer received.");
         exit(1);
     }
     
@@ -138,17 +138,17 @@ static PyObject* py_schedule_copy(PyObject *self, PyObject *args) {
 int lf_reactor_c_main(int argc, char *argv[]);
 
 /**
- * Prototype for request_stop().
- * @see reactor.c and reactor_threaded.c
+ * Prototype for lf_request_stop().
+ * @see reactor.h
  */
-void request_stop();
+void lf_request_stop();
 
 ///////////////// Other useful functions /////////////////////
 /**
  * Stop execution at the conclusion of the current logical time.
  */
 static PyObject* py_request_stop(PyObject *self, PyObject *args) {
-    request_stop();
+    lf_request_stop();
     
     Py_INCREF(Py_None);
     return Py_None;
@@ -170,7 +170,7 @@ static PyObject* py_request_stop(PyObject *self, PyObject *args) {
  */
 char** _lf_py_parse_argv_impl(PyObject* py_argv, size_t* argc) {
     if (argc == NULL) {
-        error_print_and_exit("_lf_py_parse_argv_impl called with an unallocated argc argument.");
+        lf_print_error_and_exit("_lf_py_parse_argv_impl called with an unallocated argc argument.");
     }
 
     // List of arguments
@@ -195,14 +195,14 @@ char** _lf_py_parse_argv_impl(PyObject* py_argv, size_t* argc) {
     }
 
     Py_ssize_t argv_size = PyList_Size(py_argv_parsed);
-    argv = malloc(argv_size);
-    for (Py_ssize_t i=0; i<argv_size; i++) {
+    argv = malloc(argv_size * sizeof(char *));
+    for (Py_ssize_t i = 0; i < argv_size; i++) {
         PyObject* list_item = PyList_GetItem(py_argv_parsed, i);
         if (list_item == NULL) {
             if (PyErr_Occurred()) {
                 PyErr_Print();
             }
-            error_print_and_exit("Could not get argv list item %u.", i);
+            lf_print_error_and_exit("Could not get argv list item %u.", i);
         }
 
         PyObject *encoded_string = PyUnicode_AsEncodedString(list_item, "UTF-8", "strict");
@@ -210,18 +210,17 @@ char** _lf_py_parse_argv_impl(PyObject* py_argv, size_t* argc) {
             if (PyErr_Occurred()) {
                 PyErr_Print();
             }
-            error_print_and_exit("Failed to encode argv list item %u.", i);
+            lf_print_error_and_exit("Failed to encode argv list item %u.", i);
         }
 
         argv[i] = PyBytes_AsString(encoded_string);
 
         if (PyErr_Occurred()) {
             PyErr_Print();
-            error_print_and_exit("Could not convert argv list item %u to char*.", i);
+            lf_print_error_and_exit("Could not convert argv list item %u to char*.", i);
         }
-
-        *argc = argv_size;
     }
+    *argc = argv_size;
     return argv;
 }
 
@@ -250,7 +249,7 @@ static PyObject* py_main(PyObject* self, PyObject* py_args) {
             if (PyErr_Occurred()) {
                 PyErr_Print();
             }
-            error_print_and_exit("Failed to load the module 'pickle'.");
+            lf_print_error_and_exit("Failed to load the module 'pickle'.");
         }
     }
 
@@ -426,18 +425,19 @@ PyObject* convert_C_port_to_py(void* port, int width) {
     PyObject* cap = 
         (PyObject*)PyObject_GC_New(generic_port_capsule_struct, &py_port_capsule_t);
     if (cap == NULL) {
-        error_print_and_exit("Failed to convert port.");
+        lf_print_error_and_exit("Failed to convert port.");
     }
 
     // Create the capsule to hold the void* port
     PyObject* capsule = PyCapsule_New(port, "port", NULL);
     if (capsule == NULL) {
-        error_print_and_exit("Failed to convert port.");
+        lf_print_error_and_exit("Failed to convert port.");
     }
 
     // Fill in the Python port struct
     ((generic_port_capsule_struct*)cap)->port = capsule;
     ((generic_port_capsule_struct*)cap)->width = width;
+    FEDERATED_ASSIGN_FIELDS(((generic_port_capsule_struct*)cap), cport);
 
     if (width == -2) {
         ((generic_port_capsule_struct*)cap)->is_present = 
@@ -493,18 +493,19 @@ PyObject* convert_C_action_to_py(void* action) {
     // Create the action struct in Python
     PyObject* cap = (PyObject*)PyObject_GC_New(generic_action_capsule_struct, &py_action_capsule_t);
     if (cap == NULL) {
-        error_print_and_exit("Failed to convert action.");
+        lf_print_error_and_exit("Failed to convert action.");
     }
 
     // Create the capsule to hold the void* action
     PyObject* capsule = PyCapsule_New(action, "action", NULL);
     if (capsule == NULL) {
-        error_print_and_exit("Failed to convert action.");
+        lf_print_error_and_exit("Failed to convert action.");
     }
 
     // Fill in the Python action struct
     ((generic_action_capsule_struct*)cap)->action = capsule;
     ((generic_action_capsule_struct*)cap)->is_present = trigger->status;
+    FEDERATED_ASSIGN_FIELDS(((generic_port_capsule_struct*)cap), ((generic_action_instance_struct*)action));
 
     // If token is not initialized, that is all we need to set
     if (trigger->token == NULL) {
@@ -574,7 +575,7 @@ get_python_function(string module, string class, int instance_id, string func) {
         // Set the Python search path to be the current working directory
         char cwd[PATH_MAX];
         if ( getcwd(cwd, sizeof(cwd)) == NULL) {
-            error_print_and_exit("Failed to get the current working directory.");
+            lf_print_error_and_exit("Failed to get the current working directory.");
         }
 
         wchar_t wcwd[PATH_MAX];
@@ -598,7 +599,7 @@ get_python_function(string module, string class, int instance_id, string func) {
             pDict = PyModule_GetDict(pModule);
             if (pDict == NULL) {
                 PyErr_Print();
-                error_print("Failed to load contents of module %s.", module);
+                lf_print_error("Failed to load contents of module %s.", module);
                 /* Release the thread. No Python API allowed beyond this point. */
                 PyGILState_Release(gstate);
                 return NULL;
@@ -622,7 +623,7 @@ get_python_function(string module, string class, int instance_id, string func) {
         pClasses = PyDict_GetItem(globalPythonModuleDict, list_name);
         if (pClasses == NULL){
             PyErr_Print();
-            error_print("Failed to load class list \"%s\" in module %s.", class, module);
+            lf_print_error("Failed to load class list \"%s\" in module %s.", class, module);
             /* Release the thread. No Python API allowed beyond this point. */
             PyGILState_Release(gstate);
             return NULL;
@@ -633,7 +634,7 @@ get_python_function(string module, string class, int instance_id, string func) {
         pClass = PyList_GetItem(pClasses, instance_id);
         if (pClass == NULL) {
             PyErr_Print();
-            error_print("Failed to load class \"%s[%d]\" in module %s.", class, instance_id, module);
+            lf_print_error("Failed to load class \"%s[%d]\" in module %s.", class, instance_id, module);
             /* Release the thread. No Python API allowed beyond this point. */
             PyGILState_Release(gstate);
             return NULL;
@@ -660,13 +661,13 @@ get_python_function(string module, string class, int instance_id, string func) {
             if (PyErr_Occurred()) {
                 PyErr_Print();
             }
-            error_print("Function %s was not found or is not callable.", func);
+            lf_print_error("Function %s was not found or is not callable.", func);
         }
         Py_XDECREF(pFunc);
         Py_DECREF(globalPythonModule); 
     } else {
         PyErr_Print();
-        error_print("Failed to load \"%s\".", module);
+        lf_print_error("Failed to load \"%s\".", module);
     }
     
     LF_PRINT_DEBUG("Done with start().");

@@ -140,7 +140,7 @@ int wait_until(instant_t logical_time_ns) {
     return return_value;
 }
 
-void print_snapshot() {
+void lf_print_snapshot() {
     if(LOG_LEVEL > LOG_LEVEL_LOG) {
         LF_PRINT_DEBUG(">>> START Snapshot");
         pqueue_dump(reaction_q, reaction_q->prt);
@@ -183,7 +183,7 @@ void _lf_trigger_reaction(reaction_t* reaction, int worker_number) {
 int _lf_do_step(void) {
     // Invoke reactions.
     while(pqueue_size(reaction_q) > 0) {
-        // print_snapshot();
+        // lf_print_snapshot();
         reaction_t* reaction = (reaction_t*)pqueue_pop(reaction_q);
         reaction->status = running;
         
@@ -335,7 +335,7 @@ int next(void) {
 /**
  * Stop execution at the conclusion of the next microstep.
  */
-void request_stop() {
+void lf_request_stop() {
 	tag_t new_stop_tag;
 	new_stop_tag.time = current_tag.time;
 	new_stop_tag.microstep = current_tag.microstep + 1;

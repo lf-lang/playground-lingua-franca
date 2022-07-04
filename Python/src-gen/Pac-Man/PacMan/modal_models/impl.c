@@ -42,13 +42,13 @@ static PyObject* py_mode_set(PyObject *mode_capsule, PyObject *args) {
 
     reactor_mode_t* mode = PyCapsule_GetPointer(m->mode, "mode");
     if (mode == NULL) {
-        error_print("Null pointer received.");
+        lf_print_error("Null pointer received.");
         exit(1);
     }
 
     self_base_t* self = PyCapsule_GetPointer(m->lf_self, "lf_self");
     if (self == NULL) {
-        error_print("Null pointer received.");
+        lf_print_error("Null pointer received.");
         exit(1);
     }
 
@@ -118,13 +118,13 @@ PyObject* convert_C_mode_to_py(
 	mode_capsule_struct_t* cap =
         (mode_capsule_struct_t*)PyObject_GC_New(mode_capsule_struct_t, &mode_capsule_t);
     if (cap == NULL) {
-        error_print_and_exit("Failed to convert mode.");
+        lf_print_error_and_exit("Failed to convert mode.");
     }
 
     // Create the capsule to hold the reactor_mode_t* mode
     PyObject* capsule = PyCapsule_New(mode, "mode", NULL);
     if (capsule == NULL) {
-        error_print_and_exit("Failed to convert mode.");
+        lf_print_error_and_exit("Failed to convert mode.");
     }
     // Fill in the Python mode struct.
     cap->mode = capsule;
@@ -132,7 +132,7 @@ PyObject* convert_C_mode_to_py(
     // Create a capsule to point to the self struct.
     PyObject* self_capsule = PyCapsule_New(lf_self, "lf_self", NULL);
     if (self_capsule == NULL) {
-        error_print_and_exit("Failed to convert self.");
+        lf_print_error_and_exit("Failed to convert self.");
     }
     cap->lf_self = self_capsule;
 

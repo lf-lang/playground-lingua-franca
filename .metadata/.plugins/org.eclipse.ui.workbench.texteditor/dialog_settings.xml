@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
-		<item key="selection" value="blocks_hit_list"/>
+		<item key="selection" value="ghost_sprites"/>
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
+			<item value="ghost_sprites"/>
+			<item value="self._pacman"/>
+			<item value="self._pacman_sprite"/>
+			<item value="prev_result"/>
+			<item value="= 10"/>
+			<item value="block_list"/>
+			<item value="spritecollide"/>
+			<item value="wall_list"/>
+			<item value="ghost_sprites[4]"/>
 			<item value="blocks_hit_list"/>
 			<item value="do not "/>
 			<item value="game_over"/>
 			<item value="if game_over"/>
 			<item value="resetpos"/>
 			<item value="self._score_to"/>
-			<item value="initial mode"/>
-			<item value="self._active"/>
-			<item value="K_r"/>
-			<item value="self.character_instance.resetpos"/>
-			<item value="name"/>
-			<item value=".changespe"/>
-			<item value="_all_spr"/>
-			<item value="_allspriteslist"/>
-			<item value="icon_name.set"/>
 		</list>
 		<list key="replacehistory">
+			<item value="tick"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
