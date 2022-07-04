@@ -292,7 +292,7 @@ reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_
 
 ## Player
 # Should be replacable with an AI
-reactor Player extends BasePlayer {
+reactor Player(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
     timer pygame_event(0, 100 msec)
     state _active(True)
     
@@ -700,7 +700,7 @@ main reactor {
     
     player.sprite -> controller.pacman_sprite
  
-    (ghosts.sprite)+ -> controller.ghost_sprites, player.ghost_sprites
+    (ghosts.sprite)+ -> controller.ghost_sprites
     
     controller.score -> display.score
 
@@ -715,6 +715,6 @@ main reactor {
     
     (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
     
-    controller.block_list -> player.block_list
+    #controller.block_list -> player.block_list
 }
  

@@ -201,7 +201,7 @@ class Player(pygame.sprite.Sprite):
     # Find a new position for the player
     def update(self,walls,gate = None):
         # Get the old position, in case we need to go back to it
-        
+        self.num_moves += 1
         old_x=self.rect.left
         new_x=old_x+self.change_x
         prev_x=old_x+self.prev_x
@@ -277,34 +277,51 @@ class Player(pygame.sprite.Sprite):
         self.rect.top += path[0][1]
         self.num_moves += 1
 
-    def ai_avoid(self, layout, ghosts, threshold):
-        path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
-        #TODO: make better solution, take into account other ghosts
-        made_move = False
-        possible = ai.possiblepacmoves(layout, ghosts, self.rect.left, self.rect.top, False)
-        for name, change in possible.items():
-              if change[0] == path[0][0] * -1 and change[1] == path[0][1] * -1:
-                self.rect.left += path[0][0] * -1
-                self.rect.top += path[0][1] * -1
-                made_move = True
-        #TODO: make so doesnt accidentally bring closer to ghost
-        if not made_move:
-              if path[0][0] == 0:
-                    if [30, 0] in list(possible.values()):
-                          self.rect.left += 30
-                    elif [-30, 0] in list(possible.values()):
-                          self.rect.left += -30
-              elif path[0][1] == 0:
-                    if [0, 30] in list(possible.values()):
-                          self.rect.top += 30
-                    elif [0, -30] in list(possible.values()):
-                          self.rect.top += -30
+    def ai_avoid(self, layout, ghosts, threshold, num_moves):
+        # path = ai.avoider(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        # print("this is avoid: ", path)
+        # self.rect.left += path[0][0]
+        # self.rect.top += path[0][1]
+        # self.last_move = path[0]
+        if num_moves is not self.num_moves or len(self.next_moves) == 0:
+            path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
+            self.rect.left += path[0][0]
+            self.rect.top += path[0][1]
+            self.last_move = path[0]
+            self.next_moves = path[1:]
+        else:
+            self.rect.left += self.next_moves[0][0]
+            self.rect.top += self.next_moves[0][1]
+            self.last_move = self.next_moves[0]
+            self.next_moves = self.next_moves[1:]
+        # path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        # #TODO: make better solution, take into account other ghosts
+        # made_move = False
+        # possible = ai.possiblepacmoves(layout, ghosts, self.rect.left, self.rect.top, False)
+        # for name, change in possible.items():
+        #       if change[0] == path[0][0] * -1 and change[1] == path[0][1] * -1:
+        #         self.rect.left += path[0][0] * -1
+        #         self.rect.top += path[0][1] * -1
+        #         made_move = True
+        # #TODO: make so doesnt accidentally bring closer to ghost
+        # if not made_move:
+        #       if path[0][0] == 0:
+        #             if [30, 0] in list(possible.values()):
+        #                   self.rect.left += 30
+        #             elif [-30, 0] in list(possible.values()):
+        #                   self.rect.left += -30
+        #       elif path[0][1] == 0:
+        #             if [0, 30] in list(possible.values()):
+        #                   self.rect.top += 30
+        #             elif [0, -30] in list(possible.values()):
+        #                   self.rect.top += -30
               # closeghost = ai.closestghost(layout, ghosts, self.rect.left, self.rect.top, threshold)
-              # minimum = sys.maxsize
+              # minimum = ai.euclid_dist(self.rect.left, self.rect.top, closeghost[1], closeghost[2])
               # move = [0, 0]
-              # for change in list(possible.values()):
+              # for name, change in possible.items():
               #       if ai.euclid_dist(self.rect.left + change[0], self.rect.top + change[1], closeghost[1], closeghost[2]) < minimum:
               #             move = change
+              #             minimium = ai.euclid_dist(self.rect.left + change[0], self.rect.top + change[1], closeghost[1], closeghost[2])
               # self.rect.left += move[0]
               # self.rect.top += move[1]
               # random = randint(0, len(possible) - 1)
@@ -317,7 +334,7 @@ class Player(pygame.sprite.Sprite):
               # self.rect.top += change[1]
               # self.rect.left += possible.values()[random][0]
               # self.rect.top += possible.values()[random][1]
-    
+        print("this is avoid: ", self.last_move)
         self.num_moves += 1
 
     def stop_eating(self):

@@ -131,12 +131,12 @@ def closeghostdist(layout, ghosts, x, y, threshold):
         return longest
     return min(paths, key=len)
         
-def closestghost(layout, ghosts, x, y, threshold):
+def closestghost(layout, ghosts, x, y, threshold, give_all = False):
     paths = []
     def ghostfinder(layout, ghosts, x, y, temp = []):
         oncurrpath = False
         if len(temp) <= threshold:
-            for name, change in possiblepacmoves(layout, ghosts, x, y, False).items():
+            for name, change in possiblepacmoves(layout, ghosts, x, y).items():
                 if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
                     new_x = x + change[0]
                     new_y = y + change[1]
@@ -154,11 +154,89 @@ def closestghost(layout, ghosts, x, y, threshold):
                     else:
                         ghostfinder(layout, ghosts, new_x, new_y, [*temp, change])
     ghostfinder(layout, ghosts, x, y)
-    mini = [sys.maxsize, 0, 0]
-    for item in paths:
-        if item[0] < mini[0]:
-            mini = item
-    return mini
+    if not give_all:
+        mini = [sys.maxsize, 0, 0]
+        for item in paths:
+            if item[0] < mini[0]:
+                mini = item
+        return mini
+    return paths
+#FIXME: does not work
+def avoider(layout, ghosts, x, y, threshold):
+    paths = []
+    def avoidfinder(layout, ghosts, x, y, threshold, temp = []):
+        #oncurrpath = False
+        if len(temp) < threshold:
+            for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+                if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
+                    new_x = x + change[0]
+                    new_y = y + change[1]
+                    avoidfinder(layout, ghosts, new_x, new_y, threshold, [*temp, change])
+        else:
+            paths.append(temp)
+    avoidfinder(layout, ghosts, x, y, 3)
+    print("avoider paths: ", paths)
+    maximum = len(closeghostdist(layout, ghosts, x, y, 7))
+    best = []
+    for path in paths:
+        pos_x = x
+        pos_y = y
+        for move in path:
+            pos_x += move[0]
+            pos_y += move[1]
+        dist = len(closeghostdist(layout, ghosts, pos_x, pos_y, 7))
+        if dist > maximum:
+            maximum = dist
+            best = path
+    if len(best) == 0:
+        return [[0, 0]]
+    return best
+
+def allghostavoid(layout, ghosts, x, y, threshold):
+    paths = []
+    def avoidfinder(layout, ghosts, x, y, threshold, temp = []):
+        #oncurrpath = False
+        if len(temp) < threshold:
+            for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+                if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
+                    new_x = x + change[0]
+                    new_y = y + change[1]
+                    avoidfinder(layout, ghosts, new_x, new_y, threshold, [*temp, change])
+        else:
+            paths.append(temp)
+    avoidfinder(layout, ghosts, x, y, 3)
+    print("avoider paths: ", paths)
+    ghosts_dists = closestghost(layout, ghosts, x, y, 7, True)
+    minimum = avg_dist_funcher(ghosts_dists)
+    best = []
+    for path in paths:
+        pos_x = x
+        pos_y = y
+        for move in path:
+            pos_x += move[0]
+            pos_y += move[1]
+        dist = avg_dist_funcher(closestghost(layout, ghosts, pos_x, pos_y, 7, True))
+        if dist < minimum:
+            minimum = dist
+            best = path
+    if len(best) == 0:
+        return [[0, 0]]
+    return best
+
+
+def euclid_avoider(layout, ghosts, x, y):
+    closeghost = closestghost(layout, ghosts, x, y, 7)
+    maximum_dist = euclid_dist(closeghost[1], closeghost[2], x, y)
+    best = []
+    for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+        new_x = x + change[0]
+        new_y = y + change[1]
+        new_dist = euclid_dist(closeghost[1], closeghost[2], new_x, new_y)
+        if new_dist > maximum_dist:
+            maximum_dist = new_dist
+            best = [change]
+    return best
+
 
 def euclid_dist(x1, y1, x2, y2):
     return sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
@@ -169,3 +247,15 @@ def avg_block_dist(blocks, x, y):
     for block in blocks:
         total += euclid_dist(block.rect.left, block.rect.top, x, y)
     return total / num_blocks
+
+def dist_funch(x):
+    if x == 0:
+        return 9000
+    return (10/(x - 0.9)) - 1
+    #return (2 ** (-x+7))
+
+def avg_dist_funcher(ghosts_dists):
+    total = 0
+    for ghost in ghosts_dists:
+        total += dist_funch(ghost[0])
+    return total
