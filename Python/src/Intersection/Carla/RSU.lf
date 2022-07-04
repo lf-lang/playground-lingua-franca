@@ -16,8 +16,8 @@ reactor RSU(
     nominal_speed_in_intersection(0.0),
     intersection_position(0, 0, 0)
 ) {
-    input[num_entries] request_;
-    output[num_entries] grant_;
+    input[num_entries] request;
+    output[num_entries] grant;
 
     preamble {=
         class Logger:
@@ -37,17 +37,17 @@ reactor RSU(
                        logger = self.Logger())
     =}
 
-    reaction(request_) -> grant_ {=
+    reaction(request) -> grant {=
         for i in range(self.num_entries):
-            if not request_[i].is_present:
+            if not request[i].is_present:
                 continue
-            request = request_[i].value
-            pub_packets = self.rsu.receive_request(request)
+            request_ = request[i].value
+            pub_packets = self.rsu.receive_request(request_)
             if pub_packets.grant != None:
-                grant = dotdict()
-                grant.intersection_position = pub_packets.grant.intersection_position
-                grant.target_speed = pub_packets.grant.target_speed
-                grant.arrival_time = pub_packets.grant.arrival_time
-                grant_[i].set(grant)
+                grant_ = dotdict()
+                grant_.intersection_position = pub_packets.grant.intersection_position
+                grant_.target_speed = pub_packets.grant.target_speed
+                grant_.arrival_time = pub_packets.grant.arrival_time
+                grant[i].set(grant_)
     =}
 }

@@ -80,12 +80,12 @@ main reactor (
         intersection_position = intersection_position
     );
 
-    carla.velocity_ -> vehicle.velocity_;
-    carla.position_ -> vehicle.position_;
-    vehicle.control_ -> carla.command_;
+    carla.velocity -> vehicle.velocity;
+    carla.position -> vehicle.position;
+    vehicle.control -> carla.command;
 
-    vehicle.request_ -> rsu.request_;
-    rsu.grant_ -> vehicle.grant_;
+    vehicle.request -> rsu.request;
+    rsu.grant -> vehicle.grant;
 
     
 }
