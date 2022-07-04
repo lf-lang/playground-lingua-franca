@@ -249,10 +249,10 @@ def avg_block_dist(blocks, x, y):
     return total / num_blocks
 
 def dist_funch(x):
-    if x == 0:
-        return 9000
+    if x == 0 or x == 1:
+        return 4500 * (2-x)
     return (10/(x - 0.9)) - 1
-    #return (2 ** (-x+7))
+    #return (2 ** (-x+8))
 
 def avg_dist_funcher(ghosts_dists):
     total = 0

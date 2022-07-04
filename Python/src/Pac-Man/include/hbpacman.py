@@ -334,7 +334,7 @@ class Player(pygame.sprite.Sprite):
         self.num_moves += 1
 
     def ai_avoid(self, layout, ghosts, threshold, num_moves):
-        # path = ai.avoider(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        # path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
         # print("this is avoid: ", path)
         # self.rect.left += path[0][0]
         # self.rect.top += path[0][1]

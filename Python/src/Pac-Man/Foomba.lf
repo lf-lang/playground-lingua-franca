@@ -211,7 +211,10 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
     
             #Won or lost
-            text1=self._font.render(game_over.value, True, pacman.black)
+            if game_over.value:
+                text1=self._font.render("Area Cleared!", True, pacman.black)
+            else:
+                text1=self._font.render("Collision detected.", True, pacman.black)
             self._screen.blit(text1, [235, 233])
     
             text2=self._font.render("To play again, press ENTER.", True, pacman.black)
@@ -226,9 +229,9 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
               #      print(1)
     =}
     reaction(restart) {=
-        #if restart.value:
-       #     self._active = True
-      #      pyautogui.keyUp(' ')
+        # if restart.value:
+        #    self._active = True
+        #    pyautogui.keyUp(' ')
         self._game_over = False
     =}
 
@@ -617,7 +620,7 @@ reactor GameController(number_of_ghosts(4)) {
                 self._score +=len(blocks_hit_list)
     
             if self._score == self._score_to_win:
-                game_over.set("Won!")
+                game_over.set(True)
                 #pyautogui.keyDown(' ')
                 #print("Won")
                 #self._controllerpause = True
@@ -638,7 +641,7 @@ reactor GameController(number_of_ghosts(4)) {
             monsta_hit_list = pacman.pygame.sprite.spritecollide(self._pacman_sprite, monsta_list, False)
     
             if monsta_hit_list and not self._frenzy:
-                game_over.set("Lost!")
+                game_over.set(False)
             elif monsta_hit_list and self._frenzy:
                 for monsta in monsta_hit_list:
                     monsta.moveoffgrid()
