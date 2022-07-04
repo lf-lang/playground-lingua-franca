@@ -49,28 +49,28 @@ preamble {=
             "directions": pacman.Pinky_directions,
             "width": pacman.w,
             "height": pacman.m_h,
-            "image": "images/Pinky.png"
+            "image": "images/wheelchair.png"
         },
         {
             "name": "Blinky",
             "directions": pacman.Blinky_directions,
             "width": pacman.w,
             "height": pacman.b_h,
-            "image": "images/Blinky.png"
+            "image": "images/wheelchair.png"
         },
         {
             "name": "Inky",
             "directions": pacman.Inky_directions,
             "width": pacman.i_w,
             "height": pacman.m_h,
-            "image": "images/Inky.png"
+            "image": "images/wheelchair.png"
         },
         {
             "name": "Clyde",
             "directions": pacman.Clyde_directions,
             "width": pacman.c_w,
             "height": pacman.m_h,
-            "image": "images/Clyde.png"
+            "image": "images/wheelchair.png"
         }
     ]
 =}
@@ -109,16 +109,16 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
         # Create an 606x606 sized screen
         self._screen = pacman.pygame.display.set_mode([606, 606])
         # Set the title of the window
-        pacman.pygame.display.set_caption("Pacman")
+        pacman.pygame.display.set_caption("Foomba")
         # Create a surface we can draw on
         background = pacman.pygame.Surface(self._screen.get_size())
         # Used for converting color maps and such
         background = background.convert()          
         # Fill the screen with a black background
-        background.fill(pacman.black)
+        background.fill(pacman.white)
         pacman.pygame.font.init()
         self._font = pacman.pygame.font.Font("freesansbold.ttf", 24)
-        self._screen.fill(pacman.black)
+        self._screen.fill(pacman.white)
         
     =}
 
@@ -150,12 +150,12 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     =}
     
     reaction(score) {=
-        self._top_corner_text=self._font.render("Score: "+str(score.value), True, pacman.red)
+        self._top_corner_text=self._font.render("Score: "+str(score.value), True, pacman.black)
         self._screen.blit(self._top_corner_text, [10, 10])
     =}
 
     reaction(moving_sprites) {=
-        self._screen.fill(pacman.black)
+        self._screen.fill(pacman.white)
         sprite_list = pacman.pygame.sprite.RenderPlain()
         for sprite in moving_sprites:
             if sprite.is_present and isinstance(sprite.value, pacman.pygame.sprite.Group):
@@ -192,9 +192,9 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             w.fill((128,128,128))           # this fills the entire surface
             self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
     
-            text2=self._font.render("Paused. Press SPACE to continue,", True, pacman.white)
+            text2=self._font.render("Paused. Press SPACE to continue,", True, pacman.black)
             self._screen.blit(text2, [135, 303])
-            text3=self._font.render("M for Manual, and R for Robot.", True, pacman.white)
+            text3=self._font.render("M for Manual, and R for Robot.", True, pacman.black)
             self._screen.blit(text3, [165, 333])
             pacman.pygame.display.flip()
     =}
@@ -211,12 +211,12 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
     
             #Won or lost
-            text1=self._font.render(game_over.value, True, pacman.white)
+            text1=self._font.render(game_over.value, True, pacman.black)
             self._screen.blit(text1, [235, 233])
     
-            text2=self._font.render("To play again, press ENTER.", True, pacman.white)
+            text2=self._font.render("To play again, press ENTER.", True, pacman.black)
             self._screen.blit(text2, [135, 303])
-            text3=self._font.render("To quit, press ESCAPE.", True, pacman.white)
+            text3=self._font.render("To quit, press ESCAPE.", True, pacman.black)
             self._screen.blit(text3, [165, 333])
             pyautogui.keyUp(' ')
             pacman.pygame.display.flip()
@@ -237,7 +237,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
 
 #### Model
 ## Base of every character
-reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+reactor BaseCharacter(width(0), height(0), image("images/user.png"), character_class({=pacman.Player=})) {
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input icon
@@ -253,7 +253,8 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 
     reaction(startup) -> icon_name {=
         dirname = os.path.dirname(__file__)
-        icon_name.set(os.path.join(dirname, "images/" + self.name + ".png"))
+        icon_name.set(os.path.join(dirname, self.image))
+        #"images/" + self.name + ".png"
     =}
 
     reaction(icon) -> sprite {=
@@ -424,14 +425,14 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Close {
 
-        reaction(startup) -> reset(Eat), reset(Scared), continue(export) {=
+        reaction(startup) -> reset(Eat), reset(Avoid), continue(export) {=
             if len(self._block_list) > 0 and len(self._ghosts) > 0:
-                if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 6)) > 5:
+                if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
                     #print("ghost not close")
                     Eat.set()
                 else:
                     print("ghost close")
-                    Scared.set()
+                    Avoid.set()
             else:
                 export.set()
         =}
@@ -445,31 +446,12 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
             export.set()
         =}
         
-    } mode Scared {
-
-        reaction(startup) -> reset(Avoid), reset(Chase) {=
-            if self._frenzy:
-                #print("pac not scared")
-                Chase.set()
-            else:
-                #print("pac is scared")
-                Avoid.set()
-        =}
-
     } mode Avoid {
 
         reaction(startup) -> continue(export) {=
             print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._ghosts, 7, self._avoid_moves)
             self._avoid_moves = self.character_instance.get_num_moves()
-            export.set()
-        =}
-
-    } mode Chase {
-
-        reaction(startup) -> continue(export) {=
-            print("chase time")
-            self.character_instance.ai_chase(self._layout, self._ghosts, 7)
             export.set()
         =}
 
@@ -582,7 +564,7 @@ reactor GameController(number_of_ghosts(4)) {
    # initial mode One {
         reaction(startup) -> wall_list, gate {=
             _all_sprites_list = pacman.pygame.sprite.RenderPlain()
-            self._wall_list = pacman.setupRoomOne(_all_sprites_list)
+            self._wall_list = pacman.setupRoomFoomba(_all_sprites_list)
             self._gate = pacman.setupGate(_all_sprites_list)
     
             wall_list.set(self._wall_list)
@@ -603,11 +585,7 @@ reactor GameController(number_of_ghosts(4)) {
                 for column in range(19):
                     if (row == 7 or row == 8) and (column == 8 or column == 9 or column == 10):
                         continue
-                    if randint(0, 361) > 358:
-                        block = pacman.Block(pacman.red, 10, 10)
-                        self._energizer_list.add(block)
-                    else:
-                        block = pacman.Block(pacman.yellow, 4, 4)
+                    block = pacman.Block(pacman.brown, 6, 6)
     
                     # Set a random location for the block
                     block.rect.x = (30*column+6)+26
@@ -631,13 +609,8 @@ reactor GameController(number_of_ghosts(4)) {
             print(self._score_to_win)
         =}
     
-        reaction(pacman_sprite) -> score, game_over, frenzy, end_frenzy {=
+        reaction(pacman_sprite) -> score, game_over {=
             blocks_hit_list = pacman.pygame.sprite.spritecollide(self._pacman_sprite, self._block_list, True)
-            energizer_hit_list = pacman.pygame.sprite.RenderPlain()
-            #FIXME: can also make this more efficient
-            for block in blocks_hit_list:
-                if block.rect.width == 10:
-                    energizer_hit_list.add(block)
                     
             # Check the list of collisions.
             if len(blocks_hit_list) > 0:
@@ -651,12 +624,6 @@ reactor GameController(number_of_ghosts(4)) {
                 #pause isntead of stop game
                 #controllerpause.set(True)
                 #request_stop() #remove once above finished
-            elif len(energizer_hit_list) > 0:
-                self._frenzy = True
-                print(self._frenzy)
-                frenzy.set(self._frenzy)
-                delay = randint(3, 7)
-                end_frenzy.schedule(SEC(delay))
         
             score.set(self._score)
         =}
@@ -691,11 +658,7 @@ reactor GameController(number_of_ghosts(4)) {
                     for column in range(19):
                         if (row == 7 or row == 8) and (column == 8 or column == 9 or column == 10):
                             continue
-                        if randint(0, 361) > 358:
-                            block = pacman.Block(pacman.red, 10, 10)
-                            self._energizer_list.add(block)
-                        else:
-                            block = pacman.Block(pacman.yellow, 4, 4)
+                        block = pacman.Block(pacman.brown, 6, 6)
         
                         # Set a random location for the block
                         block.rect.x = (30*column+6)+26
@@ -717,12 +680,6 @@ reactor GameController(number_of_ghosts(4)) {
                 self._score = 0
         =}
         
-        reaction(end_frenzy) -> frenzy {=
-            self._frenzy = False
-            print(self._frenzy, " and times up")
-            frenzy.set(self._frenzy)
-        =}
-        
         reaction(shutdown) {=
             pacman.pygame.quit()
         =}
@@ -735,7 +692,7 @@ main reactor {
     controller = new GameController()
 
     ### Model(s)
-    player = new Player(width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/pacman.png")
+    player = new Player(width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/roomb1.png")
     #width = {=pacman.w=}, height = {=pacman.p_h=}, image = "images/pacman.png"
     
     # Ghosts
@@ -788,9 +745,7 @@ main reactor {
     (controller.game_over)+ -> display.game_over, player.game_over, ghosts.game_over
     
     (player.restart)+ -> controller.restart, display.restart, ghosts.restart
-    
-    (controller.frenzy)+ -> player.frenzy, ghosts.frenzy
-    
+        
     controller.block_list -> player.block_list
     
 }
