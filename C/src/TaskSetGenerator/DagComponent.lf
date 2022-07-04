@@ -1,0 +1,63 @@
+/**
+* Basic component of DAG for task generator
+* @author Yunsang Cho
+*/
+target C {
+    timeout: 10 sec,
+    workers: 8,
+}
+
+reactor SimpleDagRunner(exe_time:time(200 msec)) {
+    output out0:time;
+    output out1:time;
+    output out2:time;
+
+    reaction(startup) -> out0, out1, out2 {=
+        lf_set(out0, self->exe_time);
+        lf_set(out1, self->exe_time);
+        lf_set(out2, self->exe_time);
+    =}
+
+}
+
+reactor Component {
+    input in:time;
+    output out:time;
+    
+    reaction(in) -> out {=
+        long long int physical_start_time = lf_time_physical();
+        
+        while (lf_time_physical() < physical_start_time + in->value) {
+
+        }
+        lf_set(out, in->value);
+    =}
+}
+
+
+
+main reactor {
+    runner = new SimpleDagRunner();
+
+    task_1_0 = new Component();
+    task_1_1 = new Component();
+    task_1_2 = new Component();
+
+    runner.out0 -> task_1_0.in;
+    runner.out1 -> task_1_1.in;
+    runner.out2 -> task_1_2.in;   
+
+
+    task_2_0 = new Component();
+    task_2_1 = new Component();
+
+
+    task_1_0.out -> task_2_0.in;
+    task_1_1.out -> task_2_1.in;
+
+    task_3_0 = new Component();
+    
+    task_2_0.out -> task_3_0.in;
+
+
+}
