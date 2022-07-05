@@ -34,7 +34,7 @@ target Python {
 
 preamble {=
     import os
-    import pyautogui
+    #import pyautogui
     from random import randint
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
@@ -194,7 +194,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     
             text2=self._font.render("Paused. Press SPACE to continue,", True, pacman.black)
             self._screen.blit(text2, [135, 303])
-            text3=self._font.render("M for Manual, and R for Robot.", True, pacman.black)
+            text3=self._font.render("Press M to toggle AI.", True, pacman.black)
             self._screen.blit(text3, [165, 333])
             pacman.pygame.display.flip()
     =}
@@ -202,8 +202,12 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     reaction(pygame_tick, game_over) {= 
         #Grey background
         if game_over.is_present:
+            # if not self._game_over:
+            #     pyautogui.keyDown(' ')
+            #     self._game_over = True
+            # else: 
+            #     pyautogui.keyUp(' ')
             self._game_over = True
-            pyautogui.keyDown(' ')
             #print("The display is ", self._active)
             w = pacman.pygame.Surface((400,200))  # the size of your rect
             w.set_alpha(10)                # alpha level
@@ -221,7 +225,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             self._screen.blit(text2, [135, 303])
             text3=self._font.render("To quit, press ESCAPE.", True, pacman.black)
             self._screen.blit(text3, [165, 333])
-            pyautogui.keyUp(' ')
+            
             pacman.pygame.display.flip()
             
             #for event in pacman.pygame.event.get():
@@ -366,10 +370,10 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
                             self._pause = False
                     if event.key == pacman.pygame.K_m:
                         self._pause = False
-                        self._ai_control = False
-                    if event.key == pacman.pygame.K_r:
-                        self._pause = False
-                        self._ai_control = True
+                        self._ai_control = not self._ai_control
+                    # if event.key == pacman.pygame.K_r:
+                    #     self._pause = False
+                    #     self._ai_control = True
                     if not self._ai_control and not self._pause and self._active:
                         if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
                             self.character_instance.changespeed(-30, 0)
@@ -399,7 +403,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
                 )
             sprite.set(self.character_instance)
             playerpause.set(self._pause)
-            if not self._pause and self._active:
+            if not self._pause: #and self._active
                 if self._ai_control:
                     Close.set()
                 
@@ -428,7 +432,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Close {
 
-        reaction(startup) -> reset(Eat), reset(Avoid), continue(export) {=
+        reaction(startup) -> reset(Eat), reset(Avoid), history(export) {=
             if len(self._block_list) > 0 and len(self._ghosts) > 0:
                 if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
                     #print("ghost not close")
@@ -442,7 +446,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Eat {
 
-        reaction(startup) -> continue(export) {=
+        reaction(startup) -> history(export) {=
             #print("food time")
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
@@ -451,7 +455,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
         
     } mode Avoid {
 
-        reaction(startup) -> continue(export) {=
+        reaction(startup) -> history(export) {=
             print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._ghosts, 7, self._avoid_moves)
             self._avoid_moves = self.character_instance.get_num_moves()
