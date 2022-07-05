@@ -39,7 +39,7 @@ import Chase from "ContainedPlayer.lf"
 import Ticker from "ContainedPlayer.lf"
 preamble {=
     import os
-    import pyautogui
+    #import pyautogui
     from random import randint
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
@@ -209,7 +209,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
         #Grey background
         if game_over.is_present:
             self._game_over = True
-            pyautogui.keyDown(' ')
+            #pyautogui.keyDown(' ')
             #print("The display is ", self._active)
             w = pacman.pygame.Surface((400,200))  # the size of your rect
             w.set_alpha(10)                # alpha level
@@ -224,7 +224,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             self._screen.blit(text2, [135, 303])
             text3=self._font.render("To quit, press ESCAPE.", True, pacman.white)
             self._screen.blit(text3, [165, 333])
-            pyautogui.keyUp(' ')
+            #pyautogui.keyUp(' ')
             pacman.pygame.display.flip()
             
             #for event in pacman.pygame.event.get():

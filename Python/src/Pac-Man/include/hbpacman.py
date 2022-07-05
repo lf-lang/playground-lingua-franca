@@ -333,23 +333,23 @@ class Player(pygame.sprite.Sprite):
         self.rect.top += path[0][1]
         self.num_moves += 1
 
-    def ai_avoid(self, layout, ghosts, threshold, num_moves):
-        # path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
-        # print("this is avoid: ", path)
-        # self.rect.left += path[0][0]
-        # self.rect.top += path[0][1]
-        # self.last_move = path[0]
-        if num_moves is not self.num_moves or len(self.next_moves) == 0:
-            path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
-            self.rect.left += path[0][0]
-            self.rect.top += path[0][1]
-            self.last_move = path[0]
-            self.next_moves = path[1:]
-        else:
-            self.rect.left += self.next_moves[0][0]
-            self.rect.top += self.next_moves[0][1]
-            self.last_move = self.next_moves[0]
-            self.next_moves = self.next_moves[1:]
+    def ai_avoid(self, layout, ghosts, threshold):
+        path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        print("this is avoid: ", path)
+        self.rect.left += path[0][0]
+        self.rect.top += path[0][1]
+        self.last_move = path[0]
+        # if num_moves is not self.num_moves or len(self.next_moves) == 0:
+        #     path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
+        #     self.rect.left += path[0][0]
+        #     self.rect.top += path[0][1]
+        #     self.last_move = path[0]
+        #     self.next_moves = path[1:]
+        # else:
+        #     self.rect.left += self.next_moves[0][0]
+        #     self.rect.top += self.next_moves[0][1]
+        #     self.last_move = self.next_moves[0]
+        #     self.next_moves = self.next_moves[1:]
         # path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
         # #TODO: make better solution, take into account other ghosts
         # made_move = False
