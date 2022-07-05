@@ -34,7 +34,6 @@ target Python {
 
 preamble {=
     import os
-    #import pyautogui
     from random import randint
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
