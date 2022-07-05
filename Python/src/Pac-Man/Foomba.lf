@@ -34,6 +34,7 @@ target Python {
 
 preamble {=
     import os
+    #import pyautogui
     from random import randint
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
@@ -389,7 +390,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Close {
 
-        reaction(startup) -> reset(Eat), reset(Avoid), continue(export) {=
+        reaction(startup) -> reset(Eat), reset(Avoid), history(export) {=
             if len(self._block_list) > 0 and len(self._ghosts) > 0:
                 if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
                     Eat.set()
@@ -410,7 +411,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
         
     } mode Avoid {
 
-        reaction(startup) -> continue(export) {=
+        reaction(startup) -> history(export) {=
             print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._ghosts, 7)
             #self._avoid_moves = self.character_instance.get_num_moves()
