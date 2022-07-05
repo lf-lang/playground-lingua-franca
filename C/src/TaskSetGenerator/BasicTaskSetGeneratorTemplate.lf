@@ -86,7 +86,7 @@ reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:floa
         if (self->periodic) {
             exe_time = (long long int) ((self->utilization * self->period) / self->num_task);
         } else {
-            exe_time = (long long int) ((self->total_time * self->utilization) / self->num_task);
+            exe_time = (long long int) ((self->utilization * self->total_time) / (2 * (self->num_task - self->utilization)));
         }
         for (int i = 0; i < self->num_task; i++) {
             task_config_t message;
