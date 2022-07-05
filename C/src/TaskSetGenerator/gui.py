@@ -34,7 +34,7 @@ def step(num_workers, scheduler_type):
     for key, value in char_to_replace.items():
         contents = contents.replace(key, value)
 
-    filename = f'practice_{scheduler_type}_{num_workers}'
+    filename = f'{"sporadic" if periodicity.get() == 1 else "periodic"}_{scheduler_type}_{num_workers}'
     filepath = f'{WORKING_DIR}/.gui/src/{filename}.lf'
     with open(filepath, "w") as lf_file:
         lf_file.write(contents)
