@@ -22,9 +22,9 @@ reactor CarlaSim(
     vehicle_type("vehicle.tesla.model3"),
     spawn_points({=None=})
 ) {
-    input command_;
-    output velocity_;
-    output position_;
+    input command;
+    output velocity;
+    output position;
     logical action world_is_ready;
     state carla_sim;
     timer timer_(10 msec, interval);
@@ -56,17 +56,17 @@ reactor CarlaSim(
         self.carla_sim.initialize_vehicle()
     =}
 
-    reaction(timer_) -> velocity_, position_ {=
+    reaction(timer_) -> velocity, position {=
         self.carla_sim.tick()
         print("setting velocity to ", self.carla_sim.get_vehicle_velocity())
-        velocity_.set(self.carla_sim.get_vehicle_velocity())
+        velocity.set(self.carla_sim.get_vehicle_velocity())
         p = self.carla_sim.get_vehicle_position()
         coordinate = make_coordinate([p.latitude, p.longitude, p.altitude])
-        position_.set(coordinate)
+        position.set(coordinate)
     =}
 
-    reaction(command_) {=
-        cmd = command_.value
+    reaction(command) {=
+        cmd = command.value
         self.carla_sim.apply_control(cmd.throttle, cmd.brake)
     =}
 }

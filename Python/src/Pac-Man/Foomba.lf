@@ -34,7 +34,6 @@ target Python {
 
 preamble {=
     import os
-    #import pyautogui
     from random import randint
     curr_dirname = os.path.dirname(__file__)
     sys.path.append(curr_dirname)
@@ -403,7 +402,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Eat {
 
-        reaction(startup) -> continue(export) {=
+        reaction(startup) -> history(export) {=
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
             export.set()

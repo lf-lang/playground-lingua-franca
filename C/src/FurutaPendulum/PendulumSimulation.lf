@@ -61,16 +61,6 @@ reactor PendulumSimulation(
     
     timer t(0, sample_period);
     
-    reaction(d) {=
-        // NOTE: Here, we effectively shift the disturbance to be
-        // simultaneous with the next sample. A more accurate model
-        // would apply the disturbance immediately.
-        // The update of the state vector in the reaction below
-        // should first be factored out to a method, when methods
-        // are implemented in C.
-        self->x[1] += d->value;
-    =}
-    
     reaction(t) -> theta, d_theta, phi, d_phi {=
         if (!self->first) {
             // Update the state.
@@ -152,6 +142,19 @@ reactor PendulumSimulation(
         lf_set(d_theta, self->x[1]);
         lf_set(phi, self->x[2]);
         lf_set(d_phi, self->x[3]);
+    =}
+    reaction(d) {=
+        // NOTE: If the disturbance is coincident with a sample,
+        // then it won't have any effect on theta until the next sample.
+        // Hence, this reaction needs to be after the previous.
+        // NOTE: If the disturbance is in between samples, then
+        // we effectively shift the disturbance to be
+        // simultaneous with the next sample. A more accurate model
+        // would apply the disturbance immediately.
+        // The update of the state vector in the reaction below
+        // should first be factored out to a method, when methods
+        // are implemented in C.
+        self->x[1] += d->value;
     =}
     reaction(u) {=
         self->latest_u = u->value;
