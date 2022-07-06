@@ -310,12 +310,16 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
         =}
 
         reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
+            print("in export mode")
+            print("pause is ", self._pause)
+            print("ai control is ", self._ai_control)
             keyboard_events = pacman.pygame.event.get()
             for event in keyboard_events:
                 if event.type == pacman.pygame.QUIT:
                     request_stop()
                     
                 if event.type == pacman.pygame.KEYDOWN:
+                    print("detecting key down")
                     if event.key == pacman.pygame.K_ESCAPE:
                         request_stop()
                     if event.key == pacman.pygame.K_RETURN:
@@ -359,10 +363,12 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
                     self._wall_list,
                     self._gate_list
                 )
+            print("setting sprite")
             sprite.set(self.character_instance)
             playerpause.set(self._pause)
             if not self._pause: #and self._active
                 if self._ai_control:
+                    print("changing to close")
                     Close.set()
                 
         =}
@@ -391,6 +397,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     } mode Close {
 
         reaction(startup) -> reset(Eat), reset(Avoid), history(export) {=
+            print("in mode close")
             if len(self._block_list) > 0 and len(self._ghosts) > 0:
                 if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
                     Eat.set()
@@ -404,6 +411,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
     } mode Eat {
 
         reaction(startup) -> history(export) {=
+            print("in mode eat")
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
             export.set()

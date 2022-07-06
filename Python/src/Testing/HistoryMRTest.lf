@@ -1,0 +1,54 @@
+### Testing new syntax for modal reactors
+
+target Python {};
+
+preamble{=
+    from random import randint
+=}
+
+### Ticking Reactor
+reactor Ticker {
+    timer tick(0, 500msec)
+
+    output click
+
+    reaction(tick) -> click {=
+        click.set(randint(0, 9))
+    =}
+}
+
+### Modal Reactor
+reactor Mody {
+    input click
+
+    initial mode One {
+        reaction(startup) {=
+            print("was started")
+        =}
+        reaction(click) -> reset(Two) {=
+            if click.value <= 4:
+                print("In mode 1, val: ", click.value)
+            else:
+                print(click.value, " is val, switching to Two")
+                Two.set()
+        =}
+    } mode Two {
+        reaction(startup) {=
+            print("was started")
+        =}
+        reaction(click) -> reset(One) {=
+            if click.value > 4:
+                print("In mode 2, val: ", click.value)
+            else:
+                print(click.value, " is val, switching to One")
+                One.set()
+        =}
+    }
+}
+
+main reactor {
+    ticky = new Ticker()
+    moody = new Mody()
+
+    ticky.click -> moody.click
+}
