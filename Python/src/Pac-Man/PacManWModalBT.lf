@@ -424,7 +424,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Close {
 
-        reaction(startup) -> reset(Eat), reset(Scared), history(export) {=
+        reaction(reset) -> reset(Eat), reset(Scared), history(export) {=
             if len(self._block_list) > 0 and len(self._ghosts) > 0:
                 if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 6)) > 5:
                     #print("ghost not close")
@@ -438,7 +438,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Eat {
 
-        reaction(startup) -> history(export) {=
+        reaction(reset) -> history(export) {=
             #print("food time")
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
@@ -447,7 +447,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
         
     } mode Scared {
 
-        reaction(startup) -> reset(Avoid), reset(Chase) {=
+        reaction(reset) -> reset(Avoid), reset(Chase) {=
             if self._frenzy:
                 #print("pac not scared")
                 Chase.set()
@@ -458,7 +458,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Avoid {
 
-        reaction(startup) -> history(export) {=
+        reaction(reset) -> history(export) {=
             print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._ghosts, 7)
             #self._avoid_moves = self.character_instance.get_num_moves()
@@ -467,7 +467,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Chase {
 
-        reaction(startup) -> history(export) {=
+        reaction(reset) -> history(export) {=
             print("chase time")
             self.character_instance.ai_chase(self._layout, self._ghosts, 7)
             export.set()

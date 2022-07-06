@@ -396,7 +396,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Close {
 
-        reaction(startup) -> reset(Eat), reset(Avoid), history(export) {=
+        reaction(reset) -> reset(Eat), reset(Avoid), history(export) {=
             print("in mode close")
             if len(self._block_list) > 0 and len(self._ghosts) > 0:
                 if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
@@ -410,7 +410,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
 
     } mode Eat {
 
-        reaction(startup) -> history(export) {=
+        reaction(reset) -> history(export) {=
             print("in mode eat")
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
@@ -419,7 +419,7 @@ reactor Player(width(0), height(0), image("images/Trollman.png"), character_clas
         
     } mode Avoid {
 
-        reaction(startup) -> history(export) {=
+        reaction(reset) -> history(export) {=
             print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._ghosts, 7)
             #self._avoid_moves = self.character_instance.get_num_moves()
