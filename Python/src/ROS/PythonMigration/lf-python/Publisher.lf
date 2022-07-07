@@ -5,7 +5,7 @@ preamble {=
     # Locate the MinimalPublisher class written for ROS
     # After source the ros package, 
     # Python import would be:
-    # from [package name]/[file name] import [class name]
+    # from [package name].[file name] import [class name]
     from py_pubsub.publisher_member_function import MinimalPublisher
 
     # copy and paste all imports from python file to here
