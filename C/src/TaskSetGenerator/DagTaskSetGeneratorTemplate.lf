@@ -8,17 +8,9 @@ target C {
 }
 
 reactor SimpleDagRunner(exe_time:time(200 msec)) {
-    //output out0:time;
-    //output out1:time;
-    //output out2:time;
+
     $STARTOUTPUT$
 
-
-    // reaction(startup) -> out0, out1, out2 {=
-    //     lf_set(out0, self->exe_time);
-    //     lf_set(out1, self->exe_time);
-    //     lf_set(out2, self->exe_time);
-    // =}
     $STARTUPREACTION$
 
 }
@@ -42,23 +34,6 @@ reactor Component {
 main reactor {
     runner = new SimpleDagRunner();
 
-    // task_1_0 = new Component();
-    // task_1_1 = new Component();
-    // task_1_2 = new Component();
-
-    // runner.out0 -> task_1_0.in;
-    // runner.out1 -> task_1_1.in;
-    // runner.out2 -> task_1_2.in;   
-    
-    // task_2_0 = new Component();
-    // task_2_1 = new Component();
-
-    // task_1_0.out -> task_2_0.in;
-    // task_1_1.out -> task_2_1.in;
-
-    // task_3_0 = new Component();
-    
-    // task_2_0.out -> task_3_0.in;
     $TASKCONFIG$
 
 }

@@ -6,8 +6,11 @@ import os
 import sys
 import subprocess
 import shutil
+import random
 from functools import partial
+from datetime import datetime
 import statistics
+
 
 def saveFile():
 
@@ -28,32 +31,62 @@ def saveFile():
         lf_file.close()
         print(f"File saved: {filepath}")
 
+def task_config(num_outputs, max_depth=4, seed=datetime.now()):
+    random.seed(seed)
+    tasks = ''
+    depths = []
+
+    depths.append(max_depth)    # The first node has a depth to the end.
+    for i in range(1, num_outputs):
+        depths.append(random.randint(1, max_depth))
+    
+    print(f'Depths: {depths}')
+
+    # Configure nodes at level 1.
+    for i in range(num_outputs):
+        tasks += f'task_1_{i} = new Component();\n\t'
+    tasks += '\n\t'
+    for i in range(num_outputs):
+        tasks += f'runner.out{i} -> task_1_{i}.in;\n\t'
+    tasks += '\n'
+
+    # Configure level 2 or higher nodes
+    current_level = 1
+    while current_level < max_depth:
+        for i in range(num_outputs):
+            if depths[i] > current_level:
+                tasks += f'\ttask_{current_level+1}_{i} = new Component();\n'
+        tasks += '\n'
+        for i in range(num_outputs):
+            if depths[i] > current_level:
+                tasks += f'\ttask_{current_level}_{i}.out -> task_{current_level+1}_{i}.in;\n'
+        tasks += '\n'
+        current_level += 1
+
+    return tasks
+
 def str_Generator(num_outputs) :
     global char_to_replace
-    backspace = '\b'
              
     char_to_replace= {
         '$TIMEOUT$':'10 sec',
         '$NUM_WORKERS$':'8',
         '$STARTOUTPUT$' : '',
         '$STARTUPREACTION$': '',
-        #'$TASKCONFIG$': '',
+        '$TASKCONFIG$': '',
     }
 
-    char_to_replace['$STARTUPREACTION$']+=f'{"reaction(startup) ->"}'
-    for i in range(0, num_outputs-1) :
-        char_to_replace['$STARTUPREACTION$']+=f'{" out"}{i}{","}'
-    char_to_replace['$STARTUPREACTION$']+=f'{" out"}{num_outputs-1}'
-    for i in range(0, num_outputs) :
-        if (i == 0) :
-            char_to_replace['$STARTUPREACTION$']+=' {=\n\t\t'
-        char_to_replace['$STARTOUTPUT$']+=f'{"output out"}{i}{":time;"}{chr(10)}{chr(9)}'
-        char_to_replace['$STARTUPREACTION$']+=f'{"lf_set(out"}{i}{", self->exe_time);"}'
-        if (i != num_outputs-1) :
-            char_to_replace['$STARTUPREACTION$']+=f'{chr(10)}{chr(9)}{chr(9)}'
-        else :
-            char_to_replace['$STARTUPREACTION$']+=f'{chr(10)}{chr(9)}'
-    char_to_replace['$STARTUPREACTION$']+='=}'
+    outputs = [f'out{i}' for i in range(num_outputs)]
+
+    for out in outputs:
+        char_to_replace['$STARTOUTPUT$'] += f'output {out}:time;\n\t'
+
+    char_to_replace['$STARTUPREACTION$'] += "reaction(startup) -> " + ", ".join(outputs) + " {=\n"
+    for out in outputs:
+        char_to_replace['$STARTUPREACTION$'] += f"\t\tlf_set({out}, self->exe_time);\n"
+    char_to_replace['$STARTUPREACTION$'] += "\t=}"
+
+    char_to_replace['$TASKCONFIG$'] += task_config(num_outputs, max_depth=8)
 
 
 if __name__ == "__main__":
@@ -71,5 +104,5 @@ if __name__ == "__main__":
 
     os.mkdir(f'{WORKING_DIR}/.gui')
     os.mkdir(f'{WORKING_DIR}/.gui/src')
-    str_Generator(3)
+    str_Generator(8)
     saveFile()
