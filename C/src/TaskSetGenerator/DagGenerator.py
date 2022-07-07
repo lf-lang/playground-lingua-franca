@@ -19,9 +19,9 @@ def saveFile():
     char_to_replace= {
         '$TIMEOUT$':'10 sec',
         '$NUM_WORKERS$':'8',
-        '$STARTOUTPUT$' : 'output out0:time\n\
-    output out1:time\n\
-    output out2:time',
+        '$STARTOUTPUT$' : 'output out0:time;\n\
+    output out1:time;\n\
+    output out2:time;',
         '$STARTUPREACTION$': 'reaction(startup) -> out0, out1, out2 {=\n\
         lf_set(out0, self->exe_time);\n\
         lf_set(out1, self->exe_time);\n\
