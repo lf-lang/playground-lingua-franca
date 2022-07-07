@@ -11,24 +11,11 @@ import statistics
 
 def saveFile():
 
-    global template
+    global char_to_replace, template
     
     with open(TEMPLATE_PATH) as f:
         template = f.read()
-         
-    char_to_replace= {
-        '$TIMEOUT$':'10 sec',
-        '$NUM_WORKERS$':'8',
-        '$STARTOUTPUT$' : 'output out0:time;\n\
-    output out1:time;\n\
-    output out2:time;',
-        '$STARTUPREACTION$': 'reaction(startup) -> out0, out1, out2 {=\n\
-        lf_set(out0, self->exe_time);\n\
-        lf_set(out1, self->exe_time);\n\
-        lf_set(out2, self->exe_time);\n\
-    =}',
-        #'$TASKCONFIG$': '',
-    }
+
     
     contents = template
     for key, value in char_to_replace.items():
@@ -40,6 +27,34 @@ def saveFile():
         lf_file.write(contents)
         lf_file.close()
         print(f"File saved: {filepath}")
+
+def str_Generator(num_outputs) :
+    global char_to_replace
+    backspace = '\b'
+             
+    char_to_replace= {
+        '$TIMEOUT$':'10 sec',
+        '$NUM_WORKERS$':'8',
+        '$STARTOUTPUT$' : '',
+        '$STARTUPREACTION$': '',
+        #'$TASKCONFIG$': '',
+    }
+
+    char_to_replace['$STARTUPREACTION$']+=f'{"reaction(startup) ->"}'
+    for i in range(0, num_outputs-1) :
+        char_to_replace['$STARTUPREACTION$']+=f'{" out"}{i}{","}'
+    char_to_replace['$STARTUPREACTION$']+=f'{" out"}{num_outputs-1}'
+    for i in range(0, num_outputs) :
+        if (i == 0) :
+            char_to_replace['$STARTUPREACTION$']+=' {=\n\t\t'
+        char_to_replace['$STARTOUTPUT$']+=f'{"output out"}{i}{":time;"}{chr(10)}{chr(9)}'
+        char_to_replace['$STARTUPREACTION$']+=f'{"lf_set(out"}{i}{", self->exe_time);"}'
+        if (i != num_outputs-1) :
+            char_to_replace['$STARTUPREACTION$']+=f'{chr(10)}{chr(9)}{chr(9)}'
+        else :
+            char_to_replace['$STARTUPREACTION$']+=f'{chr(10)}{chr(9)}'
+    char_to_replace['$STARTUPREACTION$']+='=}'
+
 
 if __name__ == "__main__":
     global LF_PATH, WORKING_DIR, TEMPLATE_PATH
@@ -56,4 +71,5 @@ if __name__ == "__main__":
 
     os.mkdir(f'{WORKING_DIR}/.gui')
     os.mkdir(f'{WORKING_DIR}/.gui/src')
+    str_Generator(3)
     saveFile()
