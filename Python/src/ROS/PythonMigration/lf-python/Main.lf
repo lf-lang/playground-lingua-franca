@@ -1,0 +1,10 @@
+target Python;
+
+import Publisher from "Publisher.lf"
+import Subscriber from "Subscriber.lf"
+
+federated reactor {
+    publisher = new Publisher();
+    subscriber = new Subscriber();
+    publisher.topic -> subscriber.topic;
+}
