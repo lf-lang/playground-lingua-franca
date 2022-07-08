@@ -14,7 +14,7 @@ preamble {=
     from std_msgs.msg import String
 =}
 
-reactor Publisher {
+reactor Sender {
     state minimal_publisher;
     timer t(0, 500ms);
     output topic;

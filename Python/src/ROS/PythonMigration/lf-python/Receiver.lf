@@ -14,7 +14,7 @@ preamble {=
     from std_msgs.msg import String
 =}
 
-reactor Subscriber {
+reactor Receiver {
     state minimal_subscriber;
     input topic;
 
@@ -22,7 +22,7 @@ reactor Subscriber {
         rclpy.init(args=None)
         self.minimal_subscriber = MinimalSubscriber()
 
-        ### rclpy.spin is commented out. ###
+        # rclpy.spin is commented out.
         #rclpy.spin(self.minimal_subscriber)
     =}
 

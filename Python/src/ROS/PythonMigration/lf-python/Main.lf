@@ -1,10 +1,10 @@
 target Python;
 
-import Publisher from "Publisher.lf"
-import Subscriber from "Subscriber.lf"
+import Sender from "Sender.lf"
+import Receiver from "Receiver.lf"
 
 federated reactor {
-    publisher = new Publisher();
-    subscriber = new Subscriber();
-    publisher.topic -> subscriber.topic;
+    sender = new Sender();
+    receiver = new Receiver();
+    sender.topic -> receiver.topic;
 }
