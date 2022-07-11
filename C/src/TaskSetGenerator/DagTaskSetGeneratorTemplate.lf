@@ -15,6 +15,9 @@ reactor SimpleDagRunner(exe_time:time(200 msec)) {
 
 }
 
+
+$COMPONENTS$
+
 reactor Component {
     input in:time;
     output out:time;

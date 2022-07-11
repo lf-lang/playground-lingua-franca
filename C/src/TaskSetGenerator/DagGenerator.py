@@ -1,5 +1,8 @@
+# DAG taskset generator
+# @author Yunsang Cho
+# @author ByeongGil Jun
 
-
+from copyreg import constructor
 import numpy as np
 
 import os
@@ -10,6 +13,32 @@ import random
 from functools import partial
 from datetime import datetime
 import statistics
+
+
+# A node corresponding to one DAG component reactor
+class Node:
+    
+    def __init__(self, id, parents):
+        self.id = id
+        self.level = int(str(id).split('_')[0])
+        self.index = int(str(id).split('_')[-1])
+        self.name = f'task_{id}'
+        if self.level > 1:
+            self.parents = [f'task_{self.level-1}_{p}' for p in sorted(parents)]
+        else:
+            self.parents = ['runner']
+        self.size= len(self.parents)
+
+    def get_string(self):
+        result = f'{self.name} = new Component_{self.size}();\n'
+        if self.level == 1:
+            return result + f'\trunner.out{self.index} -> {self.name}.in1;\n\n'
+
+
+        for i, parent in enumerate(self.parents):
+            result += f'\t{parent}.out -> {self.name}.in{i+1};\n'
+        
+        return result + '\n'
 
 
 def saveFile():
@@ -31,7 +60,8 @@ def saveFile():
         lf_file.close()
         print(f"File saved: {filepath}")
 
-def task_config(num_outputs, max_depth=4, seed=datetime.now()):
+
+def task_config_simple(num_outputs, max_depth=4, seed=datetime.now()):
     random.seed(seed)
     tasks = ''
     depths = []
@@ -65,7 +95,71 @@ def task_config(num_outputs, max_depth=4, seed=datetime.now()):
 
     return tasks
 
-def str_Generator(num_outputs) :
+
+
+
+
+def task_config_multiple_inputs(num_outputs, max_depth, seed=datetime.now()):
+    random.seed(seed)
+
+    heights = [random.randint(1, num_outputs) for _ in range(max_depth)]
+    heights[0] = num_outputs
+
+    arr_for_random = [[i for i in range(N)] for N in range(1, num_outputs+1)]
+    task_arr = [[] for _ in range(max_depth)]
+
+    for i, height in enumerate(heights):
+        if i == 0:
+            for h in range(height):
+                task_arr[i].append(Node(f'{i+1}_{h}', []))
+        else:
+            sizes = [random.randint(1, heights[i-1]) for _ in range(height)]
+            for h in range(height):
+                random.shuffle(arr_for_random[heights[i-1]-1])
+                task_arr[i].append(Node(f'{i+1}_{h}', arr_for_random[heights[i-1]-1][:sizes[h]].copy()))
+
+
+
+    task_config = ''
+    for tasks in task_arr:
+        for task in tasks:
+            task_config += task.get_string() + '\t'
+
+    return task_config
+
+
+    
+
+def make_component_reactor(num_outputs=1):
+    result = ''
+    for i in range(1, num_outputs+1):
+        inputs = [f'in{j}' for j in range(1, i+1)]
+        
+        component = f'reactor Component_{i} {{\n'
+                
+        for input in inputs:
+            component += f'\tinput {input}:time;\n'
+        component += f'\toutput out:time;\n'
+        component += f'\tstate exe_time:time(0);\n\n'
+        
+        # define reaction
+        component += f'\treaction({", ".join(inputs)}) -> out {{=\n'
+        component += f'\t\tlong long int physical_start_time = lf_time_physical();\n\n'
+        component += f'\t\tif (in1->is_present) {{\n\t\t\tself->exe_time = in1->value;\n\t\t}}'
+        
+        for input in inputs[1:]:
+            component += f' else if ({input}->is_present) {{\n\t\t\tself->exe_time = {input}->value;\n\t\t}}'
+
+        component += '\n\t\twhile (lf_time_physical() < physical_start_time + self->exe_time) {\n\n\t\t}\n'
+        component += '\t\tlf_set(out, self->exe_time);\n'
+        component += '\t=}\n}\n'
+
+        result += component + '\n'
+
+    return result
+
+
+def str_Generator(num_outputs, max_depth, seed=datetime.now()) :
     global char_to_replace
              
     char_to_replace= {
@@ -74,6 +168,7 @@ def str_Generator(num_outputs) :
         '$STARTOUTPUT$' : '',
         '$STARTUPREACTION$': '',
         '$TASKCONFIG$': '',
+        '$COMPONENTS$': '',
     }
 
     outputs = [f'out{i}' for i in range(num_outputs)]
@@ -85,10 +180,13 @@ def str_Generator(num_outputs) :
     for out in outputs:
         char_to_replace['$STARTUPREACTION$'] += f"\t\tlf_set({out}, self->exe_time);\n"
     char_to_replace['$STARTUPREACTION$'] += "\t=}"
+    char_to_replace['$COMPONENTS$'] += make_component_reactor(num_outputs)
 
-    char_to_replace['$TASKCONFIG$'] += task_config(num_outputs, max_depth=8)
 
+    #char_to_replace['$TASKCONFIG$'] += task_config_simple(num_outputs, max_depth=8)
+    char_to_replace['$TASKCONFIG$'] += task_config_multiple_inputs(num_outputs, max_depth, seed)
 
+    
 if __name__ == "__main__":
     global LF_PATH, WORKING_DIR, TEMPLATE_PATH
     LF_PATH = os.getenv("LF_PATH")
@@ -104,5 +202,8 @@ if __name__ == "__main__":
 
     os.mkdir(f'{WORKING_DIR}/.gui')
     os.mkdir(f'{WORKING_DIR}/.gui/src')
-    str_Generator(8)
+    str_Generator(num_outputs=4, max_depth=4, seed=datetime.now())
     saveFile()
+
+
+

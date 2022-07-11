@@ -22,11 +22,12 @@ reactor SimpleDagRunner(exe_time:time(200 msec)) {
 
 reactor Component {
     input in:time;
+
     output out:time;
-    
+     
     reaction(in) -> out {=
         long long int physical_start_time = lf_time_physical();
-        
+
         while (lf_time_physical() < physical_start_time + in->value) {
 
         }
