@@ -12,6 +12,9 @@ blue = (0,0,255)
 green = (0,255,0)
 gray = (90, 90, 90)
 red = (255,0,0)
+burgundy = (172, 56, 56)
+wash_blue = (0, 102, 204)
+filter_orange = (255, 153, 51)
 purple = (255,0,255)
 yellow   = (255, 255, 0)
 brown = (139, 69, 19)
@@ -349,7 +352,7 @@ class AGV(pygame.sprite.Sprite):
 
 
 #Inheritime Player klassist
-class Ghost(AGV):
+class People(AGV):
     # Change the speed of the ghost
     def changespeed(self,list,ghost,turn,steps,l):
       try:

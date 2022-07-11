@@ -237,14 +237,14 @@ def euclid_avoider(layout, ghosts, x, y):
             best = [change]
     return best
 
-def euclid_close_ghost(ghosts, x, y):
+def euclid_close_people(people, x, y):
     minimum = sys.maxsize
-    closest = ghosts[0]
-    for ghost in ghosts:
-        if euclid_dist(ghost.rect.left, ghost.rect.top, x, y) < minimum:
-            minimum = euclid_dist(ghost.rect.left, ghost.rect.top, x, y)
-            closest = ghost
-    return [ghost, minimum]
+    closest = people[0]
+    for person in people:
+        if euclid_dist(person.rect.left, person.rect.top, x, y) < minimum:
+            minimum = euclid_dist(person.rect.left, person.rect.top, x, y)
+            closest = person
+    return [person, minimum]
 
 def euclid_dist(x1, y1, x2, y2):
     return sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
@@ -280,13 +280,13 @@ def avg_dist_funcher(ghosts_dists):
         total += dist_funch(ghost[0])
     return total
 
-def avg_ghost_euclid_funcher(ghosts, x, y):
+def avg_people_euclid_funcher(people, x, y):
     total = 0
-    for ghost in ghosts:
-        total += mine_dist_funch(euclid_dist(ghost.rect.left, ghost.rect.top, x, y))
-    return total/(len(ghosts))
+    for person in people:
+        total += mine_dist_funch(euclid_dist(person.rect.left, person.rect.top, x, y))
+    return total/(len(people))
 
-def peopleavoid(layout, ghosts, x, y):
+def peopleavoid(layout, people, x, y):
     # new_moves = {
     #         "LEFT": [30, 0], 
     #         "RIGHT": [-30, 0], 
@@ -298,29 +298,69 @@ def peopleavoid(layout, ghosts, x, y):
     #         # "DIAG3": [-30, -30]
     #         }
     #ghosts_dists = closestghost(layout, ghosts, x, y, 7, True)
-    minimum = avg_ghost_euclid_funcher(ghosts, x, y)
+    minimum = avg_people_euclid_funcher(people, x, y)
     print("avoid min: ", minimum)
     best = [[0, 0]]
-    for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+    for name, change in possiblepacmoves(layout, people, x, y).items():
         new_x = x + change[0]
         new_y = y + change[1]
         #ghost_dists = closestghost(layout, ghosts, new_x, new_y, 7, True)
         print("avoid min: ", minimum)
-        if avg_ghost_euclid_funcher(ghosts, new_x, new_y) < minimum:
-            minimum = avg_ghost_euclid_funcher(ghosts, new_x, new_y)
+        if avg_people_euclid_funcher(people, new_x, new_y) < minimum:
+            minimum = avg_people_euclid_funcher(people, new_x, new_y)
             best = [change]
 
     print("best is ", best)
     return best
 
-def pplavoidcloseghost(layout, ghosts, x, y):
-    closeghost = euclid_close_ghost(ghosts, x, y)
-    minimum = euclid_dist(closeghost[0].rect.left, closeghost[0].rect.top, x, y)
+def pplavoidcloseghost(layout, people, x, y):
+    closeperson = euclid_close_people(people, x, y)
+    minimum = euclid_dist(closeperson[0].rect.left, closeperson[0].rect.top, x, y)
     best = [[0, 0]]
-    for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+    for name, change in possiblepacmoves(layout, people, x, y).items():
         new_x = x + change[0]
         new_y = y + change[1]
-        if euclid_dist(closeghost[0].rect.left, closeghost[0].rect.top, new_x, new_y) > minimum:
-            minimum = euclid_dist(closeghost[0].rect.left, closeghost[0].rect.top, new_x, new_y)
+        if euclid_dist(closeperson[0].rect.left, closeperson[0].rect.top, new_x, new_y) > minimum:
+            minimum = euclid_dist(closeperson[0].rect.left, closeperson[0].rect.top, new_x, new_y)
             best = [change]
     return best
+
+def mod_a_star(layout, people, x, y, goal_x, goal_y, acceptable_dev = 220):
+    paths = []
+    accept_dist = euclid_dist(x, y, goal_x, goal_y) + acceptable_dev
+    def pathfinder(layout, people, x, y, temp = [], search_len = 15, add_anyways = False):
+        if len(temp) < search_len and euclid_dist(x, y, goal_x, goal_y) <= accept_dist:
+            for name, change in possiblepacmoves(layout, people, x, y).items():
+                if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
+                    new_x = x + change[0]
+                    new_y = y + change[1]
+                    if new_x == goal_x and new_y == goal_y:
+                        temp.append(change)
+                        paths.append(temp)
+                        break
+                    else:
+                        pathfinder(layout, people, new_x, new_y, [*temp, change], search_len, add_anyways)
+        elif add_anyways:
+            #print("added anyways")
+            paths.append(temp)
+    pathfinder(layout, people, x, y)
+    #print(paths, " is paths")
+    #print("this is paths")
+    if len(paths) > 0:
+        smallest = []
+        for path in paths:
+            if len(path) == min(map(len, paths)):
+                smallest.append(path)
+        return smallest[randint(0, len(smallest) - 1)]
+    else:
+        # minimum = sys.maxsize
+        # move = None
+        # for name, change in possiblepacmoves(layout, ghosts, x, y).items():
+        #     if avg_block_dist(blocks, x + change[0], y + change[1]) < minimum:
+        #         move = [change]
+        #         minimum = avg_block_dist(blocks, x + change[0], y + change[1])
+        #         print("move is ", move)
+        #         print("minimum is ", minimum)
+        pathfinder(layout, ghosts, x, y, blocks, [], 3, True)
+        #print(paths)
+        return paths[randint(0, len(paths) - 1)]

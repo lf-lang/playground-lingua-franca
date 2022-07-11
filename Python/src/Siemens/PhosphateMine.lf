@@ -43,7 +43,7 @@ preamble {=
 
     # Construct a table of ghost characteristics to access
     # using the bank member as the index.
-    ghost_specs = [
+    people_specs = [
         {
             "name": "Pinky",
             "directions": mine.Pinky_directions,
@@ -157,7 +157,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
         for sprite in moving_sprites:
             if sprite.is_present and isinstance(sprite.value, mine.pygame.sprite.Group):
                 sprite.value.draw(self._screen)
-            elif isinstance(sprite.value, mine.AGV) and not isinstance(sprite.value, mine.Ghost):
+            elif isinstance(sprite.value, mine.AGV) and not isinstance(sprite.value, mine.People):
                 agv = sprite.value
                 #print("agv battery is ", agv.battery)
                 sprite_list.add(sprite.value)
@@ -252,7 +252,7 @@ reactor BaseCharacter(width(0), height(0), image("images/user.png"), character_c
 reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_class({=mine.Player=})) {
     input game_over
     input frenzy
-    input[4] ghost_sprites
+    input[4] people_sprites
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input block_list
@@ -275,14 +275,14 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     
     input game_over
     input frenzy
-    input[4] ghost_sprites
+    input[4] people_sprites
     input wall_list # Receive updated wall list
     input gate_list # Receive updated gate list
     input block_list
     input icon
 
     state _frenzy(False)
-    state _ghosts({=[]=})
+    state _people({=[]=})
     state _layout({=mine.walls=})
     state _block_list({=[]=})
     state _ai_control(True)
@@ -291,6 +291,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     state _gate_list
     state _pause({=False=})
     state _eat_moves(0)
+    state _charging(False)
     # state _avoid_moves(0)
 
     output sprite
@@ -342,21 +343,17 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     if event.key == mine.pygame.K_m:
                         self._pause = False
                         self._ai_control = not self._ai_control
-                    if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
+                    if not self._ai_control and not self._pause and self._active:
                         if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
                             self.character_instance.changespeed(-30, 0)
-                            self.character_instance.charge(self.energy_cost)
                         if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
                             self.character_instance.changespeed(30, 0)
-                            self.character_instance.charge(self.energy_cost)
                         if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
                             self.character_instance.changespeed(0, -30)
-                            self.character_instance.charge(self.energy_cost)
                         if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
                             self.character_instance.changespeed(0, 30)
-                            self.character_instance.charge(self.energy_cost)
             
-                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0: 
+                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
                     if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
                         self.character_instance.changespeed(30, 0)
                     if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
@@ -366,7 +363,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
                         self.character_instance.changespeed(0, -30)
 
-            if not self._ai_control and not self._pause and self._active:
+            if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
+                self.character_instance.charge(self.energy_cost)
                 self.character_instance.update(
                     self._wall_list,
                     self._gate_list
@@ -382,11 +380,11 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                 
         =}
 
-        reaction(ghost_sprites) {=
+        reaction(people_sprites) {=
             self._ghosts = []
-            for ghost in ghost_sprites:
-                if ghost.is_present:
-                    self._ghosts.append(ghost.value)
+            for person in people_sprites:
+                if person.is_present:
+                    self._people.append(person.value)
         =}
 
         reaction(block_list) {=
@@ -407,9 +405,9 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
         reaction(startup) -> reset(Eat), reset(Avoid), continue(export) {=
             #print("in mode close")
-            if len(self._block_list) > 0 and len(self._ghosts) > 0:
+            if len(self._block_list) > 0 and len(self._people) > 0:
                 #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
-                if ai.euclid_close_ghost(self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top)[1] > 180:
+                if ai.euclid_close_ghost(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > 180:
                     Eat.set()
                 else:
                     #print("ghost close")
@@ -422,7 +420,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
         reaction(startup) -> continue(export) {=
             #print("in mode eat")
-            self.character_instance.ai_eat(mine.walls, self._ghosts, self._block_list, self._eat_moves)
+            self.character_instance.ai_eat(mine.walls, self._people, self._block_list, self._eat_moves)
             if self.character_instance.last_move is not [0, 0]:
                 self.character_instance.charge(self.energy_cost)
             self._eat_moves = self.character_instance.get_num_moves()
@@ -433,7 +431,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
         reaction(startup) -> continue(export) {=
             #print("avoid time")
-            self.character_instance.ai_avoid(self._layout, self._ghosts, 7)
+            self.character_instance.ai_avoid(self._layout, self._people, 7)
             if self.character_instance.last_move is not [0, 0]:
                 self.character_instance.charge(self.energy_cost)
             #self._avoid_moves = self.character_instance.get_num_moves()
@@ -445,7 +443,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
 ## Ghosts
 # FIXME: Different Ghosts should have different personalities
-reactor Ghost (directions({=()=}), name("Stinky")) extends BaseCharacter {
+reactor People (directions({=()=}), name("Stinky")) extends BaseCharacter {
     input tick    
     input playerpause # pause from player
     input game_over
@@ -506,7 +504,7 @@ reactor Ghost (directions({=()=}), name("Stinky")) extends BaseCharacter {
 }
 
 #### Controller
-reactor GameController(number_of_ghosts(4)) {
+reactor GameController(number_of_people(4)) {
     output wall_list  # List of walls on the map
     output gate
     output block_list # List of yummy dots for Pac-Man
@@ -514,7 +512,7 @@ reactor GameController(number_of_ghosts(4)) {
     output game_over
     output frenzy
 
-    input[number_of_ghosts] ghost_sprites
+    input[number_of_people] people_sprites
     input agv_sprite
     input tick # The game tick
     input restart
@@ -591,12 +589,12 @@ reactor GameController(number_of_ghosts(4)) {
         score.set(self._score)
     =}
 
-    reaction(ghost_sprites) -> game_over {=
+    reaction(people_sprites) -> game_over {=
         # FIXME: Make this more efficient.
         monsta_list = mine.pygame.sprite.RenderPlain()
-        for ghost in ghost_sprites:
-            if ghost.is_present:
-                monsta_list.add(ghost.value)
+        for person in people_sprites:
+            if person.is_present:
+                monsta_list.add(person.value)
         
         monsta_hit_list = mine.pygame.sprite.spritecollide(self._agv_sprite, monsta_list, False)
 
@@ -658,12 +656,12 @@ main reactor {
     #width = {=mine.w=}, height = {=mine.p_h=}, image = "images/mine.png"
     
     # Ghosts
-    ghosts = new[4] Ghost(
-        width  = {= ghost_specs[bank_index]["width"] =}, 
-        height = {= ghost_specs[bank_index]["height"] =}, 
-        directions = {= ghost_specs[bank_index]["directions"] =},   
-        name = {= ghost_specs[bank_index]["name"] =},
-        character_class = ({=mine.Ghost=})
+    peoples = new[4] People(
+        width  = {= people_specs[bank_index]["width"] =}, 
+        height = {= people_specs[bank_index]["height"] =}, 
+        directions = {= people_specs[bank_index]["directions"] =},   
+        name = {= people_specs[bank_index]["name"] =},
+        character_class = ({=mine.People=})
     )
     # image  = {= ghost_specs[bank_index]["image"] =}
 
@@ -671,13 +669,13 @@ main reactor {
     display = new Display( num_moving_sprites = 6, num_static_sprites = 2 )
 
     # Send the list of walls to the ghosts so that they can avoid running into walls
-    (controller.wall_list)+ -> ghosts.wall_list
+    (controller.wall_list)+ -> peoples.wall_list
 
     # Send the sprites to the display to be drawn
      
     controller.block_list, 
         agv.sprite, 
-        ghosts.sprite -> 
+        peoples.sprite -> 
             display.moving_sprites
     
     (controller.wall_list, controller.gate)+ -> 
@@ -685,28 +683,28 @@ main reactor {
 
     (display.tick)+ -> 
         controller.tick, 
-        ghosts.tick
+        peoples.tick
 
     #Send pause player to game controller and ghosts
-    (agv.playerpause)+ -> ghosts.playerpause, display.playerpause
+    (agv.playerpause)+ -> peoples.playerpause, display.playerpause
     
     #Send pause controller to player and ghosts
     #controller.controllerpause -> player.controllerpause
     
     agv.sprite -> controller.agv_sprite
  
-    (ghosts.sprite)+ -> controller.ghost_sprites, agv.ghost_sprites
+    (peoples.sprite)+ -> controller.people_sprites, agv.people_sprites
     
     controller.score -> display.score
 
-    ghosts.icon_name, agv.icon_name -> display.icon_name
+    peoples.icon_name, agv.icon_name -> display.icon_name
 
-    display.icon -> ghosts.icon, agv.icon
+    display.icon -> peoples.icon, agv.icon
     
     #sending game_over to player causes problem
-    (controller.game_over)+ -> display.game_over, agv.game_over, ghosts.game_over
+    (controller.game_over)+ -> display.game_over, agv.game_over, peoples.game_over
     
-    (agv.restart)+ -> controller.restart, display.restart, ghosts.restart
+    (agv.restart)+ -> controller.restart, display.restart, peoples.restart
         
     controller.block_list -> agv.block_list
     
