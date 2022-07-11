@@ -67,7 +67,7 @@ def possiblepacmoves(layout, ghosts, x, y, cond=True):
             "LEFT": [30, 0], 
             "RIGHT": [-30, 0], 
             "DOWN": [0, 30], 
-            "UP": [0, -30]
+            "UP": [0, -30],
             }
         possible = {}
         add = True
@@ -174,7 +174,7 @@ def avoider(layout, ghosts, x, y, threshold):
                     avoidfinder(layout, ghosts, new_x, new_y, threshold, [*temp, change])
         else:
             paths.append(temp)
-    avoidfinder(layout, ghosts, x, y, 3)
+    avoidfinder(layout, ghosts, x, y, 2)
     print("avoider paths: ", paths)
     maximum = len(closeghostdist(layout, ghosts, x, y, 7))
     best = []
@@ -206,7 +206,7 @@ def allghostavoid(layout, ghosts, x, y, threshold):
             paths.append(temp)
     avoidfinder(layout, ghosts, x, y, 2)
     print("avoider paths: ", paths)
-    ghosts_dists = closestghost(layout, ghosts, x, y, 7, True)
+    ghosts_dists = closestghost(layout, ghosts, x, y, 5, True)
     minimum = avg_dist_funcher(ghosts_dists)
     best = []
     for path in paths:
@@ -215,7 +215,7 @@ def allghostavoid(layout, ghosts, x, y, threshold):
         for move in path:
             pos_x += move[0]
             pos_y += move[1]
-        dist = avg_dist_funcher(closestghost(layout, ghosts, pos_x, pos_y, 7, True))
+        dist = avg_dist_funcher(closestghost(layout, ghosts, pos_x, pos_y, 5, True))
         if dist < minimum:
             minimum = dist
             best = path
@@ -250,7 +250,7 @@ def avg_block_dist(blocks, x, y):
 
 def dist_funch(x):
     if x == 0:
-        return 4500 * (2-x)
+        return 2000 * (2-x)
     return (10/(x - 0.9999)) - 1
     #return (2 ** (-x+8))
 
@@ -258,4 +258,4 @@ def avg_dist_funcher(ghosts_dists):
     total = 0
     for ghost in ghosts_dists:
         total += dist_funch(ghost[0])
-    return total
+    return total/(len(ghosts_dists))
