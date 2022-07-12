@@ -23,6 +23,11 @@ walls = [ [0,0,6,600],
               [0,600,606,6],
               [600,0,6,606],
             ]
+minespot = [66, 96]
+chargerspot = [66, 516]
+washspot = [276, 216]
+filterspot = [426, 546]
+storespot = [546, 126]
 
 # This class represents the bar at the bottom that the player controls
 class Wall(pygame.sprite.Sprite):
@@ -95,7 +100,7 @@ def setupRoomOne(all_sprites_list):
     # return our new list
     return wall_list
 
-def setupRoomMine(all_sprites_list):
+def setupMineWalls(all_sprites_list):
     # Make the walls. (x_pos, y_pos, width, height)
     wall_list=pygame.sprite.RenderPlain()
      
@@ -120,6 +125,21 @@ def setupGate(all_sprites_list):
       gate.add(Wall(282,242,42,2,white))
       all_sprites_list.add(gate)
       return gate
+
+class ActionPlace(pygame.sprite.Sprite):
+      
+      def __init__(self, name, color, x, y, width, height):
+            
+            pygame.sprite.Sprite.__init__(self)
+            self.image = pygame.Surface([width, height])
+            self.image.fill(color)
+            #self.image.set_colorkey(color)
+            #pygame.draw.rect(self.image, color, [0, 0, width, height])
+
+            self.rect = self.image.get_rect()
+            self.rect.left = x
+            self.rect.top = y
+            self.name = name
 
 # This class represents the ball        
 # It derives from the "Sprite" class in Pygame

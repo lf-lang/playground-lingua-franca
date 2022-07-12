@@ -407,15 +407,13 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                 findspot.set()
         =}
     } mode findspot {
-        reaction(startup) -> reset(Location_check) {=
+        reaction(startup) -> history(export) {=
             # implement to go to intended location
-            cond = False
-            if cond:
-                Location_check.set()
+            export.set()
         =}
     } mode Close {
 
-        reaction(reset) -> reset(Eat), reset(Avoid), history(export) {=
+        reaction(reset) -> reset(Location_check), reset(Avoid), history(export) {=
             #print("in mode close")
             if len(self._people) > 0:
                 #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
