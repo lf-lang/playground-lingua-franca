@@ -100,7 +100,7 @@ def task_config_simple(num_outputs, max_depth=4, seed=datetime.now()):
 
 
 def task_config_multiple_inputs(num_outputs, max_depth, seed=datetime.now()):
-    random.seed(seed)
+    random.seed(seed.timestamp())
 
     heights = [random.randint(1, num_outputs) for _ in range(max_depth)]
     heights[0] = num_outputs
