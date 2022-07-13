@@ -267,7 +267,7 @@ reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_
 
 ## Player
 # Should be replacable with an AI
-reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), energy_cost(-0.5)) {
+reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), energy_cost(-0.5), charge_at(20), risk(180)) {
     timer pygame_event(0, 100 msec)
     state _active(True)
     
@@ -277,6 +277,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     input gate_list # Receive updated gate list
     input icon
 
+    logical action scheduler
+
     state _people({=[]=})
     state _layout({=mine.walls=})
     state _ai_control(True)
@@ -284,8 +286,10 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     state _wall_list
     state _gate_list
     state _pause({=False=})
-    state _eat_moves(0)
+    state _find_moves(0)
     state _action({="mining"=})
+    state _prev_action({="mining"=})
+    state _scheduled(True)
 
     output sprite
     output icon_name
@@ -308,7 +312,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             self._gate_list = gate_list.value
         =}
 
-        reaction(pygame_event) -> sprite, playerpause, restart, reset(Charge_check) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
             #print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
@@ -368,7 +372,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             playerpause.set(self._pause)
             if not self._pause and self.character_instance.battery > 0: #and self._active
                 if self._ai_control:
-                    Charge_check.set()
+                    Close.set()
                 
         =}
 
@@ -386,10 +390,10 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         =}
 
     } mode Charge_check {
-        reaction(reset) -> reset(charging), reset(Close) {=
+        reaction(reset) -> reset(Location_check) {=
             if self.character_instance.battery <= self.charge_at:
                 self._action = "charging"
-            Close.set()
+            Location_check.set()
         =}
     } mode Location_check {
         reaction(reset) -> reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing), reset(findspot) {=
@@ -408,17 +412,99 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         =}
     } mode findspot {
         reaction(startup) -> history(export) {=
-            # implement to go to intended location
+            if self._action == "mining":
+                self.character_instance.approach(self._layout, self._people, mine.minespot, self._find_moves)
+            elif self._action == "charging":
+                self.character_instance.approach(self._layout, self._people, mine.chargerspot, self._find_moves)
+            elif self._action == "washing":
+                self.character_instance.approach(self._layout, self._people, mine.washspot, self._find_moves)
+            elif self._action == "filtering":
+                self.character_instance.approach(self._layout, self._people, mine.filterspot, self._find_moves)
+            elif self._action == "storing":
+                self.character_instance.approach(self._layout, self._people, mine.storespot, self._find_moves)
+
+            if self.character_instance.last_move is not [0, 0]:
+                self.character_instance.charge(self.energy_cost)
+
+            self._find_moves = self.character_instance.num_moves
+            export.set()
+        =}
+    } mode mining {
+        #implement
+        reaction(reset) -> history(export) {=
+            if self._scheduled:
+                scheduler.schedule(SEC(4))
+                self._scheduled = False
+            export.set()
+        =}
+
+        reaction(scheduler) -> history(export) {=
+            self._scheduled = True
+            self._prev_action = "mining"
+            self._action = "washing"
+            export.set()
+        =}
+
+    } mode washing {
+
+        reaction(reset) -> history(export) {=
+            if self._scheduled:
+                scheduler.schedule(SEC(3))
+                self._scheduled = False
+            export.set()
+        =}
+
+        reaction(scheduler) -> history(export) {=
+            self._scheduled = True
+            self._prev_action = "washing"
+            self._action = "filtering"
+            export.set()
+        =}
+
+    } mode charging {
+        reaction(reset) -> history(export) {=
+            if self.character_instance.battery is not 100:
+                self.character_instance.charge(1)
+            else:
+                self._action, self._prev_action = self._prev_action, self._action
+            export.set()
+        =}
+    } mode filtering {
+        reaction(reset) -> history(export) {=
+            if self._scheduled:
+                scheduler.schedule(SEC(4))
+                self._scheduled = False
+            export.set()
+        =}
+
+        reaction(scheduler) -> history(export) {=
+            self._scheduled = True
+            self._prev_action = "filtering"
+            self._action = "storing"
+            export.set()
+        =}
+    } mode storing {
+        reaction(reset) -> history(export) {=
+            if self._scheduled:
+                scheduler.schedule(SEC(4))
+                self._scheduled = False
+            export.set()
+        =}
+
+        reaction(scheduler) -> history(export) {=
+            self._scheduled = True
+            self._prev_action = "storing"
+            self._action = "mining"
             export.set()
         =}
     } mode Close {
 
-        reaction(reset) -> reset(Location_check), reset(Avoid), history(export) {=
+        reaction(reset) -> reset(Charge_check), reset(Avoid), history(export) {=
             #print("in mode close")
             if len(self._people) > 0:
                 #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
-                if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > 180:
-                    Location_check.set()
+                if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > self.risk:
+                    Charge_check.set()
                 else:
                     #print("ghost close")
                     Avoid.set()

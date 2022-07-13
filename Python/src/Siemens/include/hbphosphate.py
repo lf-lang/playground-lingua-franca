@@ -23,6 +23,11 @@ walls = [ [0,0,6,600],
               [0,600,606,6],
               [600,0,6,606],
             ]
+layout = [ [0,0,6,600],
+              [0,0,600,6],
+              [0,600,606,6],
+              [600,0,6,606]
+            ]
 minespot = [66, 96]
 chargerspot = [66, 516]
 washspot = [276, 216]
@@ -367,6 +372,26 @@ class AGV(pygame.sprite.Sprite):
           self.eating = False
     def get_num_moves(self):
           return self.num_moves
+    def approach(self, layout, people, goal_coords, num_moves):
+          if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
+          # or self.num_moves + 15 > self.calcpathmove:
+            path = ai.mod_a_star(layout, people, self.rect.left, self.rect.top, goal_coords[0], goal_coords[1])
+            self.calcpathmove = self.num_moves + 1
+            self.rect.left += path[0][0]
+            self.rect.top += path[0][1]
+            print("eat move is ", path[0])
+            print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            self.last_move = path[0]
+            self.next_moves = path[1:]
+          else:
+            self.rect.left += self.next_moves[0][0]
+            self.rect.top += self.next_moves[0][1]
+            self.last_move = self.next_moves[0]
+            print("eat move is ", self.last_move)
+            print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            self.next_moves = self.next_moves[1:]
+        
+          self.num_moves += 1
           
 
 
