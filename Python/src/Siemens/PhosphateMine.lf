@@ -136,6 +136,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     =}
 
     reaction(static_sprites) {=
+        print("adding static sprites")
         for sprite in static_sprites:
             if sprite.is_present and isinstance(sprite.value, mine.pygame.sprite.Group):
                 self._static_sprites.add(sprite.value.sprites())
@@ -151,6 +152,8 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     =}
 
     reaction(moving_sprites) {=
+
+        print("adding moving sprites")
         self._screen.fill(mine.white)
         agv = mine.pygame.sprite.Sprite()
         sprite_list = mine.pygame.sprite.RenderPlain()
@@ -176,7 +179,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             w.set_alpha(10)                # alpha level
             w.fill((128,128,128))           # this fills the entire surface
             self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
-    
+            print("paused")
             text2=self._font.render("Paused. Press SPACE to continue,", True, mine.black)
             self._screen.blit(text2, [135, 303])
             text3=self._font.render("Press M to toggle AI.", True, mine.black)
@@ -199,7 +202,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
             else:
                 text1=self._font.render("Collision detected.", True, mine.black)
             self._screen.blit(text1, [235, 233])
-    
+            print("game is over")
             text2=self._font.render("To play again, press ENTER.", True, mine.black)
             self._screen.blit(text2, [135, 303])
             text3=self._font.render("To quit, press ESCAPE.", True, mine.black)
@@ -313,7 +316,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         =}
 
         reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
-            #print("in export mode")
+            print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
             keyboard_events = mine.pygame.event.get()
@@ -366,8 +369,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     self._wall_list,
                     self._gate_list
                 )
-            #print("setting sprite")
-            #print("battery is ", self.character_instance.battery)
+            print("setting sprite")
+            print("battery is ", self.character_instance.battery)
             sprite.set(self.character_instance)
             playerpause.set(self._pause)
             if not self._pause and self.character_instance.battery > 0: #and self._active
@@ -391,6 +394,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
     } mode Charge_check {
         reaction(reset) -> reset(Location_check) {=
+            print("checking charge")
             if self.character_instance.battery <= self.charge_at:
                 self._action = "charging"
             Location_check.set()
@@ -409,6 +413,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                 charging.set()
             else:
                 findspot.set()
+            print("checking location")
         =}
     } mode findspot {
         reaction(startup) -> history(export) {=
@@ -425,41 +430,45 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
             if self.character_instance.last_move is not [0, 0]:
                 self.character_instance.charge(self.energy_cost)
-
+            print("finding the spot")
             self._find_moves = self.character_instance.num_moves
             export.set()
         =}
     } mode mining {
         #implement
         reaction(reset) -> history(export) {=
-            if self._scheduled:
-                scheduler.schedule(SEC(4))
-                self._scheduled = False
-            export.set()
-        =}
-
-        reaction(scheduler) -> history(export) {=
+            # if self._scheduled:
+            #     scheduler.schedule(SEC(4))
+            #     self._scheduled = False
+            # print("mining rn")
+            # export.set()
             self._scheduled = True
             self._prev_action = "mining"
             self._action = "washing"
+            print("ending mining, beginning wash")
             export.set()
         =}
+
+        #reaction(scheduler) -> history(export) {=
+            
+        #=}
 
     } mode washing {
 
         reaction(reset) -> history(export) {=
-            if self._scheduled:
-                scheduler.schedule(SEC(3))
-                self._scheduled = False
-            export.set()
-        =}
-
-        reaction(scheduler) -> history(export) {=
+            # if self._scheduled:
+            #     scheduler.schedule(SEC(3))
+            #     self._scheduled = False
+            # export.set()
             self._scheduled = True
             self._prev_action = "washing"
             self._action = "filtering"
             export.set()
         =}
+
+        #reaction(scheduler) -> history(export) {=
+            
+        #=}
 
     } mode charging {
         reaction(reset) -> history(export) {=
@@ -471,36 +480,38 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         =}
     } mode filtering {
         reaction(reset) -> history(export) {=
-            if self._scheduled:
-                scheduler.schedule(SEC(4))
-                self._scheduled = False
-            export.set()
-        =}
-
-        reaction(scheduler) -> history(export) {=
+            # if self._scheduled:
+            #     scheduler.schedule(SEC(4))
+            #     self._scheduled = False
+            # export.set()
             self._scheduled = True
             self._prev_action = "filtering"
             self._action = "storing"
             export.set()
         =}
+
+        #reaction(scheduler) -> history(export) {=
+            
+        #=}
     } mode storing {
         reaction(reset) -> history(export) {=
-            if self._scheduled:
-                scheduler.schedule(SEC(4))
-                self._scheduled = False
-            export.set()
-        =}
-
-        reaction(scheduler) -> history(export) {=
+            # if self._scheduled:
+            #     scheduler.schedule(SEC(4))
+            #     self._scheduled = False
+            # export.set()
             self._scheduled = True
             self._prev_action = "storing"
             self._action = "mining"
             export.set()
         =}
+
+        #reaction(scheduler) -> history(export) {=
+            
+        #=}
     } mode Close {
 
         reaction(reset) -> reset(Charge_check), reset(Avoid), history(export) {=
-            #print("in mode close")
+            print("in mode close")
             if len(self._people) > 0:
                 #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
                 if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > self.risk:
@@ -515,7 +526,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     } mode Avoid {
 
         reaction(reset) -> history(export) {=
-            #print("avoid time")
+            print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._people, 7)
             if self.character_instance.last_move is not [0, 0]:
                 self.character_instance.charge(self.energy_cost)
