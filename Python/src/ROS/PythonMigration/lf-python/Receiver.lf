@@ -1,4 +1,4 @@
-// Subscriber.lf
+// Receiver.lf
 target Python;
 
 preamble {=

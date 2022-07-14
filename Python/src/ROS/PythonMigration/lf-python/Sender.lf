@@ -1,4 +1,4 @@
-// Publisher.lf
+// Sender.lf
 target Python;
 
 preamble {=
