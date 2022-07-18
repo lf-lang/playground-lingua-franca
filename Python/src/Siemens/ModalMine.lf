@@ -270,7 +270,7 @@ reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_
 
 ## Player
 # Should be replacable with an AI
-reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), energy_cost(-0.5), charge_at(20), risk(180)) {
+reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), event_list({=["mining", "washing", "filtering", "storing"]=}), energy_cost(-0.5), charge_at(20), risk(180)) {
     timer pygame_event(0, 100 msec)
     state _active(True)
     
@@ -290,14 +290,76 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     state _gate_list
     state _pause({=False=})
     state _find_moves(0)
-    state _action({="mining"=})
-    state _prev_action({="mining"=})
-    state _scheduled(True)
+    state _prev_action({=["mining"]=})
 
     output sprite
     output icon_name
     output playerpause
     output restart
+
+    method ensureCharge(current_mode) {=
+        if self.character_instance.battery <= self.charge_at:
+            self._prev_action = [current_mode]
+            charging.set()
+    =}
+
+    method atLocation() {=
+        if self._action == "mining" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.minespot:
+            return True
+        elif self._action == "washing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.washspot:
+            return True
+        elif self._action == "filtering" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.filterspot:
+            return True
+        elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+            return True
+        elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+            return True
+        return False
+    =}
+
+    method keepDistance(current_mode) {=
+        if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] <= self.risk:
+            self._prev_action = current_mode
+            Avoid.set()
+    =}
+
+    method isClose() {=
+        if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > self.risk:
+            return False
+        return True
+    =}
+
+    method performNext() {=
+        if self.event_list[0] == "mining":
+            self.event_list = self.event_list[1:]
+            self.event_list.append("mining")
+            mining.set()
+        elif self.event_list[0] == "filtering":
+            self.event_list = self.event_list[1:]
+            self.event_list.append("filtering")
+            filtering.set()
+        elif self.event_list[0] == "washing":
+            self.event_list = self.event_list[1:]
+            self.event_list.append("washing")
+            washing.set()
+        elif self.event_list[0] == "storing":
+            self.event_list = self.event_list[1:]
+            self.event_list.append("storing")
+            storing.set()
+    =}
+
+    method performLast() {=
+        if self._prev_action[0] == "mining":
+            mining.set()
+        elif self._prev_action[0] == "filtering":
+            filtering.set()
+        elif self._prev_action[0] == "washing":
+            washing.set()
+        elif self._prev_action[0] == "storing":
+            storing.set()
+        elif self._prev_action[0] == "charging":
+            charging.set()
+    =}
     
     initial mode export {
         reaction(startup) -> icon_name {=
@@ -399,24 +461,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                 self._action = "charging"
             Location_check.set()
         =}
-    } mode Location_check {
-        reaction(reset) -> reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing), reset(findspot) {=
-            print("checking location")
-            if self._action == "mining" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.minespot:
-                mining.set()
-            elif self._action == "washing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.washspot:
-                washing.set()
-            elif self._action == "filtering" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.filterspot:
-                filtering.set()
-            elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
-                storing.set() 
-            elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
-                charging.set()
-            else:
-                print("setting findspot")
-                findspot.set()
-            
-        =}
     } mode findspot {
         reaction(startup) -> history(export) {=
             if self._action == "mining":
@@ -510,21 +554,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         #reaction(scheduler) -> history(export) {=
             
         #=}
-    } mode Close {
-
-        reaction(reset) -> reset(Charge_check), reset(Avoid), history(export) {=
-            print("in mode close")
-            if len(self._people) > 0:
-                #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
-                if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > self.risk:
-                    Charge_check.set()
-                else:
-                    #print("ghost close")
-                    Avoid.set()
-            else:
-                export.set()
-        =}
-
     } mode Avoid {
 
         reaction(reset) -> history(export) {=
@@ -535,7 +564,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             #self._avoid_moves = self.character_instance.get_num_moves()
             export.set()
         =}
-
     }
 }
 

@@ -375,6 +375,7 @@ class AGV(pygame.sprite.Sprite):
     def approach(self, layout, people, goal_coords, num_moves):
           if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
           # or self.num_moves + 15 > self.calcpathmove:
+            print("finding approach path")
             path = ai.mod_a_star(layout, people, self.rect.left, self.rect.top, goal_coords[0], goal_coords[1])
             self.calcpathmove = self.num_moves + 1
             self.rect.left += path[0][0]
