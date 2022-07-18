@@ -1,12 +1,81 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-import sys
-import random
+from tasksets import BasicTaskSet, DagTaskSet
 
-class Ui_MainWindow(object):
+from PyQt5 import QtCore, QtWidgets
+import sys
+import os
+from datetime import datetime
+
+class TasksetGenerator(object):
+    
+    def __init__(self):
+        self.config = {
+            'schedulers': ['NP'],
+            'type': 'basic',
+            'timeout': {'value': 10, 'timeUnit': 'sec'},
+            'min_workers': 1,
+            'max_workers': 20,
+        }
+        self.basic_config = {
+            'periodicity': 'sporadic',
+            'period': {'value': 0, 'timeUnit': 'sec'},
+            'num_tasks': 20,
+            'utilization': 0.6
+        }
+        self.dag_config = {
+            'seed': datetime.now(),
+            'max_depth': 5,
+            'num_outputs': 4,
+            'execution_time': {'value': 100, 'timeUnit': 'msec'}
+        }
+
+    def setConfig(self, config) :
+        configs = [self.config, self.basic_config, self.dag_config]
+
+        for key, value in config.items():
+            for c in configs:
+                if key in c.keys():
+                    c[key] = value
     
 
+    # Generate taskset LF files to speicific directory.
+    def makeLF(self, templateDir='./', saveDir='./'):
+        TEMPLATE_PATH = f'{templateDir}/{self.config["type"].capitalize()}TaskSetGeneratorTemplate.lf'
+
+        if os.path.isfile(TEMPLATE_PATH) == False:
+            sys.exit("The template file of task generator is not exist.")
+        if os.path.isdir(saveDir) == False:
+            sys.exit("The directory for saving result is not exist.")
+        
+        with open(TEMPLATE_PATH) as f:
+            template = f.read()
+
+        char_to_replace = {
+            '$TOTAL_TIME$': f'{self.config["timeout"]["value"]} {self.config["timeout"]["timeUnit"]}'
+        }   
+
+        if self.config['type'] == 'basic':
+            basic_taskset = BasicTaskSet.TaskSet()
+            #basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
+            basic_taskset.setConfig(self.config)
+            basic_taskset.setConfig(self.basic_config)
+            saved_path = basic_taskset.makeLF(saveDir=saveDir)
+
+        elif self.config['type'] == 'dag':
+            dag_taskset = DagTaskSet.TaskSet()
+            dag_taskset.setConfig(self.config)
+            dag_taskset.setConfig(self.dag_config)
+            saved_path = dag_taskset.makeLF(saveDir=saveDir)
+
+        
+
+class Ui_MainWindow(object):
+
+    def __init__(self):
+        self.taskConfig = {
+            'schedulers':[]
+        }
+    
     def setupUi(self, MainWindow):
-        scheduler_list = ['NP', 'GEDF_NP', 'GEDF_NP_CI']
 
         VerticalSize = 1024
         HorizontalSize = 660
@@ -16,8 +85,8 @@ class Ui_MainWindow(object):
         MainWindow.setMaximumHeight(HorizontalSize)
         MainWindow.setMinimumWidth(VerticalSize)
         MainWindow.setMinimumHeight(HorizontalSize)
-        self.totalTimeUnit = "secs"
-        self.executionTimeUnit = "secs"
+        self.totalTimeUnit = "sec"
+        self.executionTimeUnit = "sec"
 
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -131,7 +200,7 @@ class Ui_MainWindow(object):
 
         self.comboBox_totalTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_basic)
         self.comboBox_totalTimeUnit.setObjectName('comboBox_totalTimeUnit')
-        self.comboBox_totalTimeUnit.addItems(['secs', 'msecs', 'usecs', 'nsecs'])
+        self.comboBox_totalTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
         self.comboBox_totalTimeUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_totalTimeUnit, 'totalTimeUnit'))
         self.gridLayout_basic.addWidget(self.comboBox_totalTimeUnit, 2, 2)
 
@@ -233,7 +302,7 @@ class Ui_MainWindow(object):
             
         self.comboBox_executionTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_dag)
         self.comboBox_executionTimeUnit.setObjectName('comboBox_executionTimeUnit')
-        self.comboBox_executionTimeUnit.addItems(['secs', 'msecs', 'usecs', 'nsecs'])
+        self.comboBox_executionTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
         self.comboBox_executionTimeUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_executionTimeUnit, 'executionTimeUnit'))
         self.gridLayout_dag.addWidget(self.comboBox_executionTimeUnit, 3, 2)
 
@@ -250,8 +319,9 @@ class Ui_MainWindow(object):
         self.exit.setText('Exit')
 
         MainWindow.setCentralWidget(self.centralwidget)
-
-
+        self.run.clicked.connect(self.clickRun)
+        self.exit.clicked.connect(self.clickExit)
+        
     def selectionchange(self, comboBox, type):
         if type == 'periodicity':
             if comboBox.currentText() == 'sporadic':
@@ -264,8 +334,63 @@ class Ui_MainWindow(object):
             self.totalTimeUnit = comboBox.currentText()
         elif type == 'executionTimeUnit':
             self.executionTimeUnit = comboBox.currentText()
+    
+    def clickRun(self):
+        # Set data
+        self.__updateConfig()
+        if len(self.taskConfig['schedulers']) == 0:
+            print("Choose scheduler to evaluate")
+        else:
+            generator = TasksetGenerator()
+            generator.setConfig(self.taskConfig)
+            generator.makeLF(templateDir='./', saveDir='./.gui/')
+            print("Generate Finish!")
+        
+    def clickExit(self):
+        app.quit()
 
+    def __updateConfig(self):
 
+        schedulers = {
+            self.scheduler_NP: 'NP',
+            self.scheduler_GEDF_NP: 'GEDF_NP',
+            self.scheduler_GEDF_NP_CI: 'GEDF_NP_CI'
+        }
+
+        self.taskConfig['schedulers'].clear()
+
+        for key, value in schedulers.items():
+            if key.isChecked():
+                self.taskConfig['schedulers'].append(value)
+            
+        self.taskConfig['type'] = self.tab_task.currentWidget().objectName().split('_')[-1]
+        self.taskConfig['timeout'] = {
+            'value': self.spinBox_totalTime.value(),
+            'timeUnit': self.comboBox_totalTimeUnit.currentText()
+        }
+
+        # FIXME: Should add spinboxs for min_workers and max_workers in GUI.
+        self.taskConfig['min_workers'] = 1
+        self.taskConfig['max_workers'] = 20
+
+        # FIXME: Should add combobox for timeunit of period in GUI.
+        if self.taskConfig['type'] == 'basic':
+            self.taskConfig['periodicity'] = self.comboBox_periodicity.currentText()
+            self.taskConfig['period'] = {
+               'value': self.spinBox_period.value(),
+               'timeUnit': 'msec'
+            }
+            self.taskConfig['num_tasks'] = self.spinBox_numOfTasks.value()
+            self.taskConfig['utilization'] = float(self.lineEdit_utilization.text())
+        elif self.taskConfig['type'] == 'dag':
+            self.taskConfig['seed'] = int(self.spinBox_seed.text()) if len(self.spinBox_seed.text()) > 0 else datetime.now()         # FIXME: it should be lineEdit, not spinBox
+            self.taskConfig['max_depth'] = self.spinBox_numOfLevel.value()
+            self.taskConfig['num_outputs'] = self.spinBox_capacityOfOneLevel.value()
+            self.taskConfig['execution_time'] = {
+                'value': self.spinBox_executionTime.value(),
+                'timeUnit': self.comboBox_executionTimeUnit.currentText()
+            }    
+    
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()

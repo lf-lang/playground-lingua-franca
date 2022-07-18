@@ -3,7 +3,14 @@
 # @author ByeongGil Jun
 
 from copyreg import constructor
+
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
+
+import matplotlib
+matplotlib.use('tkagg')
 
 import os
 import sys
@@ -41,24 +48,100 @@ class Node:
         return result + '\n'
 
 
-def saveFile():
+def step(num_workers, scheduler_type):
+
+    global char_to_replace, template
+    char_to_replace['$SCHEDULER_TYPE$'] = scheduler_type
+    char_to_replace['$NUM_WORKERS$'] = str(num_workers)
+
+    contents = template
+    for key, value in char_to_replace.items():
+        contents = contents.replace(key, value)
+    
+    filename = f'DAG_{num_workers}'
+    filepath = f'{WORKING_DIR}/.gui/src/{filename}.lf'
+    with open(filepath, "w") as lf_file:
+        lf_file.write(contents)
+        lf_file.close()
+        if (os.path.exists(filepath)):
+            print(f"File saved: {filepath}")
+
+
+    out = subprocess.run([f'./gradlew','runLfc', '--args', filepath], capture_output=True)
+    built_success = False
+    for line in reversed(out.stdout.decode("utf-8").split('\n')):
+        if line.startswith("BUILD SUCCESSFUL"):
+            built_success = True
+            break
+
+    if built_success:
+        print("Built Successfully!")
+    else:
+        print("Build Failed")
+        print(out.stderr.decode("utf-8"))
+        exit(0)
+
+    lf_out = subprocess.run([f'{WORKING_DIR}/.gui/bin/{filename}'], capture_output=True)
+
+    for line in reversed(lf_out.stdout.decode("utf-8").split('\n')):
+        if line.startswith("---- Elapsed physical"):
+            exe_time = line.split(' ')[-1]
+            break
+
+    exe_time = int(exe_time.replace(',','')) / 1000000000
+
+    return exe_time
+
+def plot_graph(data):
+    
+    fig, ax = plt.subplots()
+    plt.axis([1, 25, 0.0, 5.0])
+
+    workers = data['workers']
+    scatters = [1, 2, 5, 20]
+
+    axes = []
+    patches = []
+    schedulers = data['exe_times'].keys()
+
+    colors = ['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD']
+    
+    patches.append(mpatches.Patch(color=colors[0], label='NP'))
+
+    axes.append(ax.plot(workers, data['exe_times']['NP'], '--', color=colors[0]))
+    
+
+    ax.legend(handles=patches, loc='upper right')
+    plt.axis([0, max(workers)+1, 0, max(max(i) for i in data['exe_times'].values()) * 1.2])
+    
+    plt.xlabel('Number of Worker')
+    plt.ylabel('Execution time')
+    title = ''
+    title += 'DAG_NP_2468'
+
+    plt.title(title, fontsize= 10)
+    plt.show()
+
+def run():
 
     global char_to_replace, template
     
     with open(TEMPLATE_PATH) as f:
         template = f.read()
 
-    
+    workers = [i for i in range(1, 21)]
     contents = template
-    for key, value in char_to_replace.items():
-        contents = contents.replace(key, value)
+    exe_times = {}
+    exe_times['NP'] = []
+    for num_worker in workers:
+        exe_time = step(num_worker, 'NP')
+        exe_times['NP'].append(exe_time)
     
-    filename = f'{"Dag"}_{"Test"}'
-    filepath = f'{WORKING_DIR}/.gui/src/{filename}.lf'
-    with open(filepath, "w") as lf_file:
-        lf_file.write(contents)
-        lf_file.close()
-        print(f"File saved: {filepath}")
+    result = {}
+    result['workers'] = workers
+    result['exe_times'] = exe_times
+
+    plot_graph(result)
 
 
 def task_config_simple(num_outputs, max_depth=4, seed=datetime.now()):
@@ -96,11 +179,9 @@ def task_config_simple(num_outputs, max_depth=4, seed=datetime.now()):
     return tasks
 
 
-
-
-
 def task_config_multiple_inputs(num_outputs, max_depth, seed=datetime.now()):
-    random.seed(seed.timestamp())
+    random.seed(seed)
+    #random.seed(seed.timestamp())
 
     heights = [random.randint(1, num_outputs) for _ in range(max_depth)]
     heights[0] = num_outputs
@@ -117,8 +198,6 @@ def task_config_multiple_inputs(num_outputs, max_depth, seed=datetime.now()):
             for h in range(height):
                 random.shuffle(arr_for_random[heights[i-1]-1])
                 task_arr[i].append(Node(f'{i+1}_{h}', arr_for_random[heights[i-1]-1][:sizes[h]].copy()))
-
-
 
     task_config = ''
     for tasks in task_arr:
@@ -169,6 +248,8 @@ def str_Generator(num_outputs, max_depth, seed=datetime.now()) :
         '$STARTUPREACTION$': '',
         '$TASKCONFIG$': '',
         '$COMPONENTS$': '',
+        '$SCHEDULER_TYPE$': 'NP',
+        '$EXE_TIME$': '200 msec'
     }
 
     outputs = [f'out{i}' for i in range(num_outputs)]
@@ -186,6 +267,9 @@ def str_Generator(num_outputs, max_depth, seed=datetime.now()) :
     #char_to_replace['$TASKCONFIG$'] += task_config_simple(num_outputs, max_depth=8)
     char_to_replace['$TASKCONFIG$'] += task_config_multiple_inputs(num_outputs, max_depth, seed)
 
+   
+
+
     
 if __name__ == "__main__":
     global LF_PATH, WORKING_DIR, TEMPLATE_PATH
@@ -197,13 +281,14 @@ if __name__ == "__main__":
     TEMPLATE_PATH = f'{WORKING_DIR}/DagTaskSetGeneratorTemplate.lf'
     os.chdir(LF_PATH)
 
-    if (os.path.isdir(f'{WORKING_DIR}/.gui')):
-        shutil.rmtree(f'{WORKING_DIR}/.gui')
+    # if (os.path.isdir(f'{WORKING_DIR}/.gui')):
+    #     shutil.rmtree(f'{WORKING_DIR}/.gui')
 
-    os.mkdir(f'{WORKING_DIR}/.gui')
-    os.mkdir(f'{WORKING_DIR}/.gui/src')
-    str_Generator(num_outputs=4, max_depth=4, seed=datetime.now())
-    saveFile()
+    # os.mkdir(f'{WORKING_DIR}/.gui')
+    # os.mkdir(f'{WORKING_DIR}/.gui/src')
+    str_Generator(num_outputs=4, max_depth=4, seed=2468)
+    run()
+    
 
 
 
