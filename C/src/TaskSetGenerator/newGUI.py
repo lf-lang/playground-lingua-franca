@@ -265,6 +265,7 @@ class Ui_MainWindow(object):
         elif type == 'executionTimeUnit':
             self.executionTimeUnit = comboBox.currentText()
 
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
