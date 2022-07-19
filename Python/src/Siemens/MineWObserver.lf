@@ -346,7 +346,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             self._gate_list = gate_list.value
         =}
 
-        reaction(pygame_event) -> sprite, playerpause, restart, reset(Charge_check) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(Charge_check), reset(Avoid) {=
             print("action is ", self._action)
             print("prev action is ", self._prev_action)
             #print("pause is ", self._pause)

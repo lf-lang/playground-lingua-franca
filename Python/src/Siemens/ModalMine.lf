@@ -329,37 +329,37 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         self.payCost()
     =}
 
-    method performNext() {=
-        if self.event_list[0] == "mining":
-            self.event_list = self.event_list[1:]
-            self.event_list.append("mining")
-            mining.set()
-        elif self.event_list[0] == "filtering":
-            self.event_list = self.event_list[1:]
-            self.event_list.append("filtering")
-            filtering.set()
-        elif self.event_list[0] == "washing":
-            self.event_list = self.event_list[1:]
-            self.event_list.append("washing")
-            washing.set()
-        elif self.event_list[0] == "storing":
-            self.event_list = self.event_list[1:]
-            self.event_list.append("storing")
-            storing.set()
-    =}
+    // method performNext() {=
+    //     if self.event_list[0] == "mining":
+    //         self.event_list = self.event_list[1:]
+    //         self.event_list.append("mining")
+    //         mining.set()
+    //     elif self.event_list[0] == "filtering":
+    //         self.event_list = self.event_list[1:]
+    //         self.event_list.append("filtering")
+    //         filtering.set()
+    //     elif self.event_list[0] == "washing":
+    //         self.event_list = self.event_list[1:]
+    //         self.event_list.append("washing")
+    //         washing.set()
+    //     elif self.event_list[0] == "storing":
+    //         self.event_list = self.event_list[1:]
+    //         self.event_list.append("storing")
+    //         storing.set()
+    // =}
 
-    method performLast() {=
-        if self._prev_action[0] == "mining":
-            mining.set()
-        elif self._prev_action[0] == "filtering":
-            filtering.set()
-        elif self._prev_action[0] == "washing":
-            washing.set()
-        elif self._prev_action[0] == "storing":
-            storing.set()
-        elif self._prev_action[0] == "charging":
-            charging.set()
-    =}
+    // method performLast() {=
+    //     if self._prev_action[0] == "mining":
+    //         mining.set()
+    //     elif self._prev_action[0] == "filtering":
+    //         filtering.set()
+    //     elif self._prev_action[0] == "washing":
+    //         washing.set()
+    //     elif self._prev_action[0] == "storing":
+    //         storing.set()
+    //     elif self._prev_action[0] == "charging":
+    //         charging.set()
+    // =}
 
     method payCost() {=
         if self.character_instance.last_move is not [0, 0]:
@@ -501,7 +501,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
     } mode washing {
 
-        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
@@ -606,7 +606,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         #=}
 
     } mode charging {
-        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
@@ -706,7 +706,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             self.character_instance.speedzero()
         =}
     } mode filtering {
-        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
@@ -806,7 +806,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             self.character_instance.speedzero()
         =}
     } mode storing {
-        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
