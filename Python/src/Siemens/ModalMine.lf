@@ -305,25 +305,18 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     =}
 
     method atLocation() {=
-        if self._action == "mining" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.minespot:
+        if self._action == "mining" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.minespot:
             return True
-        elif self._action == "washing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.washspot:
+        elif self._action == "washing" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.washspot:
             return True
-        elif self._action == "filtering" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.filterspot:
+        elif self._action == "filtering" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.filterspot:
             return True
-        elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+        elif self._action == "storing" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.storespot:
             return True
-        elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+        elif self._action == "charging" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.chargespot:
             return True
         return False
     =}
-
-    // method keepDistance(current_mode) {=
-    //     if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] <= self.risk:
-    //         self._prev_action = [current_mode]
-    //         return True
-    //     return False
-    // =}
 
     method isClose() {=
         if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > self.risk:
