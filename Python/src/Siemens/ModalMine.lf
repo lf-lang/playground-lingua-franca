@@ -300,7 +300,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     method ensureCharge(current_mode) {=
         if self.character_instance.battery <= self.charge_at:
             self._prev_action = [current_mode]
-            charging.set()
+            return True
+        return False
     =}
 
     method atLocation() {=
@@ -317,16 +318,22 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         return False
     =}
 
-    method keepDistance(current_mode) {=
-        if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] <= self.risk:
-            self._prev_action = current_mode
-            Avoid.set()
-    =}
+    // method keepDistance(current_mode) {=
+    //     if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] <= self.risk:
+    //         self._prev_action = [current_mode]
+    //         return True
+    //     return False
+    // =}
 
     method isClose() {=
         if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > self.risk:
             return False
         return True
+    =}
+
+    method Avoid() {=
+        self.character_instance.ai_avoid(self._layout, self._people, 7)
+        self.payCost()
     =}
 
     method performNext() {=
@@ -360,8 +367,30 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         elif self._prev_action[0] == "charging":
             charging.set()
     =}
+
+    method payCost() {=
+        if self.character_instance.last_move is not [0, 0]:
+                self.character_instance.charge(self.energy_cost)
+    =}
+
+    method Approach() {=
+        if self._action == "mining":
+            self.character_instance.approach(self._layout, self._people, mine.minespot, self._find_moves)
+        elif self._action == "charging":
+            self.character_instance.approach(self._layout, self._people, mine.chargerspot, self._find_moves)
+        elif self._action == "washing":
+            self.character_instance.approach(self._layout, self._people, mine.washspot, self._find_moves)
+        elif self._action == "filtering":
+            self.character_instance.approach(self._layout, self._people, mine.filterspot, self._find_moves)
+        elif self._action == "storing":
+            self.character_instance.approach(self._layout, self._people, mine.storespot, self._find_moves)
+
+        self.payCost()
+        print("finding the spot")
+        self._find_moves = self.character_instance.num_moves
+    =}
     
-    initial mode export {
+    initial mode mining {
         reaction(startup) -> icon_name {=
             dirname = os.path.dirname(__file__)
             icon_name.set(os.path.join(dirname, self.image))
@@ -377,7 +406,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             self._gate_list = gate_list.value
         =}
 
-        reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
+        reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
@@ -435,9 +464,32 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             print("battery is ", self.character_instance.battery)
             sprite.set(self.character_instance)
             playerpause.set(self._pause)
-            if not self._pause and self.character_instance.battery > 0: #and self._active
-                if self._ai_control:
-                    Close.set()
+            if not self._pause and self.character_instance.battery > 0 and self._ai_control: #and self._active
+                if self.isClose():
+                    self.Avoid()
+                elif self.ensureCharge():
+                    #implement correctly for new design
+                    charging.set()
+                elif self.atLocation():
+                    if self.event_list[0] == "mining":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("mining")
+                        mining.set()
+                    elif self.event_list[0] == "filtering":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("filtering")
+                        filtering.set()
+                    elif self.event_list[0] == "washing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("washing")
+                        washing.set()
+                    elif self.event_list[0] == "storing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("storing")
+                        storing.set()
+                else:
+                    self.Approach()
+
                 
         =}
 
@@ -454,62 +506,106 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             self.character_instance.speedzero()
         =}
 
-    } mode Charge_check {
-        reaction(reset) -> reset(Location_check) {=
-            print("checking charge")
-            if self.character_instance.battery <= self.charge_at:
-                self._action = "charging"
-            Location_check.set()
-        =}
-    } mode findspot {
-        reaction(startup) -> history(export) {=
-            if self._action == "mining":
-                self.character_instance.approach(self._layout, self._people, mine.minespot, self._find_moves)
-            elif self._action == "charging":
-                self.character_instance.approach(self._layout, self._people, mine.chargerspot, self._find_moves)
-            elif self._action == "washing":
-                self.character_instance.approach(self._layout, self._people, mine.washspot, self._find_moves)
-            elif self._action == "filtering":
-                self.character_instance.approach(self._layout, self._people, mine.filterspot, self._find_moves)
-            elif self._action == "storing":
-                self.character_instance.approach(self._layout, self._people, mine.storespot, self._find_moves)
-
-            if self.character_instance.last_move is not [0, 0]:
-                self.character_instance.charge(self.energy_cost)
-            print("finding the spot")
-            self._find_moves = self.character_instance.num_moves
-            export.set()
-        =}
-    } mode mining {
-        #implement
-        reaction(reset) -> history(export) {=
-            # if self._scheduled:
-            #     scheduler.schedule(SEC(4))
-            #     self._scheduled = False
-            # print("mining rn")
-            # export.set()
-            self._scheduled = True
-            self._prev_action = "mining"
-            self._action = "washing"
-            print("ending mining, beginning wash")
-            export.set()
-        =}
-
-        #reaction(scheduler) -> history(export) {=
-            
-        #=}
-
     } mode washing {
 
-        reaction(reset) -> history(export) {=
-            # if self._scheduled:
-            #     scheduler.schedule(SEC(3))
-            #     self._scheduled = False
-            # export.set()
-            self._scheduled = True
-            self._prev_action = "washing"
-            self._action = "filtering"
-            export.set()
+        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+            print("in export mode")
+            #print("pause is ", self._pause)
+            #print("ai control is ", self._ai_control)
+            keyboard_events = mine.pygame.event.get()
+            for event in keyboard_events:
+                if event.type == mine.pygame.QUIT:
+                    request_stop()
+                    
+                if event.type == mine.pygame.KEYDOWN:
+                    #print("detecting key down")
+                    if event.key == mine.pygame.K_ESCAPE:
+                        request_stop()
+                    if event.key == mine.pygame.K_RETURN:
+                        restart.set(True)
+                        self.character_instance.resetpos()
+                        self._pause = False
+                        self._active = True
+                        self.character_instance.charge("full")
+                        #print(self.character_instance.rect.left)
+                    if event.key == mine.pygame.K_SPACE:
+                        if self._pause is False:
+                            self._pause = True
+                        else:
+                            self._pause = False
+                    if event.key == mine.pygame.K_m:
+                        self._pause = False
+                        self._ai_control = not self._ai_control
+                    if not self._ai_control and not self._pause and self._active:
+                        if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                            self.character_instance.changespeed(-30, 0)
+                        if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                            self.character_instance.changespeed(30, 0)
+                        if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                            self.character_instance.changespeed(0, -30)
+                        if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                            self.character_instance.changespeed(0, 30)
+            
+                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+                    if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                        self.character_instance.changespeed(30, 0)
+                    if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                        self.character_instance.changespeed(-30, 0)
+                    if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                        self.character_instance.changespeed(0, 30)
+                    if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                        self.character_instance.changespeed(0, -30)
+
+            if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
+                self.character_instance.charge(self.energy_cost)
+                self.character_instance.update(
+                    self._wall_list,
+                    self._gate_list
+                )
+            print("setting sprite")
+            print("battery is ", self.character_instance.battery)
+            sprite.set(self.character_instance)
+            playerpause.set(self._pause)
+            if not self._pause and self.character_instance.battery > 0 and self._ai_control: #and self._active
+                if self.isClose():
+                    self.Avoid()
+                elif self.ensureCharge():
+                    #implement correctly for new design
+                    charging.set()
+                elif self.atLocation():
+                    if self.event_list[0] == "mining":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("mining")
+                        mining.set()
+                    elif self.event_list[0] == "filtering":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("filtering")
+                        filtering.set()
+                    elif self.event_list[0] == "washing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("washing")
+                        washing.set()
+                    elif self.event_list[0] == "storing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("storing")
+                        storing.set()
+                else:
+                    self.Approach()
+
+                
+        =}
+
+        reaction(people_sprites) {=
+            self._ghosts = []
+            for person in people_sprites:
+                if person.is_present:
+                    self._people.append(person.value)
+        =}
+
+        reaction(game_over) {=
+            self._active = False
+            self._pause = True
+            self.character_instance.speedzero()
         =}
 
         #reaction(scheduler) -> history(export) {=
@@ -517,54 +613,306 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         #=}
 
     } mode charging {
-        reaction(reset) -> history(export) {=
-            if self.character_instance.battery is not 100:
-                self.character_instance.charge(1)
-            else:
-                self._action, self._prev_action = self._prev_action, self._action
-            export.set()
+        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+            print("in export mode")
+            #print("pause is ", self._pause)
+            #print("ai control is ", self._ai_control)
+            keyboard_events = mine.pygame.event.get()
+            for event in keyboard_events:
+                if event.type == mine.pygame.QUIT:
+                    request_stop()
+                    
+                if event.type == mine.pygame.KEYDOWN:
+                    #print("detecting key down")
+                    if event.key == mine.pygame.K_ESCAPE:
+                        request_stop()
+                    if event.key == mine.pygame.K_RETURN:
+                        restart.set(True)
+                        self.character_instance.resetpos()
+                        self._pause = False
+                        self._active = True
+                        self.character_instance.charge("full")
+                        #print(self.character_instance.rect.left)
+                    if event.key == mine.pygame.K_SPACE:
+                        if self._pause is False:
+                            self._pause = True
+                        else:
+                            self._pause = False
+                    if event.key == mine.pygame.K_m:
+                        self._pause = False
+                        self._ai_control = not self._ai_control
+                    if not self._ai_control and not self._pause and self._active:
+                        if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                            self.character_instance.changespeed(-30, 0)
+                        if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                            self.character_instance.changespeed(30, 0)
+                        if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                            self.character_instance.changespeed(0, -30)
+                        if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                            self.character_instance.changespeed(0, 30)
+            
+                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+                    if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                        self.character_instance.changespeed(30, 0)
+                    if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                        self.character_instance.changespeed(-30, 0)
+                    if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                        self.character_instance.changespeed(0, 30)
+                    if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                        self.character_instance.changespeed(0, -30)
+
+            if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
+                self.character_instance.charge(self.energy_cost)
+                self.character_instance.update(
+                    self._wall_list,
+                    self._gate_list
+                )
+            print("setting sprite")
+            print("battery is ", self.character_instance.battery)
+            sprite.set(self.character_instance)
+            playerpause.set(self._pause)
+            if not self._pause and self.character_instance.battery > 0 and self._ai_control: #and self._active
+                if self.isClose():
+                    self.Avoid()
+                elif self.ensureCharge():
+                    #implement correctly for new design
+                    charging.set()
+                elif self.atLocation():
+                    if self.event_list[0] == "mining":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("mining")
+                        mining.set()
+                    elif self.event_list[0] == "filtering":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("filtering")
+                        filtering.set()
+                    elif self.event_list[0] == "washing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("washing")
+                        washing.set()
+                    elif self.event_list[0] == "storing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("storing")
+                        storing.set()
+                else:
+                    self.Approach()
+
+                
+        =}
+
+        reaction(people_sprites) {=
+            self._ghosts = []
+            for person in people_sprites:
+                if person.is_present:
+                    self._people.append(person.value)
+        =}
+
+        reaction(game_over) {=
+            self._active = False
+            self._pause = True
+            self.character_instance.speedzero()
         =}
     } mode filtering {
-        reaction(reset) -> history(export) {=
-            # if self._scheduled:
-            #     scheduler.schedule(SEC(4))
-            #     self._scheduled = False
-            # export.set()
-            self._scheduled = True
-            self._prev_action = "filtering"
-            self._action = "storing"
-            export.set()
-        =}
-
-        #reaction(scheduler) -> history(export) {=
+        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+            print("in export mode")
+            #print("pause is ", self._pause)
+            #print("ai control is ", self._ai_control)
+            keyboard_events = mine.pygame.event.get()
+            for event in keyboard_events:
+                if event.type == mine.pygame.QUIT:
+                    request_stop()
+                    
+                if event.type == mine.pygame.KEYDOWN:
+                    #print("detecting key down")
+                    if event.key == mine.pygame.K_ESCAPE:
+                        request_stop()
+                    if event.key == mine.pygame.K_RETURN:
+                        restart.set(True)
+                        self.character_instance.resetpos()
+                        self._pause = False
+                        self._active = True
+                        self.character_instance.charge("full")
+                        #print(self.character_instance.rect.left)
+                    if event.key == mine.pygame.K_SPACE:
+                        if self._pause is False:
+                            self._pause = True
+                        else:
+                            self._pause = False
+                    if event.key == mine.pygame.K_m:
+                        self._pause = False
+                        self._ai_control = not self._ai_control
+                    if not self._ai_control and not self._pause and self._active:
+                        if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                            self.character_instance.changespeed(-30, 0)
+                        if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                            self.character_instance.changespeed(30, 0)
+                        if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                            self.character_instance.changespeed(0, -30)
+                        if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                            self.character_instance.changespeed(0, 30)
             
-        #=}
-    } mode storing {
-        reaction(reset) -> history(export) {=
-            # if self._scheduled:
-            #     scheduler.schedule(SEC(4))
-            #     self._scheduled = False
-            # export.set()
-            self._scheduled = True
-            self._prev_action = "storing"
-            self._action = "mining"
-            export.set()
-        =}
+                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+                    if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                        self.character_instance.changespeed(30, 0)
+                    if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                        self.character_instance.changespeed(-30, 0)
+                    if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                        self.character_instance.changespeed(0, 30)
+                    if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                        self.character_instance.changespeed(0, -30)
 
-        #reaction(scheduler) -> history(export) {=
-            
-        #=}
-    } mode Avoid {
-
-        reaction(reset) -> history(export) {=
-            print("avoid time")
-            self.character_instance.ai_avoid(self._layout, self._people, 7)
-            if self.character_instance.last_move is not [0, 0]:
+            if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
                 self.character_instance.charge(self.energy_cost)
-            #self._avoid_moves = self.character_instance.get_num_moves()
-            export.set()
+                self.character_instance.update(
+                    self._wall_list,
+                    self._gate_list
+                )
+            print("setting sprite")
+            print("battery is ", self.character_instance.battery)
+            sprite.set(self.character_instance)
+            playerpause.set(self._pause)
+            if not self._pause and self.character_instance.battery > 0 and self._ai_control: #and self._active
+                if self.isClose():
+                    self.Avoid()
+                elif self.ensureCharge():
+                    #implement correctly for new design
+                    charging.set()
+                elif self.atLocation():
+                    if self.event_list[0] == "mining":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("mining")
+                        mining.set()
+                    elif self.event_list[0] == "filtering":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("filtering")
+                        filtering.set()
+                    elif self.event_list[0] == "washing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("washing")
+                        washing.set()
+                    elif self.event_list[0] == "storing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("storing")
+                        storing.set()
+                else:
+                    self.Approach()
+
+                
         =}
-    }
+
+        reaction(people_sprites) {=
+            self._ghosts = []
+            for person in people_sprites:
+                if person.is_present:
+                    self._people.append(person.value)
+        =}
+
+        reaction(game_over) {=
+            self._active = False
+            self._pause = True
+            self.character_instance.speedzero()
+        =}
+    } mode storing {
+        reaction(reset, pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
+            print("in export mode")
+            #print("pause is ", self._pause)
+            #print("ai control is ", self._ai_control)
+            keyboard_events = mine.pygame.event.get()
+            for event in keyboard_events:
+                if event.type == mine.pygame.QUIT:
+                    request_stop()
+                    
+                if event.type == mine.pygame.KEYDOWN:
+                    #print("detecting key down")
+                    if event.key == mine.pygame.K_ESCAPE:
+                        request_stop()
+                    if event.key == mine.pygame.K_RETURN:
+                        restart.set(True)
+                        self.character_instance.resetpos()
+                        self._pause = False
+                        self._active = True
+                        self.character_instance.charge("full")
+                        #print(self.character_instance.rect.left)
+                    if event.key == mine.pygame.K_SPACE:
+                        if self._pause is False:
+                            self._pause = True
+                        else:
+                            self._pause = False
+                    if event.key == mine.pygame.K_m:
+                        self._pause = False
+                        self._ai_control = not self._ai_control
+                    if not self._ai_control and not self._pause and self._active:
+                        if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                            self.character_instance.changespeed(-30, 0)
+                        if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                            self.character_instance.changespeed(30, 0)
+                        if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                            self.character_instance.changespeed(0, -30)
+                        if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                            self.character_instance.changespeed(0, 30)
+            
+                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+                    if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+                        self.character_instance.changespeed(30, 0)
+                    if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+                        self.character_instance.changespeed(-30, 0)
+                    if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+                        self.character_instance.changespeed(0, 30)
+                    if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+                        self.character_instance.changespeed(0, -30)
+
+            if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
+                self.character_instance.charge(self.energy_cost)
+                self.character_instance.update(
+                    self._wall_list,
+                    self._gate_list
+                )
+            print("setting sprite")
+            print("battery is ", self.character_instance.battery)
+            sprite.set(self.character_instance)
+            playerpause.set(self._pause)
+            if not self._pause and self.character_instance.battery > 0 and self._ai_control: #and self._active
+                if self.isClose():
+                    self.Avoid()
+                elif self.ensureCharge():
+                    #implement correctly for new design
+                    charging.set()
+                elif self.atLocation():
+                    if self.event_list[0] == "mining":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("mining")
+                        mining.set()
+                    elif self.event_list[0] == "filtering":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("filtering")
+                        filtering.set()
+                    elif self.event_list[0] == "washing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("washing")
+                        washing.set()
+                    elif self.event_list[0] == "storing":
+                        self.event_list = self.event_list[1:]
+                        self.event_list.append("storing")
+                        storing.set()
+                else:
+                    self.Approach()
+
+                
+        =}
+
+        reaction(people_sprites) {=
+            self._ghosts = []
+            for person in people_sprites:
+                if person.is_present:
+                    self._people.append(person.value)
+        =}
+
+        reaction(game_over) {=
+            self._active = False
+            self._pause = True
+            self.character_instance.speedzero()
+        =}
+    } 
 }
 
 ## Ghosts

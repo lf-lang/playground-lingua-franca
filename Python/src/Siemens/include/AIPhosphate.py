@@ -325,11 +325,11 @@ def pplavoidcloseghost(layout, people, x, y):
             best = [change]
     return best
 
-def mod_a_star(layout, people, x, y, goal_x, goal_y, acceptable_dev = 180):
+def mod_a_star(layout, people, x, y, goal_x, goal_y, acceptable_dev = 30):
     paths = []
-    accept_dist = euclid_dist(x, y, goal_x, goal_y) + acceptable_dev
-    def pathfinder(layout, people, x, y, temp = [], search_len = 5, add_anyways = False):
-        if len(temp) < search_len and euclid_dist(x, y, goal_x, goal_y) < accept_dist:
+    accept_dist = euclid_dist(x, y, goal_x, goal_y) * (2/sqrt(2)) + acceptable_dev
+    def pathfinder(layout, people, x, y, temp = [], search_len = 12, add_anyways = False):
+        if len(temp) < search_len and len(temp) * 30 < accept_dist:
             for name, change in possiblepacmoves(layout, people, x, y).items():
                 if len(temp) < 1 or not (change[0] * -1 == temp[len(temp) - 1][0] and change[1] * -1 == temp[len(temp) - 1][1]):
                     new_x = x + change[0]
@@ -361,6 +361,23 @@ def mod_a_star(layout, people, x, y, goal_x, goal_y, acceptable_dev = 180):
         #         minimum = avg_block_dist(blocks, x + change[0], y + change[1])
         #         print("move is ", move)
         #         print("minimum is ", minimum)
-        pathfinder(layout, people, x, y, [], 3, True)
+        #pathfinder(layout, people, x, y, [], 3, True)
         #print(paths)
-        return paths[randint(0, len(paths) - 1)]
+        #return paths[randint(0, len(paths) - 1)]
+        return euclid_approacher(layout, people, x, y, goal_x, goal_y)
+
+def euclid_approacher(layout, people, x, y, goal_x, goal_y):
+    move = None
+    minimum = euclid_dist(x, y, goal_x, goal_y)
+    for name, change in possiblepacmoves(layout, people, x, y).items():
+        new_x = x + change[0]
+        new_y = y + change[1]
+        new_dist = euclid_dist(new_x, new_y, goal_x, goal_y)
+        if new_dist <= minimum:
+            minimum = new_dist
+            move = [change]
+    
+    if move is None:
+        return [[0, 0]]
+    return move
+

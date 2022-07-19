@@ -28,11 +28,11 @@ layout = [ [0,0,6,600],
               [0,600,606,6],
               [600,0,6,606]
             ]
-minespot = [66, 96]
-chargerspot = [66, 516]
-washspot = [276, 216]
-filterspot = [426, 546]
-storespot = [546, 126]
+minespot = [63, 95]
+chargerspot = [63, 515]
+washspot = [273, 215]
+filterspot = [423, 545]
+storespot = [543, 125]
 
 # This class represents the bar at the bottom that the player controls
 class Wall(pygame.sprite.Sprite):
@@ -174,6 +174,7 @@ class AGV(pygame.sprite.Sprite):
   
     # Set speed vector
     battery = 100
+    total_stored = 0
     change_x=0
     change_y=0
     last_move = [0, 0]
@@ -268,6 +269,9 @@ class AGV(pygame.sprite.Sprite):
         else:
             self.battery += input
 
+    def store(self, input):
+          self.total_stored += input
+    
     def ai_eat(self, layout, ghosts, blocks, num_moves):
         if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
           # or self.num_moves + 15 > self.calcpathmove:
@@ -376,20 +380,20 @@ class AGV(pygame.sprite.Sprite):
           if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
           # or self.num_moves + 15 > self.calcpathmove:
             print("finding approach path")
-            path = ai.mod_a_star(layout, people, self.rect.left, self.rect.top, goal_coords[0], goal_coords[1])
+            path = ai.euclid_approacher(layout, people, self.rect.left + 16, self.rect.top + 16, goal_coords[0], goal_coords[1])
             self.calcpathmove = self.num_moves + 1
             self.rect.left += path[0][0]
             self.rect.top += path[0][1]
-            print("eat move is ", path[0])
-            print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            print("approach move is ", path[0])
+            print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
             self.last_move = path[0]
             self.next_moves = path[1:]
           else:
             self.rect.left += self.next_moves[0][0]
             self.rect.top += self.next_moves[0][1]
             self.last_move = self.next_moves[0]
-            print("eat move is ", self.last_move)
-            print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            print("approach move is ", self.last_move)
+            print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
             self.next_moves = self.next_moves[1:]
         
           self.num_moves += 1

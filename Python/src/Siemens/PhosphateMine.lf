@@ -147,13 +147,13 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     =}
     
     reaction(score) {=
-        self._top_corner_text=self._font.render("Score: "+str(score.value), True, mine.black)
+        self._top_corner_text=self._font.render("Mined Material: "+str(score.value), True, mine.black)
         self._screen.blit(self._top_corner_text, [10, 10])
     =}
 
     reaction(moving_sprites) {=
 
-        print("adding moving sprites")
+        #print("adding moving sprites")
         self._screen.fill(mine.white)
         agv = mine.pygame.sprite.Sprite()
         sprite_list = mine.pygame.sprite.RenderPlain()
@@ -198,7 +198,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
     
             #Won or lost
             if game_over.value:
-                text1=self._font.render("Area Cleared!", True, mine.black)
+                text1=self._font.render("Mining Complete!", True, mine.black)
             else:
                 text1=self._font.render("Collision detected.", True, mine.black)
             self._screen.blit(text1, [235, 233])
@@ -270,7 +270,7 @@ reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_
 
 ## Player
 # Should be replacable with an AI
-reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), energy_cost(-0.5), charge_at(20), risk(180)) {
+reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), energy_cost(-0.25), charge_at(30), risk(120)) {
     timer pygame_event(0, 100 msec)
     state _active(True)
     
@@ -298,6 +298,12 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     output icon_name
     output playerpause
     output restart
+
+    method payCost() {=
+        print("payCost last move is ", self.character_instance.last_move)
+        if self.character_instance.last_move is not [0, 0]:
+                self.character_instance.charge(self.energy_cost)
+    =}
     
     initial mode export {
         reaction(startup) -> icon_name {=
@@ -316,7 +322,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         =}
 
         reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
-            print("in export mode")
+            print("action is ", self._action)
+            print("prev action is ", self._prev_action)
             #print("pause is ", self._pause)
             #print("ai control is ", self._ai_control)
             keyboard_events = mine.pygame.event.get()
@@ -333,6 +340,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                         self.character_instance.resetpos()
                         self._pause = False
                         self._active = True
+                        self._action = "mining"
+                        self._prev_action = "mining"
                         self.character_instance.charge("full")
                         #print(self.character_instance.rect.left)
                     if event.key == mine.pygame.K_SPACE:
@@ -369,8 +378,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     self._wall_list,
                     self._gate_list
                 )
-            print("setting sprite")
-            print("battery is ", self.character_instance.battery)
+            #print("setting sprite")
+            #print("battery is ", self.character_instance.battery)
             sprite.set(self.character_instance)
             playerpause.set(self._pause)
             if not self._pause and self.character_instance.battery > 0: #and self._active
@@ -394,31 +403,32 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
     } mode Charge_check {
         reaction(reset) -> reset(Location_check) {=
-            print("checking charge")
+            #print("checking charge")
             if self.character_instance.battery <= self.charge_at:
                 self._action = "charging"
             Location_check.set()
         =}
     } mode Location_check {
         reaction(reset) -> reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing), reset(findspot) {=
-            print("checking location")
-            if self._action == "mining" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.minespot:
+            #print("checking location")
+            if self._action == "mining" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.minespot:
                 mining.set()
-            elif self._action == "washing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.washspot:
+            elif self._action == "washing" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.washspot:
                 washing.set()
-            elif self._action == "filtering" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.filterspot:
+            elif self._action == "filtering" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.filterspot:
                 filtering.set()
-            elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+            elif self._action == "storing" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.storespot:
                 storing.set() 
-            elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+            elif self._action == "charging" and [self.character_instance.rect.left + 16, self.character_instance.rect.top + 16] == mine.chargerspot:
                 charging.set()
             else:
-                print("setting findspot")
+                #print("setting findspot")
                 findspot.set()
             
         =}
     } mode findspot {
-        reaction(startup) -> history(export) {=
+        reaction(reset) -> history(export) {=
+            #print("in findspot")
             if self._action == "mining":
                 self.character_instance.approach(self._layout, self._people, mine.minespot, self._find_moves)
             elif self._action == "charging":
@@ -430,9 +440,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             elif self._action == "storing":
                 self.character_instance.approach(self._layout, self._people, mine.storespot, self._find_moves)
 
-            if self.character_instance.last_move is not [0, 0]:
-                self.character_instance.charge(self.energy_cost)
-            print("finding the spot")
+            self.payCost()
+            #print("found the spot move")
             self._find_moves = self.character_instance.num_moves
             export.set()
         =}
@@ -444,10 +453,11 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             #     self._scheduled = False
             # print("mining rn")
             # export.set()
+            print("in mining")
             self._scheduled = True
             self._prev_action = "mining"
             self._action = "washing"
-            print("ending mining, beginning wash")
+            #print("ending mining, beginning wash")
             export.set()
         =}
 
@@ -462,6 +472,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             #     scheduler.schedule(SEC(3))
             #     self._scheduled = False
             # export.set()
+            print("in washing")
             self._scheduled = True
             self._prev_action = "washing"
             self._action = "filtering"
@@ -474,7 +485,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
     } mode charging {
         reaction(reset) -> history(export) {=
-            if self.character_instance.battery is not 100:
+            print("in charging")
+            if self.character_instance.battery < 100:
                 self.character_instance.charge(1)
             else:
                 self._action, self._prev_action = self._prev_action, self._action
@@ -486,6 +498,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             #     scheduler.schedule(SEC(4))
             #     self._scheduled = False
             # export.set()
+            print("in filtering")
             self._scheduled = True
             self._prev_action = "filtering"
             self._action = "storing"
@@ -501,9 +514,11 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             #     scheduler.schedule(SEC(4))
             #     self._scheduled = False
             # export.set()
+            print("in storing")
             self._scheduled = True
             self._prev_action = "storing"
             self._action = "mining"
+            self.character_instance.store(randint(7, 11))
             export.set()
         =}
 
@@ -530,8 +545,7 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         reaction(reset) -> history(export) {=
             print("avoid time")
             self.character_instance.ai_avoid(self._layout, self._people, 7)
-            if self.character_instance.last_move is not [0, 0]:
-                self.character_instance.charge(self.energy_cost)
+            self.payCost()
             #self._avoid_moves = self.character_instance.get_num_moves()
             export.set()
         =}
@@ -618,7 +632,7 @@ reactor GameController(number_of_people(4)) {
     state _wash
     state _filter
     state _store
-    state _score_to_win(0)
+    state _score_to_win(100)
     state _score(0)
     state _agv_sprite
     state _agv_collide({=mine.pygame.sprite.RenderPlain()=})
@@ -656,10 +670,10 @@ reactor GameController(number_of_people(4)) {
         #if len(blocks_hit_list) > 0:
         #    self._score +=len(blocks_hit_list)
 
-        #if self._score == self._score_to_win:
-        #    game_over.set(True)
+        if self._score == self._score_to_win:
+            game_over.set(True)
     
-        score.set(self._score)
+        score.set(agv_sprite.value.total_stored)
     =}
 
     reaction(people_sprites) -> game_over {=
@@ -680,7 +694,7 @@ reactor GameController(number_of_people(4)) {
     reaction(restart) {=
         if restart.value:
             
-            self._score_to_win = 5
+            self._score_to_win = 100
             #print(self._energizer_list)
             self._score = 0
     =}

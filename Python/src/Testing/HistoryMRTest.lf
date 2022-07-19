@@ -21,27 +21,30 @@ reactor Ticker {
 reactor Mody {
     input click
 
+    method setter(click, mod) -> reset(One), reset(Two) {=
+        if click <= 4:
+            print("In mode " + str(mod) + ", val: ", str(click))
+        else:
+            print(click, " is val, switching mode")
+            if mod == 1:
+                Two.set()
+            else:
+                One.set()
+    =}
+
     initial mode One {
         reaction(startup) {=
             print("was started")
         =}
         reaction(click) -> reset(Two) {=
-            if click.value <= 4:
-                print("In mode 1, val: ", click.value)
-            else:
-                print(click.value, " is val, switching to Two")
-                Two.set()
+            self.setter(click.value, 1)
         =}
     } mode Two {
         reaction(startup) {=
             print("was started")
         =}
         reaction(click) -> reset(One) {=
-            if click.value > 4:
-                print("In mode 2, val: ", click.value)
-            else:
-                print(click.value, " is val, switching to One")
-                One.set()
+            self.setter(click.value, 2)
         =}
     }
 }
