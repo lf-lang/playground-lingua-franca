@@ -14,17 +14,12 @@ Python >= 3.7.13
 
 * Install python libraries
 ```
-pip3 install numpy scipy matplotlib
-```
-
-* Install python tkinter library for using GUI
-```
-apt-get install python3-tk
+pip3 install numpy scipy matplotlib pyqt5
 ```
 
 for MacOS users, 
 ```
-brew install python-tk
+brew install pyqt
 ```
 
 ## How to use
