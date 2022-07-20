@@ -382,22 +382,23 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         print("finding the spot")
         self._find_moves = self.character_instance.num_moves
     =}
+
+    reaction(startup) -> icon_name {=
+        dirname = os.path.dirname(__file__)
+        icon_name.set(os.path.join(dirname, self.image))
+    =}
+
+    reaction(icon) -> sprite {=
+        self.character_instance = self.character_class(self.width, self.height, icon.value)
+        sprite.set(self.character_instance)
+    =}
+
+    reaction(wall_list, gate_list) {=
+        self._wall_list = wall_list.value
+        self._gate_list = gate_list.value
+    =}
     
     initial mode mining {
-        reaction(startup) -> icon_name {=
-            dirname = os.path.dirname(__file__)
-            icon_name.set(os.path.join(dirname, self.image))
-        =}
-    
-        reaction(icon) -> sprite {=
-            self.character_instance = self.character_class(self.width, self.height, icon.value)
-            sprite.set(self.character_instance)
-        =}
-    
-        reaction(wall_list, gate_list) {=
-            self._wall_list = wall_list.value
-            self._gate_list = gate_list.value
-        =}
 
         reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
@@ -484,19 +485,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     self.Approach()
 
                 
-        =}
-
-        reaction(people_sprites) {=
-            self._ghosts = []
-            for person in people_sprites:
-                if person.is_present:
-                    self._people.append(person.value)
-        =}
-
-        reaction(game_over) {=
-            self._active = False
-            self._pause = True
-            self.character_instance.speedzero()
         =}
 
     } mode washing {
@@ -586,19 +574,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     self.Approach()
 
                 
-        =}
-
-        reaction(people_sprites) {=
-            self._ghosts = []
-            for person in people_sprites:
-                if person.is_present:
-                    self._people.append(person.value)
-        =}
-
-        reaction(game_over) {=
-            self._active = False
-            self._pause = True
-            self.character_instance.speedzero()
         =}
 
         #reaction(scheduler) -> history(export) {=
@@ -692,19 +667,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
                 
         =}
-
-        reaction(people_sprites) {=
-            self._ghosts = []
-            for person in people_sprites:
-                if person.is_present:
-                    self._people.append(person.value)
-        =}
-
-        reaction(game_over) {=
-            self._active = False
-            self._pause = True
-            self.character_instance.speedzero()
-        =}
     } mode filtering {
         reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
             print("in export mode")
@@ -791,19 +753,6 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
                     self.Approach()
 
                 
-        =}
-
-        reaction(people_sprites) {=
-            self._ghosts = []
-            for person in people_sprites:
-                if person.is_present:
-                    self._people.append(person.value)
-        =}
-
-        reaction(game_over) {=
-            self._active = False
-            self._pause = True
-            self.character_instance.speedzero()
         =}
     } mode storing {
         reaction(pygame_event) -> sprite, playerpause, restart, reset(charging), reset(mining), reset(washing), reset(filtering), reset(storing) {=
@@ -892,20 +841,20 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
 
                 
         =}
-
-        reaction(people_sprites) {=
-            self._ghosts = []
-            for person in people_sprites:
-                if person.is_present:
-                    self._people.append(person.value)
-        =}
-
-        reaction(game_over) {=
-            self._active = False
-            self._pause = True
-            self.character_instance.speedzero()
-        =}
     } 
+
+    reaction(people_sprites) {=
+        self._ghosts = []
+        for person in people_sprites:
+            if person.is_present:
+                self._people.append(person.value)
+    =}
+
+    reaction(game_over) {=
+        self._active = False
+        self._pause = True
+        self.character_instance.speedzero()
+    =}
 }
 
 ## Ghosts
