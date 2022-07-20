@@ -1,4 +1,5 @@
 from tasksets import BasicTaskSet, DagTaskSet
+from plots import BasicPlot
 
 from PyQt5 import QtCore, QtWidgets
 import sys
@@ -58,14 +59,15 @@ class TasksetGenerator(object):
             #basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
-            saved_path = basic_taskset.makeLF(saveDir=saveDir)
+            generated_files = basic_taskset.makeLF(saveDir=saveDir)
 
         elif self.config['type'] == 'dag':
             dag_taskset = DagTaskSet.TaskSet()
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
-            saved_path = dag_taskset.makeLF(saveDir=saveDir)
-
+            generated_files = dag_taskset.makeLF(saveDir=saveDir)
+        
+        return generated_files
         
 
 class Ui_MainWindow(object):
@@ -87,7 +89,6 @@ class Ui_MainWindow(object):
         MainWindow.setMinimumHeight(HorizontalSize)
         self.totalTimeUnit = "sec"
         self.executionTimeUnit = "sec"
-
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -341,10 +342,23 @@ class Ui_MainWindow(object):
         if len(self.taskConfig['schedulers']) == 0:
             print("Choose scheduler to evaluate")
         else:
+
+            WORKING_DIR = os.getcwd()
+
+
             generator = TasksetGenerator()
             generator.setConfig(self.taskConfig)
-            generator.makeLF(templateDir='./', saveDir='./.gui/')
+            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}', saveDir=f'{WORKING_DIR}/.gui/src/')
             print("Generate Finish!")
+            
+            plot_generator = BasicPlot.PlotGenerator()
+            plot_generator.setConfig({
+                'dataset': generated_files,
+                'num_iteration': self.spinBox_numOfIterations.value()
+            })
+
+            plot_generator.plot_graph()
+
         
     def clickExit(self):
         app.quit()

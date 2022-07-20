@@ -95,7 +95,16 @@ class TaskSet(object):
         char_to_replace['$EXE_TIME$'] += f'{self.config["execution_time"]["value"]} {self.config["execution_time"]["timeUnit"]}'
 
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
-        generated_files = []
+
+        generated_files = {
+            'title': f'Dag / Seed: {self.config["seed"]}',
+            'workers': workers,
+            'schedulers': {
+                'NP': [],
+                'GEDF_NP': [],
+                'GEDF_NP_CI': [],
+            },
+        }
         
         for scheduler in self.config['schedulers']:
             char_to_replace['$SCHEDULER_TYPE$'] = scheduler
@@ -114,7 +123,7 @@ class TaskSet(object):
                 
                 if os.path.isfile(FILE_PATH) == True:
                     print(f'File saved: {FILE_PATH}')
-                    generated_files.append(FILE_PATH)
+                    generated_files['schedulers'][scheduler].append(FILE_PATH)
                 else:
                     sys.exit('The LF file is not generated.')
         
