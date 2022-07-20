@@ -97,7 +97,6 @@ class TaskSet(object):
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
 
         generated_files = {
-            'title': f'Dag / Seed: {self.config["seed"]}',
             'workers': workers,
             'schedulers': {
                 'NP': [],

@@ -75,7 +75,7 @@ class PlotGenerator(object):
         plt.axis([0, max(workers)+1, 0, max(max(exe_times[s]) for s in target_schedulers) * 1.2])
         
         plt.xlabel('Number of Worker')
-        plt.ylabel('Execution time')
+        plt.ylabel('Physical Execution time')
 
         plt.title(self.config['title'], fontsize= 10)
         plt.show()

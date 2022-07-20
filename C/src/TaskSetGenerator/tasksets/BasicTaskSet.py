@@ -45,9 +45,7 @@ class TaskSet(object):
         char_to_replace['$NUM_TASKS$'] = str(self.config['num_tasks'])
         
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
-        title = f'{self.config["periodicity"].capitalize()} / Total time: {char_to_replace["$TOTAL_TIME$"]} / Number of Tasks: {char_to_replace["$NUM_TASKS$"]}'
         generated_files = {
-            'title': title, 
             'workers': workers,
             'schedulers': {
                 'NP': [],

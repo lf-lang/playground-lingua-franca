@@ -213,6 +213,7 @@ class Ui_MainWindow(object):
 
         self.lineEdit_utilization = QtWidgets.QLineEdit(self.gridLayoutWidget_basic)
         self.lineEdit_utilization.setObjectName('lineEdit_utilization')
+        self.lineEdit_utilization.setText('0.4')
         self.gridLayout_basic.addWidget(self.lineEdit_utilization, 3, 1)
         
         self.label_period = QtWidgets.QLabel(self.gridLayoutWidget_basic)
@@ -351,8 +352,14 @@ class Ui_MainWindow(object):
             generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}', saveDir=f'{WORKING_DIR}/.gui/src/')
             print("Generate Finish!")
             
+            plot_title = ''
+            if self.taskConfig['type'] == 'basic':
+                plot_title = f'{self.taskConfig["periodicity"].capitalize()} / Number of task: {self.taskConfig["num_tasks"]} / Utilization: {self.taskConfig["utilization"]}'
+            elif self.taskConfig['type'] == 'dag':
+                plot_title = f'DAG / Seed: {self.taskConfig["seed"]}'
             plot_generator = BasicPlot.PlotGenerator()
             plot_generator.setConfig({
+                'title': plot_title,
                 'dataset': generated_files,
                 'num_iteration': self.spinBox_numOfIterations.value()
             })
