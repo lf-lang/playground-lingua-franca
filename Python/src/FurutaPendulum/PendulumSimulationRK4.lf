@@ -171,24 +171,23 @@ reactor PendulumSimulation(
     =}
     
     # The update will be triggered when either a disturbance is introduced or a sample
-    # period of time has elapsed. It will only be triggered once even if both happen 
-    # at the same time.
-    reaction(d, t) -> theta, d_theta, phi, d_phi {=
+    # period of time has elapsed. 
+    # See SmallTest.lf for how disturbance updates works in a simpler forward euler 
+    # example
+    reaction(d) {=
+        self.update_state()
+        self.x[1] += d.value
+    =}
 
-        if not(self.first):
-            # Update the state.
-            if d.is_present:
-                self.x[1] += d.value
-                self.update_state()
-            else:
-                self.update_state()
+    reaction(t) -> theta, d_theta, phi, d_phi {=
+        if not (self.first):
+            self.update_state()
         else:
             self.x[0] = self.initial_theta
             self.first = False
-            
         # Output the state.
         self.output_state(theta, d_theta, phi, d_phi)
-    =}
+     =}
 
     reaction(u) {=
         self.latest_u = u.value
