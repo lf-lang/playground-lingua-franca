@@ -20,7 +20,10 @@ reactor MergeOr {
     output merged
 
     reaction(left, right) -> merged {=
-        merged.set(True)
+        if left.is_present:
+            merged.set(left.value)
+        else:
+            merged.set(right.value)
     =}
 }
 
@@ -28,6 +31,7 @@ reactor EatPills extends BehaviorNode {
     input[4] ghost_sprites
     input pacman_sprite
     input block_list
+    input init_sprite
     
     #output sprite
 
@@ -37,16 +41,21 @@ reactor EatPills extends BehaviorNode {
     state _eat_moves(0)
 
     reaction(start) -> success, failure {=
+        print("eat ghosts leng is ", len(self._ghosts))
+        print("character is ", self.character_instance)
         if len(self._ghosts) > 0 and self.character_instance is not None:
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
             #sprite.set(self.character_instance)
+            print("eat success, instance is ", self.character_instance)
             success.set(self.character_instance)
         else:
+            print("eat has failed")
             failure.set(True)
     =}
 
     reaction(ghost_sprites) {=
+        self._ghosts = []
         for sprite in ghost_sprites:
             if sprite.is_present:
                 self._ghosts.append(sprite.value)
@@ -56,8 +65,12 @@ reactor EatPills extends BehaviorNode {
         self._block_list = block_list.value
     =}
 
-    reaction(pacman_sprite) {=
-        self.character_instance = pacman_sprite.value
+    reaction(pacman_sprite, init_sprite) {=
+        print("eat has received character")
+        if pacman_sprite.is_present:
+            self.character_instance = pacman_sprite.value
+        else:
+            self.character_instance = init_sprite.value
     =}
 
 }
@@ -85,6 +98,7 @@ reactor AvoidGhost extends BehaviorNode {
     =}
 
     reaction(ghost_sprites) {=
+        self._ghosts = []
         for sprite in ghost_sprites:
             if sprite.is_present:
                 self._ghosts.append(sprite.value)
@@ -114,6 +128,7 @@ reactor ChaseGhost extends BehaviorNode {
     =}
 
     reaction(ghost_sprites) {=
+        self._ghosts = []
         for sprite in ghost_sprites:
             if sprite.is_present:
                 self._ghosts.append(sprite.value)
@@ -144,6 +159,7 @@ reactor GhostClose extends BehaviorNode {
     =}
 
     reaction(ghost_sprites) {=
+        self._ghosts = []
         for sprite in ghost_sprites:
             if sprite.is_present:
                 self._ghosts.append(sprite.value)
@@ -178,7 +194,7 @@ reactor PacMan0(width(0), height(0), image("images/Trollman.png"), character_cla
     input block_list
     input frenzy
     input icon
-    #output sprite
+    input init_sprite
 
     reaction(icon) {=
         self.character_instance = self.character_class(self.width, self.height, icon.value)
@@ -189,6 +205,7 @@ reactor PacMan0(width(0), height(0), image("images/Trollman.png"), character_cla
     (pacman_sprite)+ -> right.pacman_sprite, left.pacman_sprite
     (block_list)+ -> right.block_list
     frenzy -> left.frenzy
+    init_sprite -> right.init_sprite
 
     left.success -> merge.left
     left.failure -> right.start
