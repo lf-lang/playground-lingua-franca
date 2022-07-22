@@ -29,10 +29,10 @@
  *
 **/
 target Python {
-    files: ["include/hbpacman.py", "include/images", "include/AIPacSupport.py", "DresdenPacManTree.lf"]
+    files: ["include/hbpacman.py", "include/images", "include/AIPacSupport.py", "KielPacManTree.lf"]
 };
 
-import PacMan0 from "DresdenPacManTree.lf"
+import PacMan0 from "KielPacManTree.lf"
 
 preamble {=
     import os
