@@ -37,7 +37,7 @@ reactor EatPills extends BehaviorNode {
     state _eat_moves(0)
 
     reaction(start) -> success, failure {=
-        if len(self._ghosts) > 0:
+        if len(self._ghosts) > 0 and self.character_instance is not None:
             self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
             self._eat_moves = self.character_instance.get_num_moves()
             #sprite.set(self.character_instance)
@@ -79,7 +79,7 @@ reactor AvoidGhost extends BehaviorNode {
         else:
             failure.set(True)
     =}
-
+ 
     reaction(pacman_sprite) {=
         self.character_instance = pacman_sprite.value
     =}
@@ -130,7 +130,7 @@ reactor GhostClose extends BehaviorNode {
     state _ghosts({=[]=})
 
     reaction(start) -> success, failure {=
-        if len(self._ghosts) > 0 and len(self._ghosts) > 0:
+        if len(self._ghosts) > 0 and len(self._ghosts) > 0 and self.character_instance is not None:
             if len(ai.closeghostdist(pacman.walls, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 6)) > 5:
                 failure.set(True)
             else:
@@ -168,7 +168,7 @@ reactor GhostScared extends BehaviorNode {
 }
 
 #fallback
-reactor PacMan0 extends BehaviorNode {
+reactor PacMan0(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) extends BehaviorNode {
     left = new PacMan1()
     right = new EatPills()
     merge = new MergeOr()
@@ -177,6 +177,12 @@ reactor PacMan0 extends BehaviorNode {
     input pacman_sprite
     input block_list
     input frenzy
+    input icon
+    #output sprite
+
+    reaction(icon) {=
+        self.character_instance = self.character_class(self.width, self.height, icon.value)
+    =}
 
     start -> left.start
     (ghost_sprites)+ -> right.ghost_sprites, left.ghost_sprites
@@ -254,13 +260,3 @@ reactor PacMan3 extends BehaviorNode {
     right.failure -> merge.right
     merge.merged -> failure
 }
-
-// main reactor {
-//     timer t (0, 100msec)
-
-//     bt = new PacMan0()
-
-//     reaction(t) -> bt.start {=
-//         bt.start.set(True)
-//     =}
-// }
