@@ -1,0 +1,266 @@
+/** PacMan Dresden Reactor **/
+target Python{
+    files: ["include/hbpacman.py", "include/AIPacSupport.py"]
+};
+
+preamble {=
+    import hbpacman as pacman
+    import AIPacSupport as ai
+=}
+
+reactor BehaviorNode {
+    input start
+    output success
+    output failure
+}
+
+reactor MergeOr {
+    input right
+    input left
+    output merged
+
+    reaction(left, right) -> merged {=
+        merged.set(True)
+    =}
+}
+
+reactor EatPills extends BehaviorNode {
+    input[4] ghost_sprites
+    input pacman_sprite
+    input block_list
+    
+    #output sprite
+
+    state character_instance
+    state _ghosts({=[]=})
+    state _block_list({=pacman.pygame.sprite.RenderPlain()=})
+    state _eat_moves(0)
+
+    reaction(start) -> success, failure {=
+        if len(self._ghosts) > 0:
+            self.character_instance.ai_eat(pacman.walls, self._ghosts, self._block_list, self._eat_moves)
+            self._eat_moves = self.character_instance.get_num_moves()
+            #sprite.set(self.character_instance)
+            success.set(self.character_instance)
+        else:
+            failure.set(True)
+    =}
+
+    reaction(ghost_sprites) {=
+        for sprite in ghost_sprites:
+            if sprite.is_present:
+                self._ghosts.append(sprite.value)
+    =}
+
+    reaction(block_list) {=
+        self._block_list = block_list.value
+    =}
+
+    reaction(pacman_sprite) {=
+        self.character_instance = pacman_sprite.value
+    =}
+
+}
+
+reactor AvoidGhost extends BehaviorNode {
+    input pacman_sprite
+    input[4] ghost_sprites
+
+    #output sprite
+
+    state character_instance
+    state _ghosts({=[]=})
+
+    reaction(start) -> success, failure {=
+        if len(self._ghosts) > 0:
+            self.character_instance.ai_avoid(pacman.walls, self._ghosts, 7)
+            #sprite.set(self.character_instance)
+            success.set(self.character_instance)
+        else:
+            failure.set(True)
+    =}
+
+    reaction(pacman_sprite) {=
+        self.character_instance = pacman_sprite.value
+    =}
+
+    reaction(ghost_sprites) {=
+        for sprite in ghost_sprites:
+            if sprite.is_present:
+                self._ghosts.append(sprite.value)
+    =}
+}
+
+reactor ChaseGhost extends BehaviorNode {
+    input pacman_sprite
+    input[4] ghost_sprites
+
+    #output sprite
+
+    state character_instance
+    state _ghosts({=[]=})
+
+    reaction(start) -> success, failure {=
+        if len(self._ghosts) > 0:
+            self.character_instance.ai_chase(pacman.walls, self._ghosts, 7)
+            #sprite.set(self.character_instance)
+            success.set(self.character_instance)
+        else:
+            failure.set(True)
+    =}
+
+    reaction(pacman_sprite) {=
+        self.character_instance = pacman_sprite.value
+    =}
+
+    reaction(ghost_sprites) {=
+        for sprite in ghost_sprites:
+            if sprite.is_present:
+                self._ghosts.append(sprite.value)
+    =}
+}
+
+reactor GhostClose extends BehaviorNode {
+    input pacman_sprite
+    input[4] ghost_sprites
+
+    #output sprite
+
+    state character_instance
+    state _ghosts({=[]=})
+
+    reaction(start) -> success, failure {=
+        if len(self._ghosts) > 0 and len(self._ghosts) > 0:
+            if len(ai.closeghostdist(pacman.walls, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 6)) > 5:
+                failure.set(True)
+            else:
+                success.set(True)
+        else:
+            failure.set(True)
+    =}
+
+    reaction(pacman_sprite) {=
+        self.character_instance = pacman_sprite.value
+    =}
+
+    reaction(ghost_sprites) {=
+        for sprite in ghost_sprites:
+            if sprite.is_present:
+                self._ghosts.append(sprite.value)
+    =}
+}
+
+reactor GhostScared extends BehaviorNode {
+    input frenzy
+    state _frenzy(False)
+
+    reaction(start) -> success, failure {=
+        if self._frenzy:
+            success.set(True)
+        else:
+            failure.set(True)
+    =}
+
+    reaction(frenzy) {=
+        self._frenzy = frenzy.value
+    =}
+
+}
+
+#fallback
+reactor PacMan0 extends BehaviorNode {
+    left = new PacMan1()
+    right = new EatPills()
+    merge = new MergeOr()
+
+    input[4] ghost_sprites
+    input pacman_sprite
+    input block_list
+    input frenzy
+
+    start -> left.start
+    (ghost_sprites)+ -> right.ghost_sprites, left.ghost_sprites
+    (pacman_sprite)+ -> right.pacman_sprite, left.pacman_sprite
+    (block_list)+ -> right.block_list
+    frenzy -> left.frenzy
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+#sequence
+reactor PacMan1 extends BehaviorNode {
+    left = new GhostClose()
+    right = new PacMan2()
+    merge = new MergeOr()
+
+    input pacman_sprite
+    input frenzy
+    input[4] ghost_sprites
+
+    start -> left.start
+    (ghost_sprites)+ -> left.ghost_sprites, right.ghost_sprites
+    (pacman_sprite)+ -> left.pacman_sprite, right.pacman_sprite
+    frenzy -> right.frenzy
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+#fallback
+reactor PacMan2 extends BehaviorNode {
+    left = new PacMan3()
+    right = new AvoidGhost()
+    merge = new MergeOr()
+
+    input[4] ghost_sprites
+    input pacman_sprite
+    input frenzy
+
+    start -> left.start
+    (ghost_sprites)+ -> left.ghost_sprites, right.ghost_sprites
+    (pacman_sprite)+ -> left.pacman_sprite, right.pacman_sprite
+    frenzy -> left.frenzy
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+#sequence
+reactor PacMan3 extends BehaviorNode {
+    left = new GhostScared()
+    right = new ChaseGhost()
+    merge = new MergeOr()
+
+    input[4] ghost_sprites
+    input pacman_sprite
+    input frenzy
+
+    start -> left.start
+    frenzy -> left.frenzy
+    ghost_sprites -> right.ghost_sprites
+    pacman_sprite -> right.pacman_sprite
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+// main reactor {
+//     timer t (0, 100msec)
+
+//     bt = new PacMan0()
+
+//     reaction(t) -> bt.start {=
+//         bt.start.set(True)
+//     =}
+// }

@@ -290,8 +290,9 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
     state _gate_list
     state _pause({=False=})
     state _find_moves(0)
-    state _action({="mining"=})
-    state _prev_action({="mining"=})
+    state _event_list({=["washing", "mining", "washing", "filtering", "storing"]=})
+    state _action({=self._event_list[0]=})
+    state _prev_action({=self._event_list[0]=})
     state _scheduled(True)
 
     output sprite
@@ -303,6 +304,12 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
         print("payCost last move is ", self.character_instance.last_move)
         if self.character_instance.last_move is not [0, 0]:
                 self.character_instance.charge(self.energy_cost)
+    =}
+
+    method proceedList() {=
+        temp = self._event_list[0]
+        self._event_list = self._event_list[1:]
+        self._event_list.append(temp)
     =}
     
     initial mode export {
@@ -456,7 +463,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             print("in mining")
             self._scheduled = True
             self._prev_action = "mining"
-            self._action = "washing"
+            self.proceedList()
+            self._action = self._event_list[0]
             #print("ending mining, beginning wash")
             export.set()
         =}
@@ -475,7 +483,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             print("in washing")
             self._scheduled = True
             self._prev_action = "washing"
-            self._action = "filtering"
+            self.proceedList()
+            self._action = self._event_list[0]
             export.set()
         =}
 
@@ -501,7 +510,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             print("in filtering")
             self._scheduled = True
             self._prev_action = "filtering"
-            self._action = "storing"
+            self.proceedList()
+            self._action = self._event_list[0]
             export.set()
         =}
 
@@ -517,7 +527,8 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             print("in storing")
             self._scheduled = True
             self._prev_action = "storing"
-            self._action = "mining"
+            self.proceedList()
+            self._action = self._event_list[0]
             self.character_instance.store(randint(7, 11))
             export.set()
         =}
