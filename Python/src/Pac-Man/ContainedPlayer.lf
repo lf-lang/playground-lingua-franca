@@ -32,6 +32,7 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
     state _ghosts({=[]=})
     state _pause(False)
     state _active(True)
+    state _ai_control(True)
     state _layout({=pacman.walls=})
 
     output[7] result
@@ -76,9 +77,37 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
                         self._pause = True
                     else:
                         self._pause = False
+                if event.key == pacman.pygame.K_m:
+                    self._pause = False
+                    self._ai_control = not self._ai_control
+
+                if not self._ai_control and not self._pause and self._active:
+                    if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
+                        self.character_instance.changespeed(-30, 0)
+                    if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
+                        self.character_instance.changespeed(30, 0)
+                    if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
+                        self.character_instance.changespeed(0, -30)
+                    if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
+                        self.character_instance.changespeed(0, 30)
+            
+            if event.type == pacman.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+                if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
+                    self.character_instance.changespeed(30, 0)
+                if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
+                    self.character_instance.changespeed(-30, 0)
+                if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
+                    self.character_instance.changespeed(0, 30)
+                if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
+                    self.character_instance.changespeed(0, -30)
+        if not self._ai_control and not self._pause and self._active:
+            self.character_instance.update(
+                self._wall_list,
+                self._gate_list
+            )
         playerpause.set(self._pause)
         sprite.set(self.character_instance)
-        if not self._pause and self._active:
+        if not self._pause and self._active and self._ai_control:
 
             for i, port in enumerate(result):
                 if i == 0:

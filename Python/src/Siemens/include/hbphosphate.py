@@ -2,7 +2,7 @@
 #https://github.com/hbokmann/Pacman
   
 import pygame
-import AIPacSupport as ai
+import AIPhosphate as ai
 from random import randint
 import sys
   
@@ -12,6 +12,9 @@ blue = (0,0,255)
 green = (0,255,0)
 gray = (90, 90, 90)
 red = (255,0,0)
+burgundy = (172, 56, 56)
+wash_blue = (0, 102, 204)
+filter_orange = (255, 153, 51)
 purple = (255,0,255)
 yellow   = (255, 255, 0)
 brown = (139, 69, 19)
@@ -19,41 +22,17 @@ walls = [ [0,0,6,600],
               [0,0,600,6],
               [0,600,606,6],
               [600,0,6,606],
-              [300,0,6,66],
-              [60,60,186,6],
-              [360,60,186,6],
-              [60,120,66,6],
-              [60,120,6,126],
-              [180,120,246,6],
-              [300,120,6,66],
-              [480,120,66,6],
-              [540,120,6,126],
-              [120,180,126,6],
-              [120,180,6,126],
-              [360,180,126,6],
-              [480,180,6,126],
-              [180,240,6,126],
-              [180,360,246,6],
-              [420,240,6,126],
-              [240,240,42,6],
-              [324,240,42,6],
-              [240,240,6,66],
-              [240,300,126,6],
-              [360,240,6,66],
-              [0,300,66,6],
-              [540,300,66,6],
-              [60,360,66,6],
-              [60,360,6,186],
-              [480,360,66,6],
-              [540,360,6,186],
-              [120,420,366,6],
-              [120,420,6,66],
-              [480,420,6,66],
-              [180,480,246,6],
-              [300,480,6,66],
-              [120,540,126,6],
-              [360,540,126,6]
             ]
+layout = [ [0,0,6,600],
+              [0,0,600,6],
+              [0,600,606,6],
+              [600,0,6,606]
+            ]
+minespot = [63, 95]
+chargerspot = [63, 515]
+washspot = [273, 215]
+filterspot = [423, 545]
+storespot = [543, 125]
 
 # This class represents the bar at the bottom that the player controls
 class Wall(pygame.sprite.Sprite):
@@ -126,7 +105,7 @@ def setupRoomOne(all_sprites_list):
     # return our new list
     return wall_list
 
-def setupRoomFoomba(all_sprites_list):
+def setupMineWalls(all_sprites_list):
     # Make the walls. (x_pos, y_pos, width, height)
     wall_list=pygame.sprite.RenderPlain()
      
@@ -135,40 +114,6 @@ def setupRoomFoomba(all_sprites_list):
               [0,0,600,6],
               [0,600,606,6],
               [600,0,6,606],
-              [300,0,6,66],
-              [60,60,186,6],
-              [360,60,186,6],
-              [60,120,66,6],
-              [60,120,6,126],
-              [180,120,246,6],
-              [300,120,6,66],
-              [480,120,66,6],
-              [540,120,6,126],
-              [120,180,126,6],
-              [120,180,6,126],
-              [360,180,126,6],
-              [480,180,6,126],
-              [180,240,6,126],
-              [180,360,246,6],
-              [420,240,6,126],
-              [240,240,42,6],
-              [324,240,42,6],
-              [240,240,6,66],
-              [240,300,126,6],
-              [360,240,6,66],
-              [0,300,66,6],
-              [540,300,66,6],
-              [60,360,66,6],
-              [60,360,6,186],
-              [480,360,66,6],
-              [540,360,6,186],
-              [120,420,366,6],
-              [120,420,6,66],
-              [480,420,6,66],
-              [180,480,246,6],
-              [300,480,6,66],
-              [120,540,126,6],
-              [360,540,126,6]
             ]
      
     # Loop through the list. Create the wall, add it to the list
@@ -185,6 +130,21 @@ def setupGate(all_sprites_list):
       gate.add(Wall(282,242,42,2,white))
       all_sprites_list.add(gate)
       return gate
+
+class ActionPlace(pygame.sprite.Sprite):
+      
+      def __init__(self, name, color, x, y, width, height):
+            
+            pygame.sprite.Sprite.__init__(self)
+            self.image = pygame.Surface([width, height])
+            self.image.fill(color)
+            #self.image.set_colorkey(color)
+            #pygame.draw.rect(self.image, color, [0, 0, width, height])
+
+            self.rect = self.image.get_rect()
+            self.rect.left = x
+            self.rect.top = y
+            self.name = name
 
 # This class represents the ball        
 # It derives from the "Sprite" class in Pygame
@@ -210,9 +170,11 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect() 
 
 # This class represents the bar at the bottom that the player controls
-class Player(pygame.sprite.Sprite):
+class AGV(pygame.sprite.Sprite):
   
     # Set speed vector
+    battery = 100
+    total_stored = 0
     change_x=0
     change_y=0
     last_move = [0, 0]
@@ -220,7 +182,7 @@ class Player(pygame.sprite.Sprite):
     calcpathmove = 0
     next_moves = []
     eating = False
-  
+
     # Constructor function
     def __init__(self,x,y, _image):
         # Call the parent's constructor
@@ -301,6 +263,15 @@ class Player(pygame.sprite.Sprite):
         #     self.rect.top=old_y
     #TODO: consolidate the following into one func based on move
     #save potential future moves
+    def charge(self, input):
+        if input == "full":
+            self.battery = 100
+        else:
+            self.battery += input
+
+    def store(self, input):
+          self.total_stored += input
+    
     def ai_eat(self, layout, ghosts, blocks, num_moves):
         if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
           # or self.num_moves + 15 > self.calcpathmove:
@@ -308,12 +279,16 @@ class Player(pygame.sprite.Sprite):
           self.calcpathmove = self.num_moves + 1
           self.rect.left += path[0][0]
           self.rect.top += path[0][1]
+          print("eat move is ", path[0])
+          print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
           self.last_move = path[0]
           self.next_moves = path[1:]
         else:
           self.rect.left += self.next_moves[0][0]
           self.rect.top += self.next_moves[0][1]
           self.last_move = self.next_moves[0]
+          print("eat move is ", self.last_move)
+          print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
           self.next_moves = self.next_moves[1:]
         
         self.num_moves += 1
@@ -334,11 +309,15 @@ class Player(pygame.sprite.Sprite):
         self.num_moves += 1
 
     def ai_avoid(self, layout, ghosts, threshold):
-        path = ai.avoider(layout, ghosts, self.rect.left, self.rect.top, threshold)
-        print("this is avoid: ", path)
+        path = ai.peopleavoid(layout, ghosts, self.rect.left, self.rect.top)
+        #print("this is avoid: ", path)
+        print("old x and y " + str(self.rect.left) + ", " + str(self.rect.top))
         self.rect.left += path[0][0]
         self.rect.top += path[0][1]
-        self.last_move = path[0]
+        print("new x and y " + str(self.rect.left) + ", " + str(self.rect.top))
+        self.last_move = path
+        print("avoid move is: ", self.last_move)
+        print("avoid x y: " + str(self.rect.left) + ", " + str(self.rect.top))
         # if num_moves is not self.num_moves or len(self.next_moves) == 0:
         #     path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
         #     self.rect.left += path[0][0]
@@ -390,19 +369,40 @@ class Player(pygame.sprite.Sprite):
               # self.rect.top += change[1]
               # self.rect.left += possible.values()[random][0]
               # self.rect.top += possible.values()[random][1]
-        print("this is avoid: ", self.last_move)
+        #print("this is avoid: ", self.last_move)
         self.num_moves += 1
 
     def stop_eating(self):
           self.eating = False
     def get_num_moves(self):
           return self.num_moves
+    def approach(self, layout, people, goal_coords, num_moves):
+          if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
+          # or self.num_moves + 15 > self.calcpathmove:
+            print("finding approach path")
+            path = ai.euclid_approacher(layout, people, self.rect.left + 16, self.rect.top + 16, goal_coords[0], goal_coords[1])
+            self.calcpathmove = self.num_moves + 1
+            self.rect.left += path[0][0]
+            self.rect.top += path[0][1]
+            print("approach move is ", path[0])
+            print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            self.last_move = path[0]
+            self.next_moves = path[1:]
+          else:
+            self.rect.left += self.next_moves[0][0]
+            self.rect.top += self.next_moves[0][1]
+            self.last_move = self.next_moves[0]
+            print("approach move is ", self.last_move)
+            print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            self.next_moves = self.next_moves[1:]
+        
+          self.num_moves += 1
           
 
 
 
 #Inheritime Player klassist
-class Ghost(Player):
+class People(AGV):
     # Change the speed of the ghost
     def changespeed(self,list,ghost,turn,steps,l):
       try:
