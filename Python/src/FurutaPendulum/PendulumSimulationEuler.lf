@@ -61,6 +61,16 @@ reactor PendulumSimulation(
     
     timer t(0, sample_period)
     
+    reaction(d) {=
+        # NOTE: Here, we effectively shift the disturbance to be
+        # simultaneous with the next sample. A more accurate model
+        # would apply the disturbance immediately.
+        # The update of the state vector in the reaction below
+        # should first be factored out to a method, when methods
+        # are implemented in C.
+        self.x[1] = self.x[1] + d.value
+    =}
+
     reaction(t) -> theta, d_theta, phi, d_phi {=
         if not(self.first):
             # Update the state.
@@ -145,17 +155,6 @@ reactor PendulumSimulation(
         phi.set(self.x[2])
         d_phi.set(self.x[3])
     =}
-
-    reaction(d) {=
-        # NOTE: Here, we effectively shift the disturbance to be
-        # simultaneous with the next sample. A more accurate model
-        # would apply the disturbance immediately.
-        # The update of the state vector in the reaction below
-        # should first be factored out to a method, when methods
-        # are implemented in C.
-        self.x[1] = self.x[1] + d.value;
-    =}
-
     reaction(u) {=
         self.latest_u = u.value
     =}

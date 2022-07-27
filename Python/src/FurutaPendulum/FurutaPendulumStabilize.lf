@@ -10,7 +10,10 @@ target Python {
     timeout: 8 secs,
     fast: true
 }
-import PendulumSimulation from "PendulumSimulation.lf"
+import PendulumSimulation from "PendulumSimulationRk4.lf"
+
+# Alternatively, change the ODE solver to forward-Euler by calling:
+# import PendulumSimulation from "PendulumSimulationEuler.lf"
 
 preamble {=
     import matplotlib.pyplot as plt
@@ -67,6 +70,6 @@ main reactor {
     p.theta -> plt.data
 
     reaction(d) -> p.d {=
-        p.d.set(1.0);
+        p.d.set(1.0)
     =}
 }
