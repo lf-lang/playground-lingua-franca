@@ -1,0 +1,52 @@
+target TypeScript {
+    Timeout: 3 secs
+};
+
+reactor Source {
+    output out1: string
+    output out2: string
+    logical action a;
+
+    reaction(startup) -> a {=
+        actions.a.schedule(TimeValue.sec(1), null);
+    =}
+
+    reaction(a) -> out1 {=
+        out1 = "out1";
+    =} 
+    
+    reaction(a) -> out2 {=
+        out2 = "out2";
+    =}
+}
+
+reactor Destination {
+    input inp1: string
+    input inp2: string
+    timer t(1 sec, 1 sec);
+
+    reaction(inp1, inp2) {= //the reaction should wait until inp2 arriving
+        console.log(`At tag: ${util.getElapsedLogicalTime()}, `);
+        console.log(`inp1: ${inp1}`);
+        console.log(`inp2: ${inp2}`);
+        if (inp1 === undefined || inp2 === undefined) {
+            util.requestErrorStop("Error");
+        }
+    =}
+
+    reaction(t) {= 
+        console.log(`At tag: ${util.getElapsedLogicalTime()}, `);
+        console.log("This reaction should be triggered after the above reaction is triggered."); 
+    =}
+}
+
+main reactor PortAbsentTest {
+    s = new Source() 
+    d = new Destination()  
+    s.out1 -> d.inp1      
+    s.out2 -> d.inp2
+
+    reaction(startup) {=
+        console.log("Printing something in top-level federated reactor.");
+    =}
+}
