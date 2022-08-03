@@ -5,7 +5,9 @@
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  */
 
-target TypeScript;
+target TypeScript {
+    coordination-options: {advance-message-interval: 100 msec}
+}
 
 reactor InputHandler {
     output out:string;
