@@ -1,0 +1,50 @@
+target C {
+    Timeout: 3 secs
+};
+
+reactor Source {
+    output out1: string
+    output out2: string
+    logical action a;
+
+    reaction(startup) -> a {=
+        lf_schedule(a, SEC(1));
+    =}
+
+    reaction(a) -> out1 {=
+        lf_set(out1, "out1");
+    =} 
+    
+    reaction(a) -> out2 {=
+        lf_set(out2, "out2");
+    =}
+}
+
+reactor Destination {
+    input inp1: string
+    input inp2: string
+    timer t(1 sec, 1 sec);
+
+    reaction(inp1, inp2) {= //the reaction should wait until inp2 arriving
+        lf_print("At logical time %lld, inp1: %s, inp2: %s", lf_time_logical_elapsed(), inp1->value, inp2->value);
+        if (inp1 == NULL || inp2 == NULL) {
+            lf_print_error_and_exit("Error");
+        }
+    =}
+
+    reaction(t) {= 
+        lf_print("At logical time %lld", lf_time_logical_elapsed());
+        lf_print("This reaction should be triggered after the above reaction is triggered."); 
+    =}
+}
+
+main reactor PortAbsentTest {
+    s = new Source() 
+    d = new Destination()  
+    s.out1 -> d.inp1      
+    s.out2 -> d.inp2
+
+    reaction(startup) {=
+        printf("Printing something in top-level federated reactor.");
+    =}
+}
