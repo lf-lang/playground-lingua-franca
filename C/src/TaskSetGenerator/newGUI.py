@@ -89,6 +89,7 @@ class Ui_MainWindow(object):
         MainWindow.setMinimumWidth(VerticalSize)
         MainWindow.setMinimumHeight(HorizontalSize)
         self.totalTimeUnit = "sec"
+        self.periodTimeUnit = "sec"
         self.executionTimeUnit = "sec"
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -239,10 +240,16 @@ class Ui_MainWindow(object):
         self.spinBox_period.setMinimum(1)
         self.spinBox_period.setProperty('value', 1)
         self.gridLayout_basic.addWidget(self.spinBox_period, 4, 1)
-        
+
+        self.comboBox_periodTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_basic)
+        self.comboBox_periodTimeUnit.setObjectName('comboBox_periodTimeUnit')
+        self.comboBox_periodTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
+        self.comboBox_periodTimeUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_periodTimeUnit, 'periodTimeUnit'))
+        self.gridLayout_basic.addWidget(self.comboBox_periodTimeUnit, 4, 2)
+
         self.label_period.hide()
         self.spinBox_period.hide() 
-
+        self.comboBox_periodTimeUnit.hide()
 
         self.scrollArea_task_dag = QtWidgets.QScrollArea(self.tab_task)
         self.scrollArea_task_dag.setWidgetResizable(True)
@@ -297,9 +304,9 @@ class Ui_MainWindow(object):
         self.label_dag_seed.setToolTip("Seed value to initialize random function")
         self.gridLayout_dag.addWidget(self.label_dag_seed, 2, 0)
 
-        self.spinBox_dag_seed = QtWidgets.QLineEdit(self.gridLayoutWidget_dag)
-        self.spinBox_dag_seed.setObjectName('spinBox_dag_seed')
-        self.gridLayout_dag.addWidget(self.spinBox_dag_seed, 2, 1)
+        self.lineEdit_dag_seed = QtWidgets.QLineEdit(self.gridLayoutWidget_dag)
+        self.lineEdit_dag_seed.setObjectName('lineEdit_dag_seed')
+        self.gridLayout_dag.addWidget(self.lineEdit_dag_seed, 2, 1)
         
         self.label_executionTime = QtWidgets.QLabel(self.gridLayoutWidget_dag)
         self.label_executionTime.setObjectName("label_executionTime")
@@ -343,15 +350,19 @@ class Ui_MainWindow(object):
                 self.lineEdit_basic_seed.show()
                 self.label_period.hide()
                 self.spinBox_period.hide()
+                self.comboBox_periodTimeUnit.hide()
             elif comboBox.currentText() == 'periodic':
                 self.label_basic_seed.hide()
                 self.lineEdit_basic_seed.hide()
                 self.label_period.show()
                 self.spinBox_period.show()
+                self.comboBox_periodTimeUnit.show()
         elif type == 'totalTimeUnit':
             self.totalTimeUnit = comboBox.currentText()
         elif type == 'executionTimeUnit':
             self.executionTimeUnit = comboBox.currentText()
+        elif type == 'periodTimeUnit':
+            self.periodTimeUnit = comboBox.currentText()
     
     def clickRun(self):
         # Set data
@@ -414,13 +425,13 @@ class Ui_MainWindow(object):
             self.taskConfig['periodicity'] = self.comboBox_periodicity.currentText()
             self.taskConfig['period'] = {
                'value': self.spinBox_period.value(),
-               'timeUnit': 'msec'
+               'timeUnit': self.periodTimeUnit,
             }
             self.taskConfig['num_tasks'] = self.spinBox_numOfTasks.value()
             self.taskConfig['utilization'] = float(self.lineEdit_utilization.text())
             self.taskConfig['seed'] = int(self.lineEdit_basic_seed.text()) if len(self.lineEdit_basic_seed.text()) > 0 else int(round(datetime.now().timestamp()))
         elif self.taskConfig['type'] == 'dag':
-            self.taskConfig['seed'] = int(self.spinBox_dag_seed.text()) if len(self.spinBox_dag_seed.text()) > 0 else datetime.now()         # FIXME: it should be lineEdit, not spinBox
+            self.taskConfig['seed'] = int(self.lineEdit_dag_seed.text()) if len(self.lineEdit_dag_seed.text()) > 0 else datetime.now()
             self.taskConfig['max_depth'] = self.spinBox_numOfLevel.value()
             self.taskConfig['num_outputs'] = self.spinBox_capacityOfOneLevel.value()
             self.taskConfig['execution_time'] = {
