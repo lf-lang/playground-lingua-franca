@@ -20,10 +20,11 @@ class TasksetGenerator(object):
             'periodicity': 'sporadic',
             'period': {'value': 0, 'timeUnit': 'sec'},
             'num_tasks': 20,
-            'utilization': 0.6
+            'utilization': 0.6,
+            'seed': datetime.now()
         }
         self.dag_config = {
-            'seed': datetime.now(),
+            'seed': int(round(datetime.now().timestamp())),
             'max_depth': 5,
             'num_outputs': 4,
             'execution_time': {'value': 100, 'timeUnit': 'msec'}
@@ -215,7 +216,17 @@ class Ui_MainWindow(object):
         self.lineEdit_utilization.setObjectName('lineEdit_utilization')
         self.lineEdit_utilization.setText('0.4')
         self.gridLayout_basic.addWidget(self.lineEdit_utilization, 3, 1)
-        
+
+        self.label_basic_seed = QtWidgets.QLabel(self.gridLayoutWidget_basic)
+        self.label_basic_seed.setObjectName("label_basic_seed")
+        self.label_basic_seed.setText("Seed:")
+        self.label_basic_seed.setToolTip("Seed value to initialize random function")
+        self.gridLayout_basic.addWidget(self.label_basic_seed, 4, 0)
+
+        self.lineEdit_basic_seed = QtWidgets.QLineEdit(self.gridLayoutWidget_basic)
+        self.lineEdit_basic_seed.setObjectName('lineEdit_basic_seed')
+        self.gridLayout_basic.addWidget(self.lineEdit_basic_seed, 4, 1)
+
         self.label_period = QtWidgets.QLabel(self.gridLayoutWidget_basic)
         self.label_period.setObjectName("label_period")
         self.label_period.setText("Period:")
@@ -231,6 +242,7 @@ class Ui_MainWindow(object):
         
         self.label_period.hide()
         self.spinBox_period.hide() 
+
 
         self.scrollArea_task_dag = QtWidgets.QScrollArea(self.tab_task)
         self.scrollArea_task_dag.setWidgetResizable(True)
@@ -279,15 +291,15 @@ class Ui_MainWindow(object):
         self.spinBox_capacityOfOneLevel.setProperty('value', 1)
         self.gridLayout_dag.addWidget(self.spinBox_capacityOfOneLevel, 1, 1)
         
-        self.label_seed = QtWidgets.QLabel(self.gridLayoutWidget_dag)
-        self.label_seed.setObjectName("label_seed")
-        self.label_seed.setText("Seed:")
-        self.label_seed.setToolTip("Seed value to initialize random function")
-        self.gridLayout_dag.addWidget(self.label_seed, 2, 0)
+        self.label_dag_seed = QtWidgets.QLabel(self.gridLayoutWidget_dag)
+        self.label_dag_seed.setObjectName("label_dag_seed")
+        self.label_dag_seed.setText("Seed:")
+        self.label_dag_seed.setToolTip("Seed value to initialize random function")
+        self.gridLayout_dag.addWidget(self.label_dag_seed, 2, 0)
 
-        self.spinBox_seed = QtWidgets.QLineEdit(self.gridLayoutWidget_dag)
-        self.spinBox_seed.setObjectName('spinBox_seed')
-        self.gridLayout_dag.addWidget(self.spinBox_seed, 2, 1)
+        self.spinBox_dag_seed = QtWidgets.QLineEdit(self.gridLayoutWidget_dag)
+        self.spinBox_dag_seed.setObjectName('spinBox_dag_seed')
+        self.gridLayout_dag.addWidget(self.spinBox_dag_seed, 2, 1)
         
         self.label_executionTime = QtWidgets.QLabel(self.gridLayoutWidget_dag)
         self.label_executionTime.setObjectName("label_executionTime")
@@ -327,9 +339,13 @@ class Ui_MainWindow(object):
     def selectionchange(self, comboBox, type):
         if type == 'periodicity':
             if comboBox.currentText() == 'sporadic':
+                self.label_basic_seed.show()
+                self.lineEdit_basic_seed.show()
                 self.label_period.hide()
                 self.spinBox_period.hide()
             elif comboBox.currentText() == 'periodic':
+                self.label_basic_seed.hide()
+                self.lineEdit_basic_seed.hide()
                 self.label_period.show()
                 self.spinBox_period.show()
         elif type == 'totalTimeUnit':
@@ -345,7 +361,6 @@ class Ui_MainWindow(object):
         else:
 
             WORKING_DIR = os.getcwd()
-
 
             generator = TasksetGenerator()
             generator.setConfig(self.taskConfig)
@@ -403,8 +418,9 @@ class Ui_MainWindow(object):
             }
             self.taskConfig['num_tasks'] = self.spinBox_numOfTasks.value()
             self.taskConfig['utilization'] = float(self.lineEdit_utilization.text())
+            self.taskConfig['seed'] = int(self.lineEdit_basic_seed.text()) if len(self.lineEdit_basic_seed.text()) > 0 else int(round(datetime.now().timestamp()))
         elif self.taskConfig['type'] == 'dag':
-            self.taskConfig['seed'] = int(self.spinBox_seed.text()) if len(self.spinBox_seed.text()) > 0 else datetime.now()         # FIXME: it should be lineEdit, not spinBox
+            self.taskConfig['seed'] = int(self.spinBox_dag_seed.text()) if len(self.spinBox_dag_seed.text()) > 0 else datetime.now()         # FIXME: it should be lineEdit, not spinBox
             self.taskConfig['max_depth'] = self.spinBox_numOfLevel.value()
             self.taskConfig['num_outputs'] = self.spinBox_capacityOfOneLevel.value()
             self.taskConfig['execution_time'] = {

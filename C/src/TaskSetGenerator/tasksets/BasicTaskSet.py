@@ -17,7 +17,8 @@ class TaskSet(object):
             'min_workers': 1,
             'max_workers': 20,
             'num_tasks': 20,
-            'utilization': 0.6
+            'utilization': 0.6,
+            'seed': 0
         }
 
         if TEMPLATE_PATH == '':
@@ -43,7 +44,8 @@ class TaskSet(object):
         char_to_replace['$PERIODIC$'] = 'true' if self.config['periodicity'] == 'periodic' else 'false'
         char_to_replace['$PERIOD$'] = f'{self.config["period"]["value"]} {self.config["period"]["timeUnit"]}'
         char_to_replace['$NUM_TASKS$'] = str(self.config['num_tasks'])
-        
+        char_to_replace['$RANDOM_SEED$'] = str(self.config['seed'])
+
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
         generated_files = {
             'workers': workers,
@@ -150,7 +152,7 @@ reactor Task {
         if (self->periodic) {   // periodic task
             lf_schedule(release, self->period);
         } else {            // sporadic task
-            srand(0);
+            srand($RANDOM_SEED$);
             float r = (float) rand() / (float) RAND_MAX;
             long long int period = self->exe_time + (long long int) (r * self->total_time);
             lf_schedule(release, period);
