@@ -2,8 +2,6 @@
 # @author Yunsang Cho
 # @author ByeongGil Jun
 
-
-
 import numpy as np
 import os
 import sys
@@ -52,12 +50,11 @@ class TaskSet(object):
             'execution_time': {'value': 100, 'timeUnit': 'msec'}
         }
 
-        if TEMPLATE_PATH == '':
-            self.template = self.make_template()
+        if os.path.isfile(TEMPLATE_PATH) == True:
+            with open(TEMPLATE_PATH) as f:
+                self.template = f.read()
         else:
-            if os.path.isfile(TEMPLATE_PATH) == True:
-                with open(TEMPLATE_PATH) as f:
-                    self.template = f.read()
+            sys.exit('The template path is invalid.')
 
     def setConfig(self, config):
         for key, value in config.items():
@@ -182,48 +179,3 @@ class TaskSet(object):
                 task_config += task.get_string() + '\t'
 
         return task_config
-
-
-
-
-    def make_template(self):
-        template = """/**
-* Basic component of DAG for task generator
-* @author Yunsang Cho
-*/
-target C {
-    timeout: $TIMEOUT$,
-    workers: $NUM_WORKERS$,
-    scheduler: $SCHEDULER_TYPE$
-}
-
-reactor SimpleDagRunner(exe_time:time(200 msec)) {
-
-    $STARTOUTPUT$
-
-    $STARTUPREACTION$
-}
-
-$COMPONENTS$
-
-reactor Component {
-    input in:time;
-    output out:time;
-    
-    reaction(in) -> out {=
-        long long int physical_start_time = lf_time_physical();
-        
-        while (lf_time_physical() < physical_start_time + in->value) {
-
-        }
-        lf_set(out, in->value);
-    =}
-}
-
-main reactor {
-    runner = new SimpleDagRunner(exe_time=$EXE_TIME$);
-
-    $TASKCONFIG$
-}
-        """
-        return template

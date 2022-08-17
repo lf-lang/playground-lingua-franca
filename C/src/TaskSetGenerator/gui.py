@@ -1,3 +1,10 @@
+# A GUI program for task set generator.
+# It helps to configure task sets to be generated, 
+# and make graph to evaluate different schedulers.
+#
+# @author Yunsang Cho
+# @author Hokeun Kim
+
 from tasksets import BasicTaskSet, DagTaskSet
 from plots import BasicPlot
 
@@ -38,7 +45,6 @@ class TasksetGenerator(object):
                 if key in c.keys():
                     c[key] = value
     
-
     # Generate taskset LF files to speicific directory.
     def makeLF(self, templateDir='./', saveDir='./'):
         TEMPLATE_PATH = f'{templateDir}/{self.config["type"].capitalize()}TaskSetGeneratorTemplate.lf'
@@ -56,14 +62,13 @@ class TasksetGenerator(object):
         }   
 
         if self.config['type'] == 'basic':
-            basic_taskset = BasicTaskSet.TaskSet()
-            #basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
+            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH='./tasksets/BasicTaskSetGeneratorTemplate.lf')
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
             generated_files = basic_taskset.makeLF(saveDir=saveDir)
 
         elif self.config['type'] == 'dag':
-            dag_taskset = DagTaskSet.TaskSet()
+            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH='./tasksets/DagTaskSetGeneratorTemplate.lf')
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
             generated_files = dag_taskset.makeLF(saveDir=saveDir)
@@ -392,7 +397,6 @@ class Ui_MainWindow(object):
 
             plot_generator.plot_graph()
 
-        
     def clickExit(self):
         app.quit()
 

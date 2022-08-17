@@ -7,7 +7,6 @@ import sys
 
 class TaskSet(object):
 
-
     def __init__(self, TEMPLATE_PATH=''):
         self.config = {
             'schedulers': ['NP'],
@@ -21,12 +20,11 @@ class TaskSet(object):
             'seed': 0
         }
 
-        if TEMPLATE_PATH == '':
-            self.template = self.make_template()
+        if os.path.isfile(TEMPLATE_PATH) == True:
+            with open(TEMPLATE_PATH) as f:
+                self.template = f.read()
         else:
-            if os.path.isfile(TEMPLATE_PATH) == True:
-                with open(TEMPLATE_PATH) as f:
-                    self.template = f.read()
+            sys.exit('The template path is invalid.')
 
     def setConfig(self, config):
         for key, value in config.items():
@@ -78,153 +76,3 @@ class TaskSet(object):
                     sys.exit('The LF file is not generated.')
         
         return generated_files                
-
-    
-    def make_template(self):
-        template = """/**
- * Taskset Generator of Lingua Franca
- * @author Hokeun Kim
- * @author Yunsang Cho
- */
-
-target C {
-    timeout: $TOTAL_TIME$,
-    workers: $NUM_WORKERS$,
-    scheduler: $SCHEDULER_TYPE$
-};
-
-preamble {=
-    typedef struct task_config_t {
-        int id;
-        long long int total_time;
-        long long int release_time;
-        long long int exe_time;
-        bool    periodic;
-        long long int period;
-    } task_config_t;
-    //#define 
-=}
-
-// Each Task has information about its release time and exeuction time
-reactor Task {
-
-    input in:task_config_t;
-    state total_time:time(0 sec);
-    state exe_time:time(0 sec);
-    state id:int;
-    state periodic:bool(false);
-    state period:time(0 sec);
-    logical action release;
-
-    reaction(startup) {=
-        #ifdef TASK_SET_TRACING_ON
-            if (!register_user_trace_event("ID")) {
-                fprintf(stderr, "ERROR: Failed to register trace event.");
-                exit(1);
-            }
-        #endif // TASK_SET_TRACING_ON
-    =}
-
-    reaction(in) -> release {=
-        self->id = in->value.id;
-        self->total_time = in->value.total_time;
-        self->exe_time = in->value.exe_time;
-        self->periodic = in->value.periodic;
-        self->period = in->value.period;
-        lf_schedule(release, in->value.release_time);
-    =}
-    
-    reaction(release) -> release {=
-        long long int physical_start_time = lf_time_physical();
-        //tracepoint_user_value("ID", self->id);
-        printf("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec",
-            self->id,
-            lf_time_logical_elapsed(),
-            lf_time_physical_elapsed(),
-            self->exe_time
-        );
-        while (lf_time_physical() < physical_start_time + self->exe_time) {
-
-        };
-        printf("Task %d finished execution at physical time %lld nsec",
-            self->id,
-            lf_time_physical_elapsed());
-        if (self->periodic) {   // periodic task
-            lf_schedule(release, self->period);
-        } else {            // sporadic task
-            srand($RANDOM_SEED$);
-            float r = (float) rand() / (float) RAND_MAX;
-            long long int period = self->exe_time + (long long int) (r * self->total_time);
-            lf_schedule(release, period);
-        }
-    =}
-}
-
-// Runner with uniform task execution time and release time = 0.
-reactor SimpleRunner(num_task:int(10), total_time:time(10 sec), utilization:float(0.6), periodic:bool(false), period:time(1 sec)) {
-    output[100] out:task_config_t;
-    
-    reaction(startup) -> out {=
-        long long int exe_time;
-        if (self->periodic) {
-            exe_time = (long long int) ((self->utilization * self->period) / self->num_task);
-        } else {
-            exe_time = (long long int) ((self->utilization * self->total_time) / (2 * (self->num_task - self->utilization)));
-        }
-        for (int i = 0; i < self->num_task; i++) {
-            task_config_t message;
-            message.id = i;
-            message.total_time = self->total_time;
-            message.exe_time = exe_time;
-            message.release_time = (long long int) 0;
-            message.periodic = self->periodic;
-            message.period = (long long int) self->period;
-            lf_set(out[i], message);
-        }
-    =}
-}
-
-// Runner considering number of workers when computing execution time with uniform task execution time and release time = 0.
-reactor RunnerForMultipleWorkers(num_task:int(100), total_time:time(10 sec), utilization:float(0.6)) {
-    output[100] out:task_config_t;
-
-    reaction(startup) -> out {=
-        long long int exe_time = (long long int) $NUM_WORKERS$ * ((self->total_time * self->utilization) / self->num_task);
-        for (int i = 0; i < self->num_task; i++) {
-            task_config_t message;
-            message.id = i;
-            message.exe_time = exe_time;
-            message.release_time = (long long int) 0;
-            lf_set(out[i], message);
-        }
-    =}
-}
-
-// Runner which set tasks' release times with random number.
-reactor RandomReleaseRunner(num_task:int(100), total_time:time(10 sec), utilization:float(0.6)) {
-    output[100] out:task_config_t;
-
-    reaction(startup) -> out {=
-        srand(time(0));
-        long long int exe_time = (long long int) $NUM_WORKERS$ * ((self->total_time * self->utilization) / self->num_task);
-        for (int i = 0; i < self->num_task; i++) {
-            task_config_t message;
-            float r = (float) rand() / (float) RAND_MAX;
-            message.id = i;
-            message.exe_time = exe_time;
-            message.release_time = (long long int) (r * (float) (self->total_time - exe_time) / 10.0);
-            lf_set(out[i], message);
-        }
-    =}
-}
-
-main reactor {
-    runner = new SimpleRunner(num_task=$NUM_TASKS$, total_time=$TOTAL_TIME$, utilization=$UTILIZATION$, periodic=$PERIODIC$, period=$PERIOD$);
-    //runner = new RunnerForMultipleWorkers();
-    //runner = new RandomReleaseRunner();
-    tasks = new[100] Task();
-    runner.out -> tasks.in;
-}
-        """
-        return template
-
