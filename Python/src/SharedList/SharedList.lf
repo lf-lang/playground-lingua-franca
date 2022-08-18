@@ -1,0 +1,54 @@
+'''
+This is a shared itemlist for multiple people 
+to appendItem or deltetItem at the same time 
+
+Simulate when multiple clients append or delete items from the 
+same sharedItem list.
+'''
+target Python 
+
+reactor ItemList {
+    state itemList;
+    timer t(0, 1 sec);
+    output out;
+    reaction(t) -> out {=
+        out.set(self.itemList)
+    =}
+}
+
+reactor AddItem {
+    // a int type
+    input index;
+
+    // a string type
+    input value;
+
+    // a list data structure in Python
+    input itemList;
+
+    output out; 
+    reaction(index, value, itemList) -> out {=
+        out.set(itemList.insert(index, value))
+    =}
+}
+
+reactor DeleteItem {
+
+}
+
+
+# Print current items on the SharedList
+reactor Printer {
+    input _in;
+    reaction(_in) {=
+        for item in _in.itemList:
+            print(item)
+    =}
+}
+
+main reactor {
+    l = new ItemList();
+    p = new Printer();
+    l.out -> p._in
+}
+
