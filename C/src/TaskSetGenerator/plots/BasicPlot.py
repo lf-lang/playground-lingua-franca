@@ -37,7 +37,7 @@ class PlotGenerator(object):
         
         LF_PATH = os.getenv("LF_PATH")
         if LF_PATH == None:
-            sys.exit("Set the environment variable LF_PATH to the path where Lingua Franca is installed")
+            raise RuntimeError("Set the environment variable LF_PATH to the path where Lingua Franca is installed")
     
         os.chdir(LF_PATH)
         workers = self.config['dataset']['workers']
@@ -85,12 +85,12 @@ class PlotGenerator(object):
 
         LF_PATH = os.getenv("LF_PATH")
         if LF_PATH == None:
-            sys.exit("Set the environment variable LF_PATH to the path where Lingua Franca is installed")
+            raise RuntimeError("Set the environment variable LF_PATH to the path where Lingua Franca is installed")
     
         os.chdir(LF_PATH)
 
         if os.path.isfile(filepath) == False:
-            sys.exit("The LF file is not exists.")
+            raise RuntimeError("No LF file: " + filepath)
         
         filename = filename = filepath.split('/')[-1].split('.')[0]
         binpath = f"{'/'.join(filepath.split('/')[:-3])}/bin/{filename}"

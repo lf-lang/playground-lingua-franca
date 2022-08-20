@@ -50,9 +50,9 @@ class TasksetGenerator(object):
         TEMPLATE_PATH = f'{templateDir}/{self.config["type"].capitalize()}TaskSetGeneratorTemplate.lf'
 
         if os.path.isfile(TEMPLATE_PATH) == False:
-            sys.exit("The template file of task generator is not exist.")
+            raise RuntimeError("No template file of task generator: " + TEMPLATE_PATH)
         if os.path.isdir(saveDir) == False:
-            sys.exit("The directory for saving result is not exist.")
+            raise RuntimeError("No output directory: " + saveDir)
         
         with open(TEMPLATE_PATH) as f:
             template = f.read()
@@ -370,6 +370,12 @@ class Ui_MainWindow(object):
             self.periodTimeUnit = comboBox.currentText()
     
     def clickRun(self):
+        try:
+            self.Run()
+        except RuntimeError as err:
+            print("Python Error: {0}".format(err)) 
+
+    def Run(self):
         # Set data
         self.__updateConfig()
         if len(self.taskConfig['schedulers']) == 0:

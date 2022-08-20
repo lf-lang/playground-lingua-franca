@@ -52,7 +52,7 @@ class TaskSet(object):
             with open(TEMPLATE_PATH) as f:
                 self.template = f.read()
         else:
-            sys.exit('The template path is invalid.')
+            raise RuntimeError('Invalid template path: ' + TEMPLATE_PATH)
 
     def setConfig(self, config):
         for key, value in config.items():
@@ -62,7 +62,7 @@ class TaskSet(object):
 
     def makeLF(self, saveDir='./'):
         if os.path.isdir(saveDir) == False:
-            sys.exit("The directory for saving result is not exist.")
+            raise RuntimeError("No output directory: " + saveDir)
         
         char_to_replace = {
             '$STARTOUTPUT$' : '',
@@ -119,7 +119,7 @@ class TaskSet(object):
                     print(f'File saved: {FILE_PATH}')
                     generated_files['schedulers'][scheduler].append(FILE_PATH)
                 else:
-                    sys.exit('The LF file is not generated.')
+                    raise RuntimeError('Failed to generate LF file: ' + FILE_PATH)
         
         return generated_files                
 
