@@ -450,5 +450,3 @@ if __name__ == "__main__":
     MainWindow.statusBar().showMessage('Ready')
     MainWindow.show()
     sys.exit(app.exec_())
-
-    

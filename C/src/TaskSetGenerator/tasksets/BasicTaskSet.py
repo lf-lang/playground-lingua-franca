@@ -53,7 +53,7 @@ class TaskSet(object):
                 'GEDF_NP_CI': [],
             },
         }
-        
+
         for scheduler in self.config['schedulers']:
             char_to_replace['$SCHEDULER_TYPE$'] = scheduler
             for worker in workers:
@@ -64,15 +64,15 @@ class TaskSet(object):
                 contents = self.template
                 for k, v in char_to_replace.items():
                     contents = contents.replace(k, v)
-                
+
                 with open(FILE_PATH, 'w') as lf_file:
                     lf_file.write(contents)
                     lf_file.close()
-                
+
                 if os.path.isfile(FILE_PATH) == True:
                     print(f'File saved: {FILE_PATH}')
                     generated_files['schedulers'][scheduler].append(FILE_PATH)
                 else:
                     sys.exit('The LF file is not generated.')
-        
-        return generated_files                
+
+        return generated_files

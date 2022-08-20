@@ -8,7 +8,6 @@ import sys
 import random
 from datetime import datetime
 
-
 # A node corresponding to one DAG component reactor
 class Node:
     
@@ -33,7 +32,6 @@ class Node:
             result += f'\t{parent}.out -> {self.name}.in{i+1};\n'
         
         return result + '\n'
-
 
 class TaskSet(object):
 
