@@ -33,7 +33,7 @@ class TaskSet(object):
 
 
     def makeLF(self, outputDir='./'):
-        if os.path.isdir(outputDir) == False:
+        if not os.path.isdir(outputDir):
             raise RuntimeError("No output directory: " + outputDir)
         
         char_to_replace = {}

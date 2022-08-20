@@ -89,7 +89,7 @@ class PlotGenerator(object):
     
         os.chdir(LF_PATH)
 
-        if os.path.isfile(filepath) == False:
+        if not os.path.isfile(filepath):
             raise RuntimeError("No LF file: " + filepath)
         
         filename = filename = filepath.split('/')[-1].split('.')[0]
@@ -103,9 +103,9 @@ class PlotGenerator(object):
                 break
         
         if built_success:
-            print(f"Built Successfull: {filepath}")
+            print(f"Built Successfully: {filepath}")
         else:
-            print("Build Failed")
+            print("Failed to build")
             print(out.stderr.decode("utf-8"))
             exit(0)
     
