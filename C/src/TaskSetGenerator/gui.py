@@ -46,13 +46,16 @@ class TasksetGenerator(object):
                     c[key] = value
     
     # Generate taskset LF files to speicific directory.
-    def makeLF(self, templateDir='./', saveDir='./'):
+    def makeLF(self, templateDir='./', outputDir='./'):
         TEMPLATE_PATH = f'{templateDir}/{self.config["type"].capitalize()}TaskSetGeneratorTemplate.lf'
 
-        if os.path.isfile(TEMPLATE_PATH) == False:
+        if not os.path.isfile(TEMPLATE_PATH):
             raise RuntimeError("No template file of task generator: " + TEMPLATE_PATH)
-        if os.path.isdir(saveDir) == False:
-            raise RuntimeError("No output directory: " + saveDir)
+        if not os.path.exists(outputDir):
+            # Create output directory if not exists.
+            os.makedirs(outputDir)
+            if not os.path.isdir(outputDir):
+                raise RuntimeError("No output directory: " + outputDir)
         
         with open(TEMPLATE_PATH) as f:
             template = f.read()
@@ -65,13 +68,13 @@ class TasksetGenerator(object):
             basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH='./tasksets/BasicTaskSetGeneratorTemplate.lf')
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
-            generated_files = basic_taskset.makeLF(saveDir=saveDir)
+            generated_files = basic_taskset.makeLF(outputDir=outputDir)
 
         elif self.config['type'] == 'dag':
             dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH='./tasksets/DagTaskSetGeneratorTemplate.lf')
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
-            generated_files = dag_taskset.makeLF(saveDir=saveDir)
+            generated_files = dag_taskset.makeLF(outputDir=outputDir)
         
         return generated_files
         
@@ -386,7 +389,7 @@ class Ui_MainWindow(object):
 
             generator = TasksetGenerator()
             generator.setConfig(self.taskConfig)
-            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}', saveDir=f'{WORKING_DIR}/.gui/src/')
+            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}', outputDir=f'{WORKING_DIR}/.gui/src/')
             print("Generate Finish!")
             
             plot_title = ''

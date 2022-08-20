@@ -32,9 +32,9 @@ class TaskSet(object):
                 self.config[key] = value
 
 
-    def makeLF(self, saveDir='./'):
-        if os.path.isdir(saveDir) == False:
-            raise RuntimeError("No output directory: " + saveDir)
+    def makeLF(self, outputDir='./'):
+        if os.path.isdir(outputDir) == False:
+            raise RuntimeError("No output directory: " + outputDir)
         
         char_to_replace = {}
         char_to_replace['$TOTAL_TIME$'] = f'{self.config["timeout"]["value"]} {self.config["timeout"]["timeUnit"]}'
@@ -59,7 +59,7 @@ class TaskSet(object):
             for worker in workers:
                 char_to_replace['$NUM_WORKERS$'] = str(worker)
                 FILE_NAME = f'{self.config["periodicity"].capitalize()}_{scheduler}_{worker}.lf'
-                FILE_PATH = f'{saveDir}/{FILE_NAME}'
+                FILE_PATH = f'{outputDir}/{FILE_NAME}'
 
                 contents = self.template
                 for k, v in char_to_replace.items():
