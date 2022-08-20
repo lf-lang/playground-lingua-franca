@@ -65,13 +65,13 @@ class TasksetGenerator(object):
         }   
 
         if self.config['type'] == 'basic':
-            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH='./tasksets/BasicTaskSetGeneratorTemplate.lf')
+            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH='./templates/BasicTaskSetGeneratorTemplate.lf')
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
             generated_files = basic_taskset.makeLF(outputDir=outputDir)
 
         elif self.config['type'] == 'dag':
-            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH='./tasksets/DagTaskSetGeneratorTemplate.lf')
+            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH='./templates/DagTaskSetGeneratorTemplate.lf')
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
             generated_files = dag_taskset.makeLF(outputDir=outputDir)
@@ -389,8 +389,8 @@ class Ui_MainWindow(object):
 
             generator = TasksetGenerator()
             generator.setConfig(self.taskConfig)
-            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}', outputDir=f'{WORKING_DIR}/.gui/src/')
-            print("Generate Finish!")
+            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}/templates', outputDir=f'{WORKING_DIR}/.gui/src/')
+            print("Finished generating LF files!")
             
             plot_title = ''
             if self.taskConfig['type'] == 'basic':
