@@ -381,6 +381,7 @@ class Ui_MainWindow(object):
         try:
             self.Run()
         except RuntimeError as err:
+            print("Python Error: {0}".format(err), file=sys.stderr)
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Critical)
             msg.setWindowTitle("Python Error")
