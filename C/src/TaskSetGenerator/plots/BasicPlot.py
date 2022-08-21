@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
-import matplotlib
-matplotlib.use('tkagg')
-
 import os
 import sys
 import subprocess
@@ -117,4 +114,5 @@ class PlotGenerator(object):
                 break
 
         exe_time = int(exe_time.replace(',','')) / 1000000000
+        print('Total physical execution time: ' + str(exe_time))
         return exe_time
