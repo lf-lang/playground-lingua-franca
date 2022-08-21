@@ -22,6 +22,7 @@ class TasksetGenerator(object):
             'timeout': {'value': 10, 'timeUnit': 'sec'},
             'min_workers': 1,
             'max_workers': 20,
+            'deadline': {'value': 100, 'timeUnit': 'msec'}
         }
         self.basic_config = {
             'periodicity': 'sporadic',
@@ -145,6 +146,24 @@ class Ui_MainWindow(object):
         self.spinBox_numOfIterations.setProperty('value', 1)
         self.spinBox_numOfIterations.setObjectName('spinBox_numOfIterations')
         
+        self.label_deadline = QtWidgets.QLabel(self.groupBox_generalConfiguration)
+        self.label_deadline.setGeometry(QtCore.QRect(12, 60, 180, 25))
+        self.label_deadline.setObjectName("label_deadline")
+        self.label_deadline.setText("Deadline:")
+
+        self.spinBox_deadline = QtWidgets.QSpinBox(self.groupBox_generalConfiguration)
+        self.spinBox_deadline.setGeometry(QtCore.QRect(200, 60, 55, 25))
+        self.spinBox_deadline.setObjectName('spinBox_deadline')
+        self.spinBox_deadline.setMaximum(10000)
+        self.spinBox_deadline.setMinimum(1)
+        self.spinBox_deadline.setProperty('value', 1)
+
+        self.comboBox_deadlineUnit = QtWidgets.QComboBox(self.groupBox_generalConfiguration)
+        self.comboBox_deadlineUnit.setGeometry(QtCore.QRect(270, 60, 55, 25))
+        self.comboBox_deadlineUnit.setObjectName('comboBox_deadlineUnit')
+        self.comboBox_deadlineUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
+        self.comboBox_deadlineUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_deadlineUnit, 'deadlineUnit'))
+
         self.groupBox_taskConfiguration = QtWidgets.QGroupBox(self.centralwidget)               # Task Config
         self.groupBox_taskConfiguration.setGeometry(QtCore.QRect(12, 232, 1000, 228))
         self.groupBox_taskConfiguration.setObjectName("groupBox_taskConfiguration")
@@ -437,6 +456,10 @@ class Ui_MainWindow(object):
         # FIXME: Should add spinboxs for min_workers and max_workers in GUI.
         self.taskConfig['min_workers'] = 1
         self.taskConfig['max_workers'] = 20
+        self.taskConfig['deadline'] = {
+            'value': self.spinBox_deadline.value(),
+            'timeUnit': self.comboBox_deadlineUnit.currentText()
+        }
 
         if self.taskConfig['type'] == 'basic':
             self.taskConfig['periodicity'] = self.comboBox_periodicity.currentText()

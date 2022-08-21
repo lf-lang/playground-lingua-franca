@@ -17,7 +17,8 @@ class TaskSet(object):
             'max_workers': 20,
             'num_tasks': 20,
             'utilization': 0.6,
-            'seed': 0
+            'seed': 0,
+            'deadline': {'value': 100, 'timeUnit': 'msec'},
         }
 
         if os.path.isfile(TEMPLATE_PATH) == True:
@@ -43,6 +44,7 @@ class TaskSet(object):
         char_to_replace['$PERIOD$'] = f'{self.config["period"]["value"]} {self.config["period"]["timeUnit"]}'
         char_to_replace['$NUM_TASKS$'] = str(self.config['num_tasks'])
         char_to_replace['$RANDOM_SEED$'] = str(self.config['seed'])
+        char_to_replace['$DEADLINE$'] = f'{self.config["deadline"]["value"]} {self.config["deadline"]["timeUnit"]}'
 
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
         generated_files = {

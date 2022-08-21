@@ -8,6 +8,11 @@ target C {
     scheduler: $SCHEDULER_TYPE$
 }
 
+preamble {=
+    #include "platform.h";
+    int deadline_miss = 0;
+=}
+
 reactor SimpleDagRunner(exe_time:time(200 msec)) {
 
     $STARTOUTPUT$
@@ -35,4 +40,8 @@ main reactor {
     runner = new SimpleDagRunner(exe_time=$EXE_TIME$);
 
     $TASKCONFIG$
+
+    reaction(shutdown) {=
+        printf("---- Deadline miss: %d\n", deadline_miss);
+    =}
 }

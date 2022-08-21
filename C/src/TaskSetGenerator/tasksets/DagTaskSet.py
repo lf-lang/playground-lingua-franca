@@ -45,7 +45,8 @@ class TaskSet(object):
             'seed': datetime.now(),
             'max_depth': 4,
             'num_outputs': 4,
-            'execution_time': {'value': 100, 'timeUnit': 'msec'}
+            'execution_time': {'value': 100, 'timeUnit': 'msec'},
+            'deadline': {'value': 100, 'timeUnit': 'msec'},
         }
 
         if os.path.isfile(TEMPLATE_PATH) == True:
@@ -70,6 +71,7 @@ class TaskSet(object):
             '$TASKCONFIG$': '',
             '$COMPONENTS$': '',
             '$EXE_TIME$':'',
+            '$DEADLINE$':'',
         }
 
         char_to_replace['$TIMEOUT$'] = f'{self.config["timeout"]["value"]} {self.config["timeout"]["timeUnit"]}'
@@ -88,6 +90,7 @@ class TaskSet(object):
         char_to_replace['$TASKCONFIG$'] += self.task_config_multiple_inputs(seed=self.config['seed'])
 
         char_to_replace['$EXE_TIME$'] += f'{self.config["execution_time"]["value"]} {self.config["execution_time"]["timeUnit"]}'
+        char_to_replace['$DEADLINE$'] += f'{self.config["deadline"]["value"]} {self.config["deadline"]["timeUnit"]}'
 
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
 

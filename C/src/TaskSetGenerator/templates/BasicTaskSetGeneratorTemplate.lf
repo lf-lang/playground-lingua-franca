@@ -11,6 +11,8 @@ target C {
 };
 
 preamble {=
+    #include "platform.h";
+    int deadline_miss = 0;
     typedef struct task_config_t {
         int id;
         long long int total_time;
@@ -74,6 +76,8 @@ reactor Task {
             long long int period = self->exe_time + (long long int) (r * self->total_time);
             lf_schedule(release, period);
         }
+    =} deadline($DEADLINE$) {=
+        lf_atomic_fetch_add(&deadline_miss, 1);
     =}
 }
 
@@ -141,4 +145,8 @@ main reactor {
     //runner = new RandomReleaseRunner();
     tasks = new[100] Task();
     runner.out -> tasks.in;
+
+    reaction(shutdown) {=
+        printf("---- Deadline miss: %d\n", deadline_miss);
+    =}
 }
