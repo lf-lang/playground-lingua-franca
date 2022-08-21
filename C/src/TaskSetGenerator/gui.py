@@ -124,6 +124,10 @@ class Ui_MainWindow(object):
         self.scheduler_GEDF_NP_CI.setGeometry(QtCore.QRect(280, 32, 120, 25))
         self.scheduler_GEDF_NP_CI.setObjectName('scheduler_GEDF_NP_CI')
         self.scheduler_GEDF_NP_CI.setText("GEDF_NP_CI")
+        self.scheduler_adaptive = QtWidgets.QCheckBox(self.groupBox_scheduler)
+        self.scheduler_adaptive.setGeometry(QtCore.QRect(400, 32, 145, 25))
+        self.scheduler_adaptive.setObjectName('scheduler_adaptive')
+        self.scheduler_adaptive.setText("adaptive")
 
         self.groupBox_generalConfiguration = QtWidgets.QGroupBox(self.centralwidget)              # General Config
         self.groupBox_generalConfiguration.setGeometry(QtCore.QRect(12, 122, 1000, 100))
@@ -414,7 +418,8 @@ class Ui_MainWindow(object):
         schedulers = {
             self.scheduler_NP: 'NP',
             self.scheduler_GEDF_NP: 'GEDF_NP',
-            self.scheduler_GEDF_NP_CI: 'GEDF_NP_CI'
+            self.scheduler_GEDF_NP_CI: 'GEDF_NP_CI',
+            self.scheduler_adaptive: 'adaptive'
         }
 
         self.taskConfig['schedulers'].clear()

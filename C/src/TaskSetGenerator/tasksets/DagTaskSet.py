@@ -97,6 +97,7 @@ class TaskSet(object):
                 'NP': [],
                 'GEDF_NP': [],
                 'GEDF_NP_CI': [],
+                'adaptive': [],
             },
         }
         
