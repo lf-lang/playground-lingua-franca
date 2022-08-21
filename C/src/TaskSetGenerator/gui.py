@@ -9,6 +9,7 @@ from tasksets import BasicTaskSet, DagTaskSet
 from plots import BasicPlot
 
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 import sys
 import os
 from datetime import datetime
@@ -380,13 +381,18 @@ class Ui_MainWindow(object):
         try:
             self.Run()
         except RuntimeError as err:
-            print("Python Error: {0}".format(err)) 
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setWindowTitle("Python Error")
+            msg.setText("{0}".format(err))
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
 
     def Run(self):
         # Set data
         self.__updateConfig()
         if len(self.taskConfig['schedulers']) == 0:
-            print("Choose scheduler to evaluate")
+            raise RuntimeError("Choose scheduler to evaluate")
         else:
 
             WORKING_DIR = os.getcwd()
