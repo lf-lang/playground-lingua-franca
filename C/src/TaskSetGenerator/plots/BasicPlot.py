@@ -110,6 +110,8 @@ class PlotGenerator(object):
 
         os.chdir(WORKING_DIR)
 
+        return exe_times, deadline_misses
+
     def __run_single_LF(self, filepath):
 
         LF_PATH = os.getenv("LF_PATH")
