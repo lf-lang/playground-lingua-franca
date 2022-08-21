@@ -59,21 +59,19 @@ class TasksetGenerator(object):
             if not os.path.isdir(outputDir):
                 raise RuntimeError("No output directory: " + outputDir)
         
-        with open(TEMPLATE_PATH) as f:
-            template = f.read()
 
         char_to_replace = {
             '$TOTAL_TIME$': f'{self.config["timeout"]["value"]} {self.config["timeout"]["timeUnit"]}'
         }   
 
         if self.config['type'] == 'basic':
-            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH='./templates/BasicTaskSetGeneratorTemplate.lf')
+            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
             generated_files = basic_taskset.makeLF(outputDir=outputDir)
 
         elif self.config['type'] == 'dag':
-            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH='./templates/DagTaskSetGeneratorTemplate.lf')
+            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
             generated_files = dag_taskset.makeLF(outputDir=outputDir)

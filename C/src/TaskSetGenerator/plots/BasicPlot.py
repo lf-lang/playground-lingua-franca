@@ -32,6 +32,7 @@ class PlotGenerator(object):
 
     def plot_graph(self):
         
+        WORKING_DIR = os.getcwd()
         LF_PATH = os.getenv("LF_PATH")
         if LF_PATH == None:
             raise RuntimeError("Set the environment variable LF_PATH to the path where Lingua Franca is installed")
@@ -107,7 +108,7 @@ class PlotGenerator(object):
         plt.title(self.config['title'], fontsize= 10)
         plt.show()
 
-
+        os.chdir(WORKING_DIR)
 
     def __run_single_LF(self, filepath):
 

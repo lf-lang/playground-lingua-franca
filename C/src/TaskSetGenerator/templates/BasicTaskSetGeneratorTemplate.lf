@@ -122,27 +122,35 @@ reactor RunnerForMultipleWorkers(num_task:int(100), total_time:time(10 sec), uti
 }
 
 // Runner which set tasks' release times with random number.
-reactor RandomReleaseRunner(num_task:int(100), total_time:time(10 sec), utilization:float(0.6)) {
+reactor RandomReleaseRunner(num_task:int(10), total_time:time(10 sec), utilization:float(0.6), periodic:bool(false), period:time(1 sec)) {
     output[100] out:task_config_t;
 
     reaction(startup) -> out {=
         srand(time(0));
-        long long int exe_time = (long long int) $NUM_WORKERS$ * ((self->total_time * self->utilization) / self->num_task);
+        long long int exe_time;
+        if (self->periodic) {
+            exe_time = (long long int) ((self->utilization * self->period) / self->num_task);
+        } else {
+            exe_time = (long long int) ((self->utilization * self->total_time) / (2 * (self->num_task - self->utilization)));
+        }
         for (int i = 0; i < self->num_task; i++) {
             task_config_t message;
             float r = (float) rand() / (float) RAND_MAX;
             message.id = i;
+            message.total_time = self->total_time;
             message.exe_time = exe_time;
             message.release_time = (long long int) (r * (float) (self->total_time - exe_time) / 10.0);
+            message.periodic = self->periodic;
+            message.period = (long long int) self->period;
             lf_set(out[i], message);
-        }
+        }   
     =}
 }
 
 main reactor {
-    runner = new SimpleRunner(num_task=$NUM_TASKS$, total_time=$TOTAL_TIME$, utilization=$UTILIZATION$, periodic=$PERIODIC$, period=$PERIOD$);
+    //runner = new SimpleRunner(num_task=$NUM_TASKS$, total_time=$TOTAL_TIME$, utilization=$UTILIZATION$, periodic=$PERIODIC$, period=$PERIOD$);
     //runner = new RunnerForMultipleWorkers();
-    //runner = new RandomReleaseRunner();
+    runner = new RandomReleaseRunner();
     tasks = new[100] Task();
     runner.out -> tasks.in;
 
