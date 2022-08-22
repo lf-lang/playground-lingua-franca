@@ -9,7 +9,7 @@ import sys
 import os
 from datetime import datetime
 
-from gui import TasksetGenerator
+from tasksets import TasksetGenerator
 
 class cli(object):
     def __init__(self):
