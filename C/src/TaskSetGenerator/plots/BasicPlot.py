@@ -147,5 +147,6 @@ class PlotGenerator(object):
                 break
 
         exe_time = int(exe_time.replace(',','')) / 1000000000
+        print('Raw output: \n' + lf_out.stdout.decode("utf-8"))
         print('Total physical execution time: ' + str(exe_time))
         return exe_time, deadline_miss
