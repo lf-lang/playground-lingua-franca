@@ -18,7 +18,8 @@ class PlotGenerator(object):
             'x-axis': 'num_worker',
             'y-axis': 'physical_excution_time',
             'dataset': {},
-            'num_iteration': 1
+            'num_iteration': 1,
+            'save_name': ''
         }
 
         # basic path
@@ -32,7 +33,7 @@ class PlotGenerator(object):
             if key in self.config.keys():
                 self.config[key] = value
 
-    def save_graph(self, axis, colors, graph_axis, xlabel, ylabel):
+    def save_graph(self, axis, colors, graph_axis, xlabel, ylabel, output_dir):
         _, ax = plt.subplots()
         plt.axis(axis)
         patches = []
@@ -48,9 +49,9 @@ class PlotGenerator(object):
         plt.ylabel(ylabel)
 
         plt.title(self.config['title'], fontsize= 10)
-        plt.savefig(os.path.join(self.basicPath))
+        plt.savefig(os.path.join(output_dir, "%s.png"%(self.config['save_name'])))
 
-    def plot_graph(self):
+    def plot_graph(self, output_dir):
         WORKING_DIR = os.getcwd()
         LF_PATH = os.getenv("LF_PATH")
         if LF_PATH == None:
@@ -91,23 +92,22 @@ class PlotGenerator(object):
         self.target_schedulers = target_schedulers
         self.workers = workers
 
-        # Check path exists and create path if not exists
-        if os.path.exists(os.path.join(self.basicPath, datetime.year())):
-
 
         # Graph 1: Physical execution time
         PlotGenerator.save_graph(axis= [1, 25, 0.0, 5.0],
                                 colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
                                 graph_axis=exe_times,
                                 xlabel="Number of Worker",
-                                ylabel="Physical Execution time")
+                                ylabel="Physical Execution time",
+                                output_dir=output_dir)
 
         # Graph 2: Deadline miss
         PlotGenerator.save_graph(axis= [1, 25, 0.0, 5.0],
                                 colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
                                 graph_axis=deadline_misses,
                                 xlabel="Number of Worker",
-                                ylabel="Deadline Miss")
+                                ylabel="Deadline Miss",
+                                output_dir=output_dir)
 
         os.chdir(WORKING_DIR)
 
