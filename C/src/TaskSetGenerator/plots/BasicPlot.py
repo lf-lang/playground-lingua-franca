@@ -7,9 +7,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 
 import os
-import sys
 import subprocess
-import shutil
 from functools import partial
 import statistics
 
