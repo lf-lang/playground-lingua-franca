@@ -540,8 +540,8 @@ class Ui_MainWindow(object):
                 configs.append(f'{self.taskConfig["period"]["value"]} {self.taskConfig["period"]["timeUnit"]}')
 
         elif self.taskConfig['type'] == 'dag':
-            header = ['type', 'number of iterations', 'deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
-            configs = ['dag', self.spinBox_numOfIterations.value(), f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
+            configs = ['dag', self.spinBox_numOfIterations.value(), self.taskConfig['min_workers'], self.taskConfig['max_workers'], f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
                         ', '.join(self.taskConfig['schedulers']), self.taskConfig['max_depth'], self.taskConfig['num_outputs'], self.taskConfig['seed'],
                         f'{self.taskConfig["execution_time"]["value"]} {self.taskConfig["execution_time"]["timeUnit"]}'
                       ]
