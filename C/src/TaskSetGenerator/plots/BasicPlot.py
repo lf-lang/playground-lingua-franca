@@ -8,7 +8,6 @@ import numpy as np
 
 import os
 import subprocess
-from functools import partial
 import statistics
 
 class PlotGenerator(object):
