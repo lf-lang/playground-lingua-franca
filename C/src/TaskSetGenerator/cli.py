@@ -130,10 +130,10 @@ class CLI(object):
             }
             self.taskConfig['num_tasks'] = self.args.num_tasks
             self.taskConfig['utilization'] = self.args.utilization
-            self.taskConfig['seed'] = self.args.seed if len(self.lineEdit_basic_seed.text()) > 0 else int(round(datetime.now().timestamp()))
+            self.taskConfig['seed'] = self.args.seed if self.args.seed else int(round(datetime.now().timestamp()))
         
         elif self.taskConfig['type'] == 'dag':
-            self.taskConfig['seed'] = int(self.lineEdit_dag_seed.text()) if len(self.lineEdit_dag_seed.text()) > 0 else datetime.now()
+            self.taskConfig['seed'] = self.args.seed if self.args.seed else int(round(datetime.now().timestamp()))
             self.taskConfig['max_depth'] = self.args.max_depth
             self.taskConfig['num_outputs'] = self.args.num_outputs
             self.taskConfig['execution_time'] = {
