@@ -5,6 +5,7 @@
 # @author Yunsang Cho
 # @author Hokeun Kim
 
+import enum
 from tasksets import BasicTaskSet, DagTaskSet
 from plots import BasicPlot
 
@@ -12,6 +13,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 import sys
 import os
+import csv
 from datetime import datetime
 
 class TasksetGenerator(object):
@@ -59,21 +61,19 @@ class TasksetGenerator(object):
             if not os.path.isdir(outputDir):
                 raise RuntimeError("No output directory: " + outputDir)
         
-        with open(TEMPLATE_PATH) as f:
-            template = f.read()
 
         char_to_replace = {
             '$TOTAL_TIME$': f'{self.config["timeout"]["value"]} {self.config["timeout"]["timeUnit"]}'
         }   
 
         if self.config['type'] == 'basic':
-            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH='./templates/BasicTaskSetGeneratorTemplate.lf')
+            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
             generated_files = basic_taskset.makeLF(outputDir=outputDir)
 
         elif self.config['type'] == 'dag':
-            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH='./templates/DagTaskSetGeneratorTemplate.lf')
+            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
             generated_files = dag_taskset.makeLF(outputDir=outputDir)
@@ -434,7 +434,15 @@ class Ui_MainWindow(object):
                 'num_iteration': self.spinBox_numOfIterations.value()
             })
 
-            plot_generator.plot_graph()
+            exe_times, deadline_misses = plot_generator.plot_graph()
+            result = {
+                'workers': [i for i in range(1, 21)],
+                'exe_times': exe_times,
+                'deadline_misses': deadline_misses
+            }
+
+            self.saveResult(result)
+
 
     def clickExit(self):
         app.quit()
@@ -486,6 +494,55 @@ class Ui_MainWindow(object):
                 'timeUnit': self.comboBox_executionTimeUnit.currentText()
             }    
     
+    def saveResult(self, result):
+        WORKING_DIR = os.getcwd()
+        output_dir = f'{WORKING_DIR}/.output'
+        if os.path.exists(output_dir) == False:
+            os.mkdir(output_dir)
+        
+        if self.taskConfig['type'] == 'basic':
+            header = ['type', 'number of iterations', 'deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
+            configs = ['basic', self.spinBox_numOfIterations.value(), f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+                        ', '.join(self.taskConfig['schedulers']), self.taskConfig['num_tasks'], f'{self.taskConfig["timeout"]["value"]} {self.taskConfig["timeout"]["timeUnit"]}',
+                        self.taskConfig['utilization'], self.taskConfig['periodicity']
+                      ]
+            if self.taskConfig['periodicity'] == 'sporadic':
+                header.append('seed')
+                configs.append(self.taskConfig['seed'])
+            elif self.taskConfig['periodicity'] == 'periodic':
+                header.append('period')
+                configs.append(f'{self.taskConfig["period"]["value"]} {self.taskConfig["period"]["timeUnit"]}')
+
+        elif self.taskConfig['type'] == 'dag':
+            header = ['type', 'number of iterations', 'deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
+            configs = ['dag', self.spinBox_numOfIterations.value(), f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+                        ', '.join(self.taskConfig['schedulers']), self.taskConfig['max_depth'], self.taskConfig['num_outputs'], self.taskConfig['seed'],
+                        f'{self.taskConfig["execution_time"]["value"]} {self.taskConfig["execution_time"]["timeUnit"]}'
+                      ]
+
+        output_file = f'{output_dir}/{self.taskConfig["type"]}_{", ".join(self.taskConfig["schedulers"])}_{int(round(datetime.now().timestamp()))}.csv'
+        
+        with open(output_file, 'w', encoding='UTF8', newline='') as f:
+            writer = csv.writer(f)
+
+            writer.writerow(header)
+            writer.writerow(configs)
+
+
+            outputs_header = ['scheduler', 'worker', 'physical execution time', 'deadline miss']
+            outputs = []
+
+            for scheduler in self.taskConfig['schedulers']:
+                for i, worker in enumerate(result['workers']):
+                    output = [scheduler, worker, result['exe_times'][scheduler][i], result['deadline_misses'][scheduler][i]]
+                    outputs.append(output.copy())
+                    output.clear()
+            
+            writer.writerow(outputs_header)
+            writer.writerows(outputs)
+                
+
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
