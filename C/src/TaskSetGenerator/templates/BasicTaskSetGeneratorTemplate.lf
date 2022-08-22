@@ -78,6 +78,7 @@ reactor Task {
         }
     =} deadline($DEADLINE$) {=
         lf_atomic_fetch_add(&deadline_miss, 1);
+        while (lf_time_physical() < physical_start_time + self->exe_time) {};
     =}
 }
 
