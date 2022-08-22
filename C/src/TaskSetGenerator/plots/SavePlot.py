@@ -2,6 +2,7 @@
 # x axis: number of workers
 # y axis: physical execution time
 
+from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -47,7 +48,7 @@ class PlotGenerator(object):
         plt.ylabel(ylabel)
 
         plt.title(self.config['title'], fontsize= 10)
-        plt.show()
+        plt.savefig(os.path.join(self.basicPath))
 
     def plot_graph(self):
         WORKING_DIR = os.getcwd()
@@ -91,7 +92,7 @@ class PlotGenerator(object):
         self.workers = workers
 
         # Check path exists and create path if not exists
-        if os.path.exists(os.path.join(self.basicPath, )):
+        if os.path.exists(os.path.join(self.basicPath, datetime.year())):
 
 
         # Graph 1: Physical execution time
