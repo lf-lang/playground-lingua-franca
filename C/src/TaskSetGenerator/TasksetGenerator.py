@@ -66,4 +66,3 @@ class TasksetGenerator(object):
             generated_files = dag_taskset.makeLF(outputDir=outputDir)
         
         return generated_files
-        
