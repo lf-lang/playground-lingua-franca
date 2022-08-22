@@ -147,6 +147,29 @@ class Ui_MainWindow(object):
         self.spinBox_numOfIterations.setProperty('value', 1)
         self.spinBox_numOfIterations.setObjectName('spinBox_numOfIterations')
         
+        self.label_minWorkers = QtWidgets.QLabel(self.groupBox_generalConfiguration)
+        self.label_minWorkers.setGeometry(QtCore.QRect(380, 32, 120, 25))
+        self.label_minWorkers.setObjectName("label_minWorkers")
+        self.label_minWorkers.setText("Minimum Workers:")
+        self.spinBox_minWorkers = QtWidgets.QSpinBox(self.groupBox_generalConfiguration)
+        self.spinBox_minWorkers.setGeometry(QtCore.QRect(510, 32, 55, 25))
+        self.spinBox_minWorkers.setMaximum(100)
+        self.spinBox_minWorkers.setMinimum(1)
+        self.spinBox_minWorkers.setProperty('value', 1)
+        self.spinBox_minWorkers.setObjectName('spinBox_minWorkers')
+
+        self.label_maxWorkers = QtWidgets.QLabel(self.groupBox_generalConfiguration)
+        self.label_maxWorkers.setGeometry(QtCore.QRect(600, 32, 120, 25))
+        self.label_maxWorkers.setObjectName("label_maxWorkers")
+        self.label_maxWorkers.setText("Maximum Workers:")
+        self.spinBox_maxWorkers = QtWidgets.QSpinBox(self.groupBox_generalConfiguration)
+        self.spinBox_maxWorkers.setGeometry(QtCore.QRect(760, 32, 55, 25))
+        self.spinBox_maxWorkers.setMaximum(100)
+        self.spinBox_maxWorkers.setMinimum(1)
+        self.spinBox_maxWorkers.setProperty('value', 1)
+        self.spinBox_maxWorkers.setObjectName('spinBox_maxWorkers')
+        
+
         self.label_deadline = QtWidgets.QLabel(self.groupBox_generalConfiguration)
         self.label_deadline.setGeometry(QtCore.QRect(12, 60, 180, 25))
         self.label_deadline.setObjectName("label_deadline")
@@ -160,7 +183,7 @@ class Ui_MainWindow(object):
         self.spinBox_deadline.setProperty('value', 1)
 
         self.comboBox_deadlineUnit = QtWidgets.QComboBox(self.groupBox_generalConfiguration)
-        self.comboBox_deadlineUnit.setGeometry(QtCore.QRect(270, 60, 55, 25))
+        self.comboBox_deadlineUnit.setGeometry(QtCore.QRect(270, 60, 70, 25))
         self.comboBox_deadlineUnit.setObjectName('comboBox_deadlineUnit')
         self.comboBox_deadlineUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
         self.comboBox_deadlineUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_deadlineUnit, 'deadlineUnit'))
@@ -413,6 +436,9 @@ class Ui_MainWindow(object):
         self.__updateConfig()
         if len(self.taskConfig['schedulers']) == 0:
             raise RuntimeError("Choose scheduler to evaluate")
+
+        elif self.taskConfig['min_workers'] > self.taskConfig['max_workers']:
+            raise RuntimeError("Minimum numbers of workers have to be smaller or equal to Maximum numbers of workers")
         else:
 
             WORKING_DIR = os.getcwd()
@@ -436,7 +462,7 @@ class Ui_MainWindow(object):
 
             exe_times, deadline_misses = plot_generator.plot_graph()
             result = {
-                'workers': [i for i in range(1, 21)],
+                'workers': [w for w in range(self.taskConfig['min_workers'], self.taskConfig['max_workers']+1)],
                 'exe_times': exe_times,
                 'deadline_misses': deadline_misses
             }
@@ -469,8 +495,8 @@ class Ui_MainWindow(object):
         }
 
         # FIXME: Should add spinboxs for min_workers and max_workers in GUI.
-        self.taskConfig['min_workers'] = 1
-        self.taskConfig['max_workers'] = 20
+        self.taskConfig['min_workers'] = self.spinBox_minWorkers.value()
+        self.taskConfig['max_workers'] = self.spinBox_maxWorkers.value()
         self.taskConfig['deadline'] = {
             'value': self.spinBox_deadline.value(),
             'timeUnit': self.comboBox_deadlineUnit.currentText()
@@ -501,8 +527,8 @@ class Ui_MainWindow(object):
             os.mkdir(output_dir)
         
         if self.taskConfig['type'] == 'basic':
-            header = ['type', 'number of iterations', 'deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
-            configs = ['basic', self.spinBox_numOfIterations.value(), f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
+            configs = ['basic', self.spinBox_numOfIterations.value(), self.taskConfig['min_workers'], self.taskConfig['max_workers'], f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
                         ', '.join(self.taskConfig['schedulers']), self.taskConfig['num_tasks'], f'{self.taskConfig["timeout"]["value"]} {self.taskConfig["timeout"]["timeUnit"]}',
                         self.taskConfig['utilization'], self.taskConfig['periodicity']
                       ]
