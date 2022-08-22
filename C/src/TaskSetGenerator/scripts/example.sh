@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Taskset Generator's Commend Line Interface
 #
 # 
@@ -41,4 +43,16 @@
 # 0. "--seed": int type
 #    -> "Can set the random seed if the type is 'dag' or 'sporadic basic'"
 
-python3 cli.py -S NP -NI 1 -D 1 sec -TT 1 sec -T basic -P sporadic -NT 1 -U 0.4 --period 1 sec
+CLI_PATH=$1
+
+
+if [ ! -f $CLI_PATH ]
+then
+    exit 1
+else
+    cd $(dirname $(readlink -f $CLI_PATH))
+fi
+
+python3 $(basename $CLI_PATH) -S NP -NI 1 -D 1 sec -TT 1 sec -T basic -P sporadic -NT 1 -U 0.4 --period 1 sec -BW 5 7
+
+exit 0
