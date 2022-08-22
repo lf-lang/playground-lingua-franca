@@ -13,6 +13,7 @@ target C {
 preamble {=
     #include "platform.h";
     int deadline_miss = 0;
+    int total_reactions_triggered = 0;
     typedef struct task_config_t {
         int id;
         long long int total_time;
@@ -69,6 +70,7 @@ reactor Task {
     =}
     
     reaction(release) -> release {=
+        lf_atomic_fetch_add(&total_reactions_triggered, 1);
         long long int physical_start_time = lf_time_physical();
         //tracepoint_user_value("ID", self->id);
         lf_print("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
@@ -161,6 +163,7 @@ main reactor {
     runner.out -> tasks.in;
 
     reaction(shutdown) {=
-        printf("---- Deadline miss: %d\n", deadline_miss);
+        lf_print("---- Total reactions triggered: %d\n", total_reactions_triggered);
+        lf_print("---- Deadline miss: %d\n", deadline_miss);
     =}
 }
