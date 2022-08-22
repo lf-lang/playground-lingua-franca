@@ -4,7 +4,6 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import numpy as np
 
 import os
 import subprocess
@@ -93,7 +92,7 @@ class PlotGenerator(object):
 
         # Check path exists and create path if not exists
         if os.path.exists(os.path.join(self.basicPath, )):
-            
+
 
         # Graph 1: Physical execution time
         PlotGenerator.save_graph(axis= [1, 25, 0.0, 5.0],
