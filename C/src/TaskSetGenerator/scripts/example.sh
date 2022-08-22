@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #============================================================================
-# Description: 	Build the Lingua Franca compiler.
-# Authors:		Marten Lohstroh, Mehrdad Niknami, Christian Menard
+# Description: 	Experiment of TaskSetGenerator
+# Authors:		Wonseo
 # Usage:		build-lfc [options] [[-r | --run] [lfc-args]]
 #============================================================================
 
