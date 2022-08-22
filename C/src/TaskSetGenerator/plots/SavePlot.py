@@ -1,10 +1,10 @@
-# Basic Plot
+# Save Plot
 # x axis: number of workers
 # y axis: physical execution time
 
+from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import numpy as np
 
 import os
 import subprocess
@@ -18,17 +18,39 @@ class PlotGenerator(object):
             'x-axis': 'num_worker',
             'y-axis': 'physical_excution_time',
             'dataset': {},
-            'num_iteration': 1
+            'num_iteration': 1,
+            'save_name': ''
         }
 
-    def setConfig(self, config):
+        # basic path
+        self.basicPath = "./graph"
+        if os.path.exists(self.basicPath):
+            os.mkdir(self.basicPath)
 
+
+    def setConfig(self, config):
         for key, value in config.items():
             if key in self.config.keys():
                 self.config[key] = value
 
-    def plot_graph(self):
-        
+    def save_graph(self, axis, colors, graph_axis, xlabel, ylabel, output_dir):
+        _, ax = plt.subplots()
+        plt.axis(axis)
+        patches = []
+        axes = []
+        for i, scheduler in enumerate(self.target_schedulers):
+           patches.append(mpatches.Patch(color=colors[i], label=scheduler))
+           axes.append(ax.plot(self.workers, graph_axis[scheduler], '--', color=colors[i]))
+
+        ax.legend(handles=patches, loc='upper right')
+        plt.axis([min(self.workers)-1, max(self.workers)+1, max(min(min(graph_axis[s]) for s in self.target_schedulers)-1, 0), max(max(graph_axis[s]) for s in self.target_schedulers) + 1])
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+
+        plt.title(self.config['title'], fontsize= 10)
+        plt.savefig(os.path.join(output_dir, "%s.png"%(self.config['save_name'])))
+
+    def plot_graph(self, output_dir):
         WORKING_DIR = os.getcwd()
         LF_PATH = os.getenv("LF_PATH")
         if LF_PATH == None:
@@ -51,7 +73,7 @@ class PlotGenerator(object):
         for scheduler in target_schedulers:
             exe_time = []
             deadline_miss = []
-            for i, worker in enumerate(workers):
+            for i, _ in enumerate(workers):
                 es = []
                 ds = []
                 for _ in range(int(self.config['num_iteration'])):
@@ -61,49 +83,30 @@ class PlotGenerator(object):
 
                 exe_time.append(statistics.mean(es))
                 deadline_miss.append(statistics.mean(ds))
-                #exe_time.append(statistics.mean([self.__run_single_LF(self.config['dataset']['schedulers'][scheduler][i]) for _ in range(int(self.config['num_iteration']))]))
             exe_times[scheduler] = exe_time.copy()
             deadline_misses[scheduler] = deadline_miss.copy()
             exe_time.clear()
             deadline_miss.clear()
         
+        self.target_schedulers = target_schedulers
+        self.workers = workers
+
+
         # Graph 1: Physical execution time
-        fig, ax = plt.subplots()
-        plt.axis([1, 25, 0.0, 5.0])        
-        colors = ['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD']
-        patches = []
-        axes = []
-        for i, scheduler in enumerate(target_schedulers):
-           patches.append(mpatches.Patch(color=colors[i], label=scheduler))
-           axes.append(ax.plot(workers, exe_times[scheduler], '--', color=colors[i]))
-
-        ax.legend(handles=patches, loc='upper right')
-        plt.axis([min(workers)-1, max(workers)+1, min(min(exe_times[s]) for s in target_schedulers) * 0.8, max(max(exe_times[s]) for s in target_schedulers) * 1.2])
-        
-        plt.xlabel('Number of Worker')
-        plt.ylabel('Physical Execution time')
-
-        plt.title(self.config['title'], fontsize= 10)
-        plt.show()
+        PlotGenerator.save_graph(self, axis= [1, 25, 0.0, 5.0],
+                                colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
+                                graph_axis=exe_times,
+                                xlabel="Number of Worker",
+                                ylabel="Physical Execution time",
+                                output_dir=output_dir)
 
         # Graph 2: Deadline miss
-        fig, ax = plt.subplots()
-        plt.axis([1, 25, 0.0, 5.0])        
-        colors = ['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD']
-        patches = []
-        axes = []
-        for i, scheduler in enumerate(target_schedulers):
-           patches.append(mpatches.Patch(color=colors[i], label=scheduler))
-           axes.append(ax.plot(workers, deadline_misses[scheduler], '--', color=colors[i]))
-
-        ax.legend(handles=patches, loc='upper right')
-        plt.axis([min(workers)-1, max(workers)+1, max(min(min(deadline_misses[s]) for s in target_schedulers)-1, 0), max(max(deadline_misses[s]) for s in target_schedulers) + 1])
-        
-        plt.xlabel('Number of Worker')
-        plt.ylabel('Deadline Miss')
-
-        plt.title(self.config['title'], fontsize= 10)
-        plt.show()
+        PlotGenerator.save_graph(self, axis= [1, 25, 0.0, 5.0],
+                                colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
+                                graph_axis=deadline_misses,
+                                xlabel="Number of Worker",
+                                ylabel="Deadline Miss",
+                                output_dir=output_dir)
 
         os.chdir(WORKING_DIR)
 
@@ -148,4 +151,5 @@ class PlotGenerator(object):
 
         exe_time = int(exe_time.replace(',','')) / 1000000000
         print('Total physical execution time: ' + str(exe_time))
+
         return exe_time, deadline_miss
