@@ -28,7 +28,9 @@ class CLI(object):
                             help="Set the dealine(ex. 1sec); can choose the unit(sec, msec, usec, nsec)")
         parser.add_argument("-TT", "--total_time", nargs='+', type=str, default=["1", "sec"],
                             help="Set the total time(ex. 1 sec); can choose the unit(sec, msec, usec, nsec)")
-        
+        parser.add_argument("-BW", "--bounded_workers", nargs='+', type=int,
+                            help="Set the min & max workers(ex. -BW 1 10 : min is 1 & max is 10)")
+
         # Choose the type of task
         parser.add_argument("-T", "--type", type=str, required=True,
                             help="Choose the type of taskset: 'basic', 'dag'")
@@ -61,6 +63,9 @@ class CLI(object):
         self.setConfig()
         WORKING_DIR = os.getcwd()
 
+        if self.taskConfig['min_workers'] > self.taskConfig['max_workers']:
+            raise RuntimeError("Minimum numbers of workers have to be smaller or equal to Maximum numbers of workers")
+
         generator = TasksetGenerator()
         generator.setConfig(self.taskConfig)
         generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}/templates', outputDir=f'{WORKING_DIR}/.gui/src/')
@@ -84,7 +89,7 @@ class CLI(object):
         })
 
         WORKING_DIR = os.getcwd()
-        output_dir = f'{WORKING_DIR}/.output'
+        output_dir = f'{WORKING_DIR}/output'
         if not os.path.exists(output_dir):
             os.mkdir(output_dir)
         
@@ -95,7 +100,7 @@ class CLI(object):
         
         exe_times, deadline_misses = plot_generator.plot_graph(output_dir)
         result = {
-            'workers': [i for i in range(1, 21)],
+            'workers': [w for w in range(self.taskConfig['min_workers'], self.taskConfig['max_workers']+1)],
             'exe_times': exe_times,
             'deadline_misses': deadline_misses
         }
@@ -115,9 +120,8 @@ class CLI(object):
             'timeUnit': self.args.total_time[1]
         }
 
-        # FIXME: Should add spinboxs for min_workers and max_workers in GUI.
-        self.taskConfig['min_workers'] = 1
-        self.taskConfig['max_workers'] = 20
+        self.taskConfig['min_workers'] = self.args.bounded_workers[0]
+        self.taskConfig['max_workers'] = self.args.bounded_workers[1]
 
         self.taskConfig['deadline'] = {
             'value': int(self.args.deadline[0]),
@@ -146,8 +150,8 @@ class CLI(object):
     def saveResult(self, result, output_dir):
         
         if self.taskConfig['type'] == 'basic':
-            header = ['type', 'number of iterations', 'deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
-            configs = ['basic', self.args.num_iteration, f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
+            configs = ['basic', self.args.num_iteration, self.taskConfig['min_workers'], self.taskConfig['max_workers'], f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
                         ', '.join(self.taskConfig['schedulers']), self.taskConfig['num_tasks'], f'{self.taskConfig["timeout"]["value"]} {self.taskConfig["timeout"]["timeUnit"]}',
                         self.taskConfig['utilization'], self.taskConfig['periodicity']
                       ]
@@ -159,8 +163,8 @@ class CLI(object):
                 configs.append(f'{self.taskConfig["period"]["value"]} {self.taskConfig["period"]["timeUnit"]}')
 
         elif self.taskConfig['type'] == 'dag':
-            header = ['type', 'number of iterations', 'deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
-            configs = ['dag', self.args.num_iteration, f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
+            configs = ['dag', self.args.num_iteration, self.taskConfig['min_workers'], self.taskConfig['max_workers'], f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
                         ', '.join(self.taskConfig['schedulers']), self.taskConfig['max_depth'], self.taskConfig['num_outputs'], self.taskConfig['seed'],
                         f'{self.taskConfig["execution_time"]["value"]} {self.taskConfig["execution_time"]["timeUnit"]}'
                       ]

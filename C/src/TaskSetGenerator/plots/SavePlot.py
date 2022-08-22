@@ -43,8 +43,7 @@ class PlotGenerator(object):
            axes.append(ax.plot(self.workers, graph_axis[scheduler], '--', color=colors[i]))
 
         ax.legend(handles=patches, loc='upper right')
-        plt.axis([0, max(self.workers)+1, 0, max(max(graph_axis[s]) for s in self.target_schedulers) * 1.2])
-        
+        plt.axis([min(self.workers)-1, max(self.workers)+1, max(min(min(graph_axis[s]) for s in self.target_schedulers)-1, 0), max(max(graph_axis[s]) for s in self.target_schedulers) + 1])
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
 

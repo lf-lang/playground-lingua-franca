@@ -429,7 +429,6 @@ class Ui_MainWindow(object):
             'timeUnit': self.comboBox_totalTimeUnit.currentText()
         }
 
-        # FIXME: Should add spinboxs for min_workers and max_workers in GUI.
         self.taskConfig['min_workers'] = self.spinBox_minWorkers.value()
         self.taskConfig['max_workers'] = self.spinBox_maxWorkers.value()
         self.taskConfig['deadline'] = {
