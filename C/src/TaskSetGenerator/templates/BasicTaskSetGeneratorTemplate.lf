@@ -50,32 +50,37 @@ reactor Task {
         self->exe_time = in->value.exe_time;
         self->periodic = in->value.periodic;
         self->period = in->value.period;
-        lf_schedule(release, in->value.release_time);
+        if (in->value.periodic) {
+            long long int current_release_time = in->value.release_time;
+            while (current_release_time < in->value.total_time) {
+                lf_schedule(release, current_release_time);
+                current_release_time += in->value.period;
+            }
+        } else {
+            long long int current_release_time = in->value.release_time;
+            while (current_release_time < in->value.total_time) {
+                lf_schedule(release, current_release_time);
+                srand(0);
+                float r = (float) rand() / (float) RAND_MAX;
+                long long int period = self->exe_time + (long long int) (r * self->total_time);
+                current_release_time += period;
+            }
+        }
     =}
     
     reaction(release) -> release {=
         long long int physical_start_time = lf_time_physical();
         //tracepoint_user_value("ID", self->id);
-        printf("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
+        lf_print("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
             self->id,
             lf_time_logical_elapsed(),
             lf_time_physical_elapsed(),
             self->exe_time
         );
-        while (lf_time_physical() < physical_start_time + self->exe_time) {
-
-        };
-        printf("Task %d finished execution at physical time %lld nsec\n",
+        while (lf_time_physical() < physical_start_time + self->exe_time) {};
+        lf_print("Task %d finished execution at physical time %lld nsec\n",
             self->id,
             lf_time_physical_elapsed());
-        if (self->periodic) {   // periodic task
-            lf_schedule(release, self->period);
-        } else {            // sporadic task
-            srand(0);
-            float r = (float) rand() / (float) RAND_MAX;
-            long long int period = self->exe_time + (long long int) (r * self->total_time);
-            lf_schedule(release, period);
-        }
     =} deadline($DEADLINE$) {=
         lf_atomic_fetch_add(&deadline_miss, 1);
         while (lf_time_physical() < physical_start_time + self->exe_time) {};
