@@ -100,7 +100,7 @@ class PlotGenerator(object):
            axes.append(ax.plot(workers, deadline_misses[scheduler], '--', color=colors[i]))
 
         ax.legend(handles=patches, loc='upper right')
-        plt.axis([min(workers)-1, max(workers)+1, min(min(deadline_misses[s]) for s in target_schedulers) * 0.8, max(max(deadline_misses[s]) for s in target_schedulers) * 1.2])
+        plt.axis([min(workers)-1, max(workers)+1, max(min(min(deadline_misses[s]) for s in target_schedulers)-1, 0), max(max(deadline_misses[s]) for s in target_schedulers) + 1])
         
         plt.xlabel('Number of Worker')
         plt.ylabel('Deadline Miss')

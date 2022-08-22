@@ -522,7 +522,7 @@ class Ui_MainWindow(object):
     
     def saveResult(self, result):
         WORKING_DIR = os.getcwd()
-        output_dir = f'{WORKING_DIR}/.output'
+        output_dir = f'{WORKING_DIR}/output'
         if os.path.exists(output_dir) == False:
             os.mkdir(output_dir)
         
@@ -546,7 +546,7 @@ class Ui_MainWindow(object):
                         f'{self.taskConfig["execution_time"]["value"]} {self.taskConfig["execution_time"]["timeUnit"]}'
                       ]
 
-        output_file = f'{output_dir}/{self.taskConfig["type"]}_{", ".join(self.taskConfig["schedulers"])}_{int(round(datetime.now().timestamp()))}.csv'
+        output_file = f'{output_dir}/{self.taskConfig["type"]}_{", ".join(self.taskConfig["schedulers"])}_{datetime.now().strftime("%Y%m%d%H%M%S%f")}.csv'
         
         with open(output_file, 'w', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
