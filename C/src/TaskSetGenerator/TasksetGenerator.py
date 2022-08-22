@@ -1,5 +1,7 @@
 import os
-from datetime import datetime
+from datetime import datetime 
+from tasksets.BasicTaskSet import BasicTaskSet
+from tasksets.DagTaskSet import DagTaskSet
 
 class TasksetGenerator(object):
     
@@ -52,13 +54,13 @@ class TasksetGenerator(object):
         }   
 
         if self.config['type'] == 'basic':
-            basic_taskset = BasicTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
+            basic_taskset = BasicTaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             basic_taskset.setConfig(self.config)
             basic_taskset.setConfig(self.basic_config)
             generated_files = basic_taskset.makeLF(outputDir=outputDir)
 
         elif self.config['type'] == 'dag':
-            dag_taskset = DagTaskSet.TaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
+            dag_taskset = DagTaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
             dag_taskset.setConfig(self.config)
             dag_taskset.setConfig(self.dag_config)
             generated_files = dag_taskset.makeLF(outputDir=outputDir)

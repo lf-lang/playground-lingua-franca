@@ -10,9 +10,9 @@
 # 2. "-NI", "--num_iteration": int type
 #    -> "Set the number of iterations"
 # 3. "-D", "--deadline": string type
-#    -> "Set the dealine(ex. 1 sec); can choose the unit(sec, msec, usec, nsec)"
+#    -> "Set the dealine(ex. 1_sec); choose the unit(sec, msec, usec, nsec)"
 # 4. "-TT", "--total_time": string type
-#    -> "Set the total time(ex. 1 sec); can choose the unit(sec, msec, usec, nsec)"
+#    -> "Set the total time(ex. 1_sec); choose the unit(sec, msec, usec, nsec)"
 #
 # # Choose the type of task
 # 5. "-T", "--type": string type
@@ -27,7 +27,7 @@
 # 3. "-U", "--utilization": float type
 #    -> "Set the utilization"
 # 4. "--period": string type
-#    -> "Set the period(ex. 1 sec); can choose the unit(sec, msec, usec, nsec)"
+#    -> "Set the period(ex. 1_sec); choose the unit(sec, msec, usec, nsec)"
 #
 # # DAG Taskset
 # 1. "-NL", "--num_level": int type
@@ -35,8 +35,10 @@
 # 2. "-MNC", "--max_num_components": int type
 #    -> "Set the maximum number of components in one level"
 # 3. "-TC", "--components_time": string type
-#    -> "Set the exectuion time of each component; can choose the unit(sec, msec, usec, nsec)"
+#    -> "Set the exectuion time of each component(ex. 1_sec); choose the unit(sec, msec, usec, nsec)"
 
 # # Optional setting random seed
 # 0. "--seed": int type
 #    -> "Can set the random seed if the type is 'dag' or 'sporadic basic'"
+
+python3 cli.py -S NP -NI 1 -D 1_sec -TT 1_sec -T basic -P sporadic -NT 1 -U 0.4 --period 1_sec

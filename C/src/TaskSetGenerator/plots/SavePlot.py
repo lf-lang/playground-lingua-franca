@@ -94,7 +94,7 @@ class PlotGenerator(object):
 
 
         # Graph 1: Physical execution time
-        PlotGenerator.save_graph(axis= [1, 25, 0.0, 5.0],
+        PlotGenerator.save_graph(self, axis= [1, 25, 0.0, 5.0],
                                 colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
                                 graph_axis=exe_times,
                                 xlabel="Number of Worker",
@@ -102,7 +102,7 @@ class PlotGenerator(object):
                                 output_dir=output_dir)
 
         # Graph 2: Deadline miss
-        PlotGenerator.save_graph(axis= [1, 25, 0.0, 5.0],
+        PlotGenerator.save_graph(self, axis= [1, 25, 0.0, 5.0],
                                 colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
                                 graph_axis=deadline_misses,
                                 xlabel="Number of Worker",

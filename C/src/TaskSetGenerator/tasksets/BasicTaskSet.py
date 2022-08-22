@@ -5,7 +5,7 @@
 import os
 import sys
 
-class TaskSet(object):
+class BasicTaskSet(object):
 
     def __init__(self, TEMPLATE_PATH=''):
         self.config = {
@@ -58,6 +58,7 @@ class TaskSet(object):
         }
 
         for scheduler in self.config['schedulers']:
+            print(self.config['schedulers'])
             char_to_replace['$SCHEDULER_TYPE$'] = scheduler
             for worker in workers:
                 char_to_replace['$NUM_WORKERS$'] = str(worker)

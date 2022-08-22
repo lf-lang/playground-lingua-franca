@@ -14,7 +14,7 @@ import os
 import csv
 from datetime import datetime
 
-from tasksets import TasksetGenerator
+from TasksetGenerator import TasksetGenerator
 
 class Ui_MainWindow(object):
 

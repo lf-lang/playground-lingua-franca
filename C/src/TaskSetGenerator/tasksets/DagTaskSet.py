@@ -33,7 +33,7 @@ class Node:
         
         return result + '\n'
 
-class TaskSet(object):
+class DagTaskSet(object):
 
     def __init__(self, TEMPLATE_PATH=''):
         self.config = {
