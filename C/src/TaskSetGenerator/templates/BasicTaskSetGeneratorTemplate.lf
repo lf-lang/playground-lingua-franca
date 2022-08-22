@@ -150,7 +150,7 @@ reactor RandomReleaseRunner(num_task:int(10), total_time:time(10 sec), utilizati
 main reactor {
     //runner = new SimpleRunner(num_task=$NUM_TASKS$, total_time=$TOTAL_TIME$, utilization=$UTILIZATION$, periodic=$PERIODIC$, period=$PERIOD$);
     //runner = new RunnerForMultipleWorkers();
-    runner = new RandomReleaseRunner();
+    runner = new RandomReleaseRunner(num_task=$NUM_TASKS$, total_time=$TOTAL_TIME$, utilization=$UTILIZATION$, periodic=$PERIODIC$, period=$PERIOD$);
     tasks = new[100] Task();
     runner.out -> tasks.in;
 
