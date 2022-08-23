@@ -5,6 +5,7 @@
 # @author Yunsang Cho
 # @author Hokeun Kim
 
+from multiprocessing.sharedctypes import Value
 from plots import BasicPlot
 
 from PyQt5 import QtCore, QtWidgets
@@ -116,12 +117,14 @@ class Ui_MainWindow(object):
         self.spinBox_deadline.setMaximum(10000)
         self.spinBox_deadline.setMinimum(1)
         self.spinBox_deadline.setProperty('value', 1)
+        self.spinBox_deadline.valueChanged.connect(lambda: self.updateExeTime())
 
         self.comboBox_deadlineUnit = QtWidgets.QComboBox(self.groupBox_generalConfiguration)
         self.comboBox_deadlineUnit.setGeometry(QtCore.QRect(270, 60, 70, 25))
         self.comboBox_deadlineUnit.setObjectName('comboBox_deadlineUnit')
         self.comboBox_deadlineUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
         self.comboBox_deadlineUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_deadlineUnit, 'deadlineUnit'))
+        self.comboBox_deadlineUnit.currentIndexChanged.connect(lambda: self.updateExeTime())
 
         self.groupBox_taskConfiguration = QtWidgets.QGroupBox(self.centralwidget)               # Task Config
         self.groupBox_taskConfiguration.setGeometry(QtCore.QRect(12, 232, 1000, 228))
@@ -176,6 +179,7 @@ class Ui_MainWindow(object):
         self.spinBox_numOfTasks.setMaximum(100)
         self.spinBox_numOfTasks.setMinimum(1)
         self.spinBox_numOfTasks.setProperty('value', 1)
+        self.spinBox_numOfTasks.valueChanged.connect(lambda: self.updateExeTime())
         self.gridLayout_basic.addWidget(self.spinBox_numOfTasks, 1, 1)
 
         self.label_totalTime = QtWidgets.QLabel(self.gridLayoutWidget_basic)
@@ -189,12 +193,13 @@ class Ui_MainWindow(object):
         self.spinBox_totalTime.setMaximum(10000)
         self.spinBox_totalTime.setMinimum(1)
         self.spinBox_totalTime.setProperty('value', 1)
+        self.spinBox_totalTime.valueChanged.connect(lambda: self.updateExeTime())
         self.gridLayout_basic.addWidget(self.spinBox_totalTime, 2, 1)
 
         self.comboBox_totalTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_basic)
         self.comboBox_totalTimeUnit.setObjectName('comboBox_totalTimeUnit')
         self.comboBox_totalTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
-        self.comboBox_totalTimeUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_totalTimeUnit, 'totalTimeUnit'))
+        self.comboBox_totalTimeUnit.currentIndexChanged.connect(lambda: [self.selectionchange(self.comboBox_totalTimeUnit, 'totalTimeUnit'), self.updateExeTime()])
         self.gridLayout_basic.addWidget(self.comboBox_totalTimeUnit, 2, 2)
 
         self.label_utilization = QtWidgets.QLabel(self.gridLayoutWidget_basic)
@@ -206,6 +211,7 @@ class Ui_MainWindow(object):
         self.lineEdit_utilization = QtWidgets.QLineEdit(self.gridLayoutWidget_basic)
         self.lineEdit_utilization.setObjectName('lineEdit_utilization')
         self.lineEdit_utilization.setText('0.4')
+        self.lineEdit_utilization.textChanged.connect(lambda: self.updateExeTime())
         self.gridLayout_basic.addWidget(self.lineEdit_utilization, 3, 1)
 
         self.label_basic_seed = QtWidgets.QLabel(self.gridLayoutWidget_basic)
@@ -229,12 +235,13 @@ class Ui_MainWindow(object):
         self.spinBox_period.setMaximum(10000)
         self.spinBox_period.setMinimum(1)
         self.spinBox_period.setProperty('value', 1)
+        self.spinBox_period.valueChanged.connect(lambda: self.updateExeTime())
         self.gridLayout_basic.addWidget(self.spinBox_period, 4, 1)
 
         self.comboBox_periodTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_basic)
         self.comboBox_periodTimeUnit.setObjectName('comboBox_periodTimeUnit')
         self.comboBox_periodTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
-        self.comboBox_periodTimeUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_periodTimeUnit, 'periodTimeUnit'))
+        self.comboBox_periodTimeUnit.currentIndexChanged.connect(lambda: [self.selectionchange(self.comboBox_periodTimeUnit, 'periodTimeUnit'), self.updateExeTime()])
         self.gridLayout_basic.addWidget(self.comboBox_periodTimeUnit, 4, 2)
 
         self.label_period.hide()
@@ -309,14 +316,25 @@ class Ui_MainWindow(object):
         self.spinBox_executionTime.setMaximum(10000)
         self.spinBox_executionTime.setMinimum(1)
         self.spinBox_executionTime.setProperty('value', 1)
+        self.spinBox_executionTime.valueChanged.connect(lambda: self.updateExeTime())
         self.gridLayout_dag.addWidget(self.spinBox_executionTime, 3, 1)
             
         self.comboBox_executionTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_dag)
         self.comboBox_executionTimeUnit.setObjectName('comboBox_executionTimeUnit')
         self.comboBox_executionTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
-        self.comboBox_executionTimeUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_executionTimeUnit, 'executionTimeUnit'))
+        self.comboBox_executionTimeUnit.currentIndexChanged.connect(lambda: [self.selectionchange(self.comboBox_executionTimeUnit, 'executionTimeUnit'), self.updateExeTime()])
         self.gridLayout_dag.addWidget(self.comboBox_executionTimeUnit, 3, 2)
 
+        self.label_executionT = QtWidgets.QLabel(self.centralwidget)
+        self.label_executionT.setObjectName("label_executionT")
+        self.label_executionT.setGeometry(QtCore.QRect(12, 470, 190, 25))
+        self.label_executionT.setText("Execution time of each task:")
+
+        self.label_executionT_result = QtWidgets.QLabel(self.centralwidget)
+        self.label_executionT_result.setObjectName("label_executionT_result")
+        self.label_executionT_result.setGeometry(QtCore.QRect(210, 470, 400, 25))
+        self.label_executionT_result.hide()
+        
         self.run = QtWidgets.QPushButton(self.centralwidget)
         self.run.setToolTip('Button to run the settings')
         self.run.setGeometry(QtCore.QRect(12, 610, 200, 25))
@@ -332,6 +350,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.run.clicked.connect(self.clickRun)
         self.exit.clicked.connect(self.clickExit)
+        self.updateExeTime()
         
     def selectionchange(self, comboBox, type):
         if type == 'periodicity':
@@ -354,6 +373,61 @@ class Ui_MainWindow(object):
         elif type == 'periodTimeUnit':
             self.periodTimeUnit = comboBox.currentText()
     
+    def __isfloat(self, num):
+        try:
+            float(num)
+            return True
+        except ValueError:
+            return False
+
+    def updateExeTime(self):
+        # Check parameter
+        task_type = self.tab_task.currentWidget().objectName().split('_')[-1]
+        if (task_type == 'basic') and (self.__isfloat(self.lineEdit_utilization.text()) == False):
+            self.label_executionT_result.hide()
+            return
+        
+        timeUnits = {
+            'sec': 1000000000,
+            'msec': 1000000,
+            'usec': 1000,
+            'nsec': 1
+        }
+
+        if task_type == 'basic':
+                
+            if self.comboBox_periodicity.currentText() == 'sporadic':
+                totalTime = self.spinBox_totalTime.value() * timeUnits[self.comboBox_totalTimeUnit.currentText()]
+                execution_time = totalTime * float(self.lineEdit_utilization.text()) / self.spinBox_numOfTasks.value()
+
+            elif self.comboBox_periodicity.currentText() == 'periodic':
+                period = self.spinBox_period.value() * timeUnits[self.comboBox_periodTimeUnit.currentText()]
+                execution_time = period * float(self.lineEdit_utilization.text()) / self.spinBox_numOfTasks.value()
+
+        elif task_type == 'dag':
+            execution_time = self.spinBox_executionTime.value() * timeUnits[self.comboBox_executionTimeUnit.currentText()]
+
+        deadline = self.spinBox_deadline.value() * timeUnits[self.comboBox_deadlineUnit.currentText()]
+
+        if deadline <= execution_time:
+            self.label_executionT_result.setStyleSheet("Color: red")
+        else:
+            self.label_executionT_result.setStyleSheet("Color: blue")
+
+        execution_time_unit = 'undefined'
+        for k, v in timeUnits.items():
+            if execution_time >= v:
+                execution_time_unit = k
+                break
+
+        if execution_time_unit == 'undefined':
+            execution_time = 0
+            execution_time_unit = 'nsec'
+
+        self.label_executionT_result.setText("{:.3f} {}".format(float(execution_time) / timeUnits[execution_time_unit], execution_time_unit))
+        self.label_executionT_result.show()
+
+
     def clickRun(self):
         try:
             self.Run()
