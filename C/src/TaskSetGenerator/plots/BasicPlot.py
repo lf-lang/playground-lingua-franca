@@ -96,9 +96,16 @@ class PlotGenerator(object):
            patches.append(mpatches.Patch(color=colors[i], label=scheduler))
            axes.append(ax.plot(workers, deadline_misses[scheduler], '--', color=colors[i]))
 
+           for x, y in zip(workers, deadline_misses[scheduler]):
+               label = f"{y}"
+               plt.annotate(label, (x, y), xytext=(0, 10), textcoords="offset points", color=colors[i], ha='center')
+
         ax.legend(handles=patches, loc='upper right')
         plt.axis([min(workers)-1, max(workers)+1, max(min(min(deadline_misses[s]) for s in target_schedulers)-1, 0), max(max(deadline_misses[s]) for s in target_schedulers) + 1])
+
         
+
+
         plt.xlabel('Number of Worker')
         plt.ylabel('Deadline Miss')
 
