@@ -61,7 +61,7 @@ reactor Task {
             long long int current_release_time = in->value.release_time;
             while (current_release_time < in->value.total_time) {
                 lf_schedule(release, current_release_time);
-                srand(0);
+                srand(time(0));
                 float r = (float) rand() / (float) RAND_MAX;
                 long long int period = self->exe_time + (long long int) (r * self->total_time);
                 current_release_time += period;
@@ -147,7 +147,7 @@ reactor RandomReleaseRunner(num_task:int(10), total_time:time(10 sec), utilizati
             message.id = i;
             message.total_time = self->total_time;
             message.exe_time = exe_time;
-            message.release_time = (long long int) (r * (float) (self->total_time - exe_time) / 10.0);
+            message.release_time = (long long int) (r * (float) self->period);
             message.periodic = self->periodic;
             message.period = (long long int) self->period;
             lf_set(out[i], message);
