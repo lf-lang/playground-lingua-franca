@@ -105,26 +105,16 @@ class Ui_MainWindow(object):
         self.spinBox_maxWorkers.setProperty('value', 1)
         self.spinBox_maxWorkers.setObjectName('spinBox_maxWorkers')
         
+        self.label_probability_deadline = QtWidgets.QLabel(self.groupBox_generalConfiguration)
+        self.label_probability_deadline.setGeometry(QtCore.QRect(12, 60, 180, 25))
+        self.label_probability_deadline.setObjectName("label_probability_deadline")
+        self.label_probability_deadline.setText("Probability of deadline:")
 
-        self.label_deadline = QtWidgets.QLabel(self.groupBox_generalConfiguration)
-        self.label_deadline.setGeometry(QtCore.QRect(12, 60, 180, 25))
-        self.label_deadline.setObjectName("label_deadline")
-        self.label_deadline.setText("Deadline:")
-
-        self.spinBox_deadline = QtWidgets.QSpinBox(self.groupBox_generalConfiguration)
-        self.spinBox_deadline.setGeometry(QtCore.QRect(200, 60, 55, 25))
-        self.spinBox_deadline.setObjectName('spinBox_deadline')
-        self.spinBox_deadline.setMaximum(10000)
-        self.spinBox_deadline.setMinimum(1)
-        self.spinBox_deadline.setProperty('value', 1)
-        self.spinBox_deadline.valueChanged.connect(lambda: self.updateExeTime())
-
-        self.comboBox_deadlineUnit = QtWidgets.QComboBox(self.groupBox_generalConfiguration)
-        self.comboBox_deadlineUnit.setGeometry(QtCore.QRect(270, 60, 70, 25))
-        self.comboBox_deadlineUnit.setObjectName('comboBox_deadlineUnit')
-        self.comboBox_deadlineUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
-        self.comboBox_deadlineUnit.currentIndexChanged.connect(lambda: self.selectionchange(self.comboBox_deadlineUnit, 'deadlineUnit'))
-        self.comboBox_deadlineUnit.currentIndexChanged.connect(lambda: self.updateExeTime())
+        self.lineEdit_probability_deadline = QtWidgets.QLineEdit(self.groupBox_generalConfiguration)
+        self.lineEdit_probability_deadline.setGeometry(QtCore.QRect(200, 60, 55, 25))
+        self.lineEdit_probability_deadline.setObjectName('lineEdit_probability_deadline')
+        self.lineEdit_probability_deadline.setText('0.6')
+        self.lineEdit_probability_deadline.textChanged.connect(lambda: self.updateDeadline())
 
         self.groupBox_taskConfiguration = QtWidgets.QGroupBox(self.centralwidget)               # Task Config
         self.groupBox_taskConfiguration.setGeometry(QtCore.QRect(12, 232, 1000, 228))
@@ -350,7 +340,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.run.clicked.connect(self.clickRun)
         self.exit.clicked.connect(self.clickExit)
-        self.updateExeTime()
+        #self.updateExeTime()
         
     def selectionchange(self, comboBox, type):
         if type == 'periodicity':
@@ -380,6 +370,12 @@ class Ui_MainWindow(object):
         except ValueError:
             return False
 
+    def updateDeadline(self):
+        if (self.__isfloat(self.lineEdit_probability_deadline.text())== False):
+            return
+
+        
+
     def updateExeTime(self):
         # Check parameter
         task_type = self.tab_task.currentWidget().objectName().split('_')[-1]
@@ -407,12 +403,12 @@ class Ui_MainWindow(object):
         elif task_type == 'dag':
             execution_time = self.spinBox_executionTime.value() * timeUnits[self.comboBox_executionTimeUnit.currentText()]
 
-        deadline = self.spinBox_deadline.value() * timeUnits[self.comboBox_deadlineUnit.currentText()]
+        # deadline = self.spinBox_deadline.value() * timeUnits[self.comboBox_deadlineUnit.currentText()]
 
-        if deadline <= execution_time:
-            self.label_executionT_result.setStyleSheet("Color: red")
-        else:
-            self.label_executionT_result.setStyleSheet("Color: blue")
+        # if deadline <= execution_time:
+        #     self.label_executionT_result.setStyleSheet("Color: red")
+        # else:
+        #     self.label_executionT_result.setStyleSheet("Color: blue")
 
         execution_time_unit = 'undefined'
         for k, v in timeUnits.items():
@@ -462,11 +458,12 @@ class Ui_MainWindow(object):
                 plot_title = f'{self.taskConfig["periodicity"].capitalize()} / Number of task: {self.taskConfig["num_tasks"]} / Utilization: {self.taskConfig["utilization"]}'
             elif self.taskConfig['type'] == 'dag':
                 plot_title = f'DAG / Seed: {self.taskConfig["seed"]}'
+            plot_title += f" / P(deadline) : {self.taskConfig['p_deadline']}"
             plot_generator = BasicPlot.PlotGenerator()
             plot_generator.setConfig({
                 'title': plot_title,
                 'dataset': generated_files,
-                'num_iteration': self.spinBox_numOfIterations.value()
+                'num_iteration': self.spinBox_numOfIterations.value(),
             })
 
             exe_times, deadline_misses = plot_generator.plot_graph()
@@ -505,10 +502,7 @@ class Ui_MainWindow(object):
 
         self.taskConfig['min_workers'] = self.spinBox_minWorkers.value()
         self.taskConfig['max_workers'] = self.spinBox_maxWorkers.value()
-        self.taskConfig['deadline'] = {
-            'value': self.spinBox_deadline.value(),
-            'timeUnit': self.comboBox_deadlineUnit.currentText()
-        }
+        self.taskConfig['p_deadline'] = float(self.lineEdit_probability_deadline.text())
 
         if self.taskConfig['type'] == 'basic':
             self.taskConfig['periodicity'] = self.comboBox_periodicity.currentText()
@@ -535,9 +529,9 @@ class Ui_MainWindow(object):
             os.mkdir(output_dir)
         
         if self.taskConfig['type'] == 'basic':
-            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
-            configs = ['basic', self.spinBox_numOfIterations.value(), self.taskConfig['min_workers'], self.taskConfig['max_workers'], f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
-                        ', '.join(self.taskConfig['schedulers']), self.taskConfig['num_tasks'], f'{self.taskConfig["timeout"]["value"]} {self.taskConfig["timeout"]["timeUnit"]}',
+            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'Priority of deadline', 'schedulers', 'number of tasks', 'total time', 'utilization', 'periodicity']
+            configs = ['basic', self.spinBox_numOfIterations.value(), self.taskConfig['min_workers'], self.taskConfig['max_workers'], self.taskConfig["p_deadline"],
+                        ', '.join(self.taskConfig['schedulers']), self.taskConfig['num_tasks'], f'{self.taskConfig["timeout"]["value"]} {self.taskConfig["timeout"]["timeUnit"]}',\
                         self.taskConfig['utilization'], self.taskConfig['periodicity']
                       ]
             if self.taskConfig['periodicity'] == 'sporadic':
@@ -548,8 +542,8 @@ class Ui_MainWindow(object):
                 configs.append(f'{self.taskConfig["period"]["value"]} {self.taskConfig["period"]["timeUnit"]}')
 
         elif self.taskConfig['type'] == 'dag':
-            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
-            configs = ['dag', self.spinBox_numOfIterations.value(), self.taskConfig['min_workers'], self.taskConfig['max_workers'], f'{self.taskConfig["deadline"]["value"]} {self.taskConfig["deadline"]["timeUnit"]}', 
+            header = ['type', 'number of iterations', 'minimum workers', 'maximum workers', 'Priority of deadline', 'schedulers', 'number of level', 'maximum components in each level', 'seed', 'execution time']
+            configs = ['dag', self.spinBox_numOfIterations.value(), self.taskConfig['min_workers'], self.taskConfig['max_workers'], self.taskConfig['p_deadline'], 
                         ', '.join(self.taskConfig['schedulers']), self.taskConfig['max_depth'], self.taskConfig['num_outputs'], self.taskConfig['seed'],
                         f'{self.taskConfig["execution_time"]["value"]} {self.taskConfig["execution_time"]["timeUnit"]}'
                       ]

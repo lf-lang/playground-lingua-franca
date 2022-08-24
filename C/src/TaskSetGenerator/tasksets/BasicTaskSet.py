@@ -2,8 +2,10 @@
 # @author Yunsang Cho
 # @author Hokeun Kim
 
+
 import os
 import sys
+import numpy as np
 
 class BasicTaskSet(object):
 
@@ -18,7 +20,7 @@ class BasicTaskSet(object):
             'num_tasks': 20,
             'utilization': 0.6,
             'seed': 0,
-            'deadline': {'value': 100, 'timeUnit': 'msec'},
+            'p_deadline': 0.6,
         }
 
         if os.path.isfile(TEMPLATE_PATH) == True:
@@ -44,7 +46,7 @@ class BasicTaskSet(object):
         char_to_replace['$PERIOD$'] = f'{self.config["period"]["value"]} {self.config["period"]["timeUnit"]}'
         char_to_replace['$NUM_TASKS$'] = str(self.config['num_tasks'])
         char_to_replace['$RANDOM_SEED$'] = str(self.config['seed'])
-        char_to_replace['$DEADLINE$'] = f'{self.config["deadline"]["value"]} {self.config["deadline"]["timeUnit"]}'
+        char_to_replace['$TASKCONFIG$'] = self.task_config()
 
         workers = [w for w in range(self.config['min_workers'], self.config['max_workers']+1)]
         generated_files = {
@@ -80,3 +82,62 @@ class BasicTaskSet(object):
                     raise RuntimeError('Failed to generate LF file: ' + FILE_PATH)
 
         return generated_files
+
+    def translate_TimeValue(self, TimeValue):
+        TimeUnits = {
+            'sec': 1000000000,
+            'msec': 1000000,
+            'usec': 1000,
+            'nsec': 1
+        }
+        return TimeValue['value'] * TimeUnits[TimeValue['timeUnit']]
+
+
+
+    def task_config(self):
+        configs = ""
+
+        deadlines = np.random.rand(self.config['num_tasks'])
+        deadline_task_indexs = deadlines <= self.config['p_deadline']
+        deadlines[~deadline_task_indexs] = 0
+
+        total_time = self.translate_TimeValue(self.config['timeout'])
+
+        if self.config['periodicity'] == 'sporadic':
+            
+            exe_time = int(total_time * self.config['utilization'] / float(self.config['num_tasks']))
+            if self.config['p_deadline'] > 0 and deadlines.sum() > 0:
+                ratio = (total_time - exe_time) / float(self.config['p_deadline'])
+                print(f"sproadic -> ratio: {ratio}")
+                deadlines[deadline_task_indexs] = deadlines[deadline_task_indexs] * ratio + exe_time
+        
+        elif self.config['periodicity'] == 'periodic':
+            period = self.translate_TimeValue(self.config['period'])
+            exe_time = int(period * self.config['utilization'] / float(self.config['num_tasks']))
+            if self.config['p_deadline'] > 0 and deadlines.sum() > 0:
+                ratio = (period - exe_time) / float(self.config['p_deadline'])
+                print(f"periodic -> ratio: {ratio}")
+                deadlines[deadline_task_indexs] = deadlines[deadline_task_indexs] * ratio + exe_time
+
+        deadlines = np.array([int(d) for d in deadlines])
+        np.random.shuffle(deadlines)
+        deadline_task_indexs = deadlines > 0
+
+        total_time = f"{self.config['timeout']['value']} {self.config['timeout']['timeUnit']}"
+        exe_time = f"{exe_time} nsec"
+        period = f"{self.config['period']['value']} {self.config['period']['timeUnit']}"
+        periodicity = "true" if self.config['periodicity'] == 'periodic' else "false"
+        release_time = f"{period}" if self.config['periodicity'] == 'periodic' else "0 nsec"
+
+        for i, d in enumerate(deadlines):
+            if d > 0:
+                configs += f"\ttask{i} = new TaskWithDeadline(id={i}, release_time={release_time}, total_time={total_time}, exe_time={exe_time}, periodic={periodicity}, period={period}, deadline_time={d} nsec);\n"
+            else: 
+                configs += f"\ttask{i} = new TaskWithoutDeadline(id={i}, release_time={release_time}, total_time={total_time}, exe_time={exe_time}, periodic={periodicity}, period={period});\n"
+
+        configs += "\n"
+
+        for i in range(deadlines.size):
+            configs += f"\trunner.out -> task{i}.in;\n"
+
+        return configs
