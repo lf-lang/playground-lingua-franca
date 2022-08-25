@@ -5,50 +5,53 @@ to appendItem or deltetItem at the same time
 Simulate when multiple clients append or delete items from the 
 same sharedItem list.
 '''
-target Python 
+target Python {
+    timeout: 3 sec
+}
 
-reactor ItemList {
+reactor List {
     state itemList;
     timer t(0, 1 sec);
     output out;
     reaction(t) -> out {=
+        self.itemList = [1, 2, 3]
         out.set(self.itemList)
     =}
 }
 
-reactor AddItem {
-    // a int type
-    input index;
-
-    // a string type
-    input value;
-
-    // a list data structure in Python
+reactor AddItem(index(0), item(0)) {
     input itemList;
-
-    output out; 
-    reaction(index, value, itemList) -> out {=
-        out.set(itemList.insert(index, value))
+    output out;
+    reaction(itemList) -> out {=
+        itemList.value.insert(self.index, self.item)
+        out.set(itemList.value)
     =}
 }
 
-reactor DeleteItem {
-
+reactor DeleteItem(index(0)) {
+    input itemList;
+    output out;
+    reaction(itemList) -> out {=
+        del itemList.value[self.index]
+        out.set(itemList.value)
+    =}
 }
 
-
-# Print current items on the SharedList
-reactor Printer {
-    input _in;
+reactor Printer(N(2)) {
+    input[2] _in;
     reaction(_in) {=
-        for item in _in.itemList:
-            print(item)
+        for i in range(self.N):
+            print(_in[i].value)
     =}
 }
 
 main reactor {
-    l = new ItemList();
+    l = new List();
+    add_item = new AddItem();
+    delete_item = new DeleteItem(index = 1);
     p = new Printer();
-    l.out -> p._in
+    l.out -> add_item.itemList;
+    l.out -> delete_item.itemList;
+    add_item.out, delete_item.out -> p._in;
 }
 
