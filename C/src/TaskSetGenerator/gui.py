@@ -315,6 +315,56 @@ class Ui_MainWindow(object):
         self.comboBox_executionTimeUnit.currentIndexChanged.connect(lambda: [self.selectionchange(self.comboBox_executionTimeUnit, 'executionTimeUnit'), self.updateExeTime()])
         self.gridLayout_dag.addWidget(self.comboBox_executionTimeUnit, 3, 2)
 
+        self.scrollArea_task_custom = QtWidgets.QScrollArea(self.tab_task)
+        self.scrollArea_task_custom.setWidgetResizable(True)
+        self.scrollArea_task_custom.setGeometry(QtCore.QRect(0, 0, 999, 208))
+        self.scrollArea_task_custom.setObjectName("scrollArea_task_custom")
+        self.scrollArea_task_custom.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scrollArea_task_custom.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.scrollAreaWidgetContents_custom = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents_custom.setObjectName('scrollAreaWidgetContents_custom')
+
+        self.gridLayoutWidget_custom = QtWidgets.QWidget(self.scrollAreaWidgetContents_custom)
+        self.gridLayoutWidget_custom.setObjectName("gridLayoutWidget_custom")
+
+        self.gridLayout_custom = QtWidgets.QGridLayout(self.gridLayoutWidget_custom)
+        self.gridLayout_custom.setObjectName("gridLayout_custom")
+
+        self.scrollArea_task_custom.setWidget(self.scrollAreaWidgetContents_custom)
+        self.scrollAreaWidgetContents_custom.setLayout(self.gridLayout_custom)
+
+        self.tab_task.addTab(self.scrollArea_task_custom, "Custom")
+
+        self.label_customFile = QtWidgets.QLabel(self.gridLayoutWidget_custom)
+        self.label_customFile.setObjectName("label_customFile")
+        self.label_customFile.setText("LF file path:")
+        self.label_customFile.setToolTip("Path of custom task lf file")
+        self.gridLayout_custom.addWidget(self.label_customFile, 0, 0)
+
+        self.spinBox_customFile = QtWidgets.QSpinBox(self.gridLayoutWidget_custom)
+        self.spinBox_customFile.setObjectName('spinBox_customFile')
+        self.spinBox_customFile.setMaximum(10000)
+        self.spinBox_customFile.setMinimum(1)
+        self.spinBox_customFile.setProperty('value', 1)
+        self.spinBox_customFile.valueChanged.connect(lambda: self.updateExeTime())
+        self.gridLayout_custom.addWidget(self.spinBox_customFile, 0, 1)
+        
+        self.pushButton_searchFile = QtWidgets.QPushButton(self.gridLayoutWidget_custom)
+        self.pushButton_searchFile.setToolTip('Button to get task lf file')
+        self.gridLayout_custom.addWidget(self.pushButton_searchFile, 0, 2)
+
+
+        # self.comboBox_executionTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_custom)
+        # self.comboBox_executionTimeUnit.setObjectName('comboBox_executionTimeUnit')
+        # self.comboBox_executionTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
+        # self.comboBox_executionTimeUnit.currentIndexChanged.connect(lambda: [self.selectionchange(self.comboBox_executionTimeUnit, 'executionTimeUnit'), self.updateExeTime()])
+        # self.gridLayout_custom.addWidget(self.comboBox_executionTimeUnit, 3, 2)
+
+
+
+
+
         self.label_executionT = QtWidgets.QLabel(self.centralwidget)
         self.label_executionT.setObjectName("label_executionT")
         self.label_executionT.setGeometry(QtCore.QRect(12, 470, 190, 25))
