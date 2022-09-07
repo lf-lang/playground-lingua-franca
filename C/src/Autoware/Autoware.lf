@@ -5,7 +5,6 @@
 // - Sensor Fusion causes merge (choke) points that collapse multiple logical timelines into one.
 
 target C {
-	threads: 2,
 	keepalive: false
 };
 

@@ -10,7 +10,7 @@ target Python {
     timeout: 8 secs,
     fast: true
 }
-import PendulumSimulation from "PendulumSimulationRk4.lf"
+import PendulumSimulation from "PendulumSimulationRK4.lf"
 
 # Alternatively, change the ODE solver to forward-Euler by calling:
 # import PendulumSimulation from "PendulumSimulationEuler.lf"
