@@ -1,0 +1,138 @@
+/**
+* Basic custom taskset
+*/
+
+target C {
+    timeout: 1 sec,
+    workers: $NUM_WORKERS$,
+    scheduler: $SCHEDULER_TYPE$
+};
+
+preamble {=
+    #include "platform.h"
+    int deadline_miss = 0;
+    int total_reactions_triggered = 0;
+=}
+
+reactor TaskWithoutDeadline(id:int(0), release_time:time(0 sec), total_time:time(1 sec), exe_time: time(10 msec), periodic:bool(false), period:time(20 msec)) {
+    input in:int;
+    output out:int;
+    logical action release;
+    
+    reaction(startup) {=
+        #ifdef TASK_SET_TRACING_IN
+            if (!register_user_trace_event("ID")) {
+                fprintf(stderr, "ERROR: Failed to register trace event.\n");
+                exit(1);
+            }
+        #endif // TASK_SET_TRACING_ON
+    =}
+
+    reaction(in) -> release {=
+        if (self->periodic) {   // periodic task
+            long long int current_release_time = self->release_time;
+            while (current_release_time < self->total_time) {
+                lf_schedule(release, current_release_time);
+                current_release_time += self->period;
+            }
+        } else {    // sporadic task
+            long long int current_release_time = self->release_time;
+            while (current_release_time < self->total_time) {
+                lf_schedule(release, current_release_time);
+                srand(time(0));
+                float r = (float) rand() / (float) RAND_MAX;
+                long long int p = self->exe_time + (long long int) (r * self->total_time);
+                current_release_time += p;
+            }
+        }
+    =}
+
+    reaction(release) -> release, out {=
+        lf_atomic_fetch_add(&total_reactions_triggered, 1);
+        long long int physical_start_time = lf_time_physical();
+        //tracepoint_user_value("ID", self->id);
+        lf_print("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
+            self->id,
+            lf_time_logical_elapsed(),
+            lf_time_physical_elapsed(),
+            self->exe_time
+        );
+        while (lf_time_physical() < physical_start_time + self->exe_time) {};
+        lf_print("Task %d finished execution at physical time %lld nsec\n",
+            self->id,
+            lf_time_physical_elapsed());
+    =} 
+}
+
+
+reactor TaskWithDeadline(id:int(0), release_time:time(0 sec), total_time:time(1 sec), exe_time: time(10 msec), periodic:bool(false), period:time(20 msec), deadline_time:time(15 msec)) {
+    input in:int;
+    output out:int;
+    logical action release;
+    
+    reaction(startup) {=
+        #ifdef TASK_SET_TRACING_IN
+            if (!register_user_trace_event("ID")) {
+                fprintf(stderr, "ERROR: Failed to register trace event.\n");
+                exit(1);
+            }
+        #endif // TASK_SET_TRACING_ON
+    =}
+
+    reaction(in) -> release {=
+        if (self->periodic) {   // periodic task
+            long long int current_release_time = self->release_time;
+            while (current_release_time < self->total_time) {
+                lf_schedule(release, current_release_time);
+                current_release_time += self->period;
+            }
+        } else {    // sporadic task
+            long long int current_release_time = self->release_time;
+            while (current_release_time < self->total_time) {
+                lf_schedule(release, current_release_time);
+                srand(time(0));
+                float r = (float) rand() / (float) RAND_MAX;
+                long long int p = self->exe_time + (long long int) (r * self->total_time);
+                current_release_time += p;
+            }
+        }
+    =}
+
+    reaction(release) -> release, out {=
+        lf_atomic_fetch_add(&total_reactions_triggered, 1);
+        long long int physical_start_time = lf_time_physical();
+        //tracepoint_user_value("ID", self->id);
+        lf_print("Task %d released at logical time %lld nsec, physical time %lld nsec, execution time %lld nsec\n",
+            self->id,
+            lf_time_logical_elapsed(),
+            lf_time_physical_elapsed(),
+            self->exe_time
+        );
+        while (lf_time_physical() < physical_start_time + self->exe_time) {};
+        lf_print("Task %d finished execution at physical time %lld nsec\n",
+            self->id,
+            lf_time_physical_elapsed());
+    =} deadline(deadline_time) {=
+        lf_atomic_fetch_add(&deadline_miss, 1);
+        while(lf_time_physical() < physical_start_time + self->exe_time) {};
+    =}
+}
+
+
+reactor BasicRunner {
+    output out:int;
+    reaction(startup) -> out {=
+        lf_set(out, 1);
+    =}
+}
+
+
+main reactor {
+
+    runner = new BasicRunner();
+    task0 = new TaskWithDeadline(id=0, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec, deadline_time=200 msec)
+    task1 = new TaskWithoutDeadline(id=1, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec)
+
+    runner.out -> task0.in;
+    runner.out -> task1.in;
+}

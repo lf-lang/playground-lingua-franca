@@ -5,15 +5,18 @@
 # @author Yunsang Cho
 # @author Hokeun Kim
 
+
 from multiprocessing.sharedctypes import Value
 from plots import BasicPlot
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QFileDialog
 import sys
 import os
 import csv
 from datetime import datetime
+from functools import partial
+
 
 from TasksetGenerator import TasksetGenerator
 
@@ -23,6 +26,7 @@ class Ui_MainWindow(object):
         self.taskConfig = {
             'schedulers':[]
         }
+        self.template_path=''
     
     def setupUi(self, MainWindow):
 
@@ -342,29 +346,17 @@ class Ui_MainWindow(object):
         self.label_customFile.setToolTip("Path of custom task lf file")
         self.gridLayout_custom.addWidget(self.label_customFile, 0, 0)
 
-        self.spinBox_customFile = QtWidgets.QSpinBox(self.gridLayoutWidget_custom)
-        self.spinBox_customFile.setObjectName('spinBox_customFile')
-        self.spinBox_customFile.setMaximum(10000)
-        self.spinBox_customFile.setMinimum(1)
-        self.spinBox_customFile.setProperty('value', 1)
-        self.spinBox_customFile.valueChanged.connect(lambda: self.updateExeTime())
-        self.gridLayout_custom.addWidget(self.spinBox_customFile, 0, 1)
-        
+        self.label_fileName = QtWidgets.QLabel(self.gridLayoutWidget_custom)
+        self.label_fileName.setObjectName('label_fileName')
+        self.label_fileName.hide()
+        self.gridLayout_custom.addWidget(self.label_fileName, 0, 1)
+
         self.pushButton_searchFile = QtWidgets.QPushButton(self.gridLayoutWidget_custom)
         self.pushButton_searchFile.setToolTip('Button to get task lf file')
+        self.pushButton_searchFile.setText('Select...')
+        self.pushButton_searchFile.clicked.connect(partial(self.select_template, MainWindow))
         self.gridLayout_custom.addWidget(self.pushButton_searchFile, 0, 2)
-
-
-        # self.comboBox_executionTimeUnit = QtWidgets.QComboBox(self.gridLayoutWidget_custom)
-        # self.comboBox_executionTimeUnit.setObjectName('comboBox_executionTimeUnit')
-        # self.comboBox_executionTimeUnit.addItems(['sec', 'msec', 'usec', 'nsec'])
-        # self.comboBox_executionTimeUnit.currentIndexChanged.connect(lambda: [self.selectionchange(self.comboBox_executionTimeUnit, 'executionTimeUnit'), self.updateExeTime()])
-        # self.gridLayout_custom.addWidget(self.comboBox_executionTimeUnit, 3, 2)
-
-
-
-
-
+        
         self.label_executionT = QtWidgets.QLabel(self.centralwidget)
         self.label_executionT.setObjectName("label_executionT")
         self.label_executionT.setGeometry(QtCore.QRect(12, 470, 190, 25))
@@ -392,6 +384,16 @@ class Ui_MainWindow(object):
         self.exit.clicked.connect(self.clickExit)
         #self.updateExeTime()
         
+
+    def select_template(self, MainWindow):
+        self.label_fileName.hide()
+        fname = QFileDialog.getOpenFileName(MainWindow, 'Open Taskset Template', './')[0]
+        self.template_path = fname
+        
+        self.label_fileName.setText(fname.split('/')[-1])
+        self.label_fileName.show()
+
+
     def selectionchange(self, comboBox, type):
         if type == 'periodicity':
             if comboBox.currentText() == 'sporadic':
@@ -424,7 +426,6 @@ class Ui_MainWindow(object):
         if (self.__isfloat(self.lineEdit_probability_deadline.text())== False):
             return
 
-        
 
     def updateExeTime(self):
         # Check parameter

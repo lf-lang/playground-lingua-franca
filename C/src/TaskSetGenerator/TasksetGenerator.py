@@ -2,6 +2,8 @@ import os
 from datetime import datetime 
 from tasksets.BasicTaskSet import BasicTaskSet
 from tasksets.DagTaskSet import DagTaskSet
+from tasksets.CustomTaskSet import CustomTaskSet
+
 
 class TasksetGenerator(object):
     
