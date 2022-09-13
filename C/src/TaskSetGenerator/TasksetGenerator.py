@@ -39,8 +39,10 @@ class TasksetGenerator(object):
                     c[key] = value
     
     # Generate taskset LF files to speicific directory.
-    def makeLF(self, templateDir='./', outputDir='./'):
+    def makeLF(self, templateDir='./', outputDir='./', template_path=''):
         TEMPLATE_PATH = f'{templateDir}/{self.config["type"].capitalize()}TaskSetGeneratorTemplate.lf'
+        if len(template_path) > 0:
+            TEMPLATE_PATH = template_path
 
         if not os.path.isfile(TEMPLATE_PATH):
             raise RuntimeError("No template file of task generator: " + TEMPLATE_PATH)
@@ -67,4 +69,10 @@ class TasksetGenerator(object):
             dag_taskset.setConfig(self.dag_config)
             generated_files = dag_taskset.makeLF(outputDir=outputDir)
         
+        elif self.config['type'] == 'custom':
+            custom_taskset = CustomTaskSet(TEMPLATE_PATH=TEMPLATE_PATH)
+            custom_taskset.setConfig(self.config)
+            generated_files = custom_taskset.makeLF(outputDir=outputDir)
+        
+
         return generated_files

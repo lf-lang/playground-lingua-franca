@@ -501,7 +501,7 @@ class Ui_MainWindow(object):
 
             generator = TasksetGenerator()
             generator.setConfig(self.taskConfig)
-            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}/templates', outputDir=f'{WORKING_DIR}/.gui/src/')
+            generated_files = generator.makeLF(templateDir=f'{WORKING_DIR}/templates', outputDir=f'{WORKING_DIR}/.gui/src/', template_path=self.template_path)
             print("Finished generating LF files!")
             
             plot_title = ''
