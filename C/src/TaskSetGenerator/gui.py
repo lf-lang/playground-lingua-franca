@@ -507,9 +507,13 @@ class Ui_MainWindow(object):
             plot_title = ''
             if self.taskConfig['type'] == 'basic':
                 plot_title = f'{self.taskConfig["periodicity"].capitalize()} / Number of task: {self.taskConfig["num_tasks"]} / Utilization: {self.taskConfig["utilization"]}'
+                plot_title += f" / P(deadline) : {self.taskConfig['p_deadline']}"
             elif self.taskConfig['type'] == 'dag':
                 plot_title = f'DAG / Seed: {self.taskConfig["seed"]}'
-            plot_title += f" / P(deadline) : {self.taskConfig['p_deadline']}"
+                plot_title += f" / P(deadline) : {self.taskConfig['p_deadline']}"
+            elif self.taskConfig['type'] == 'custom':
+                plot_title = 'Custom'
+            
             plot_generator = BasicPlot.PlotGenerator()
             plot_generator.setConfig({
                 'title': plot_title,
@@ -599,13 +603,15 @@ class Ui_MainWindow(object):
                         f'{self.taskConfig["execution_time"]["value"]} {self.taskConfig["execution_time"]["timeUnit"]}'
                       ]
 
+
         output_file = f'{output_dir}/{self.taskConfig["type"]}_{", ".join(self.taskConfig["schedulers"])}_{datetime.now().strftime("%Y%m%d%H%M%S%f")}.csv'
         
         with open(output_file, 'w', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
 
-            writer.writerow(header)
-            writer.writerow(configs)
+            if self.taskConfig['type'] == 'basic' or self.taskConfig['type'] == 'dag':
+                writer.writerow(header)
+                writer.writerow(configs)
 
 
             outputs_header = ['scheduler', 'worker', 'physical execution time', 'deadline miss']

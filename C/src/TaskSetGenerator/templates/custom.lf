@@ -130,9 +130,13 @@ reactor BasicRunner {
 main reactor {
 
     runner = new BasicRunner();
-    task0 = new TaskWithDeadline(id=0, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec, deadline_time=200 msec)
+    task0 = new TaskWithDeadline(id=0, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec, deadline_time=100 msec)
     task1 = new TaskWithoutDeadline(id=1, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec)
 
     runner.out -> task0.in;
     runner.out -> task1.in;
+
+    reaction(shutdown) {=
+        printf("---- Deadline miss: %d\n", deadline_miss);
+    =}
 }

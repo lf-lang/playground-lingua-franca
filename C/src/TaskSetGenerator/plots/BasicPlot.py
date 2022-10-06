@@ -130,13 +130,16 @@ class PlotGenerator(object):
         filename = filename = filepath.split('/')[-1].split('.')[0]
         binpath = f"{'/'.join(filepath.split('/')[:-3])}/bin/{filename}"
 
-        out = subprocess.run([f'./gradlew', 'runLfc', '--args', filepath], capture_output=True)
+        out = subprocess.run(['lfc', filepath], capture_output=True)
         built_success = False
+        
+        print(out.stdout.decode('utf-8'))
         for line in reversed(out.stdout.decode("utf-8").split("\n")):
-            if line.startswith("BUILD SUCCESSFUL"):
+            if line.startswith("Code generation finished"):
                 built_success = True
                 break
         
+
         if built_success:
             print(f"Built Successfully: {filepath}")
         else:
