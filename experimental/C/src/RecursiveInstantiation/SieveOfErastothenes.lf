@@ -1,0 +1,63 @@
+/**
+ * This is an implementation of the SieveOfErastothenes, based on
+ * src/Mutations/SieveOfEratosthenes.lf. As of this writing it does
+ * not compile.
+ */
+target C { fast: true, Build-Type: Debug }
+
+reactor Count(start: int(2)) {
+    timer t(0, 1 sec);
+    output out: int;
+    state c: int(start);
+    reaction(t) -> out {=
+        lf_set(out, self->c++);
+    =}
+}
+
+reactor Filter {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Print(stop_after:int(10000)) {
+    input in:int;
+    state count:int(1);
+    reaction(in) {=
+        printf("Prime %d: %d\n", self->count++, in->value);
+        if (self->count > self->stop_after) lf_request_stop();
+    =}
+}
+
+main reactor SieveOfErastothenes {
+    count = new Count()
+    filter = new Filter()
+    print = new Print(stop_after=10)
+
+    count.out -> filter.n_in
+    filter.result -> print.in
+}

@@ -1,0 +1,362 @@
+/**
+ * This is an expanded version of SieveOfErastothenes.lf. It duplicates
+ * code to prevent recursive instantiation, which is currently forbidden.
+ */
+target C { fast: true, Build-Type: Debug }
+
+reactor Count(start: int(2)) {
+    timer t(0, 1 sec);
+    output out: int;
+    state c: int(start);
+    reaction(t) -> out {=
+        lf_set(out, self->c++);
+    =}
+}
+
+reactor Filter0 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter1()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter1 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter2()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter2 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter3()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter3 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter4()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter4 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter5()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter5 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter6()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter6 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter7()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter7 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter8()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter8 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter9()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter9 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        end = new Filter10()
+
+        end.result -> result
+
+        reaction(n_in) -> end.n_in {=
+            if (n_in->value % self->p != 0) {
+                lf_set(end.n_in, n_in->value);
+            }
+        =}
+    }
+}
+
+reactor Filter10 {
+    input n_in: int
+    output n_out: int
+    output result: int
+    input initialize: int
+
+    reset state p: int(0)
+
+    initial mode End {
+        reaction(n_in) -> result, reset(Filter) {=
+            lf_set(result, n_in->value);
+            lf_set_mode(Filter);
+            assert(self->p == 0);  // This reaction can only be triggered once
+            self->p = n_in->value;
+        =}
+    }
+
+    mode Filter {
+        // end = new Filter11()
+
+        // end.result -> result
+
+        // reaction(n_in) -> end.n_in {=
+        //     if (n_in->value % self->p != 0) {
+        //         lf_set(end.n_in, n_in->value);
+        //     }
+        // =}
+    }
+}
+
+reactor Print(stop_after:int(10000)) {
+    input in:int;
+    state count:int(1);
+    reaction(in) {=
+        printf("Prime %d: %d\n", self->count++, in->value);
+        if (self->count > self->stop_after) lf_request_stop();
+    =}
+}
+
+main reactor SieveOfErastothenesUnrolled {
+    count = new Count()
+    filter = new Filter0()
+    print = new Print(stop_after=10)
+
+    count.out -> filter.n_in
+    filter.result -> print.in
+}
