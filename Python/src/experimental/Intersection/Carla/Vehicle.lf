@@ -1,0 +1,70 @@
+target Python {
+    files: [
+        "ROS/carla_intersection/src/vehicle.py",
+        "ROS/carla_intersection/src/utils.py"
+    ]
+};
+
+preamble {=
+    from vehicle import Vehicle
+    from utils import GenericClock, dotdict, make_coordinate
+=}
+
+reactor Vehicle(
+    bank_index(0),
+    initial_velocities({=None=}),
+    initial_positions({=None=})
+) {
+    input velocity;
+    input position;
+    input grant;
+    output control;
+    output request;
+    state vehicle;
+
+    preamble {=
+        class Logger:
+            def __init__(self, vehicle_id):
+                self.vehicle_id = vehicle_id
+
+            def info(self, *args):
+                print(f"{lf.time.logical()} - vehicle_{self.vehicle_id}: ", args)
+
+        class LFClock(GenericClock):
+            def get_current_time_in_ns(self):
+                return lf.time.logical()
+    =}
+
+    reaction(startup) {=
+        self.vehicle = Vehicle(vehicle_id = self.bank_index, 
+                               initial_position = make_coordinate(self.initial_positions[self.bank_index]), 
+                               initial_velocity = make_coordinate(self.initial_velocities[self.bank_index]),
+                               clock = self.LFClock(),
+                               logger = self.Logger(self.bank_index))
+    =}
+
+    reaction(position) {=
+        self.vehicle.set_position(position.value)
+    =}
+
+    reaction(velocity) -> control, request {=
+        new_velocity = velocity.value
+        pub_packets = self.vehicle.receive_velocity_from_simulator(new_velocity)
+        if pub_packets.cmd != None:
+            cmd = dotdict()
+            cmd.throttle = pub_packets.cmd.throttle
+            cmd.brake = pub_packets.cmd.brake
+            control.set(cmd)
+        if pub_packets.request != None:
+            request_ = dotdict()
+            request_.requestor_id = self.bank_index
+            request_.speed = pub_packets.request.speed
+            request_.position = pub_packets.request.position
+            request.set(request_)
+    =}
+
+    reaction(grant) {=
+        grant = grant.value
+        self.vehicle.grant(grant.arrival_time, grant.intersection_position)
+    =}
+}

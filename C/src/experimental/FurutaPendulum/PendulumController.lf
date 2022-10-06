@@ -1,0 +1,113 @@
+/**
+ * A modal controller for a Furuta pendulum,
+ * based on the Ptolemy II model constructed by Johan Eker
+ * and described in this paper:
+ * 
+ * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
+ * “Realistic simulations of embedded control systems,”
+ * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
+ * 
+ * @author Edward A. Lee
+ */
+target C;
+preamble {=
+    #include <math.h>
+    #define PI 3.14159265
+    double sign(double x) {
+        return (x > 0.0) - (x < 0.0);
+    }
+    double restrictAngle(double theta) {
+        return((fmod(fabs(theta) + PI, 2 * PI) - PI) * sign(theta));
+    }
+=}
+reactor PendulumController(
+    h:double(0.005), // Sample interval
+    w0:double(6.3),
+    k:double(0.5),   // Energy multiplier to swing up.
+    n:double(0.5),   // Bound on swing up control magnitude.
+    region1:double(0.1),   // Region to exit SwingUp.
+    region2:double(0.2),   // Region to exit Stabilize.
+    max_speed:double(0.05), // Speed to exit Catch.
+    ci1:double(-1.04945717118225),
+    ci2:double(-0.20432286791216),
+    ci3:double(-0.00735846749875),
+    ci4:double(-0.00735846749875),
+    si1:double(-1.70871686211144),
+    si2:double(-0.30395427746831),
+    si3:double(-0.03254225945714),
+    si4:double(-0.05808270221773),
+    phi2:double(-7.0124562)
+) {
+    input theta:double;
+    input d_theta:double;
+    input phi:double;
+    input d_phi:double;
+    
+    output control:double;
+    output modeID:double;
+    output energy:double;
+    
+    state phi0:double(0.0);
+    
+    initial mode SwingUp {
+        reaction(theta, d_theta) d_phi -> control, modeID, energy {=
+            double th = restrictAngle(theta->value);
+            double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
+                    + cos(th) - 1.0;
+            double c = sign(d_theta->value * cos(th));
+            double out = sign(E) * MIN(fabs(self->k * E), self->n) * c;
+            lf_set(control, out);
+            lf_set(energy, E);
+            lf_set(modeID, -1);
+        =}
+        reaction(theta) -> Catch {=
+            if (fabs(theta->value) < self->region1) {
+                lf_set_mode(Catch);
+            }
+        =}
+    }
+    
+    mode Catch {
+        reaction(theta, d_theta, phi, d_phi) -> control, modeID, energy {=
+            double th = restrictAngle(theta->value);
+            lf_set(control, -1.0 * (
+                th * self->ci1
+                + d_theta->value * self->ci2
+                + (phi->value - self->phi2) * self->ci3
+                + d_phi->value * self->ci4
+            ));
+            lf_set(modeID, 0);
+            double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
+                    + cos(th) - 1.0;
+            lf_set(energy, E);
+        =}
+        reaction(phi, d_phi) -> Stabilize {=
+            if (fabs(d_phi->value) < self->max_speed) {
+                lf_set_mode(Stabilize);
+                self->phi0 = phi->value;
+            }
+        =}
+    }
+
+    mode Stabilize {
+        reaction(theta, d_theta, phi, d_phi) -> control, modeID, energy {=
+            double th = restrictAngle(theta->value);
+            lf_set(control, -1.0 * (
+                th * self->si1
+                + d_theta->value * self->si2
+                + (phi->value - self->phi0) * self->si3
+                + d_phi->value * self->si4
+            ));
+            double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
+                    + cos(th) - 1.0;
+            lf_set(energy, E);
+            lf_set(modeID, 1);
+        =}
+        reaction(theta) -> SwingUp {=
+            double th = restrictAngle(theta->value);
+            if (fabs(th) > self->region2) {
+                lf_set_mode(SwingUp);
+            }
+        =}
+    }
+}

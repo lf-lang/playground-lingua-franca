@@ -1,0 +1,108 @@
+/* General Model of Reactors 
+ * simulating interactions between human systems
+ */
+ 
+ target Python {
+    
+};
+
+preamble {=
+    
+=}
+
+### Sensory
+reactor Sense {
+    
+    state _touch
+    state _vision
+    state _hearing
+    state _position
+    
+    output collision
+    output view
+    output sound
+    output placement
+    
+    timer t(0, 100msec)
+    
+    reaction(t) -> collision, view, sound, placement {=
+        collision.set(self._touch)
+        view.set(self._vision)
+        sound.set(self._sound)
+        placement.set(self._position)
+    =}
+}
+
+### Decision Maker
+reactor Brain {
+    
+    input collision
+    input view
+    input sound
+    input placement
+    
+    output legs
+    output torso
+    output arms
+    
+    reaction(collision, view, sound, placement) -> legs, torso, arms {=
+        if collision.is_present:
+            print("collision")
+        if view.is_present:
+            print("view")
+        if sound.is_present:
+            print("sound")
+        if placement.is_present:
+            print("placement")
+            
+        var leg_change
+        var torso_change
+        var arms_change
+        legs.set(leg_change)
+        torso.set(torso_change)
+        arms.set(arms_change)
+    =}
+}
+
+### Body
+reactor Body {
+    
+    state _energy
+    
+    input legs
+    input torso
+    input arms
+    
+    reaction(startup) {=
+        
+    =}
+    
+    reaction(legs) {=
+        
+    =}
+    
+    reaction(torso) {=
+        
+    =}
+    
+    reaction(arms) {=
+        
+    =}
+     
+}
+
+main reactor {
+    
+    sensory = new Sense()
+    brainy = new Brain()
+    corpo = new Body()
+    
+    sensory.collision, sensory.view,
+        sensory.sound, sensory.placement ->
+            brainy.collision, brainy.view,
+                brainy.sound, brainy.placement
+    
+    brainy.legs, brainy.torso, brainy.arms ->
+        corpo.legs, corpo.torso, corpo.arms           
+}
+
