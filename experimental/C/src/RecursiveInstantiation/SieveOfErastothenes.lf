@@ -1,7 +1,8 @@
 /**
- * This is an implementation of the SieveOfErastothenes, based on
+ * This is an implementation of the Sieve of Erastothenes, based on
  * src/Mutations/SieveOfEratosthenes.lf. As of this writing it does
- * not compile.
+ * not compile because recursive reactor instantiation is forbidden.
+ * @author Peter Donovan
  */
 target C { fast: true, Build-Type: Debug }
 

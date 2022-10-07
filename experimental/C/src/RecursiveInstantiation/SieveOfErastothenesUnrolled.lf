@@ -1,6 +1,9 @@
 /**
  * This is an expanded version of SieveOfErastothenes.lf. It duplicates
  * code to prevent recursive instantiation, which is currently forbidden.
+ * However, it would be better to implement this using recursive
+ * instantiation, as attempted in SieveOfErastothenes.lf.
+ * @author Peter Donovan
  */
 target C { fast: true, Build-Type: Debug }
 
