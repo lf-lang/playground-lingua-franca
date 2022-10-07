@@ -1,0 +1,215 @@
+/**
+ * This arranges "Cell" reactors in a power-of-2-by-power-of-2 square grid. The grid is created by
+ * recursively breaking grids into quadrants. The grid is connected such that each "Cell" reactor
+ * communicates only with the reactors immediately above it, below it, left of it, and right of it.
+ */
+target C
+
+import InterleaverModule from "../AllToAllConnections/Interleaved/Interleaved.lf"
+
+/**
+ * Communicate with the reactors in each of the four directions and verify that the communication
+ * works.
+ */
+reactor Cell {
+    // The width of 2 is used to convey 2 coordinates.
+    input[2] probe: int
+
+    input[2] east: int
+    input[2] north: int
+    input[2] west: int
+    input[2] south: int
+
+    output[2] east_out: int
+    output[2] north_out: int
+    output[2] west_out: int
+    output[2] south_out: int
+
+    state x: int
+    state y: int
+
+    logical action send
+
+    reaction(probe) -> send {=
+        if (probe[0]->is_present) self->x = probe[0]->value;
+        if (probe[1]->is_present) self->y = probe[1]->value;
+        lf_schedule(send, self->x * 8 * MSEC(250) + self->y * MSEC(250));
+    =}
+
+    reaction(send) -> east_out, north_out, west_out, south_out {=
+        lf_set(east_out[0], self->x);
+        lf_set(east_out[1], self->y);
+        lf_set(north_out[0], self->x);
+        lf_set(north_out[1], self->y);
+        lf_set(west_out[0], self->x);
+        lf_set(west_out[1], self->y);
+        lf_set(south_out[0], self->x);
+        lf_set(south_out[1], self->y);
+    =}
+
+    reaction(east, north, west, south) {=
+        if (east[0]->is_present) receive(1, 0, east[0]->value, east[1]->value);
+        if (north[0]->is_present) receive(0, -1, north[0]->value, north[1]->value);
+        if (west[0]->is_present) receive(-1, 0, west[0]->value, west[1]->value);
+        if (south[0]->is_present) receive(0, 1, south[0]->value, south[1]->value);
+    =}
+
+    method receive(dx: int, dy: int, x: int, y: int) {=
+        printf("(%d, %d) got (%d, %d) from the direction (%d, %d).\n", self->x, self->y, x, y, dx, dy);
+        if (self->x + dx != x || self->y + dy != y) lf_print_error_and_exit("There is an invalid connection.");
+    =}
+}
+
+reactor Grid1 {
+    input[8] probe: int
+
+    input[4] east: int
+    input[4] north: int
+    input[4] west: int
+    input[4] south: int
+
+    output[4] east_out: int
+    output[4] north_out: int
+    output[4] west_out: int
+    output[4] south_out: int
+
+    ruq = new Cell()
+    luq = new Cell()
+    llq = new Cell()
+    rlq = new Cell()
+
+    // No interleaver is instantiated at all here, but there is a meaningful pattern in the
+    // interleavers. The interleaver is only needed for the probe connections -- not the
+    // four directions. It translates from row-major order to a more esoteric order involving a
+    // base-4 number system I believe.
+
+    probe -> luq.probe, ruq.probe, llq.probe, rlq.probe
+
+    ruq.west_out -> luq.east
+    ruq.south_out -> rlq.north
+    luq.south_out -> llq.north
+    luq.east_out -> ruq.west
+    llq.east_out -> rlq.west
+    llq.north_out -> luq.south
+    rlq.north_out -> ruq.south
+    rlq.west_out -> llq.east
+
+    // make connections in order starting from luq (top-left) for consistency between opposite
+    // sides of the connection
+    ruq.east_out, rlq.east_out -> east_out
+    luq.north_out, ruq.north_out -> north_out
+    luq.west_out, llq.west_out -> west_out
+    llq.south_out, rlq.south_out -> south_out
+
+    east -> ruq.east, rlq.east
+    north -> luq.north, ruq.north
+    west -> luq.west, llq.west
+    south -> llq.south, rlq.south
+}
+
+reactor Grid2 {
+    input[32] probe: int
+
+    input[8] east: int
+    input[8] north: int
+    input[8] west: int
+    input[8] south: int
+
+    output[8] east_out: int
+    output[8] north_out: int
+    output[8] west_out: int
+    output[8] south_out: int
+
+    ruq = new Grid1()
+    luq = new Grid1()
+    llq = new Grid1()
+    rlq = new Grid1()
+
+    interleaver = new[2] InterleaverModule(stride(4))
+
+    probe -> interleaver.in
+    interleaver.out -> luq.probe, ruq.probe, llq.probe, rlq.probe
+
+    ruq.west_out -> luq.east
+    ruq.south_out -> rlq.north
+    luq.south_out -> llq.north
+    luq.east_out -> ruq.west
+    llq.east_out -> rlq.west
+    llq.north_out -> luq.south
+    rlq.north_out -> ruq.south
+    rlq.west_out -> llq.east
+
+    // make connections in order starting from luq (top-left) for consistency between opposite
+    // sides of the connection
+    ruq.east_out, rlq.east_out -> east_out
+    luq.north_out, ruq.north_out -> north_out
+    luq.west_out, llq.west_out -> west_out
+    llq.south_out, rlq.south_out -> south_out
+
+    east -> ruq.east, rlq.east
+    north -> luq.north, ruq.north
+    west -> luq.west, llq.west
+    south -> llq.south, rlq.south
+}
+
+reactor Grid3 {
+    input[128] probe: int
+
+    input[16] east: int
+    input[16] north: int
+    input[16] west: int
+    input[16] south: int
+
+    output[16] east_out: int
+    output[16] north_out: int
+    output[16] west_out: int
+    output[16] south_out: int
+
+    ruq = new Grid2()
+    luq = new Grid2()
+    llq = new Grid2()
+    rlq = new Grid2()
+
+    interleaver4 = new[4] InterleaverModule(stride(8))
+    interleaver8 = new[2] InterleaverModule(stride(16))
+
+    probe -> interleaver4.in
+    interleaver4.out -> interleaver8.in
+    interleaver8.out -> luq.probe, ruq.probe, llq.probe, rlq.probe
+
+    ruq.west_out -> luq.east
+    ruq.south_out -> rlq.north
+    luq.south_out -> llq.north
+    luq.east_out -> ruq.west
+    llq.east_out -> rlq.west
+    llq.north_out -> luq.south
+    rlq.north_out -> ruq.south
+    rlq.west_out -> llq.east
+
+    // make connections in order starting from luq (top-left) for consistency between opposite
+    // sides of the connection
+    ruq.east_out, rlq.east_out -> east_out
+    luq.north_out, ruq.north_out -> north_out
+    luq.west_out, llq.west_out -> west_out
+    llq.south_out, rlq.south_out -> south_out
+
+    east -> ruq.east, rlq.east
+    north -> luq.north, ruq.north
+    west -> luq.west, llq.west
+    south -> llq.south, rlq.south
+}
+
+main reactor {
+    grid = new Grid3()
+
+    /** Inform the cells of their coordinates via the probe. */
+    reaction(startup) -> grid.probe {=
+        int row_width = 8;
+        for (int x = 0; x < row_width; x++) {
+            for (int y = 0; y < row_width; y++) {
+                lf_set(grid.probe[2*(x + row_width * y)], x);
+                lf_set(grid.probe[2*(x + row_width * y) + 1], y);
+            }
+        }
+    =}
+}
