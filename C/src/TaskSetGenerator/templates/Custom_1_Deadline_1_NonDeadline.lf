@@ -1,5 +1,7 @@
 /**
-* Basic custom taskset
+* Basic custom task template
+* This task includes two reactions - One has a deadline and the other doesn't
+* Each reaction belongs to an individual reactor, and properties such as execution time and deadline of the reaction can be adjusted by changing the argument of this reactor.
 */
 
 target C {
@@ -61,6 +63,7 @@ reactor TaskWithoutDeadline(id:int(0), release_time:time(0 sec), total_time:time
         lf_print("Task %d finished execution at physical time %lld nsec\n",
             self->id,
             lf_time_physical_elapsed());
+        lf_set(out, 2);
     =} 
 }
 
@@ -112,10 +115,27 @@ reactor TaskWithDeadline(id:int(0), release_time:time(0 sec), total_time:time(1 
         lf_print("Task %d finished execution at physical time %lld nsec\n",
             self->id,
             lf_time_physical_elapsed());
+        lf_set(out, 1);
     =} deadline(deadline_time) {=
         lf_atomic_fetch_add(&deadline_miss, 1);
         while(lf_time_physical() < physical_start_time + self->exe_time) {};
     =}
+}
+
+reactor Printer {
+    input in1: int;
+    input in2: int;
+
+    reaction(in1, in2) {=
+        if (in1->is_present) {
+            printf("Received %d from input 1\n", in1->value);
+        }
+
+        if (in2->is_present) {
+            printf("Received %d from input 2\n", in2->value);
+        }
+    =}
+
 }
 
 
@@ -132,9 +152,13 @@ main reactor {
     runner = new BasicRunner();
     task0 = new TaskWithDeadline(id=0, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec, deadline_time=100 msec)
     task1 = new TaskWithoutDeadline(id=1, release_time=0 nsec, total_time=1 sec, exe_time=150 msec, periodic=false, period=0 nsec)
+    printer = new Printer();
 
     runner.out -> task0.in;
     runner.out -> task1.in;
+
+    task0.out -> printer.in1;
+    task1.out -> printer.in2;
 
     reaction(shutdown) {=
         printf("---- Deadline miss: %d\n", deadline_miss);
