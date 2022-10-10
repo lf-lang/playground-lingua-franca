@@ -1,0 +1,29 @@
+/**
+ * A variant of the FurutaPendulum example that plots
+ * the angles of the pendulum and arm rather than the
+ * control signal and energies.
+ * 
+ * @author Edward A. Lee
+ */
+target C {
+    timeout: 5 secs,
+    fast: true,
+    build: "./build_run_plot.sh FurutaPendulumAngle angle"
+}
+import PendulumController from "PendulumController.lf";
+import PendulumSimulation from "PendulumSimulation.lf";
+import Print from "FurutaPendulum.lf";
+
+main reactor {
+    timer disturb(3 sec);
+    p = new PendulumSimulation();
+    c = new PendulumController();
+    pr_theta = new Print(filename = "theta.data");
+    p.phi, p.d_phi -> c.phi, c.d_phi;
+    p.theta, p.d_theta -> c.theta, c.d_theta;
+    c.control -> p.u;
+    p.theta -> pr_theta.y;
+    reaction(disturb) -> p.d {=
+        lf_set(p.d, 0.5);
+    =}
+}

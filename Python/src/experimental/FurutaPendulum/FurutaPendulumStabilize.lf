@@ -1,0 +1,75 @@
+# A variant of the FurutaPendulum example that assumes
+# the initial angle is close to vertical and applies only
+# the stabilize-mode control law.
+#
+# Need to install matplotlib library:
+#    pip install matplotlib
+# 
+# @author Edward A. Lee
+target Python {
+    timeout: 8 secs,
+    fast: true
+}
+import PendulumSimulation from "PendulumSimulationRK4.lf"
+
+# Alternatively, change the ODE solver to forward-Euler by calling:
+# import PendulumSimulation from "PendulumSimulationEuler.lf"
+
+preamble {=
+    import matplotlib.pyplot as plt
+=}
+reactor Plotter {
+    input data
+    state times({=[]=})
+    state values({=[]=})
+    reaction(data) {=
+        self.times.append(lf.time.logical_elapsed()/1e9)
+        self.values.append(data.value)
+    =}
+    reaction(shutdown) {=
+        fig, axs = plt.subplots()
+        axs.set_title("Pendulum Angle")
+        axs.plot(self.times, self.values, color="C0")
+        axs.set_xlabel("Time (secs)")
+        axs.set_ylabel("Angle (radians)")
+        plt.show()
+    =}
+}
+reactor PendulumController(
+    g1(1.7),
+    g2(0.3),
+    g3(0.03),
+    g4(0.06)
+) {
+    input theta
+    input d_theta
+    input phi
+    input d_phi
+
+    output control
+
+    reaction(theta, d_theta, phi, d_phi) -> control {=
+        control.set(1.0 * (
+            theta.value * self.g1
+            + d_theta.value * self.g2
+            + phi.value * self.g3
+            + d_phi.value * self.g4
+        ))
+    =}
+}
+
+main reactor {
+    timer d(3 sec);  // One-shot disturbance at 3 seconds.
+
+    p = new PendulumSimulation(initial_theta = 0.1)
+    c = new PendulumController()
+    plt = new Plotter()
+    p.theta, p.d_theta, p.phi, p.d_phi
+        -> c.theta, c.d_theta, c.phi, c.d_phi
+    c.control -> p.u
+    p.theta -> plt.data
+
+    reaction(d) -> p.d {=
+        p.d.set(1.0)
+    =}
+}

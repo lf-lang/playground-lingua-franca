@@ -1,0 +1,62 @@
+/**
+ * A simulation of a Furuta pendulum with a modal controller
+ * based on the Ptolemy II model constructed by Johan Eker
+ * and described in this paper:
+ * 
+ * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
+ * “Realistic simulations of embedded control systems,”
+ * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
+ * 
+ * This program specifies a build script that only code generates
+ * and compiles the program, as usual, but also executes the
+ * program and processes its output to generate and open a
+ * plot. You may need to change the last argument passed to 
+ * the build script to the name of a PDF viewer installed on
+ * your system.
+ * 
+ * You have to have installed gnuplot and have it in your
+ * PATH for this script to work as expected (and also cmake).
+ * 
+ * @author Edward A. Lee
+ */
+target C {
+    timeout: 3 secs,
+    fast: true,
+    flags: "-lm",
+    build: "./build_run_plot.sh FurutaPendulum pendulum open"
+}
+import PendulumController from "PendulumController.lf";
+import PendulumSimulation from "PendulumSimulation.lf";
+
+/** Reactor that prints time-value pairs to a file. */
+reactor Print(filename:string("output.data")) {
+    input y:double;
+    state file:FILE*({=NULL=});
+    reaction(startup) {=
+        self->file = fopen(self->filename, "w");
+        if(self->file == NULL) {
+            lf_print_error_and_exit("Failed to open file: %s", self->filename);
+        }
+    =}
+    reaction(y) {=
+        double t = lf_time_logical_elapsed() / 1.0e9;
+        fprintf(self->file, "%f %f\n", t, y->value);
+    =}
+    reaction(shutdown) {=
+        fclose(self->file);
+    =}
+}
+
+main reactor {
+    p = new PendulumSimulation();
+    c = new PendulumController();
+    pr_pendulum = new Print(filename = "pendulum.data");
+    pr_mode = new Print(filename = "mode.data");
+    pr_energy = new Print(filename = "energy.data");
+    p.phi, p.d_phi -> c.phi, c.d_phi;
+    p.theta, p.d_theta -> c.theta, c.d_theta;
+    c.control -> p.u;
+    c.control -> pr_pendulum.y;
+    c.modeID -> pr_mode.y;
+    c.energy -> pr_energy.y;
+}
