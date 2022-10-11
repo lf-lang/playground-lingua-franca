@@ -22,7 +22,6 @@ class CustomTaskSet(object):
             'filename': TEMPLATE_PATH.split('/')[-1].split('.')[0]
         }
 
-    
     def setConfig(self, config):
         for key, value in config.items():
             if key in self.config.keys():
@@ -67,4 +66,3 @@ class CustomTaskSet(object):
                     raise RuntimeError('Failed to generate LF file: ' + FILE_PATH)
 
         return generated_files
-
