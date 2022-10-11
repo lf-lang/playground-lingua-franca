@@ -79,7 +79,6 @@ class CLI(object):
             plot_title = f'DAG / Seed: {self.taskConfig["seed"]}'
             save_name = f'dag/seed_{self.taskConfig["seed"]}'
             
-        
         plot_generator = SavePlot.PlotGenerator()
         plot_generator.setConfig({
             'title': plot_title,
@@ -176,7 +175,6 @@ class CLI(object):
 
             writer.writerow(header)
             writer.writerow(configs)
-
 
             outputs_header = ['scheduler', 'worker', 'physical execution time', 'deadline miss']
             outputs = []
