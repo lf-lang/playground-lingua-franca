@@ -92,8 +92,6 @@ class BasicTaskSet(object):
         }
         return TimeValue['value'] * TimeUnits[TimeValue['timeUnit']]
 
-
-
     def task_config(self):
         configs = ""
 
