@@ -67,7 +67,6 @@ reactor TaskWithoutDeadline(id:int(0), release_time:time(0 sec), total_time:time
     =} 
 }
 
-
 reactor TaskWithDeadline(id:int(0), release_time:time(0 sec), total_time:time(1 sec), exe_time: time(10 msec), periodic:bool(false), period:time(20 msec), deadline_time:time(15 msec)) {
     input in:int;
     output out:int;
@@ -138,14 +137,12 @@ reactor Printer {
 
 }
 
-
 reactor BasicRunner {
     output out:int;
     reaction(startup) -> out {=
         lf_set(out, 1);
     =}
 }
-
 
 main reactor {
 
