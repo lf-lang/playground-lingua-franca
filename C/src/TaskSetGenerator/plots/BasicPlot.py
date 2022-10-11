@@ -102,12 +102,8 @@ class PlotGenerator(object):
 
         ax.legend(handles=patches, loc='upper right')
         plt.axis([min(workers)-1, max(workers)+1, max(min(min(deadline_misses[s]) for s in target_schedulers)-1, 0), max(max(deadline_misses[s]) for s in target_schedulers) + 1])
-
-        
-
-
-        plt.xlabel('Number of Worker')
-        plt.ylabel('Deadline Miss')
+        plt.xlabel('Number of Workers')
+        plt.ylabel('Deadline Misses')
 
         plt.title(self.config['title'], fontsize= 10)
         plt.show()
@@ -139,7 +135,6 @@ class PlotGenerator(object):
                 built_success = True
                 break
         
-
         if built_success:
             print(f"Built Successfully: {filepath}")
         else:
