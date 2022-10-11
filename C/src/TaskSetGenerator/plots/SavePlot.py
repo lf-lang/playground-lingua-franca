@@ -27,7 +27,6 @@ class PlotGenerator(object):
         if os.path.exists(self.basicPath):
             os.mkdir(self.basicPath)
 
-
     def setConfig(self, config):
         for key, value in config.items():
             if key in self.config.keys():
@@ -91,21 +90,20 @@ class PlotGenerator(object):
         self.target_schedulers = target_schedulers
         self.workers = workers
 
-
         # Graph 1: Physical execution time
         PlotGenerator.save_graph(self, axis= [1, 25, 0.0, 5.0],
                                 colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
                                 graph_axis=exe_times,
-                                xlabel="Number of Worker",
-                                ylabel="Physical Execution time",
+                                xlabel="Number of Workers",
+                                ylabel="Physical Execution times",
                                 output_dir=output_dir)
 
-        # Graph 2: Deadline miss
+        # Graph 2: Deadline misses
         PlotGenerator.save_graph(self, axis= [1, 25, 0.0, 5.0],
                                 colors=['#D81B60', '#1E88E5', '#FFC107', '#004D40', '#8794DD'],
                                 graph_axis=deadline_misses,
-                                xlabel="Number of Worker",
-                                ylabel="Deadline Miss",
+                                xlabel="Number of Workers",
+                                ylabel="Deadline Misses",
                                 output_dir=output_dir)
 
         os.chdir(WORKING_DIR)
