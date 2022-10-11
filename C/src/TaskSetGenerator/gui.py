@@ -16,8 +16,6 @@ import os
 import csv
 from datetime import datetime
 from functools import partial
-
-
 from TasksetGenerator import TasksetGenerator
 
 class Ui_MainWindow(object):
@@ -626,7 +624,6 @@ class Ui_MainWindow(object):
             writer.writerow(outputs_header)
             writer.writerows(outputs)
                 
-
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
