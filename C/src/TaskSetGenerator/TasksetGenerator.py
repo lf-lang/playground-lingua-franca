@@ -1,9 +1,13 @@
+# Taskset Generator class
+# It will make LF files based on configuration which is given by user.
+# @author Yunsang Cho
+# @author Wonseo Choi
+
 import os
 from datetime import datetime 
 from tasksets.BasicTaskSet import BasicTaskSet
 from tasksets.DagTaskSet import DagTaskSet
 from tasksets.CustomTaskSet import CustomTaskSet
-
 
 class TasksetGenerator(object):
     
