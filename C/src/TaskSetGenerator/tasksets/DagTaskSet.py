@@ -27,7 +27,6 @@ class Node:
         if self.level == 1:
             return result + f'\trunner.out{self.index} -> {self.name}.in1;\n\n'
 
-
         for i, parent in enumerate(self.parents):
             result += f'\t{parent}.out -> {self.name}.in{i+1};\n'
         
@@ -59,7 +58,6 @@ class DagTaskSet(object):
         for key, value in config.items():
             if key in self.config.keys():
                 self.config[key] = value
-
 
     def makeLF(self, outputDir='./'):
         if not os.path.isdir(outputDir):
@@ -154,7 +152,6 @@ class DagTaskSet(object):
             result += component + '\n'
 
         return result
-
 
     def task_config_multiple_inputs(self, seed=datetime.now()):
         random.seed(seed)
