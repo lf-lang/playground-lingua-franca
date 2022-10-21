@@ -1,3 +1,11 @@
+/**
+ * DoorLockDemo.lf implements a simple car door lock system with a single door with user controls, 
+ * a controller, and a lock actuator to lock/unlock the door. The system can be controller using 3 modes.
+ * 1. Buttons on the physical door , 2. External System (Like an RFID Key Fob), 3. Mobile Key via cloud service
+ * See README for sample specification
+ * 
+ * @author Ravi Akella
+ */
 
 target CCpp{
     keepalive: true,
@@ -78,7 +86,7 @@ reactor UserInteraction{
     =}
 }
 
-reactor cloudAuth{
+reactor cloudAuth(auth_delay:time(50 msec)){
     //TODO: Make this a MQTT cloud node
     //Other possibilities: grpc
     input app_in:LockCommandStruct;
@@ -99,7 +107,7 @@ reactor cloudAuth{
         self->lock_command.lc = app_in->value.lc;
         self->lock_command.ts = app_in->value.ts;
   
-        lf_schedule(auth, MSEC(200));
+        lf_schedule(auth, self->auth_delay);
     =}
     
     reaction(auth)->app_auth_out{=
@@ -109,9 +117,7 @@ reactor cloudAuth{
     =}
 }
 
-reactor MobileKey{
-    //TODO: Make this an MQTT enabled key
-    
+reactor MobileKey(min_delay:time(200 msec)){    
     input userInput:char;
     output lock:LockCommandStruct;
     
@@ -122,10 +128,12 @@ reactor MobileKey{
         
         if (key == 'm'){
             lock->value.lc = LockCommandStruct::LOCK;
+            lf_nanosleep((rand()%10+1) * self->min_delay); //Simulate wireless propagation delay
             SET_PRESENT(lock);
         }
         else if(key == 'n'){
             lock->value.lc = LockCommandStruct::UNLOCK;
+            lf_nanosleep((rand()%10+1) * self->min_delay); //Simulate wireless propagation delay
             SET_PRESENT(lock);
         }
         else{
@@ -135,7 +143,7 @@ reactor MobileKey{
     =}
 }
 
-reactor ExternalSystem(delay:time(1000 msec)){
+reactor ExternalSystem(min_delay:time(100 msec)){
    
     input userInput:char;
     output lock:LockCommandStruct;
@@ -144,15 +152,15 @@ reactor ExternalSystem(delay:time(1000 msec)){
         
         char key = userInput->value;
         lock->value.ts = lf_time_physical();
-        
+
         if (key == 'f'){
             lock->value.lc = LockCommandStruct::LOCK;
-            lf_nanosleep(self->delay); //Simulate Radio propagation delay
+            lf_nanosleep((rand()%10+1) * self->min_delay); //Simulate Radio propagation delay
             SET_PRESENT(lock);
         }
         else if(key == 'r'){
             lock->value.lc = LockCommandStruct::UNLOCK;
-            lf_nanosleep(self->delay); //Simulate Radio propagation delay
+            lf_nanosleep((rand()%10+1) * self->min_delay); //Simulate Radio propagation delay
             SET_PRESENT(lock);
         }
         else{
