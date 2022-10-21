@@ -1,15 +1,27 @@
 /**
- * DoorLockDemo.lf implements a simple car door lock system with a single door with user controls, 
+ * DoorLockDemoFederated.lf implements federated version of car door lock system with a single door with user controls, 
  * a controller, and a lock actuator to lock/unlock the door. The system can be controller using 3 modes.
  * 1. Buttons on the physical door , 2. External System (Like an RFID Key Fob), 3. Mobile Key via cloud service
  * See README for sample specification
  * 
+ * NOTE: To be able to interact in federated mode, make the following changes to the generated 
+ * `DoorLockDemoFederated` script in bin directory
+ *      Move this block: 
+ *          ``echo "#### Launching the federate ui."
+ *          /Users/ra/git/examples-lingua-franca/CCpp/bin/DoorLockDemoFederated_ui -i $FEDERATION_ID &
+ *          pids[3]=$!``
+ *      after 
+ *          ``echo "#### Bringing the RTI back to foreground so it can receive Control-C."``
+ *      Make sure to remove trailing `&` on
+ *          ``/Users/ra/git/examples-lingua-franca/CCpp/bin/DoorLockDemoFederated_ui -i $FEDERATION_ID``
+ *
  * @author Ravi Akella
  */
 
 target CCpp{
     keepalive: true,
     files: "include/types.hpp",
+    coordination: decentralized
 };
 
 preamble {=
@@ -350,7 +362,7 @@ reactor DoorLockActuator(tolerance:time(1000 msec)){
                     << std::endl;
         }
         
-    =} deadline(tolerance){= /* NOTE: This does not capture the requirement that actuation should occur within 1 sec of button press */
+    =} STP(tolerance){= /* NOTE: This does not capture the requirement that actuation should occur within 1 sec of button press */
         std::cout << lf_time_physical() <<": deadline violation." << std::endl;
     =}
 }
@@ -400,24 +412,7 @@ reactor Display{
     =}
 }
 
-reactor Print{
-    input open_event:OpenEventStruct;
-    input lock_command:LockCommandStruct;
-    
-    reaction(open_event){=
-        auto& s = open_event->value;
-        std::string oe_string = (s.oe==OpenEventStruct::OPEN) ? "OPEN" : "CLOSE"; 
-        std::cout << lf_time_physical() << ": Door Status: "<< oe_string << std::endl;
-    =}
-    
-    reaction(lock_command){=
-        auto& s = lock_command->value;
-        std::string le_string = (s.lc==LockCommandStruct::LOCK) ? "LOCK" : "UNLOCK"; 
-        std::cout << lf_time_physical() << ": Lock Status: "<< le_string << std::endl;
-    =}
-}
-
-main reactor{
+federated reactor{
  
   dls = new DoorLockSystem();
   es = new ExternalSystem();
@@ -438,10 +433,4 @@ main reactor{
   ui.key_mobile -> mk.userInput;
   mk.lock -> ca.app_in;
   ca.app_auth_out -> dls.lock_mobile;
-
-   //sensor = new DoorSensor();
-  //lock = new DoorLockButton();
-  //p = new Print();
-  //sensor.out -> p.open_event;
-  //lock.out -> p.lock_command;
 }
