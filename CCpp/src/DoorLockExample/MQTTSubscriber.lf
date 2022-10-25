@@ -6,7 +6,9 @@
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-target C;
+target CCpp{
+    files: ["include/net_util.h", "include/MQTTMessage.hpp"],
+};
 
 /**
  * Reactor that subscribes to a specified MQTT topic on which
@@ -55,6 +57,7 @@ target C;
  * @param offset The offset to add to the sender's timestamp.
  * @see MQTTPublisher.
  */
+
 reactor MQTTSubscriber (
     address:string("tcp://localhost:1883"),
     clientID:string("DefaultSubscriber"),
@@ -63,11 +66,76 @@ reactor MQTTSubscriber (
 ) {
     preamble {=
         #include "MQTTClient.h"
-        #include "core/federated/net_util.h"
+        #include "net_util.h"
+        #include "MQTTMessage.hpp"
         
         #define QOS         2
         #define TIMEOUT     10000L
         
+        /*
+            TODO: Below four functions from net_util.h trigger a linker error if not defined here 
+        */
+        
+        /** Return true (1) if the host is big endian. Otherwise,
+         *  return false.
+         */
+        int host_is_big_endian() {
+            static int host = 0;
+            union {
+                uint32_t uint;
+                unsigned char c[sizeof(uint32_t)];
+            } x;
+            if (host == 0) {
+                // Determine the endianness of the host by setting the low-order bit.
+                x.uint = 0x01;
+                host = (x.c[3] == 0x01) ? HOST_BIG_ENDIAN : HOST_LITTLE_ENDIAN;
+            }
+            return (host == HOST_BIG_ENDIAN);
+        }
+
+        /** If this host is little endian, then reverse the order of
+         *  the bytes of the argument. Otherwise, return the argument
+         *  unchanged. This can be used to convert the argument to
+         *  network order (big endian) and then back again.
+         *  Network transmissions, by convention, are big endian,
+         *  meaning that the high-order byte is sent first.
+         *  But many platforms, including my Mac, are little endian,
+         *  meaning that the low-order byte is first in memory.
+         *  @param src The argument to convert.
+         */
+        int64_t swap_bytes_if_big_endian_int64(int64_t src) {
+            union {
+                int64_t ull;
+                unsigned char c[sizeof(int64_t)];
+            } x;
+            if (!host_is_big_endian()) return src;
+            // printf("DEBUG: Host is little endian.\n");
+            x.ull = src;
+            // printf("DEBUG: Before swapping bytes: %lld.\n", x.ull);
+            unsigned char c;
+            // Swap bytes.
+            c = x.c[0]; x.c[0] = x.c[7]; x.c[7] = c;
+            c = x.c[1]; x.c[1] = x.c[6]; x.c[6] = c;
+            c = x.c[2]; x.c[2] = x.c[5]; x.c[5] = c;
+            c = x.c[3]; x.c[3] = x.c[4]; x.c[4] = c;
+            // printf("DEBUG: After swapping bytes: %lld.\n", x.ull);
+            return x.ull;
+        }
+        
+        /** Extract a int64_t from the specified byte sequence.
+         *  This will swap the order of the bytes if this machine is big endian.
+         *  @param bytes The address of the start of the sequence of bytes.
+         */
+        int64_t extract_int64(unsigned char* bytes) {
+            // Use memcpy to prevent possible alignment problems on some processors.
+            union {
+                int64_t ull;
+                unsigned char c[sizeof(int64_t)];
+            } result;
+            memcpy(&result.c, bytes, sizeof(int64_t));
+            return swap_bytes_if_big_endian_int64(result.ull);
+        }
+
         // Connection options for the client.
         // Making this global means that all instances of this reactor have
         // the same connection options.
@@ -85,7 +153,7 @@ reactor MQTTSubscriber (
             size_t string_length = strlen((char*)message->payload); // Assumes null-terminated string.
             if (message->payloadlen == string_length + 1 + 2*sizeof(instant_t)) {
                 instant_t* physical_timestamp = (instant_t*)((char*)message->payload + string_length + 1);
-                // printf("DEBUG: MQTTReceiver.message_arrived: Received message after measured latency of %lld nsec (assuming synchronized clocks).\n", receive_physical_time - *physical_timestamp);
+                //printf("DEBUG: MQTTReceiver.message_arrived: Received message after measured latency of %lld nsec (assuming synchronized clocks).\n", receive_physical_time - *physical_timestamp);
             }
             
             // printf("DEBUG: MQTTSubscriber: Message arrived on topic %s: %s\n", topicName, (char*)message->payload);
@@ -147,7 +215,7 @@ reactor MQTTSubscriber (
      * Use type char* rather than string because it is not
      * a static string, but rather dynamically allocated memory.
      */
-     output message:char*;
+     output message:MQTTMessage;
 
     /**
      * Action that is triggered when there is an incoming MQTT message.
@@ -208,13 +276,16 @@ reactor MQTTSubscriber (
         // The incoming_message action contains a token that we can just forward.
         // The allocated memory will be freed when the token's reference count hits 0.
         // Note that this token will still contain the sender's timestamp.
-        lf_set_token(message, incoming_message->token);
+        
+        //lf_set_token(message, incoming_message->token);
+        message->value.payload = (char*) incoming_message->token->value;
                 
         // Get the sender's timestamp.
         instant_t* timestamp = (instant_t*)(
             (char*) incoming_message->token->value + incoming_message->token->length - sizeof(instant_t)
         );
-        // printf("DEBUG: Received message carrying timestamp %lld.\n", *timestamp);
+        //printf("DEBUG: Received message carrying logical timestamp %lld.\n", *timestamp);
+        message->value.logical_ts = *timestamp;
         
         // If the offset is 0, then the latency will be a measure of
         // the physical latency between creation of the message at the sender
@@ -230,8 +301,9 @@ reactor MQTTSubscriber (
         if (incoming_message->token->length == string_length + 1 + 2*sizeof(instant_t)) {
             instant_t receive_physical_time = lf_time_physical();
             instant_t physical_timestamp = extract_int64((unsigned char*)(incoming_message->value + string_length + 1));
+            message->value.physical_ts = physical_timestamp;
             latency = receive_physical_time - physical_timestamp;
-            // printf("DEBUG: MQTTReceiver.reaction: Reacted to message after measured latency of %lld nsec (assuming synchronized clocks).\n", latency);
+            //printf("DEBUG: MQTTReceiver.reaction: Reacted to message after measured latency of %lld nsec (assuming synchronized clocks).\n", latency);
         }
         
         self->latencies += latency;
@@ -239,6 +311,8 @@ reactor MQTTSubscriber (
         if (latency > self->max_latency) {
             self->max_latency = latency;
         }
+        
+        SET_PRESENT(message);
     =}
     
     reaction(shutdown) {=

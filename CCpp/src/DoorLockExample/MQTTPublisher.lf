@@ -5,7 +5,9 @@
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-target C;
+target CCpp{
+    files: ["include/net_util.h"],
+};
 
 /**
  * Reactor that publishes strings to a specified MQTT topic.
@@ -33,6 +35,7 @@ target C;
  *  when the message is sent.
  * @see MQTTSubscriber.
  */
+
 reactor MQTTPublisher (
     topic:string("DefaultTopic"),
     address:string("tcp://localhost:1883"),
@@ -41,7 +44,7 @@ reactor MQTTPublisher (
 ) {
     preamble {=
         #include "MQTTClient.h"
-        #include "core/federated/net_util.h"
+        #include "net_util.h"
         
         // Timeout for completion of message sending in milliseconds.
         #define TIMEOUT     10000L
@@ -51,6 +54,22 @@ reactor MQTTPublisher (
         // the same connection options.
         MQTTClient_connectOptions pub_connect_options = MQTTClient_connectOptions_initializer;
  
+        /** Write the specified data as a sequence of bytes starting
+         *  at the specified address. This encodes the data in little-endian
+         *  order (lowest order byte first).
+         *  @param data The data to write.
+         *  @param buffer The location to start writing.
+         */
+        void encode_int64(int64_t data, unsigned char* buffer) {
+            // This strategy is fairly brute force, but it avoids potential
+            // alignment problems.
+            int shift = 0;
+            for(size_t i = 0; i < sizeof(int64_t); i++) {
+                buffer[i] = (unsigned char)((data & (0xffLL << shift)) >> shift);
+                shift += 8;
+            }
+        }
+                
         // Struct type used to keep track of messages in flight between reactions.
         typedef struct inflight_t {
             bool message_in_flight;
