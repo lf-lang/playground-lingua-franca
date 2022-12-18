@@ -137,7 +137,7 @@ reactor MQTTPublisher (
         if (self->include_physical_timestamp) {
             length += sizeof(instant_t);
         }
-        self->inflight.message = malloc(sizeof(char) * length);
+        self->inflight.message = (char*) malloc(sizeof(char) * length);
         memcpy(self->inflight.message, in->value, strlen(in->value) + 1);
         
         // Append the current timestamp to the message.

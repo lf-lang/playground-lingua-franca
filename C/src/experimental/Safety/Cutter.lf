@@ -16,12 +16,13 @@ preamble {=
     int num_messages = 1;
 =}
 reactor ButtonController(
-    key:char('\0'), 
+    key:char('\0'),
     description:string("Button")
 ) {
     physical action pushed:char*;
     output push:bool;
-    reaction(startup) -> pushed {=
+    timer t(1 ms); // Give time for the startup in main to have occurred.
+    reaction(t) -> pushed {=
         register_sensor_key(self->key, pushed);
         if (self->key == '\0') {
             lf_print("%s with any key", self->description);
@@ -37,7 +38,7 @@ reactor MachineController {
     input emergencyStop:bool;
     input run:bool;
     initial mode Off {
-        reaction(run) -> Running {=
+        reaction(run) -> reset(Running) {=
             lf_set_mode(Running);
         =}
     }
@@ -75,6 +76,6 @@ main reactor {
         lf_print("Exit with 'x'");
     =}
     reaction(stop) {=
-        request_stop();
+        lf_request_stop();
     =}
 }
