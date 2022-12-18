@@ -1,5 +1,6 @@
 #Pacman in Python with PyGame
 #https://github.com/hbokmann/Pacman
+#Modified for mine example by Benjamin Asch
   
 import pygame
 import AIPhosphate as ai
@@ -125,19 +126,40 @@ def setupMineWalls(all_sprites_list):
     # return our new list
     return wall_list
 
+def setupMineStations(all_sprites_list):
+      station_list = pygame.sprite.RenderPlain()
+
+      stations = [ ["mining", burgundy, minespot[0], minespot[1], 30, 30],
+                   ["washing", wash_blue, washspot[0], washspot[1], 30, 30],
+                   ["filtering", filter_orange, filterspot[0], filterspot[1], 30, 30],
+                   ["storing", gray, storespot[0], storespot[1], 30, 30],
+                   ["charging", green, chargerspot[0], chargerspot[1], 30, 30]
+                 ]
+      
+      for station in stations:
+            place = ActionPlace(station[0], station[1], station[2], station[3], station[4], station[5])
+            station_list.add(place)
+            all_sprites_list.add(place)
+      
+      return station_list
+
 def setupGate(all_sprites_list):
       gate = pygame.sprite.RenderPlain()
       gate.add(Wall(282,242,42,2,white))
       all_sprites_list.add(gate)
       return gate
 
+#represents each station
 class ActionPlace(pygame.sprite.Sprite):
       
+      busy = False
+      cargo = []
+      
       def __init__(self, name, color, x, y, width, height):
-            
+            self.color = color
             pygame.sprite.Sprite.__init__(self)
             self.image = pygame.Surface([width, height])
-            self.image.fill(color)
+            self.image.fill(self.color)
             #self.image.set_colorkey(color)
             #pygame.draw.rect(self.image, color, [0, 0, width, height])
 
@@ -145,6 +167,50 @@ class ActionPlace(pygame.sprite.Sprite):
             self.rect.left = x
             self.rect.top = y
             self.name = name
+      
+      #changes the busy state to True
+      def set_busy(self):
+          self.busy = True
+          self.image.fill(red)
+      
+      #changes busy state to False
+      def not_busy(self):
+          self.busy = False
+          if self.name == "mining":
+              self.image.fill(burgundy)
+          elif self.name == "washing":
+              self.image.fill(wash_blue)
+          elif self.name == "filtering":
+              self.image.fill(filter_orange)
+          elif self.name == "storing":
+              self.image.fill(gray)
+          else:
+              self.image.fill(green)
+
+      #restarts
+      def restart(self):
+          self.not_busy()
+          self.cargo = []
+          
+      #changes the color for busyness
+      def flip_color(self):
+          if self.busy:
+              self.color = red
+          else:
+              if self.name == "mining":
+                  self.color = burgundy
+              elif self.name == "washing":
+                  self.color = wash_blue
+              elif self.name == "filtering":
+                  self.color = filter_orange
+              elif self.name == "storing":
+                  self.color = gray
+              else:
+                  self.color = green
+      
+      #empties cargo
+      def empty_cargo(self):
+          self.cargo = []
 
 # This class represents the ball        
 # It derives from the "Sprite" class in Pygame
@@ -169,11 +235,20 @@ class Block(pygame.sprite.Sprite):
         # of rect.x and rect.y
         self.rect = self.image.get_rect() 
 
+#class represents the cargo that the AGV holds
+class Cargo(pygame.sprite.Sprite):
+      def __init__(self, status):
+            self.status = "washing"
+
 # This class represents the bar at the bottom that the player controls
 class AGV(pygame.sprite.Sprite):
   
     # Set speed vector
     battery = 100
+    wash_cargo = []
+    filt_cargo = []
+    store_cargo = []
+    num_tot_cargo = 0
     total_stored = 0
     change_x=0
     change_y=0
@@ -269,55 +344,33 @@ class AGV(pygame.sprite.Sprite):
         else:
             self.battery += input
 
+    #stores cargo for PhosphateMine.lf example
     def store(self, input):
           self.total_stored += input
     
-    def ai_eat(self, layout, ghosts, blocks, num_moves):
-        if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
-          # or self.num_moves + 15 > self.calcpathmove:
-          path = ai.closestpillpath(layout, ghosts, self.rect.left, self.rect.top, blocks)
-          self.calcpathmove = self.num_moves + 1
-          self.rect.left += path[0][0]
-          self.rect.top += path[0][1]
-          print("eat move is ", path[0])
-          print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
-          self.last_move = path[0]
-          self.next_moves = path[1:]
-        else:
-          self.rect.left += self.next_moves[0][0]
-          self.rect.top += self.next_moves[0][1]
-          self.last_move = self.next_moves[0]
-          print("eat move is ", self.last_move)
-          print("eat x y: " + str(self.rect.left) + ", " + str(self.rect.top))
-          self.next_moves = self.next_moves[1:]
-        
-        self.num_moves += 1
-        #TODO: make more efficient by saving previous moves
-        #change if not resetting speed
-        #print(path[0][0])
-        #print(path[0][1])
-        #print("last move was ", self.last_move)
-        #print("move is ", path[0])
-        
-        #self.last_move = path[0]
-    
-    def ai_chase(self, layout, ghosts, threshold):
-        path = ai.closeghostdist(layout, ghosts, self.rect.left, self.rect.top, threshold)
+    #stores processed cargo for BusyMine.lf
+    def store_processed(self):
+          self.total_stored += len(self.store_cargo)
+          self.num_tot_cargo -= len(self.store_cargo)
 
-        self.rect.left += path[0][0]
-        self.rect.top += path[0][1]
-        self.num_moves += 1
-
-    def ai_avoid(self, layout, ghosts, threshold):
-        path = ai.peopleavoid(layout, ghosts, self.rect.left, self.rect.top)
+    #zeros out all cargo for restart
+    def zero_cargo(self):
+          self.wash_cargo = []
+          self.filt_cargo = []
+          self.store_cargo = []
+          self.num_tot_cargo = 0
+          self.total_stored = 0
+    #ai_avoid: has ai avoid people
+    def ai_avoid(self, layout, people, threshold):
+        path = ai.peopleavoid(layout, people, self.rect.left, self.rect.top)
         #print("this is avoid: ", path)
-        print("old x and y " + str(self.rect.left) + ", " + str(self.rect.top))
+        #print("old x and y " + str(self.rect.left) + ", " + str(self.rect.top))
         self.rect.left += path[0][0]
         self.rect.top += path[0][1]
-        print("new x and y " + str(self.rect.left) + ", " + str(self.rect.top))
+        #print("new x and y " + str(self.rect.left) + ", " + str(self.rect.top))
         self.last_move = path
-        print("avoid move is: ", self.last_move)
-        print("avoid x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+        #print("avoid move is: ", self.last_move)
+        #print("avoid x y: " + str(self.rect.left) + ", " + str(self.rect.top))
         # if num_moves is not self.num_moves or len(self.next_moves) == 0:
         #     path = ai.allghostavoid(layout, ghosts, self.rect.left, self.rect.top, threshold)
         #     self.rect.left += path[0][0]
@@ -376,30 +429,32 @@ class AGV(pygame.sprite.Sprite):
           self.eating = False
     def get_num_moves(self):
           return self.num_moves
+    def zero_scargo(self):
+          self.store_cargo = []
+          
+    #approach: has ai approach goal_coords location
     def approach(self, layout, people, goal_coords, num_moves):
           if len(self.next_moves) == 0 or num_moves is not self.num_moves: 
           # or self.num_moves + 15 > self.calcpathmove:
-            print("finding approach path")
+            #print("finding approach path")
             path = ai.euclid_approacher(layout, people, self.rect.left + 16, self.rect.top + 16, goal_coords[0], goal_coords[1])
             self.calcpathmove = self.num_moves + 1
             self.rect.left += path[0][0]
             self.rect.top += path[0][1]
-            print("approach move is ", path[0])
-            print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            #print("approach move is ", path[0])
+            #print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
             self.last_move = path[0]
             self.next_moves = path[1:]
           else:
             self.rect.left += self.next_moves[0][0]
             self.rect.top += self.next_moves[0][1]
             self.last_move = self.next_moves[0]
-            print("approach move is ", self.last_move)
-            print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
+            #print("approach move is ", self.last_move)
+            #print("approach x y: " + str(self.rect.left) + ", " + str(self.rect.top))
             self.next_moves = self.next_moves[1:]
         
           self.num_moves += 1
           
-
-
 
 #Inheritime Player klassist
 class People(AGV):
