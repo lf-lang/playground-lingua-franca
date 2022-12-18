@@ -212,7 +212,7 @@ reactor MQTTSubscriber (
                 
         // Get the sender's timestamp.
         instant_t* timestamp = (instant_t*)(
-            incoming_message->token->value + incoming_message->token->length - sizeof(instant_t)
+            (char*) incoming_message->token->value + incoming_message->token->length - sizeof(instant_t)
         );
         // printf("DEBUG: Received message carrying timestamp %lld.\n", *timestamp);
         

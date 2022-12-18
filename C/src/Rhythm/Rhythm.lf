@@ -221,7 +221,7 @@ reactor RhythmSource(
                 lf_print("Changing rhythm to samba.");
                 break;
             case 'x':
-                request_stop();
+                lf_request_stop();
                 break;
             case '+':
                 self->tick_duration -= self->delta;

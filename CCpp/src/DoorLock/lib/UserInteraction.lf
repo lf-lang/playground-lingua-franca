@@ -1,0 +1,93 @@
+/**
+ * A simulator that generates command for a simple car door
+ * lock system with a single door that can be
+ * controlled in any of three ways:
+ * 1. buttons on the physical door,
+ * 2. an external system (like an RFID key fob), or
+ * 3. a mobile device (like a phone) via a cloud service.
+ * 
+ * @author Ravi Akella
+ * @author Edward A. Lee
+ */
+
+target C {
+    keepalive: true,
+    files: [
+        "../include/types.h",
+    ],
+}
+preamble {=
+    #include "types.h"
+    
+    void* read_input(void* user_response) {
+        lf_print("****************************************************\n"
+            "Press the following keys for the following actions:\n"
+            "  o - OPEN the door\n"
+            "  c - CLOSE the door\n"
+            "  l - LOCK using door button\n"
+            "  u - UNLOCK using door button\n"
+            "  f - LOCK using wireless key fob\n"
+            "  r - UNLOCK using wireless key fob\n"
+            "  m - LOCK using mobile device\n"
+            "  n - UNLOCK using mobile device\n"
+        );
+        int c;
+        while(1) {
+            while((c = getchar()) != '\n') {
+                lf_schedule_copy(user_response, 0, &c, 1);
+                if (c == EOF) break;
+            }
+
+            if (c == EOF) break;
+        }
+        return NULL;
+    }
+=}
+    
+reactor UserInteraction {
+    output door:OpenEvent;
+    output button:LockCommand;
+    output fob:LockCommand;
+    output mobile:LockCommand;
+    
+    physical action key:int;
+    
+    reaction(startup) -> key {=
+        // start new thread
+        lf_thread_t thread_id;
+        lf_thread_create(&thread_id, &read_input, key);
+    =}
+
+    reaction(key) -> door, button, fob, mobile {=
+        // lf_print("You typed '%c' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
+        
+        switch(key->value) {
+        case 'o':
+            lf_set(door, OPEN);
+            break;
+        case 'c':
+            lf_set(door, CLOSE);
+            break;
+        case 'l':
+            lf_set(button, LOCK);
+            break;
+        case 'u':
+            lf_set(button, UNLOCK);
+            break;
+        case 'f':
+            lf_set(fob, LOCK);
+            break;
+        case 'r':
+            lf_set(fob, UNLOCK);
+            break;
+        case 'm':
+            lf_set(mobile, LOCK);
+            break;
+        case 'n':
+            lf_set(mobile, UNLOCK);
+            break;
+        default:
+            lf_print("Unrecognized key '%c'", key->value);
+        }
+    =}
+}
