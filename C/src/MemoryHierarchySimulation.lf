@@ -71,7 +71,7 @@ reactor Client(seed:int(0), lambda:double(10000000.0)) {
  * time value given by hit_delay.
  * Upon a cache miss, the memory fetch will be delegated
  * to the miss output and the Cache will wait for a
- * response on the fill input.  If a request arrives
+ * response on the fill input.  If a miss occurs
  * while it is waiting, then an error will occur.
  * Upon an error, the response will be sent immediately
  * and will have the negative of the request value.
@@ -90,17 +90,15 @@ reactor Cache(
         lf_set(response, a->value);
     =}
     reaction(request) -> a, response, miss {=
-        if (self->pending) {
+        bool hit = random() >= (int)(self->miss_probability * RAND_MAX);
+        if (self->pending && !hit) {
             lf_set(response, -request->value);
+        } else if (hit) {
+            lf_schedule_copy(a, self->hit_delay, &request->value, 1);
         } else {
-            bool hit = random() >= (int)(self->miss_probability * RAND_MAX);
-            if (hit) {
-                lf_schedule_copy(a, self->hit_delay, &request->value, 1);
-            } else {
-                lf_print("** Cache miss");
-                self->pending = true;
-                lf_set(miss, request->value);
-            }
+            lf_print("** Cache miss");
+            self->pending = true;
+            lf_set(miss, request->value);
         }
     =}
     reaction(fill) -> response {=
