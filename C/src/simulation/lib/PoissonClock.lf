@@ -1,0 +1,33 @@
+/**
+ * This reactor produces output events according to a Poisson process.
+ * The time between events is given by independent and identically
+ * distributed exponential random variables. Each output is a boolean
+ * true. The average number of events per second is given by the lambda
+ * parameter (1/lambda is the mean time between events).
+ * 
+ * If the seed is set to anything other than 0, then the output sequence
+ * will be the same each time the program is run. This will be true even
+ * if there are multiple instances of this reactor. If any two have the
+ * same seed, then they will produce identical sequences.
+ * 
+ * @author Edward A. Lee
+ */
+target C
+import Random from "Random.lf"
+reactor PoissonClock(lambda:double(1.0)) extends Random {
+    output event:bool
+    logical action a
+    reaction(startup) -> a {=
+        double delta = exponential(self->lambda);
+        // Convert seconds to nanoseconds.
+        interval_t interval = (interval_t)(delta * SEC(1));
+        lf_schedule(a, interval);
+    =}
+    reaction(a) -> event, a {=
+        lf_set(event, true);
+        double delta = exponential(self->lambda);
+        // Convert seconds to nanoseconds.
+        interval_t interval = (interval_t)(delta * SEC(1));
+        lf_schedule(a, interval);
+    =}
+}
