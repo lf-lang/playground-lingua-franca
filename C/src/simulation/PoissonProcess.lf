@@ -13,8 +13,8 @@
 target C {
     timeout: 5 sec
 }
-import PoissonClock from "lib/PoissonClock.lf"
-import RandomDelay from "lib/RandomDelay.lf"
+import PoissonClock from "../lib/PoissonClock.lf"
+import RandomDelay from "../lib/RandomDelay.lf"
 main reactor {
     non_repeatable = new PoissonClock()
     repeatable = new PoissonClock(seed = 1)

@@ -18,9 +18,9 @@
 target C {
     timeout: 10 us
 }
-import Random from "lib/Random.lf"
-import PoissonClock from "lib/PoissonClock.lf"
-import RandomDelay from "lib/RandomDelay.lf"
+import Random from "../lib/Random.lf"
+import PoissonClock from "../lib/PoissonClock.lf"
+import RandomDelay from "../lib/RandomDelay.lf"
 
 main reactor {
     client = new Client(seed = 0)
