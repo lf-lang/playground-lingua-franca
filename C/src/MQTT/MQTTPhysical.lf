@@ -64,6 +64,7 @@ target C {
         "include/paho-extension.cmake",
         "include/mosquitto-extension.cmake",
         "include/net_utils.cmake"],
+    keepalive:true,   // To silence warning
     timeout: 10 secs
 };
   
