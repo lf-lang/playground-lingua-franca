@@ -66,8 +66,7 @@ target C {
         "include/paho-extension.cmake", 
         "include/mosquitto-extension.cmake"],
     timeout: 10 secs,
-    keepalive: true,
-    cmake: true
+    keepalive:true,   // To silence warning
 };
 
 import MQTTPublisher from "MQTTPublisher.lf";
