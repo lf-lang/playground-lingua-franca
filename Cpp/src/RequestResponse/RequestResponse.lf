@@ -1,0 +1,125 @@
+target Cpp
+
+public preamble {=
+    template<class T>
+    class Response {
+      private:
+        const unsigned long uid_;
+        T data_;    
+
+      public:
+        Response(unsigned long uid, const T& data) 
+         : uid_(uid), data_(data) {}
+
+        auto uid() const -> unsigned long { return uid_; }
+        auto data() -> T& { return data_; }
+        auto data() const -> const T& { return data_; }
+    };
+
+    template<class T>
+    class Request {
+      private:
+        static std::atomic<unsigned long> uid_counter;
+        
+        const unsigned long uid_;
+        T data_;
+
+      public:
+        Request(const T& data) 
+         : uid_(uid_counter.fetch_add(1, std::memory_order_relaxed)),
+           data_(data) {}
+
+        auto uid() const -> unsigned long { return uid_; }
+        auto data() -> T& { return data_; }
+        auto data() const -> const T& { return data_; }
+
+        template<class U>
+        auto make_response() const -> Response<U> { return Response(uid_, U{}); }
+
+        template<class U>
+        auto make_response(const U& data) const -> Response<U> { return Response(uid_, U{data}); }
+    };
+
+    template<class T>
+    std::atomic<unsigned long> Request<T>::uid_counter{0};
+=}
+
+reactor AddService {
+    input request: Request<std::pair<int, int>>
+    output response: Response<int>
+
+    logical action request_queue: Request<std::pair<int, int>>
+
+    reaction(request) -> request_queue {=
+        auto delay = std::chrono::milliseconds(rand() % 400 + 100);
+        request_queue.schedule(request.get(), delay);
+    =}
+
+    reaction(request_queue) -> response {=
+        auto req = request_queue.get();
+        int sum = req->data().first + req->data().second;
+        response.set(req->make_response(sum));
+    =}
+}
+
+reactor ContextManager<Req, Resp, Ctx> {
+    input request_in: std::pair<Req, Ctx>
+    output request_out: Req
+
+    input response_in: Resp
+    output response_out: std::pair<Resp, Ctx>
+
+    state context_buffer: {= std::map<unsigned long, Ctx> =}
+
+    reaction (request_in) -> request_out {=
+        const auto& req = request_in.get()->first;
+        const auto& ctx = request_in.get()->second;
+        context_buffer[req.uid()] = ctx;
+        request_out.set(req);
+    =}
+
+    reaction (response_in) -> response_out {=
+        const auto& resp = *response_in.get();
+        const auto& ctx = context_buffer[resp.uid()];
+        response_out.set(std::make_pair(resp, ctx));
+    =}
+}
+
+reactor Client {
+    timer t(0, 100ms)
+    output add_request: Request<std::pair<int, int>>
+    input add_response: Response<int>
+
+    state counter: int(0)
+
+    add_cm = new ContextManager<{=Request<std::pair<int, int>>=}, {=Response<int>=}, {=std::function<void(int)>=}>()
+
+    reaction(t) -> add_cm.request_in {=
+        auto req = Request(std::make_pair(counter, 42));
+        int c = counter; // This is a weird corner case in C++ where the clojure below 
+        // cannot capture counter by value. Copying it to a local variable helps... 
+        auto callback = [c](int sum) {
+            reactor::log::Info() << "Result: " << c << " + 42 = " << sum;
+        };
+        add_cm.request_in.set(std::make_pair(req, callback));
+        reactor::log::Info() << "Client asks what " << counter << " + 42 is";
+        counter++;
+    =}
+
+    reaction(add_cm.response_out) {=
+        auto const& resp = add_cm.response_out.get()->first;
+        auto const& callback = add_cm.response_out.get()->second;
+        callback(resp.data());
+    =}
+
+    add_cm.request_out -> add_request
+    add_response -> add_cm.response_in
+}
+
+main reactor {
+    adder = new AddService()
+    client = new Client()
+
+    client.add_request -> adder.request
+    adder.response -> client.add_response
+}
