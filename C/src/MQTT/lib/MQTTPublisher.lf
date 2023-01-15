@@ -1,11 +1,15 @@
 /**
  * Reactor that publishes strings to a specified MQTT topic.
  * See MQTTPhysical and MQTTLogical for prerequisites and an example usage.
+ * This uses the Paho MQTT Client Library, documented here:
+ *    https://www.eclipse.org/paho/files/mqttdoc/MQTTClient/html/_m_q_t_t_client_8h.html
+ * The client library itself may be found here:
+ *    https://github.com/eclipse/paho.mqtt.c
  * 
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-target C;
+target C
 
 /**
  * Reactor that publishes strings to a specified MQTT topic.
@@ -28,24 +32,19 @@ target C;
  * @param address The IP address of the MQTT broker.
  * @param clientID The name of the client instance.
  *  These names are required to be unique.
- * @param include_physical_timestamp If true, include
- *  in the message the time of the local physical clock
- *  when the message is sent.
+ * @param timeout Timeout for completion of message sending in milliseconds.
  * @see MQTTSubscriber.
  */
 reactor MQTTPublisher (
     topic:string("DefaultTopic"),
     address:string("tcp://localhost:1883"),
     clientID:string("DefaultPublisher"),
-    include_physical_timestamp:int(0)
+    timeout:time(10 sec)
 ) {
     preamble {=
         #include "MQTTClient.h"
         #include "core/federated/net_util.h"
         
-        // Timeout for completion of message sending in milliseconds.
-        #define TIMEOUT     10000L
-         
         // Connection options for the client.
         // Making this global means that all instances of this reactor have
         // the same connection options.
@@ -60,16 +59,18 @@ reactor MQTTPublisher (
         
         // Callback invoked once delivery is complete.
         void pub_delivered(void *inflight, MQTTClient_deliveryToken dt) {
-            // printf("DEBUG: Message with token value %d delivery confirmed\n", dt);
+            LF_PRINT_LOG("MQTTPublisher: Message with token value %d delivery confirmed\n", dt);
             ((inflight_t*)inflight)->message_in_flight = false;
             free(((inflight_t*)inflight)->message);
+            ((inflight_t*)inflight)->delivery_token = 0;
+            ((inflight_t*)inflight)->message = NULL;
         }
         // Callback invoked if the connection is lost.
         void pub_connection_lost(void *context, char *cause) {
-            printf("\nMQTTPublisher: Connection lost\n");
-            printf("  cause: %s\n", cause);
+            lf_print_error("\nMQTTPublisher: Connection lost. Cause: %s\n", cause);
         }
     =}
+    
     /**
      * Input type char* instead of string is used for dynamically
      * allocated character arrays (as opposed to static constant strings).
@@ -102,11 +103,10 @@ reactor MQTTPublisher (
         // Connect to the broker.
         int rc; // response code.
         if ((rc = MQTTClient_connect(self->client, &pub_connect_options)) != MQTTCLIENT_SUCCESS) {
-            fprintf(stderr, "MQTTPublisher: Failed to connect to MQTT broker.\n");
-            fprintf(stderr, "Perhaps one is not running? Return code: %d\n", rc);
-            exit(EXIT_FAILURE);
+            lf_print_error_and_exit("MQTTPublisher: Failed to connect to MQTT broker.\n"
+                    "Perhaps one is not running? Return code: %d", rc);
         }
-        // printf("DEBUG: MQTTPublisher connected to broker.\n");
+        LF_PRINT_LOG("MQTTPublisher: connected to broker.");
     =}
     
     /**
@@ -114,38 +114,38 @@ reactor MQTTPublisher (
      * If delivery has not yet completed for a previously sent message, then wait for
      * it to complete before proceeding (blocking this reaction).
      * This copies the message from the input into a buffer, so the input can
-     * freed upon return of this reaction (LF will automatically decrement its
-     * reference count).
+     * freed upon return from this reaction.
      */
     reaction(in) {=
         if(self->inflight.message_in_flight) {
             // Wait for message delivery to be complete.
-            // printf("DEBUG: Waiting for publication of previous message\n");
-            int rc = MQTTClient_waitForCompletion(self->client, self->inflight.delivery_token, TIMEOUT);
+            LF_PRINT_LOG("MQTTPublisher: Waiting for confirmation of publication of previous message");
+            int rc = MQTTClient_waitForCompletion(
+                    self->client, self->inflight.delivery_token, self->timeout
+            );
             if (rc != MQTTCLIENT_SUCCESS) {
-                fprintf(stderr, "ERROR: Message delivery failed with error code %d.\n", rc);
-                fprintf(stderr, "Message: %s\n", in->value);
-                fprintf(stderr, "On topic '%s' for publisher with ClientID: %s\n", self->topic, self->clientID);
+                lf_print_error("MQTTPublisher: Message delivery failed with error code %d.\n", rc);
+                lf_print_error("  Message: %s\n", in->value);
+                lf_print_error("  On topic '%s' for publisher with ClientID: %s\n", self->topic, self->clientID);
             }
         }
-        // printf("DEBUG: Publishing message: %s\n", in);
-        // printf("DEBUG: on topic '%s' for publisher with ClientID: %s\n", self->topic, self->clientID);
+        LF_PRINT_LOG("MQTTPublisher: Publishing message: %s", in->value);
+        LF_PRINT_LOG("MQTTPublisher: on topic '%s' for publisher with ClientID: %s", self->topic, self->clientID);
         
         // Allocate memory for a copy of the message.
         // The length includes the null-terminator of the string and 8 bytes for the timestamp.
         int length = strlen(in->value) + 1 + sizeof(instant_t);
-        if (self->include_physical_timestamp) {
-            length += sizeof(instant_t);
-        }
+
         self->inflight.message = (char*) malloc(sizeof(char) * length);
         memcpy(self->inflight.message, in->value, strlen(in->value) + 1);
         
         // Append the current timestamp to the message.
         // This is always last, after the physical timestamp if it is included.
-        encode_int64(lf_time_logical(), 
+        instant_t timestamp = lf_time_logical();
+        encode_int64(timestamp,
             (unsigned char*)(self->inflight.message + length - sizeof(instant_t))
         );
-        // printf("DEBUG: Timestamp of sending message: %lld.\n", *timestamp);
+        LF_PRINT_LOG("MQTTPublisher: Timestamp of sending message: " PRINTF_TIME, timestamp);
 
         self->mqtt_msg.payload = self->inflight.message;
         self->mqtt_msg.payloadlen = length;
@@ -158,21 +158,13 @@ reactor MQTTPublisher (
         // It will be sent only to subscribers currently subscribed.
         self->mqtt_msg.retained = 0;
         
-        // As close as possible to the publishing of the message, insert
-        // the physical timestamp if it has been requested.
-        if (self->include_physical_timestamp) {
-            encode_int64(lf_time_physical(),
-                (unsigned char*)(self->inflight.message + length - 2 * sizeof(instant_t))
-            );
-        }        
-        
         MQTTClient_publishMessage(self->client, self->topic, &self->mqtt_msg, &self->inflight.delivery_token);
         self->inflight.message_in_flight = true;        
     =}
     
     /** Disconnect the client. */
     reaction(shutdown) {=
-        printf("MQTTPublisher: Client ID %s disconnecting.\n", self->clientID);
+        LF_PRINT_LOG("MQTTPublisher: Client ID %s disconnecting.", self->clientID);
         MQTTClient_disconnect(self->client, 10000);
         MQTTClient_destroy(&self->client);
     =}
