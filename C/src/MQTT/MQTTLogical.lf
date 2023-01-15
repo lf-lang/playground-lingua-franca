@@ -63,8 +63,6 @@ target C {
         "include/net_utils.cmake"       // For encode_int64()
     ],
     timeout: 10 secs,
-    // logging: log,
-    keepalive: true  // To suppress warning about physical action.
 };
   
 import MQTTPublisher from "lib/MQTTPublisher.lf";
