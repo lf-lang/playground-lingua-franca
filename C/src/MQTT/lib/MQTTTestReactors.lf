@@ -29,8 +29,9 @@ reactor MessageGenerator(root:string("")) {
         SET_NEW_ARRAY(message, length);
         // Populate the output string and increment the count.
         snprintf(message->value, length, "%s %d", self->root, self->count++);
-        lf_print("MessageGenerator: At time %lld, publish message: %s",
-            lf_time_logical_elapsed(),
+        tag_t tag = lf_tag();
+        lf_print("MessageGenerator: At (elapsed) tag " PRINTF_TAG ", publish message: %s",
+            tag.time - start_time, tag.microstep,
             message->value
         );
     =}
@@ -44,8 +45,9 @@ reactor MessageGenerator(root:string("")) {
 reactor PrintMessage {
     input message:char*;
     reaction(message) {=
-        lf_print("PrintMessage: At (elapsed) time %lld, subscriber receives: %s",
-            lf_time_logical_elapsed(),
+        tag_t tag = lf_tag();
+        lf_print("PrintMessage: At (elapsed) time " PRINTF_TAG ", subscriber receives: %s",
+            tag.time - start_time, tag.microstep,
             message->value
         );
     =}
