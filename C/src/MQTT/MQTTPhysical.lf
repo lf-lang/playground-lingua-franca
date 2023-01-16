@@ -1,52 +1,14 @@
 /**
- * Test case for MQTT pub/sub. In this version, the publisher and
- * subscriber are running in the same single executable program.
- * See MQTTDistributed for the more interesting case where they
- * are in separate programs. This version assigns a new timestamp
- * at the subscriber based on the physical time of arrival.
- * See MQTTLogical for a version that attempts to assign a
- * deterministic timestamp. The communication between the publisher
- * and the subscriber is therefore similar to a physical connection
- * in Lingua Franca.  This behavior is accomplished by accepting the
- * default offset of zero at the MQTTSubscriber.
+ * This program periodically publishes on a topic and, in a different
+ * part of the program, subscribes to the same topic. The `use_physical_time`
+ * parameter of `MQTTSubscriber` is set to true, so the timestamp at the
+ * receiving end will be nondeterministically determined from the local
+ * physical clock. The difference between the publisher's logical time
+ * and the subscriber's logical time is a reasonable measure of the
+ * latency through the MQTT broker. This gives behavior similar to an
+ * LF [physical connection](https://www.lf-lang.org/docs/handbook/composing-reactors?target=c#physical-connections).
  * 
- * The publisher sends a sequence of strings, and at the MQTTSubscriber
- * reactor, the timestamp will match the
- * physical time at which the subscriber receives the message.
- * Since the publisher and subscriber are running in the same
- * executable, there is no clock synchronization error and the
- * communication latency should be relatively low. One to five
- * milliseconds seems typical, although the very first message
- * may have substantially larger delay.
- * 
- * Prerequisites:
- * 
- * To get this example to compile, you will need to install the Paho
- * MQTT client library, which requires that you first install
- * openSSL. To run the compiled code, you will need to have an
- * MQTT broker, such as mosquitto, running.
- * 
- * The Eclipse Paho library for MQTT clients can be obtained here:
- *     https://github.com/eclipse/paho.mqtt.c
- * 
- * This openSSL library (see https://www.openssl.org) is here:
- *     https://github.com/openssl/openssl.git
- * 
- * Finally, you need an MQTT broker to be running. For example,
- * the Mosquitto Eclipse project provides one that can be downloaded
- * at https://mosquitto.org/download/.
- * Alternatively, on a Mac, you can use homebrew:
- * 
- *     brew install mosquitto
- * 
- * To start the broker and test it, you can do this:
- * 
- * 1. Start the broker in the background:
- *     > mosquitto &
- * 2. Start a command-line subscriber:
- *     > mosquitto_sub -v -t 'test/topic'
- * 3. In another terminal window, publish a message:
- *     > mosquitto_pub -t 'test/topic' -m 'Hello World'
+ * See README.md for prerequisites and further information.
  * 
  * @author Ravi Akella
  * @author Edward A. Lee
