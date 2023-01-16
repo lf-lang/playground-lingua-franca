@@ -88,6 +88,10 @@ reactor MQTTPublisher (
     
     /** Connect to the broker. Exit if this fails. */
     reaction(startup){=
+        // In case there are multiple instances of this or the subscriber, enter
+        // a critical section. The Paho MQTT functions are not thread safe.
+        lf_critical_section_enter();
+        
         MQTTClient_create(&self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
         pub_connect_options.keepAliveInterval = 20;
         pub_connect_options.cleansession = 1;
@@ -106,6 +110,9 @@ reactor MQTTPublisher (
             lf_print_error_and_exit("MQTTPublisher: Failed to connect to MQTT broker.\n"
                     "Perhaps one is not running? Return code: %d", rc);
         }
+        
+        lf_critical_section_exit();
+        
         LF_PRINT_LOG("MQTTPublisher: connected to broker.");
     =}
     
@@ -117,6 +124,10 @@ reactor MQTTPublisher (
      * freed upon return from this reaction.
      */
     reaction(in) {=
+        // In case there are multiple instances of this or the subscriber, enter
+        // a critical section. The Paho MQTT functions are not thread safe.
+        lf_critical_section_enter();
+        
         if(self->inflight.message_in_flight) {
             // Wait for message delivery to be complete.
             LF_PRINT_LOG("MQTTPublisher: Waiting for confirmation of publication of previous message");
@@ -145,7 +156,9 @@ reactor MQTTPublisher (
         encode_int64(timestamp,
             (unsigned char*)(self->inflight.message + length - sizeof(instant_t))
         );
-        LF_PRINT_LOG("MQTTPublisher: Timestamp of sending message: " PRINTF_TIME, timestamp);
+        LF_PRINT_LOG("MQTTPublisher: Timestamp (elapsed) of sending message: " PRINTF_TIME,
+            timestamp - start_time
+        );
 
         self->mqtt_msg.payload = self->inflight.message;
         self->mqtt_msg.payloadlen = length;
@@ -159,7 +172,13 @@ reactor MQTTPublisher (
         self->mqtt_msg.retained = 0;
         
         MQTTClient_publishMessage(self->client, self->topic, &self->mqtt_msg, &self->inflight.delivery_token);
-        self->inflight.message_in_flight = true;        
+        self->inflight.message_in_flight = true;
+        
+        lf_critical_section_exit();
+        
+        // It is not clear why the following is needed, but the message
+        // does not go out until the next invocation without it.
+        MQTTClient_yield();       
     =}
     
     /** Disconnect the client. */

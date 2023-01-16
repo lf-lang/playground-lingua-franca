@@ -188,6 +188,10 @@ reactor MQTTSubscriber (
     reaction(startup) -> act {=
         int rc; // response code.
 
+        // In case there are multiple instances of this or the subscriber, enter
+        // a critical section. The Paho MQTT functions are not thread safe.
+        lf_critical_section_enter();
+
         rc = MQTTClient_create(
             &self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL
         );
@@ -218,6 +222,8 @@ reactor MQTTSubscriber (
         }
         
         MQTTClient_subscribe(self->client, self->topic, QOS);
+        
+        lf_critical_section_exit();
     =}
     
     reaction(act) -> message {=
