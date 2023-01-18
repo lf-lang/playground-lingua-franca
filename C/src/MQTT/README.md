@@ -20,7 +20,7 @@ A few examples illustrate the subtleties and provide guidance on how to get repe
 
 ## Prerequisites:
 
-To get this example to compile, you will need to install the [Eclipse Paho MQTT C client library,](https://github.com/eclipse/paho.mqtt.c), which requires that you first install
+To get this example to compile, you will need to install the [Eclipse Paho MQTT C client library](https://github.com/eclipse/paho.mqtt.c), which requires that you first install
 [openSSL](https://github.com/openssl/openssl.git) (see [https://www.openssl.org](https://www.openssl.org). To run the compiled code, you need an MQTT broker to be running. For example, the [Mosquitto Eclipse project](https://mosquitto.org/download/) provides one. On a Mac, you can use homebrew to install the Mosquitto broker:
 
     brew install mosquitto
