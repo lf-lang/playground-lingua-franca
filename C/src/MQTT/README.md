@@ -14,6 +14,8 @@ A few examples illustrate the subtleties and provide guidance on how to get repe
 
 * **[MQQTDistributed](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/MQTT/MQTTDistributed.lf)**: This is a federated LF program consisting of two unconnected federates that communicate via MQTT. Like `MQTTLogical`, there is no other activity in this program, so the subscriber's timestamps will deterministically match those of the publisher. Unlike `MQTTLogical`, however, the microstep will be zero at the subscriber end. Also, the tags will be deterministic at the receiving end regardless of the communication latency because the receiving federate has no reason to advance its logical time unless it receives an MQTT subscription message. You can change the `use_physical_time` parameter of the `MQTTSubscriber` to `true` to get a (nondeterministic) physical connection, similar to `MQTTPhysical`. 
 
+* **[MQQTLegacy](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/MQTT/MQTTLegacy.lf)**: This program illustrates how to interface to a legacy MQTT service that has no connection with Lingua Franca. The `LegacyPublisher` reactor publishes messages every 5s that can be listened to by any legacy service, such as the command-line `mosquito_sub` utility. In addition, the `Listener` reactor can received messages published by any legacy MQTT publisher, such as the command-line `moquito_pub` utility.
+
 ## Prerequisites:
 
 To get this example to compile, you will need to install the [Eclipse Paho MQTT C client library,](https://github.com/eclipse/paho.mqtt.c), which requires that you first install

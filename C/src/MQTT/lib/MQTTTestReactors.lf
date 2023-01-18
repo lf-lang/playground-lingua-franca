@@ -13,14 +13,14 @@ target C
  * @param root The root string.
  * @output message The message.
  */
-reactor MessageGenerator(root:string("")) {
+reactor MessageGenerator(root:string(""), period:time(1 sec)) {
     // Output type char* instead of string is used for dynamically
     // allocated character arrays (as opposed to static constant strings).
     output message:char*;
     state count:int(1);
     // Send first message after 1 sec so that the startup reactions
     // do not factor into the transport time measurement on the first message.
-    timer t(1 sec, 1 sec);
+    timer t(1 sec, period);
     reaction(t) -> message {=
         // With NULL, 0 arguments, snprintf tells us how many bytes are needed.
         // Add one for the null terminator.

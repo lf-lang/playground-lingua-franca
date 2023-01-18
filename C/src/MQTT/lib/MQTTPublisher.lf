@@ -1,16 +1,4 @@
-/**
- * Reactor that publishes strings to a specified MQTT topic.
- * See MQTTPhysical and MQTTLogical for prerequisites and an example usage.
- * This uses the Paho MQTT Client Library, documented here:
- *    https://www.eclipse.org/paho/files/mqttdoc/MQTTClient/html/_m_q_t_t_client_8h.html
- * The client library itself may be found here:
- *    https://github.com/eclipse/paho.mqtt.c
- * 
- * @author Ravi Akella
- * @author Edward A. Lee
- */
 target C
-
 /**
  * Reactor that publishes strings to a specified MQTT topic.
  * This publisher appends to the end of the message the
@@ -27,6 +15,19 @@ target C
  * the delivery of the previous message has completed, then the reaction
  * that sends the message (the reaction to an input 'in') will
  * block until the previous delivery has completed.
+ * 
+ * If `include_timestamp` is true (the default), then two things happen:
+ * 
+ * 1. The publisher ensures that the message is null terminated by
+ *    adding a null terminator if needed. This ensures that the message
+ *    can be treated as a string at the receiving end.
+ * 2. The publisher appends to the end of the message the current logical
+ *    time at which the publishing occurs.
+ * 
+ * Note that `include_timestamp` *must* be true
+ * if an MQTTSubcriber that subscribes to this topic has
+ * its `use_physical_time` parameter set to false (its default).
+ * Otherwise, the subscriber will issue a warning.
  *
  * @param topic The topic name on which to publish.
  * @param address The IP address of the MQTT broker.
@@ -34,11 +35,15 @@ target C
  *  These names are required to be unique.
  * @param timeout Timeout for completion of message sending in milliseconds.
  * @see MQTTSubscriber.
+ *
+ * @author Ravi Akella
+ * @author Edward A. Lee
  */
 reactor MQTTPublisher (
     topic:string("DefaultTopic"),
     address:string("tcp://localhost:1883"),
-    clientID:string("DefaultPublisher"),
+    clientID:string("DefaultPublisher"), // FIXME: Replace with reactor name?
+    include_timestamp:bool(true),
     timeout:time(10 sec)
 ) {
     preamble {=
@@ -144,22 +149,39 @@ reactor MQTTPublisher (
         LF_PRINT_LOG("MQTTPublisher: on topic '%s' for publisher with ClientID: %s", self->topic, self->clientID);
         
         // Allocate memory for a copy of the message.
-        // The length includes the null-terminator of the string and 8 bytes for the timestamp.
-        int length = strlen(in->value) + 1 + sizeof(instant_t);
+        // The default length is just the length of the incoming message.
+        int length = in->length;
+        // If a timestamp is to be included, the length is bigger.
+        if (self->include_timestamp) {
+            // If the input message is not null terminated, then add a null terminator.
+            if (in->value[in->length - 1] != '\0') length++;
+            // Allow space (4 bytes) for the magic string "LFts".
+            length += 4 + sizeof(instant_t);
+        }
 
         self->inflight.message = (char*) malloc(sizeof(char) * length);
-        memcpy(self->inflight.message, in->value, strlen(in->value) + 1);
-        
-        // Append the current timestamp to the message.
-        // This is always last, after the physical timestamp if it is included.
-        instant_t timestamp = lf_time_logical();
-        encode_int64(timestamp,
-            (unsigned char*)(self->inflight.message + length - sizeof(instant_t))
-        );
-        LF_PRINT_LOG("MQTTPublisher: Timestamp (elapsed) of sending message: " PRINTF_TIME,
-            timestamp - start_time
-        );
+        memcpy(self->inflight.message, in->value, in->length);
+        // Append null terminator and timestamp, if appropriate.
+        if (self->include_timestamp) {
+            // If the input message is not null terminated, then add a null terminator.
+            if (in->value[in->length - 1] != '\0') {
+                self->inflight.message[in->length] = '\0';
+                // Add magic string.
+                memcpy(&self->inflight.message[in->length + 1], "LFts", 4);
+            } else {
+                // Add magic string.
+                memcpy(&self->inflight.message[in->length], "LFts", 4);
+            }
 
+            // Append the current timestamp to the message.
+            instant_t timestamp = lf_time_logical();
+            encode_int64(timestamp,
+                (unsigned char*)(self->inflight.message + length - sizeof(instant_t))
+            );
+            LF_PRINT_LOG("MQTTPublisher: Timestamp (elapsed) of sending message: " PRINTF_TIME,
+                timestamp - start_time
+            );
+        }
         self->mqtt_msg.payload = self->inflight.message;
         self->mqtt_msg.payloadlen = length;
         

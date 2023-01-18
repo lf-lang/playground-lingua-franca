@@ -1,56 +1,45 @@
-/**
- * Reactor that subscribes to a specified MQTT topic on which
- * string messages are published.
- * See MQTTPhysical and MQTTLogical for prerequisites and an example usage.
- * This uses the Paho MQTT Client Library, documented here:
- *    https://www.eclipse.org/paho/files/mqttdoc/MQTTClient/html/_m_q_t_t_client_8h.html
- * The client library itself may be found here:
- *    https://github.com/eclipse/paho.mqtt.c
- * 
- * @author Ravi Akella
- * @author Edward A. Lee
- */
 target C
-
 /**
  * Reactor that subscribes to a specified MQTT topic on which
  * string messages are published. The timestamp of the output
- * will depend on the use_physical_time parameter.
+ * will depend on the use_physical_time parameter and (if present)
+ * the timestamp carried by the incoming message.
  * 
  * If use_physical_time is false (the default), then this reactor
  * extracts the publisher's timestamp from the message and adds the
- * specified offset to get the desired output timestamp. 
+ * specified offset to get the desired output timestamp. If there
+ * is no timestamp on the incoming message, then this prints a
+ * warning and uses physical time. If the received timestamp equals
+ * current logical time, then a microstep is added.
  * 
  * If use_physical_time is true, then this reactor ignores the
  * publisher's timestamp and uses the current physical time plus the
- * offset as the desired output timestamp. If the offset is zero, this
- * transport latency. With this setting, this timestamp increment
- * also measures the apparent communication latency.
+ * offset as the desired output timestamp. If the offset is zero, then
+ * the discrepancy between the timestamp in the message (if present)
+ * and the timestamp of the output is a measure of the apparent
+ * communication latency.
  * 
- * In both cases, if the desired output timestamp is in the past
+ * In all cases, if the desired output timestamp is in the past
  * when the message arrives, then a warning will be printed and
  * the tag of the message will be one microstep later than
  * the current tag when it arrives.
  * 
- * At shutdown, this reactor reports the apparent latency, which is
- * the physical time of arrival of the message minus the timestamp
- * carried by the message. If clocks are perfectly synchronized at
- * the publisher and subscriber, then this is a measure of the
+ * At shutdown, this reactor reports the average and maximum apparent
+ * latencies, which are the physical time of arrival of the message minus
+ * the timestamp carried by the message, unless no incoming message carried
+ * a timestamp. If clocks are perfectly synchronized at
+ * the publisher and subscriber, then this is a measure of the actual
  * communication latency.
  * 
  * Note that the communication from a publisher to a subscriber
- * behaves roughly like a logical connection if use_physical_time is
- * false and like a physical connection if use_physical_time is true.
- * The offset is roughly equivalent to an after delay. There are some
+ * behaves roughly like a logical connection if `use_physical_time` is
+ * false and like a physical connection if `use_physical_time` is true.
+ * The offset is roughly equivalent to an `after` delay. There are some
  * subtle distinctions, however. One is that logical time can advance
  * between when the publisher launches a message, sending it to the
  * MQTT broker, and when the subscriber receives it. This may make
  * it impossible to match the desired timestamp and will result in
- * warning messages being printed. A second distinction is that
- * even when desired timestamps are met most of the time, a message
- * that is launched at the timeout time will never be received
- * even if, had it been received, it would have been given the
- * same timestamp at the timeout time.
+ * warning messages being printed.
  * 
  * @param address The IP address of the MQTT broker.
  * @param clientID The name of the client instance.
@@ -59,6 +48,9 @@ target C
  * @param use_physical_time If true, then use physical time.
  * @param offset The offset to add to the publisher's timestamp.
  * @see MQTTPublisher.
+ *
+ * @author Ravi Akella
+ * @author Edward A. Lee
  */
 reactor MQTTSubscriber (
     address:string("tcp://localhost:1883"),
@@ -103,9 +95,7 @@ reactor MQTTSubscriber (
             );
             
             MQTTSubscriber_info_t* my_info = (MQTTSubscriber_info_t*)info;
-            
-            my_info->count++;
-                     
+                                 
             // Enter a critical section so that logical time does not elapse while
             // we calculate the delay to the logical time for the message.
             lf_critical_section_enter();
@@ -114,40 +104,65 @@ reactor MQTTSubscriber (
             instant_t current_time = lf_time_logical();
             interval_t offset = my_info->offset;
             
-            // Extract the publisher's timestamp from the message.
-            instant_t timestamp = extract_int64(
-                (unsigned char*)message->payload + message->payloadlen - sizeof(instant_t)
-            );
-            instant_t physical_time = lf_time_physical();
+            // Extract the publisher's timestamp from the message, if it is present.
+            if (
+                // Is the string null terminated?
+                (int)((char*)message->payload)[message->payloadlen - sizeof(instant_t) - 5] == '\0'
+                // Is the magic string present?
+                && memcmp("LFts", &message->payload[message->payloadlen - sizeof(instant_t) - 4], 4) == 0
+            ) {
+                my_info->count++;
+                
+                instant_t timestamp = extract_int64(
+                    (unsigned char*)message->payload + message->payloadlen - sizeof(instant_t)
+                );
+                instant_t physical_time = lf_time_physical();
+                
+                interval_t latency = physical_time - timestamp;
+                my_info->latencies += latency;
             
-            interval_t latency = physical_time - timestamp;
-            my_info->latencies += latency;
-        
-            if (latency > my_info->max_latency) {
-                my_info->max_latency = latency;
-            }
-            
-            if (my_info->use_physical_time) {
-                // Use physical time.
-                delay = physical_time + offset - current_time;
+                if (latency > my_info->max_latency) {
+                    my_info->max_latency = latency;
+                }
+                if (my_info->use_physical_time) {
+                    // Use physical time.
+                    delay = physical_time + offset - current_time;
+                } else {
+                    // Use logical time.
+                    delay = timestamp + offset - current_time;
+                }
+                // Schedule the event.
+                // We rely on lf_schedule_copy to issue a warning if the delay is negative.
+                lf_schedule_copy(
+                    ((MQTTSubscriber_info_t*)info)->logical_action,
+                    delay,
+                    (char*)message->payload,
+                    message->payloadlen - sizeof(instant_t)
+                );
             } else {
-                // Use logical time.
-                delay = timestamp + offset - current_time;
+                if (!my_info->use_physical_time) {
+                    // No timestamp included, so we can't use logical time!
+                    lf_print_warning("MQTTSubscriber: Received message with no timestamp!");
+                }
+                // Use physical time.
+                instant_t physical_time = lf_time_physical();
+                delay = physical_time + offset - current_time;
+
+                // Schedule the event.
+                // We rely on lf_schedule_copy to issue a warning if the delay is negative.
+                lf_schedule_copy(
+                    ((MQTTSubscriber_info_t*)info)->logical_action,
+                    delay,
+                    (char*)message->payload,
+                    message->payloadlen
+                );
             }
+            
             LF_PRINT_LOG(
                 "MQTTSubscriber: Received message. Timestamp will be " PRINTF_TIME
                 " ahead of current (elapsed) time, " PRINTF_TIME, delay, current_time - start_time
             );
-                        
-            // Schedule the event.
-            // We rely on lf_schedule_copy to issue a warning if the delay is negative.
-            lf_schedule_copy(
-                ((MQTTSubscriber_info_t*)info)->logical_action,
-                delay,
-                (char*)message->payload,
-                message->payloadlen - sizeof(instant_t)
-            );
-            
+                                    
             lf_critical_section_exit();
 
             // MQTTClient_freeMessage() also frees the memory allocated to the payload,
@@ -234,11 +249,11 @@ reactor MQTTSubscriber (
     =}
     
     reaction(shutdown) {=
-        lf_print(
-            "MQTTSubscriber: Maximum apparent latency measured at receiver (in nsec): " PRINTF_TIME,
-            self->info.max_latency
-        );
         if (self->info.count > 0) {
+            lf_print(
+                "MQTTSubscriber: Maximum apparent latency measured at receiver (in nsec): " PRINTF_TIME,
+                self->info.max_latency
+            );
             lf_print(
                 "MQTTSubscriber: Average apparent latency measured at receiver (in nsec): " PRINTF_TIME,
                 self->info.latencies/self->info.count

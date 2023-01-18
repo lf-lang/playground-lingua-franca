@@ -1,0 +1,59 @@
+/**
+ * This program illustrates how to interface to a legacy MQTT
+ * service that has no connection with Lingua Franca.
+ * The "LegacyPublisher" reactor publishes messages every 5s
+ * on topic "legacy". You can listen to these messages using
+ * a command-line utility (in another window):
+ * 
+ *     mosquitto_sub -t 'legacy'
+ * 
+ * You can publish your own messages on this
+ * topic using the command line (in another window distinct from
+ * the one you are running this example in):
+ * 
+ *     mosquitto_pub -t 'legacy' -m '******* My own message!'
+ * 
+ * @author Edward A. Lee
+ */
+target C {
+    cmake-include: [
+        "include/paho-extension.cmake", 
+        "include/mosquitto-extension.cmake"],
+    timeout: 5 min,
+    coordination: centralized,
+};
+
+import MQTTPublisher from "lib/MQTTPublisher.lf";
+import MQTTSubscriber from "lib/MQTTSubscriber.lf";
+import MessageGenerator, PrintMessage from "lib/MQTTTestReactors.lf";
+
+reactor LegacyPublisher {
+    msg = new MessageGenerator(
+        root = "Legacy Message",
+        period = 5 sec
+    );
+    pub = new MQTTPublisher(
+        topic = "legacy",
+        address = "tcp://localhost:1883",
+        clientID = "LegacyPublisher",
+        include_timestamp = false
+    );
+    msg.message->pub.in;
+}
+
+reactor Listener {
+    sub = new MQTTSubscriber(
+        address = "tcp://localhost:1883",
+        clientID = "Listener",
+        topic = "legacy",
+        use_physical_time = true,
+        offset = 0 sec
+    );
+    dsp = new PrintMessage();
+    sub.message->dsp.message;
+}
+
+federated reactor {
+    source = new LegacyPublisher();
+    destination = new Listener();
+}
