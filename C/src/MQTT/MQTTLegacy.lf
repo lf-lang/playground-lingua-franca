@@ -3,13 +3,14 @@
  * service that has no connection with Lingua Franca.
  * The "LegacyPublisher" reactor publishes messages every 5s
  * on topic "legacy". You can listen to these messages using
- * a command-line utility (in another window):
+ * any MQTT subscriber, such as the command-line utility
+ * (in another window):
  * 
  *     mosquitto_sub -t 'legacy'
  * 
  * You can publish your own messages on this
- * topic using the command line (in another window distinct from
- * the one you are running this example in):
+ * topic using any MQTT publisher, such as the command line 
+ * utility:
  * 
  *     mosquitto_pub -t 'legacy' -m '******* My own message!'
  * 
