@@ -16,6 +16,8 @@ A few examples illustrate the subtleties and provide guidance on how to get repe
 
 * **[MQQTLegacy](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/MQTT/MQTTLegacy.lf)**: This program illustrates how to interface to a legacy MQTT service that has no connection with Lingua Franca. The `LegacyPublisher` reactor publishes messages every 5s that can be listened to by any legacy service, such as the command-line `mosquito_sub` utility. In addition, the `Listener` reactor can received messages published by any legacy MQTT publisher, such as the command-line `moquito_pub` utility.
 
+* **[MQQTDistributedActivity](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/MQTT/MQQTDistributedActivity)**: This is a federated LF program consisting of two unconnected federates that communicate via MQTT, but where the destination reactor has activity that interferes with its ability to use the incoming timestamps from the publisher.  This program will print a warning each time it receives a message. To get rid of the warnings, you can set the `use_physical_time` parameter of the `MQTTSubscriber` to true, and then it will not use the incoming timestamps (except to measure apparent latency).
+
 ## Prerequisites:
 
 To get this example to compile, you will need to install the [Eclipse Paho MQTT C client library,](https://github.com/eclipse/paho.mqtt.c), which requires that you first install
