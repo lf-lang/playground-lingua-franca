@@ -1,0 +1,23 @@
+target Cpp
+
+public preamble {=
+    #include "RequestResponse/request_response.hh"
+=}
+
+reactor AddService {
+    input request: Request<std::pair<int, int>>
+    output response: Response<int>
+
+    logical action request_queue: Request<std::pair<int, int>>
+
+    reaction(request) -> request_queue {=
+        auto delay = std::chrono::milliseconds(rand() % 400 + 100);
+        request_queue.schedule(request.get(), delay);
+    =}
+
+    reaction(request_queue) -> response {=
+        auto req = request_queue.get();
+        int sum = req->data().first + req->data().second;
+        response.set(req->make_response(sum));
+    =}
+}
