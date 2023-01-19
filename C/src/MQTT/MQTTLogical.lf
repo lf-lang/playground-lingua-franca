@@ -1,12 +1,14 @@
 /**
  * This program periodically publishes on a topic and, in a different
- * part of the program, subscribes to the same topic. The program has
- * no other activity, so as long as the time between publishing of events
- * is larger than the total latency through the MQTT broker, the
- * subscriber will see messages one microstep later than the publisher.
- * By setting a positive `offset` at the subscriber, you can increase the
- * logical time of the received message and get a zero microstep.
- * This gives behavior similar to an LF connection with an `after` delay.
+ * part of the program, subscribes to the same topic. The publisher has
+ * `include_timestamp` set to `true`, and the subscriber has `use_physical_time`
+ * set to `false`. The program has no other activity, so as long as
+ * the time between publishing of events is larger than the total
+ * latency through the MQTT broker, the subscriber will see messages
+ * one microstep later than the publisher. By setting a positive `offset`
+ * at the subscriber, you can increase the logical time of the received
+ * message and get a zero microstep. This gives behavior similar to an
+ * LF connection with an `after` delay.
  * 
  * See README.md for prerequisites and further information.
  * 
@@ -29,14 +31,13 @@ main reactor {
     pub = new MQTTPublisher(
         topic = "my/test",
         address = "tcp://localhost:1883",
-        clientID = "TestPublisher"
+        include_timestamp = true
     );
     msg = new MessageGenerator(root = "Hello World");
     msg.message->pub.in;
     
     sub = new MQTTSubscriber(
         address = "tcp://localhost:1883",
-        clientID = "TestSubscriber",
         topic = "my/test",
         use_physical_time = false,
         offset = 0

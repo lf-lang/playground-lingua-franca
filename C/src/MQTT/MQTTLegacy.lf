@@ -1,19 +1,29 @@
 /**
  * This program illustrates how to interface to a legacy MQTT
  * service that has no connection with Lingua Franca.
- * The "LegacyPublisher" reactor publishes messages every 5s
- * on topic "legacy". You can listen to these messages using
- * any MQTT subscriber, such as the command-line utility
- * (in another window):
+ * The "Publisher" reactor publishes messages every 5s
+ * on topic "legacy" that any other MQTT application can subscribe
+ * to. For example, you can subscribe to these messages using
+ * the command-line utility (in another window):
  * 
  *     mosquitto_sub -t 'legacy'
  * 
- * You can publish your own messages on this
- * topic using any MQTT publisher, such as the command line 
- * utility:
+ * You can publish your own messages on this topic using any
+ * MQTT publisher, such as the command line utility:
  * 
  *     mosquitto_pub -t 'legacy' -m '******* My own message!'
  * 
+ * This is a federated program, the publisher and subscriber run
+ * in separate programs.  This would work pretty much the same
+ * way, however, as an unfederated program. To run as an
+ * unfederated program, add to cmake-include the following file:
+ * 
+ *     "include/net_utils.cmake"
+ * 
+ * and change the `federated` keyword to `main`.
+ * 
+ * See README.md for prerequisites and further information.
+ *
  * @author Edward A. Lee
  */
 target C {
@@ -28,7 +38,7 @@ import MQTTPublisher from "lib/MQTTPublisher.lf";
 import MQTTSubscriber from "lib/MQTTSubscriber.lf";
 import MessageGenerator, PrintMessage from "lib/MQTTTestReactors.lf";
 
-reactor LegacyPublisher {
+reactor Publisher {
     msg = new MessageGenerator(
         root = "Legacy Message",
         period = 5 sec
@@ -36,16 +46,14 @@ reactor LegacyPublisher {
     pub = new MQTTPublisher(
         topic = "legacy",
         address = "tcp://localhost:1883",
-        clientID = "LegacyPublisher",
         include_timestamp = false
     );
     msg.message->pub.in;
 }
 
-reactor Listener {
+reactor Subscriber {
     sub = new MQTTSubscriber(
         address = "tcp://localhost:1883",
-        clientID = "Listener",
         topic = "legacy",
         use_physical_time = true,
         offset = 0 sec
@@ -55,6 +63,6 @@ reactor Listener {
 }
 
 federated reactor {
-    source = new LegacyPublisher();
-    destination = new Listener();
+    source = new Publisher();
+    destination = new Subscriber();
 }

@@ -28,7 +28,7 @@ reactor Source {
     pub = new MQTTPublisher(
         topic = "my/test",
         address = "tcp://localhost:1883",
-        clientID = "TestPublisher"
+        include_timestamp = true
     );
     msg.message->pub.in;
 }
@@ -37,7 +37,6 @@ reactor Destination {
     timer t(1001 ms, 1 s)
     sub = new MQTTSubscriber(
         address = "tcp://localhost:1883",
-        clientID = "TestSubscriber2",
         topic = "my/test",
         use_physical_time = false,
         offset = 0 sec

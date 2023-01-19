@@ -1,22 +1,16 @@
 target C
 /**
- * Reactor that publishes strings to a specified MQTT topic.
- * This publisher appends to the end of the message the
- * timestamp of the message at the publisher. The receiving
- * end adds to this timestamp a specified offset, and if that
- * offset is larger than the current physical time at which it
- * receives the message, assigns that incremented timestamp
- * to the message.  If the offset is always greater than or
- * equal to the transport latency plus the clock synchronization
- * error, then the overall program remains deterministic.
+ * Reactor that publishes strings (or arbitrary byte arrays cast
+ * to `char*`) to a specified MQTT topic.
  * 
- * This publisher also ensures in-order delivery messages to
+ * This publisher ensures in-order delivery messages to
  * subscribers. If an attempt is made to send a message before
  * the delivery of the previous message has completed, then the reaction
  * that sends the message (the reaction to an input 'in') will
  * block until the previous delivery has completed.
  * 
- * If `include_timestamp` is true (the default), then two things happen:
+ * If `include_timestamp` is true (the default is `false`),
+ * then two things happen:
  * 
  * 1. The publisher ensures that the message is null terminated by
  *    adding a null terminator if needed. This ensures that the message
@@ -24,15 +18,14 @@ target C
  * 2. The publisher appends to the end of the message the current logical
  *    time at which the publishing occurs.
  * 
- * Note that `include_timestamp` *must* be true
- * if an MQTTSubcriber that subscribes to this topic has
- * its `use_physical_time` parameter set to false (its default).
- * Otherwise, the subscriber will issue a warning.
- *
- * @param topic The topic name on which to publish.
+ * This can be useful if the receiving end will be an instance
+ * of `MQTTSubscriber` in another Lingua Franca program.
+ * Note that `include_timestamp` *must* be true if an `MQTTSubcriber`
+ * that subscribes to this topic has its `use_physical_time` parameter
+ * set to false (its default is `true`). Otherwise, the subscriber
+ * will issue a warning.
+ * 
  * @param address The IP address of the MQTT broker.
- * @param clientID The name of the client instance.
- *  These names are required to be unique.
  * @param timeout Timeout for completion of message sending in milliseconds.
  * @see MQTTSubscriber.
  *
@@ -42,13 +35,15 @@ target C
 reactor MQTTPublisher (
     topic:string("DefaultTopic"),
     address:string("tcp://localhost:1883"),
-    clientID:string("DefaultPublisher"), // FIXME: Replace with reactor name?
-    include_timestamp:bool(true),
+    include_timestamp:bool(false),
     timeout:time(10 sec)
 ) {
     preamble {=
         #include "MQTTClient.h"
         #include "core/federated/net_util.h"
+        
+        // Count of instances of this reactor so that unique client IDs are generated.
+        static size_t _lf_MQTTPublisher_count = 0;
         
         // Connection options for the client.
         // Making this global means that all instances of this reactor have
@@ -85,6 +80,9 @@ reactor MQTTPublisher (
     /** State variable that keeps track of a message in flight. */
     state inflight:inflight_t({={false, 0, NULL}=});
     
+    /** Client ID. This is automatically generated. */
+    state clientID:char*({= NULL =});
+    
     /** The client object. */
     state client:MQTTClient({=NULL=});
     
@@ -97,6 +95,11 @@ reactor MQTTPublisher (
         // a critical section. The Paho MQTT functions are not thread safe.
         lf_critical_section_enter();
         
+        // Create a unique ID.
+        if (asprintf(&self->clientID, "LF_MQTTPublisher_%zu", _lf_MQTTPublisher_count++) < 0) {
+            lf_print_error_and_exit("MQTTPublisher: Failed to create client ID.");
+        }
+                
         MQTTClient_create(&self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
         pub_connect_options.keepAliveInterval = 20;
         pub_connect_options.cleansession = 1;
@@ -206,6 +209,7 @@ reactor MQTTPublisher (
     /** Disconnect the client. */
     reaction(shutdown) {=
         LF_PRINT_LOG("MQTTPublisher: Client ID %s disconnecting.", self->clientID);
+        if (self->clientID) free(self->clientID);
         MQTTClient_disconnect(self->client, 10000);
         MQTTClient_destroy(&self->client);
     =}

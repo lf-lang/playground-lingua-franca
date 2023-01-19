@@ -5,47 +5,41 @@ target C
  * will depend on the use_physical_time parameter and (if present)
  * the timestamp carried by the incoming message.
  * 
- * If use_physical_time is false (the default), then this reactor
+ * If `use_physical_time` is `tru`e (the default), then this reactor
+ * uses the current physical time when the subscription notification
+ * arrives, plus the `offset`, as the desired output timestamp.
+ * If the incoming message is carrying a timestamp (the publisher
+ * is an instance of `MQTTPublisher` with `include_timestamp` set
+ * to `true), then this reactor measures the *apparent latency*
+ * (the physical time of arrival minus the timestamp in the message).
+ * At shutdown, this reactor will report that maximum and average
+ * apparent latencies.
+ * 
+ * If `use_physical_time` is `false`, then this reactor
  * extracts the publisher's timestamp from the message and adds the
  * specified offset to get the desired output timestamp. If there
  * is no timestamp on the incoming message, then this prints a
  * warning and uses physical time. If the received timestamp equals
- * current logical time, then a microstep is added.
- * 
- * If use_physical_time is true, then this reactor ignores the
- * publisher's timestamp and uses the current physical time plus the
- * offset as the desired output timestamp. If the offset is zero, then
- * the discrepancy between the timestamp in the message (if present)
- * and the timestamp of the output is a measure of the apparent
- * communication latency.
- * 
- * In all cases, if the desired output timestamp is in the past
- * when the message arrives, then a warning will be printed and
+ * current logical time, then a microstep is added. If the desired
+ * output timestamp is in the past, then a warning will be printed and
  * the tag of the message will be one microstep later than
  * the current tag when it arrives.
  * 
- * At shutdown, this reactor reports the average and maximum apparent
- * latencies, which are the physical time of arrival of the message minus
- * the timestamp carried by the message, unless no incoming message carried
- * a timestamp. If clocks are perfectly synchronized at
- * the publisher and subscriber, then this is a measure of the actual
- * communication latency.
+ * Note that if the publisher and subscriber are both Lingua Franca
+ * programs, then the communication behaves a physical connection
+ * if `use_physical_time` is true (the default). The offset is
+ * equivalent to an `after` delay.
  * 
- * Note that the communication from a publisher to a subscriber
- * behaves roughly like a logical connection if `use_physical_time` is
- * false and like a physical connection if `use_physical_time` is true.
- * The offset is roughly equivalent to an `after` delay. There are some
- * subtle distinctions, however. One is that logical time can advance
- * between when the publisher launches a message, sending it to the
- * MQTT broker, and when the subscriber receives it. This may make
- * it impossible to match the desired timestamp and will result in
- * warning messages being printed.
+ * If `use_physical_time` is false, then the communication attempts
+ * to behave like a logical connection, but this is not always possible.
+ * Logical time can advance between when the publisher launches a message,
+ * sending it to the MQTT broker, and when the subscriber receives it.
+ * This may make it impossible to match the desired timestamp and will
+ * result in warning messages being printed.
  * 
  * @param address The IP address of the MQTT broker.
- * @param clientID The name of the client instance.
- *  These names are required to be unique.
  * @param topic The topic name to which to subscribe.
- * @param use_physical_time If true, then use physical time.
+ * @param use_physical_time If true, then use physical time (the default).
  * @param offset The offset to add to the publisher's timestamp.
  * @see MQTTPublisher.
  *
@@ -54,9 +48,8 @@ target C
  */
 reactor MQTTSubscriber (
     address:string("tcp://localhost:1883"),
-    clientID:string("DefaultSubscriber"),
     topic:string("DefaultTopic"),
-    use_physical_time:bool(false),
+    use_physical_time:bool(true),
     offset:time(0)
 ) {
     preamble {=
@@ -65,6 +58,9 @@ reactor MQTTSubscriber (
         
         // Fix the QoS to indicate that the message will be delivered reliably exactly once.
         #define QOS         2
+
+        // Count of instances of this reactor so that unique client IDs are generated.
+        static size_t _lf_MQTTSubscriber_count = 0;
         
         typedef struct MQTTSubscriber_info_t {
             void* logical_action;
@@ -194,6 +190,9 @@ reactor MQTTSubscriber (
      */
     logical action act:char*;
     
+    /** Client ID. This is automatically generated. */
+    state clientID:char*({= NULL =});
+
     /** State variable storing the MQTT client created for each instance of this reactor. */
     state client:MQTTClient({=NULL=});
         
@@ -202,6 +201,10 @@ reactor MQTTSubscriber (
     
     reaction(startup) -> act {=
         int rc; // response code.
+
+        if (asprintf(&self->clientID, "LF_MQTTSubscriber_%zu", _lf_MQTTSubscriber_count++) < 0) {
+            lf_print_error_and_exit("MQTTSubscriber: Failed to create client ID.");
+        }
 
         // In case there are multiple instances of this or the subscriber, enter
         // a critical section. The Paho MQTT functions are not thread safe.
@@ -260,6 +263,7 @@ reactor MQTTSubscriber (
             );
         }
         LF_PRINT_LOG("MQTTSubscriber: Client ID %s disconnecting.", self->clientID);
+        if (self->clientID) free(self->clientID);
         MQTTClient_disconnect(self->client, 10000);
         MQTTClient_destroy(&self->client);
     =}

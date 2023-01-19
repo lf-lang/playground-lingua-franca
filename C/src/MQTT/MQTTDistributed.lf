@@ -1,6 +1,8 @@
 /**
  * This is a federated LF program consisting of two unconnected federates
- * that communicate via MQTT. Like `MQTTLogical`, there is no other activity
+ * that communicate via MQTT. The publisher has `include_timestamp` set
+ * to `true`, and the subscriber has `use_physical_time` set to `false`.
+ * Like `MQTTLogical`, there is no other activity
  * in this program, so the subscriber's timestamps will deterministically
  * match those of the publisher. Unlike `MQTTLogical`, however, the microstep
  * will be zero at the subscriber end. Also, the tags will be deterministic
@@ -39,7 +41,7 @@ reactor Source {
     pub = new MQTTPublisher(
         topic = "my/test",
         address = "tcp://localhost:1883",
-        clientID = "TestPublisher"
+        include_timestamp = true
     );
     msg.message->pub.in;
 }
@@ -47,7 +49,6 @@ reactor Source {
 reactor Destination {
     sub = new MQTTSubscriber(
         address = "tcp://localhost:1883",
-        clientID = "TestSubscriber2",
         topic = "my/test",
         use_physical_time = false,
         offset = 0 sec
