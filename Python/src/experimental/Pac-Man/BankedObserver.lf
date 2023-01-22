@@ -248,7 +248,7 @@ reactor Player extends BaseCharacter {
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
-                request_stop()
+                lf_request_stop()
                 
             if event.type == pacman.pygame.KEYDOWN:
                 if event.key == pacman.pygame.K_b and self._boosted == False:
@@ -466,7 +466,7 @@ reactor Watcher {
                 if event.type == pacman.pygame.KEYDOWN:
                     if event.key == pacman.pygame.K_ESCAPE:
                         print("yikes")
-                        request_stop()
+                        lf_request_stop()
                     elif event.type == pacman.pygame.K_SPACE or event.type == pacman.pygame.K_r:
                         print("restart")
                         restart.set(True)

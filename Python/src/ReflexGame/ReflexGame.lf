@@ -39,7 +39,7 @@ reactor GetUserInput {
                 try:
                     c = self.user_input.recv()
                 except EOFError:
-                    request_stop()
+                    lf_request_stop()
                     return
                 # Each time a key press is received, schedule a user_response event 
                 user_response.schedule(0, c)
@@ -124,7 +124,7 @@ reactor UpdateGraphics {
                                            (0, 0, 0), 
                                            "YOU CHEATED!", 
                                            "Average response time: undefined"))
-            request_stop()
+            lf_request_stop()
         else:
             time_in_ms = (lf.time.logical() - self.prompt_time) // MSEC(1)
             self.update_graphics.send(((205,92,92), 

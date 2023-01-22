@@ -99,14 +99,14 @@ reactor Sieve {
         bool** new_memory = (bool**)realloc(_lf_is_present_fields, (_lf_is_present_fields_size + 1) * sizeof(bool*));
         if (new_memory == NULL) {
             lf_print_error("Out of memory!");
-            request_stop();
+            lf_request_stop();
         } else {
             _lf_is_present_fields = new_memory;
             
             new_memory = (bool**)realloc(_lf_is_present_fields_abbreviated, (_lf_is_present_fields_size + 1) * sizeof(bool*));
             if (new_memory == NULL) {
                 lf_print_error("Out of memory!");
-                request_stop();
+                lf_request_stop();
             } else {
                 _lf_is_present_fields_abbreviated = new_memory;
             }
@@ -125,7 +125,7 @@ reactor Print(stop_after:int(10000)) {
     state count:int(1);
     reaction(in) {=
         printf("Prime %d: %d\n", self->count++, in->value);
-        if (self->count > self->stop_after) request_stop();
+        if (self->count > self->stop_after) lf_request_stop();
     =}
 }
 main reactor {

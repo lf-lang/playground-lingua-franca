@@ -36,7 +36,7 @@ preamble {=
                 break;
             }
         }
-        request_stop();
+        lf_request_stop();
         return NULL;
     }   
 =}

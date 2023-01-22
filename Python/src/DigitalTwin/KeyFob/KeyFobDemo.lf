@@ -69,7 +69,7 @@ reactor KeyFob {
                     press_lock.schedule(0)
                 elif key == ord("u"):
                     press_unlock.schedule(0)
-            request_stop()
+            lf_request_stop()
     =}
 
     reaction(startup) -> press_lock, press_unlock {=

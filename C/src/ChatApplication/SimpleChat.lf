@@ -25,7 +25,7 @@ reactor InputHandler {
                 while((c = getchar()) != '\n') {
                     buf[i++] = c;
                     if (c == EOF) {
-                        request_stop();
+                        lf_request_stop();
                         break;
                     }
                 }

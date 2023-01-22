@@ -22,7 +22,7 @@ reactor Sensor {
             while(1) {
                 while((c = getchar()) != '\n') {
                     if (c == EOF) {
-                        request_stop();
+                        lf_request_stop();
                         break;
                     }
                 }

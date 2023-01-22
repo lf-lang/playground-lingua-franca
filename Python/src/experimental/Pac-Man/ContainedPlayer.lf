@@ -60,11 +60,11 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
-                request_stop()
+                lf_request_stop()
                 
             if event.type == pacman.pygame.KEYDOWN:
                 if event.key == pacman.pygame.K_ESCAPE:
-                    request_stop()
+                    lf_request_stop()
                 if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
                     restart.set(True)
                     self.character_instance.resetpos()

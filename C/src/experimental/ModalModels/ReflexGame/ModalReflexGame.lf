@@ -108,7 +108,7 @@ reactor GetUserInput {
         
         reaction(user_response) {=
             printf("YOU CHEATED!\n");
-            request_stop();
+            lf_request_stop();
         =}
     }
     mode Waiting {
@@ -128,7 +128,7 @@ reactor GetUserInput {
     
     reaction(user_response) {=
         if (user_response->value == EOF) {
-            request_stop();
+            lf_request_stop();
             return;
         }
     =}
