@@ -130,12 +130,12 @@ main reactor {
     
     reaction(robot.success) {=
         printf("Total success\n");
-        request_stop();
+        lf_request_stop();
     =}
     
     reaction(robot.failure) {=
         printf("Utter failure\n");
-        request_stop();
+        lf_request_stop();
     =}
 
 }

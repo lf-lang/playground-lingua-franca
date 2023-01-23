@@ -121,7 +121,7 @@ reactor GetUserInput {
     
     reaction(user_input) -> stst {=
         if (user_input->value == 'x') {
-            request_stop();
+            lf_request_stop();
         } else {
             lf_set(stst, 42);            
         }

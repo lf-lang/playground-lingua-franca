@@ -116,7 +116,7 @@ reactor CustomerFactory(
         // only need to count invocations of this reaction.
         self->done_customers++;
         if (self->done_customers >= self->num_customers) {
-            request_stop();
+            lf_request_stop();
         }
     =}
     
