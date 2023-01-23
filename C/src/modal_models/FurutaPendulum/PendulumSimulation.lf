@@ -3,7 +3,7 @@ target C;
  * A simple forward-Euler simulation of a Furuta pendulum,
  * based on the Ptolemy II model constructed by Johan Eker
  * and described in this paper:
- * 
+ *
  * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
  * “Realistic simulations of embedded control systems,”
  * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
@@ -70,7 +70,11 @@ reactor PendulumSimulation(
                     + pow(self->alpha * sin(self->x[0]), 2.0)
                     - pow(self->gamma * cos(self->x[0]), 2.0)
                 ) * (
-                    (self->alpha * self->beta + pow(self->alpha * sin(self->x[0]), 2.0))
+                    (
+                        self->alpha
+                        * self->beta
+                        + pow(self->alpha * sin(self->x[0]), 2.0)
+                    )
                     * pow(self->x[3], 2.0)
                     * sin(self->x[0])
                     * cos(self->x[0])
@@ -92,7 +96,11 @@ reactor PendulumSimulation(
                     * self->g
                     * self->latest_u
                 + 
-                    (self->alpha * self->beta + pow(self->alpha * sin(self->x[0]), 2.0))
+                    (
+                        self->alpha 
+                        * self->beta 
+                        + pow(self->alpha * sin(self->x[0]), 2.0)
+                    )
                     * self->epsilon / self->alpha * sin(self->x[0])
                 );
             double x2_dot = self->x[3];

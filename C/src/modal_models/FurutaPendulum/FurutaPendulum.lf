@@ -23,40 +23,24 @@ target C {
     timeout: 3 secs,
     fast: true,
     flags: "-lm",
-    build: "./build_run_plot.sh FurutaPendulum pendulum open"
+    build: "./build_run_plot.sh FurutaPendulum open"
 }
 import PendulumController from "PendulumController.lf";
 import PendulumSimulation from "PendulumSimulation.lf";
-
-/** Reactor that prints time-value pairs to a file. */
-reactor Print(filename:string("output.data")) {
-    input y:double;
-    state file:FILE*({=NULL=});
-    reaction(startup) {=
-        self->file = fopen(self->filename, "w");
-        if(self->file == NULL) {
-            lf_print_error_and_exit("Failed to open file: %s", self->filename);
-        }
-    =}
-    reaction(y) {=
-        double t = lf_time_logical_elapsed() / 1.0e9;
-        fprintf(self->file, "%f %f\n", t, y->value);
-    =}
-    reaction(shutdown) {=
-        fclose(self->file);
-    =}
-}
+import Print from "Print.lf";
 
 main reactor {
-    p = new PendulumSimulation();
+    s = new PendulumSimulation();
     c = new PendulumController();
-    pr_pendulum = new Print(filename = "pendulum.data");
-    pr_mode = new Print(filename = "mode.data");
-    pr_energy = new Print(filename = "energy.data");
-    p.phi, p.d_phi -> c.phi, c.d_phi;
-    p.theta, p.d_theta -> c.theta, c.d_theta;
-    c.control -> p.u;
-    c.control -> pr_pendulum.y;
-    c.modeID -> pr_mode.y;
-    c.energy -> pr_energy.y;
+    p = new Print();
+
+    s.phi, s.d_phi -> c.phi, c.d_phi;
+    s.theta, s.d_theta -> c.theta, c.d_theta;
+    c.control -> s.u;
+
+    c.control -> p.control;
+    c.modeID -> p.modeID;
+    c.energy -> p.energy;
+    s.theta -> p.theta;
+    s.phi -> p.phi;
 }
