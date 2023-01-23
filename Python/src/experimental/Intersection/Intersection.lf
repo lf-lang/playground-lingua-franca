@@ -370,7 +370,7 @@ reactor RSU (
             sum_of_active_participants += self.active_participants[i]
         if sum_of_active_participants == 0:
             # End the simulation if all vehicles have reached the intersection
-            lf_request_stop()            
+            request_stop()            
             print("\n********* SUCCESS: All vehicles have reached the intersection. *********\n")
     =}
 }

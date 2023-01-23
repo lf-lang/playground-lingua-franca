@@ -180,7 +180,7 @@ reactor Player extends BaseCharacter {
         keyboard_events = pacman.pygame.event.get()
         for event in keyboard_events:
             if event.type == pacman.pygame.QUIT:
-                lf_request_stop()
+                request_stop()
             if event.type == pacman.pygame.KEYDOWN:
                 if event.key == pacman.pygame.K_LEFT:
                     self.character_instance.changespeed(-30, 0)
@@ -315,7 +315,7 @@ reactor GameController(number_of_ghosts(4)) {
 
         if self._score == self._score_to_win:
             game_over.set("Won!")
-            lf_request_stop()
+            request_stop()
 
     
         score.set(self._score)
@@ -332,7 +332,7 @@ reactor GameController(number_of_ghosts(4)) {
 
         if monsta_hit_list:
             game_over.set("Lost!")
-            lf_request_stop()
+            request_stop()
 
     =}
 

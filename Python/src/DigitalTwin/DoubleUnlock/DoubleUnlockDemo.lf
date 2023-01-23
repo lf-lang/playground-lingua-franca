@@ -96,7 +96,7 @@ reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
                     press_lock.schedule(0)
                 elif key == ord("u"):
                     press_unlock.schedule(0)
-            lf_request_stop()
+            request_stop()
         
         def reset_autolock_counter(self):
             self.auto_lock_counter = self.auto_lock_duration

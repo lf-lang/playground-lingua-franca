@@ -25,7 +25,7 @@ reactor MotionDetector {
                 try:
                     c = input("> ")
                 except EOFError:
-                    lf_request_stop()
+                    request_stop()
                     return
                 if c == 'm':
                     move_action.schedule(0)

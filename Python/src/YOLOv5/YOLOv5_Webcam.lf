@@ -151,7 +151,7 @@ reactor Plotter(label_deadline(100 msec)) {
              not labels.is_present or 
              not label_coordinates.is_present):
              sys.stderr.write("Error: Expected all inputs to be present at the same time.\n")
-             lf_request_stop()
+             request_stop()
         
         elapsed_time, frame_data = frame.value
         # Get how many labels we have
@@ -185,7 +185,7 @@ reactor Plotter(label_deadline(100 msec)) {
         self.cv2.imshow("frame", frame_data)
             # press 'Q' if you want to exit
         if self.cv2.waitKey(1) & 0xFF == ord('q'):
-            lf_request_stop()
+            request_stop()
     =}
     
     reaction(shutdown) {=

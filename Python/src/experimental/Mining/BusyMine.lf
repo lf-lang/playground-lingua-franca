@@ -429,11 +429,11 @@ reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({
             keyboard_events = mine.pygame.event.get()
             for event in keyboard_events:
                 if event.type == mine.pygame.QUIT:
-                    lf_request_stop()
+                    request_stop()
                     
                 if event.type == mine.pygame.KEYDOWN:
                     if event.key == mine.pygame.K_ESCAPE:
-                        lf_request_stop()
+                        request_stop()
                     if event.key == mine.pygame.K_RETURN:
                         restart.set(True)
                         self.character_instance.resetpos()

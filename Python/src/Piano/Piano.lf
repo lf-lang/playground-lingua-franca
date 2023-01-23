@@ -16,7 +16,7 @@ reactor GetUserInput {
                 try:
                     c = self.user_input.recv()
                 except EOFError:
-                    lf_request_stop()
+                    request_stop()
                     return
                 # Each time a key press is received, schedule a user_response event 
                 user_response.schedule(0, c)
@@ -147,7 +147,7 @@ reactor StartFluidSynth {
             from mingus.containers.note import Note
         except:
             print("Import Error: Failed to import 'mingus'. Try 'pip3 install mingus'")
-            lf_request_stop()
+            request_stop()
             sys.exit(1)
 
         try:
@@ -159,7 +159,7 @@ reactor StartFluidSynth {
                 print("Import Error: fluidsynth is missing. Try 'sudo apt-get install -y fluidsynth'")
             else:
                 print("Import Error: fluidsynth is missing. ")
-            lf_request_stop()
+            request_stop()
             sys.exit(1)
     =}
     state soundfont({=self.os.path.join(self.os.path.dirname(__file__), "soundfont.sf2")=})
@@ -174,7 +174,7 @@ reactor StartFluidSynth {
             print("Alternatively, pick and download a soundfont from here:")
             print("https://github.com/FluidSynth/fluidsynth/wiki/SoundFont")
             print("Rename the soundfont to \"soundfont.sf2\" and put it under the same directory as Piano.lf.")
-            lf_request_stop() 
+            request_stop() 
             return
 
         # initialize fluidsynth
@@ -183,7 +183,7 @@ reactor StartFluidSynth {
             driver = "alsa"
         if not self.fluidsynth.init(self.soundfont, driver):
             print("Error: Failed to initialize fluidsynth")
-            lf_request_stop()
+            request_stop()
             return
             
         play_sound_init.set((self.fluidsynth, self.Note))
