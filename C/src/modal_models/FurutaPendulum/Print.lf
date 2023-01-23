@@ -17,10 +17,6 @@ reactor Print(filename:string("pendulum.csv")) {
 
     state file:FILE*({=NULL=});
 
-    // preamble {=
-    //     #define PI 3.14159265
-    // =}
-
     reaction(startup) {=
         self->file = fopen(self->filename, "w");
         if(self->file == NULL) {

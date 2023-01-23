@@ -19,4 +19,4 @@ set key autotitle columnhead    # Set y axis labels based on column headers
 plot 'pendulum.csv' using 1:2 with lines linetype 1 linewidth 2, \
      ''             using 1:3 with lines linetype 2 linewidth 2, \
      ''             using 1:4 with lines linetype 3 linewidth 2, \
-     ''             using 1:5 with lines linetype 4 linewidth 2,
+     ''             using 1:5 with lines linetype 4 linewidth 2

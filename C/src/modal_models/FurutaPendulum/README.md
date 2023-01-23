@@ -3,12 +3,12 @@
 A [Furuta pendulum](https://en.wikipedia.org/wiki/Furuta_pendulum) is a classic control system problem often used to teach feedback control. 
 It consists of a vertical shaft driven by motor, a fixed arm extending out at 90 degrees from the top of the shaft, and a pendulum at the end of the arm.
 The goal is to rotate the shaft to impart enough energy to the pendulum that it swings up, to then catch the pendulum and balance it so that the pendulum remains above the arm.
-Each of these steps requires a different control behavior, which makes a controller a prime candidate
-for a modal model.
+Each of these steps requires a different control behavior, which makes a controller a prime candidate for a modal model.
 
 The example here replicates [a solution by Eker et al.](https://ptolemy.berkeley.edu/papers/02/IFAC/IFAC.pdf)
-It is uses a simple forward-Euler simulation of an actual pendulum and the control logic provided by Eker et al. implemented in a modal controller in Lingua Franca.
-The program is configured to automatically plot the results of a 3 second simulation interval.
+It uses a simple forward-Euler simulation of an actual pendulum and the control logic provided by Eker et al. to implement a modal controller in Lingua Franca.
+
+The program is configured to automatically plot the results of the simulation.
 
 
 ## Prerequisites
