@@ -4,6 +4,12 @@
 # The first argument is the name of the main reactor
 # and the second argument is the viewer to render the PDF in.
 
+# Determine platform specific command to open PDF
+openPDF="open"
+if [[ "$OSTYPE" =~ ^linux ]]; then
+    openPDF="xdg-open"
+fi
+
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
 cmake .
@@ -22,10 +28,10 @@ ${LF_BIN_DIRECTORY}/$1
 gnuplot pendulum.gnuplot
 
 # Open the produced PDF using the specified viewer
-if ! command -v $2 &> /dev/null
+if ! command -v $openPDF &> /dev/null
 then
-    echo "'$2' could not be found; please specify another PDF viewer."
+    echo "'$openPDF' could not be found; please specify another PDF viewer."
     exit
 else
-    $2 pendulum.pdf &
+    $openPDF pendulum.pdf &
 fi

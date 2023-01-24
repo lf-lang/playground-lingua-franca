@@ -18,8 +18,8 @@ It relies on [cmake](https://cmake.org/) and [gnuplot](http://www.gnuplot.info/)
 The script is not compatible to Windows systems.
 
 The script automatically opens the resulting plot.
-By default it uses the 'open' command (MacOS).
-You may need to change the last argument passed to the build script to the name of a PDF viewer installed on your system (e.g. 'xdg-open' on Linux).
+By default it uses the 'open' command on MacOS and 'xdg-open' on Linux.
+If this command is not available on your system you have to adjust the script ('openPDF' variable).
 
 
 ## Summary of the Examples
