@@ -1,0 +1,146 @@
+/**
+ * Aircraft model from the ROSACE case study, from:
+ * 
+ * Claire Pagetti , David Saussiéy, Romain Gratia , Eric Noulard , Pierre Siron,
+ * "The ROSACE Case Study: From Simulink Specification to Multi/Many-Core Execution,"
+ * RTAS (2014).
+ * 
+ * This implementation is based on code from:
+ * 
+ * Deschamps, Henrick and Cappello, Gerlando and Cardoso, Janette and Siron, Pierre
+ * Coincidence Problem in CPS Simulations: the R-ROSACE Case Study.
+ * (2018) In: 9th European Congress Embedded Real Time Software and Systems ERTS2 2018,
+ * 31 January 2018 - 2 February 2018 (Toulouse, France).
+ * https://www.erts2018.org/authors_detail_inverted_Cappello%20Gerlando.html
+ * 
+ * The code was download from https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ * 
+ * This is a forward Euler simulation of an aircraft designed to run at 200 Hz.
+ * The inputs are elevator controls `delta_ec` and throttle controls `delta_thc`.
+ * This runs at a fixed 200 Hz rate reading the most recent inputs.
+ * 
+ * @author Edward A. Lee
+ */
+target C
+preamble {=
+    #include <math.h>
+=}
+reactor Aircraft(
+    // Timing parameters
+    h_eq: double(10000.0),
+    Va_eq: double(230.0),
+    theta_eq: double(0.026485847681737),
+    
+    // Atmosphere parameters
+    rho0: double(1.225),
+    g0: double(9.80665),
+    T0_0: double(288.15),
+    T0_h: double(-0.0065),
+    Rs: double(287.05),
+    
+    // Aircraft parameters
+    masse: double(57837.5),
+    I_y: double(3781272.0),
+    S: double(122.6),
+    cbar: double(4.29),
+    CD_0: double(0.016),
+    CD_alpha: double(2.5),
+    CD_deltae: double(0.05),
+    CL_alpha: double(5.5),
+    CL_deltae: double(0.193),
+    alpha_0: double(-0.05),
+    Cm_0: double(0.04),
+    Cm_alpha: double(-0.83),
+    Cm_deltae: double(-1.5),
+    Cm_q: double(-30)
+) {
+    timer t(0, 5 ms)          // 200 Hz Forward Euler simulation rate
+    
+    input delta_thc: double   // Engine control
+    input delta_ec: double    // Elevator control
+    
+    output Vz:double          // Vertical speed
+    output Va:double          // True airspeed
+    output h:double           // Altitude
+    output az:double          // Vertical acceleration
+    output q:double           // Pitch rate
+    
+    state u: double(0.0)
+    state w: double(0.0)
+    state q: double(0.0)
+    state theta: double(0.0)
+    state h: double(0.0)
+    
+    reaction(startup) {=
+        self->u     = self->Va_eq * cos(self->theta_eq);
+        self->w     = self->Va_eq * sin(self->theta_eq);
+        self->q     = 0.0;
+        self->theta = self->theta_eq;
+        self->h     = self->h_eq;
+    =}
+    
+    reaction(t) delta_ec, delta_thc -> Vz, Va, h, az, q {=
+        const double dt = 1.0/200.0;  // Period as a double.
+        
+        double u_dot, w_dot, q_dot, theta_dot, h_dot;
+        double CD, CL, Cm;
+        double Xa, Za, Ma;
+        double alpha, qbar, V, rho;
+            
+        rho   = self->rho0 * pow(1.0 + self->T0_h / self->T0_0 * self->h,- self->g0 / (self->Rs * self->T0_h) - 1.0);
+        alpha = atan(self->w / self->u);
+        V     = sqrt(self->u * self->u + self->w * self->w);
+        qbar  = 0.5 * rho * V * V;
+        CL    = self->CL_deltae * delta_ec->value + self->CL_alpha * (alpha - self->alpha_0);
+        CD    = self->CD_0 + self->CD_deltae * delta_ec->value + self->CD_alpha * (alpha - self->alpha_0) * (alpha - self->alpha_0);
+        Cm    = self->Cm_0 + self->Cm_deltae * delta_ec->value + self->Cm_alpha * alpha + 0.5 * self->Cm_q * self->q * self->cbar / V;
+        Xa    = - qbar * self->S * (CD * cos(alpha) - CL * sin(alpha));
+        Za    = - qbar * self->S * (CD * sin(alpha) + CL * cos(alpha));
+        Ma    = qbar * self->cbar * self->S * Cm;
+    
+        // Output
+        lf_set(Va, V);
+        lf_set(Vz, self->w * cos(self->theta) - self->u * sin(self->theta));
+        lf_set(q, self->q);
+        lf_set(az, self->g0 * cos(self->theta) + Za / self->masse);
+        lf_set(h, self->h);
+
+        // State Equation
+        u_dot     = - self->g0 * sin(self->theta) - self->q * self->w + (Xa + delta_thc->value) / self->masse;
+        w_dot     = self->g0 * cos(self->theta) + self->q * self->u + Za / self->masse;
+        q_dot     = Ma / self->I_y;
+        theta_dot = self->q;
+        h_dot     = self->u * sin(self->theta) - self->w * cos(self->theta);
+        
+        // Update State
+        self->u     += dt * u_dot;
+        self->w     += dt * w_dot;
+        self->q     += dt * q_dot;
+        self->theta += dt * theta_dot;
+        self->h     += dt * h_dot;
+    =}
+}
+
+main reactor {
+    a = new Aircraft()
+    timer t(0, 5 ms)
+    reaction(t) -> a.delta_ec, a.delta_thc {=
+        lf_set(a.delta_ec, 0.1);
+        lf_set(a.delta_thc, 0.1);
+    =}
+    reaction(
+        a.Vz,          // Vertical speed
+        a.Va,          // True airspeed
+        a.h,           // Altitude
+        a.az,          // Vertical acceleration
+        a.q            // Pitch rate
+    ) {=
+        // Assume all are present.
+        lf_print("Vertical speed: %f", a.Vz->value);
+        lf_print("True airspeed: %f", a.Va->value);
+        lf_print("Altitude: %f", a.h->value);
+        lf_print("Vertical acceleration: %f", a.az->value);
+        lf_print("Pitch rate: %f", a.q->value);
+    =}
+    
+}

@@ -1,0 +1,88 @@
+/**
+ * ROSACE case study, from:
+ * 
+ * Claire Pagetti , David Saussiéy, Romain Gratia , Eric Noulard , Pierre Siron,
+ * "The ROSACE Case Study: From Simulink Specification to Multi/Many-Core Execution,"
+ * RTAS (2014).
+ * 
+ * This implementation is based on code from:
+ * 
+ * Deschamps, Henrick and Cappello, Gerlando and Cardoso, Janette and Siron, Pierre
+ * Coincidence Problem in CPS Simulations: the R-ROSACE Case Study.
+ * (2018) In: 9th European Congress Embedded Real Time Software and Systems ERTS2 2018,
+ * 31 January 2018 - 2 February 2018 (Toulouse, France).
+ * https://www.erts2018.org/authors_detail_inverted_Cappello%20Gerlando.html
+ * 
+ * The code was download from https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ * 
+ * @author Edward A. Lee
+ */
+
+target C
+
+import Aircraft from "lib/Aircraft.lf"
+
+// Documentation
+@icon("Variables.png")
+reactor Variables {}
+
+reactor Filter(downsample:int(1)) {
+    input x:double
+    output y:double
+}
+
+reactor Command {
+    timer t(0, 100 ms)
+    output c:double
+}
+
+reactor Hold {
+    input s: double     // Set point
+    input x: double     // Measurement
+    output c: double    // Command
+}
+
+reactor VzControl {
+    input Vzc: double
+    input azf: double
+    input Vzf: double
+    input qf: double
+    output delta_ec: double
+}
+
+reactor VaControl {
+    input Vzf: double
+    input Vaf: double
+    input Vac: double
+    output delta_thc: double
+}
+
+main reactor {
+    variables = new Variables()
+    a = new Aircraft()
+    altitude = new Command()
+    h_c = new Hold()            // Altitude command
+    speed = new Command()
+    Va_c = new Hold()
+    
+    h = new Filter(downsample = 2)
+    az = new Filter(downsample = 2)
+    Vz = new Filter(downsample = 2)
+    q = new Filter(downsample = 2)
+    Va = new Filter(downsample = 2)
+    
+    Vz_ct = new VzControl()
+    Va_ct = new VaControl()
+    
+    a.h, a.az, a.Vz, a.q, a.Va -> h.x, az.x, Vz.x, q.x, Va.x
+    altitude.c -> h_c.s
+    h.y -> h_c.x
+    speed.c -> Va_c.s
+    Va.y -> Va_c.x
+    
+    Vz.y, az.y, h_c.c, q.y -> Vz_ct.Vzf, Vz_ct.azf, Vz_ct.Vzc, Vz_ct.qf
+    Vz_ct.delta_ec -> a.delta_ec
+    
+    Va.y, Vz.y, Va_c.c -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac
+    Va_ct.delta_thc -> a.delta_thc
+}
