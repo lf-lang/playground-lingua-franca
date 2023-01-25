@@ -20,7 +20,13 @@
 
 target C
 
-import Aircraft from "lib/Aircraft.lf"
+preamble {=
+    // Shared constants.
+    #define delta_th_eq (1.5868660794926)
+    #define delta_e_eq (0.012009615652468)
+=}
+
+import Aircraft from "lib/AircraftSimulator.lf"
 
 // Documentation
 @icon("Variables.png")
@@ -31,18 +37,27 @@ reactor Filter(downsample:int(1)) {
     output y:double
 }
 
-reactor Command {
-    timer t(0, 100 ms)
+reactor Command(period:time(100 ms)) {
+    timer t(0, period)
     output c:double
+    reaction(t) -> c {=
+        lf_set(c, 11000);
+    =}
 }
 
-reactor Hold {
+reactor Hold(period:time(20 ms)) {
+    timer t(0, period)
     input s: double     // Set point
     input x: double     // Measurement
     output c: double    // Command
+    reaction(t) s, x -> c {=
+        
+    =}
+    
 }
 
-reactor VzControl {
+reactor VzControl(period:time(20 ms)) {
+    timer t(0, period)
     input Vzc: double
     input azf: double
     input Vzf: double
@@ -50,11 +65,41 @@ reactor VzControl {
     output delta_ec: double
 }
 
-reactor VaControl {
+reactor VaControl(
+    period: time(20 ms),
+    K1_intVa: double(0.049802610664357),
+    K1_Va: double(-0.486813084356079),
+    K1_Vz: double(-0.077603095495388),
+    K1_q: double(21.692383376322041),
+    
+    // Trimming parameters
+    Va_eq: double(230.0)
+) {
+    timer t(0, period)
+    
     input Vzf: double
     input Vaf: double
     input Vac: double
+    input qf: double
+    
     output delta_thc: double
+    
+    state integrator: double(0.0)
+    
+    reaction(t) Vzf, Vaf, Vac, qf -> delta_thc {=
+        double Ts_K1 = ((double)self->period)/SEC(1); // Period in seconds. (1.0/50.0)
+    
+        // Output
+        double y = self->K1_intVa * self->integrator 
+                + self->K1_Va * (Va_f->value - self->Va_eq)
+                + self->K1_Vz * Vzf->value + self->K1_q * qf->value + delta_th_eq;
+                
+        // State
+        self->integrator += Ts_K1 * (Vac->value - Vaf-value + self->Va_eq);
+    
+        lf_set(delta_thc, y);
+        
+    =}
 }
 
 main reactor {
@@ -83,6 +128,6 @@ main reactor {
     Vz.y, az.y, h_c.c, q.y -> Vz_ct.Vzf, Vz_ct.azf, Vz_ct.Vzc, Vz_ct.qf
     Vz_ct.delta_ec -> a.delta_ec
     
-    Va.y, Vz.y, Va_c.c -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac
+    Va.y, Vz.y, Va_c.c, q.y -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac, Va_ct.qf
     Va_ct.delta_thc -> a.delta_thc
 }
