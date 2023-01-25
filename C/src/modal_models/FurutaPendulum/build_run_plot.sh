@@ -12,8 +12,8 @@ fi
 
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
-cmake .
-make
+cmake -DLF_REACTION_GRAPH_BREADTH=3 -DLF_THREADED=1 -DNUMBER_OF_WORKERS=0 -DSCHEDULER=NP -DMODAL_REACTORS=TRUE .
+cmake --build .
 
 # Move the executable to the bin directory.
 mv $1 ${LF_BIN_DIRECTORY}
