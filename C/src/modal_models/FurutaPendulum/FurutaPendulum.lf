@@ -15,6 +15,7 @@
  * PATH for this script to work as expected (and also cmake).
  * 
  * @author Edward A. Lee
+ * @author Alexander Schulz-Rosengarted
  */
 target C {
     timeout: 3 secs,

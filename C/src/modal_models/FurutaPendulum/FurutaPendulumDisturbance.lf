@@ -3,6 +3,7 @@
  * a disturbance to bring the pendulum out of balance.
  * 
  * @author Edward A. Lee
+ * @author Alexander Schulz-Rosengarted
  */
 target C {
     timeout: 5 secs,
