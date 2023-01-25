@@ -8,7 +8,14 @@
 openPDF="open"
 if [[ "$OSTYPE" =~ ^linux ]]; then
     openPDF="xdg-open"
+elif [[ "$OSTYPE" =~ ^cygwin ]]; then
+    openPDF="cygstart"
+elif [[ "$OSTYPE" =~ ^msys ]]; then
+    openPDF="start"
+elif [[ "$OSTYPE" =~ ^win ]]; then
+    openPDF="start"
 fi
+
 
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
