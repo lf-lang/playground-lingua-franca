@@ -20,7 +20,8 @@
 
 target C {
     fast: true,
-    timeout: 3 min
+    // build: "./build_run_plot.sh Rosace",   // FIXME: Doesn't find it.
+    timeout: 10 min
 }
 
 import Aircraft from "lib/AircraftSimulator.lf"

@@ -27,8 +27,11 @@ preamble {=
     // Trimming parameters
     #define Va_eq (230.0)   // Nominal airspeed?
     #define h_eq (10000.0)
+
+    #define delta_th_eq (1.5868660794926)
+    #define delta_e_eq (0.012009615652468)
 =}
-reactor Aircraft(
+reactor AircraftDynamics(
     period: time(5 ms),
     // Trimming parameters
     theta_eq: double(0.026485847681737),  // Initial angle
@@ -58,8 +61,8 @@ reactor Aircraft(
 ) {
     timer t(0, period)        // 200 Hz Forward Euler simulation rate
     
-    input delta_thc: double   // Engine control
-    input delta_ec: double    // Elevator control
+    input T: double           // Thrust
+    input delta_e: double    // Elevator control
     
     output Vz:double          // Vertical speed
     output Va:double          // True airspeed
@@ -81,7 +84,7 @@ reactor Aircraft(
         self->h     = h_eq;
     =}
     
-    reaction(t) delta_ec, delta_thc -> Vz, Va, h, az, q {=
+    reaction(t) delta_e, T -> Vz, Va, h, az, q {=
         const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
                 
         double u_dot, w_dot, q_dot, theta_dot, h_dot;
@@ -93,9 +96,9 @@ reactor Aircraft(
         alpha = atan(self->w / self->u);
         V     = sqrt(self->u * self->u + self->w * self->w);
         qbar  = 0.5 * rho * V * V;
-        CL    = self->CL_deltae * delta_ec->value + self->CL_alpha * (alpha - self->alpha_0);
-        CD    = self->CD_0 + self->CD_deltae * delta_ec->value + self->CD_alpha * (alpha - self->alpha_0) * (alpha - self->alpha_0);
-        Cm    = self->Cm_0 + self->Cm_deltae * delta_ec->value + self->Cm_alpha * alpha + 0.5 * self->Cm_q * self->q * self->cbar / V;
+        CL    = self->CL_deltae * delta_e->value + self->CL_alpha * (alpha - self->alpha_0);
+        CD    = self->CD_0 + self->CD_deltae * delta_e->value + self->CD_alpha * (alpha - self->alpha_0) * (alpha - self->alpha_0);
+        Cm    = self->Cm_0 + self->Cm_deltae * delta_e->value + self->Cm_alpha * alpha + 0.5 * self->Cm_q * self->q * self->cbar / V;
         Xa    = - qbar * self->S * (CD * cos(alpha) - CL * sin(alpha));
         Za    = - qbar * self->S * (CD * sin(alpha) + CL * cos(alpha));
         Ma    = qbar * self->cbar * self->S * Cm;
@@ -108,7 +111,7 @@ reactor Aircraft(
         lf_set(h, self->h);
 
         // State Equation
-        u_dot     = - self->g0 * sin(self->theta) - self->q * self->w + (Xa + delta_thc->value) / self->masse;
+        u_dot     = - self->g0 * sin(self->theta) - self->q * self->w + (Xa + T->value) / self->masse;
         w_dot     = self->g0 * cos(self->theta) + self->q * self->u + Za / self->masse;
         q_dot     = Ma / self->I_y;
         theta_dot = self->q;
@@ -121,6 +124,88 @@ reactor Aircraft(
         self->theta += dt * theta_dot;
         self->h     += dt * h_dot;
     =}
+}
+
+reactor Engine(
+    period: time(5 ms),
+    scale: double(26350.0),
+    tau: double(0.75)
+) {
+    input delta_thc: double   // Engine control
+    output T: double          // Thrust
+    
+    timer t(0, period)        // 200 Hz Forward Euler simulation rate
+
+    state x1: double({= delta_th_eq =})
+    
+    reaction(t) -> T {=
+        lf_set(T, self->scale * self->x1);
+    =}
+    
+    reaction(t) delta_thc {=
+        const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
+
+        // State Equation
+        double x1_dot = - self->tau * self->x1 + self->tau * delta_thc->value;
+        // Update State
+        self->x1 += dt * x1_dot;
+    =}
+}
+
+reactor Elevator(
+    period: time(5 ms),
+    omega: double(25.0),
+    xi: double(0.85)
+) {
+    input delta_ec: double   // Elevator control
+    output delta_e: double
+    
+    timer t(0, period)        // 200 Hz Forward Euler simulation rate
+
+    state x1: double({= delta_e_eq =})
+    state x2: double(0.0)
+    
+    reaction(t) -> delta_e {=
+        lf_set(delta_e, self->x1);
+    =}
+    
+    reaction(t) delta_ec {=
+        const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
+        
+        // State Equation
+        double x1_dot = self->x2;
+        double x2_dot = -self->omega * self->omega * self->x1 
+                - 2.0 * self->xi * self->omega * self->x2
+                + self->omega * self->omega * delta_ec->value;
+                
+        // Update State
+        self->x1 += dt * x1_dot;
+        self->x2 += dt * x2_dot;
+    =}
+}
+
+reactor Aircraft(
+    period: time(5 ms),
+    theta_eq: double(0.026485847681737)  // Initial angle
+) {
+    input delta_thc: double   // Engine control
+    input delta_ec: double    // Elevator control
+    
+    output Vz:double          // Vertical speed
+    output Va:double          // True airspeed
+    output h:double           // Altitude
+    output az:double          // Vertical acceleration
+    output q:double           // Pitch rate
+    
+    a = new AircraftDynamics(period = period, theta_eq = theta_eq)
+    e = new Engine(period = period)
+    el = new Elevator(period = period)
+    
+    a.Vz, a.Va, a.h, a.az, a.q -> Vz, Va, h, az, q
+    delta_thc -> e.delta_thc
+    e.T -> a.T
+    delta_ec -> el.delta_ec
+    el.delta_e -> a.delta_e
 }
 
 main reactor {
