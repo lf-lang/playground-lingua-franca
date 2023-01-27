@@ -15,6 +15,10 @@
  * 
  * The code was download from https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
  * 
+ * This program uses a forward Euler simulation of aircraft dynamics and implements
+ * throttle and elevator control. The parameters specified execute an elevation
+ * climb from an initial 10,000 feet to a target 11,000 feet.
+ * 
  * @author Edward A. Lee
  */
 
