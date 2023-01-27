@@ -18,51 +18,145 @@
  * @author Edward A. Lee
  */
 
-target C
+target C {
+    fast: true,
+    timeout: 3 min
+}
+
+import Aircraft from "lib/AircraftSimulator.lf"
+import PrintToFile from "../lib/PrintToFile.lf"
 
 preamble {=
     // Shared constants.
     #define delta_th_eq (1.5868660794926)
-    #define delta_e_eq (0.012009615652468)
+    #define delta_e_eq (0.012009615652468)    
 =}
-
-import Aircraft from "lib/AircraftSimulator.lf"
 
 // Documentation
 @icon("Variables.png")
 reactor Variables {}
 
-reactor Filter(downsample:int(1)) {
+reactor Filter(
+    period: time(10 ms),
+    
+    a:double[](0.0, 0.0),
+    b:double[](0.0, 0.0),
+    
+    init_x1:double(0.0),
+    init_x2:double(0.0)
+) {
     input x:double
     output y:double
+    
+    state x1: double(0.0)
+    state x2: double(0.0)
+
+    timer t(0, period)
+    
+    reaction(startup) {=
+        self->x1 = self->init_x1;
+        self->x2 = self->init_x2;
+    =}
+    
+    reaction(t) -> y {=
+        lf_set(y, self->x2);
+    =}
+    
+    reaction(t) x {=
+        double x1_tmp = - self->a[0] * self->x2 + self->b[0] * x->value;
+        double x2_tmp = self->x1 - self->a[1] * self->x2 + self->b[1] * x->value;
+        // Update
+        self->x1 = x1_tmp;
+        self->x2 = x2_tmp;        
+    =}
 }
 
-reactor Command(period:time(100 ms)) {
+reactor Command(
+    period: time(100 ms),
+    value: double(0.0)
+) {
     timer t(0, period)
     output c:double
     reaction(t) -> c {=
-        lf_set(c, 11000);
+        lf_set(c, self->value);
     =}
 }
 
-reactor Hold(period:time(20 ms)) {
+reactor Hold(
+    period:time(20 ms),
+    
+    Kp_h: double(0.1014048),
+    Ki_h: double(0.0048288),
+    h_switch: double(50.0),
+
+    Vz_c: double(-2.5),
+    Va_c: double(0.0),
+    h_c: double(11000)
+) {
     timer t(0, period)
+    
     input s: double     // Set point
     input x: double     // Measurement
-    output c: double    // Command
-    reaction(t) s, x -> c {=
-        
-    =}
     
+    output c: double    // Command
+
+    state integrator: double(532.2730285)
+    
+    reaction(t) s, x -> c {=
+        double y = 0.0;
+
+        double Ts_h = ((double)self->period)/1e9; // Period in seconds. (1.0/50.0)
+    
+        if ((x->value - s->value) < -self->h_switch) {
+            // Output
+            y = self->Vz_c;
+        } else if ((x->value - s->value) > self->h_switch) {
+            // Output
+            y = -self->Vz_c;
+        } else {
+            // Output
+            y = self->Kp_h * (x->value - s->value) + self->Ki_h * self->integrator;
+            // State
+            self->integrator += Ts_h * (x->value - s->value);
+        }
+    
+        lf_set(c, y);
+    =}
 }
 
-reactor VzControl(period:time(20 ms)) {
+reactor VzControl(
+    period:time(20 ms),
+    
+    K2_intVz: double(0.000627342822264),
+    K2_Vz: double(-0.003252836726554),
+    K2_q: double(0.376071446897134),
+    K2_az: double(-0.001566907423747)
+) {
     timer t(0, period)
+    
     input Vzc: double
     input azf: double
     input Vzf: double
     input qf: double
+    
     output delta_ec: double
+    
+    state integrator: double(0.0)
+
+    reaction(t) Vzc, azf, Vzf, qf -> delta_ec {=
+    
+        double Ts_K2 = ((double)self->period)/1e9; // Period in seconds. (1.0/50.0)
+    
+        // Output
+        double y = self->K2_intVz * self->integrator
+                + self->K2_Vz * Vzf->value 
+                + self->K2_q * qf->value
+                + self->K2_az * azf->value + delta_e_eq;
+        // State
+        self->integrator += Ts_K2 * (Vzc->value - Vzf->value);
+    
+        lf_set(delta_ec, y);
+    =}
 }
 
 reactor VaControl(
@@ -70,10 +164,7 @@ reactor VaControl(
     K1_intVa: double(0.049802610664357),
     K1_Va: double(-0.486813084356079),
     K1_Vz: double(-0.077603095495388),
-    K1_q: double(21.692383376322041),
-    
-    // Trimming parameters
-    Va_eq: double(230.0)
+    K1_q: double(21.692383376322041)
 ) {
     timer t(0, period)
     
@@ -87,15 +178,15 @@ reactor VaControl(
     state integrator: double(0.0)
     
     reaction(t) Vzf, Vaf, Vac, qf -> delta_thc {=
-        double Ts_K1 = ((double)self->period)/SEC(1); // Period in seconds. (1.0/50.0)
+        double Ts_K1 = ((double)self->period)/1e9; // Period in seconds. (1.0/50.0)
     
         // Output
         double y = self->K1_intVa * self->integrator 
-                + self->K1_Va * (Va_f->value - self->Va_eq)
+                + self->K1_Va * (Vaf->value - Va_eq)
                 + self->K1_Vz * Vzf->value + self->K1_q * qf->value + delta_th_eq;
                 
         // State
-        self->integrator += Ts_K1 * (Vac->value - Vaf-value + self->Va_eq);
+        self->integrator += Ts_K1 * (Vac->value - Vaf->value + Va_eq);
     
         lf_set(delta_thc, y);
         
@@ -105,16 +196,43 @@ reactor VaControl(
 main reactor {
     variables = new Variables()
     a = new Aircraft()
-    altitude = new Command()
-    h_c = new Hold()            // Altitude command
-    speed = new Command()
-    Va_c = new Hold()
+    altitude = new Command(value = 11000) // Altitude command
+    h_c = new Hold()
+    speed = new Command(value = 0.0)      // Delta airspeed from nominal Va_eq (230)
     
-    h = new Filter(downsample = 2)
-    az = new Filter(downsample = 2)
-    Vz = new Filter(downsample = 2)
-    q = new Filter(downsample = 2)
-    Va = new Filter(downsample = 2)
+    p_h = new PrintToFile(filename = "altitude.data")
+    p_Va = new PrintToFile(filename = "airspeed.data")
+    
+    h = new Filter(
+        init_x1 = {= h_eq * (1.0 - 1.477888930110354 /*a[1]*/ - 0.049596808318647 /*b1*/) =},
+        init_x2 = {= h_eq =},
+        a = (0.586756156020839, -1.477888930110354),
+        b = (0.049596808318647, 0.059270417591839)
+    )
+    az = new Filter(
+        init_x1 = 0.0,
+        init_x2 = 0.0,
+        a = (0.169118914523145, -0.518588903229759),
+        b = (0.229019233988375, 0.421510777305010)
+    )
+    Vz = new Filter(
+        init_x1 = 0.0,
+        init_x2 = 0.0,
+        a = (0.914975803093201, -1.911199519984605),
+        b = (0.001860178914816, 0.001916104193780)
+    )
+    q = new Filter(
+        init_x1 = 0.0,
+        init_x2 = 0.0,
+        a = (0.586756156020839, -1.477888930110354),
+        b = (0.049596808318647, 0.059270417591839)
+    )
+    Va = new Filter(
+        init_x1 = {= Va_eq * (1.0 - 1.911199519984605 /*a[1]*/ - 0.001916104193780 /*b[1]*/) =},
+        init_x2 = {= Va_eq =},
+        a = (0.914975803093201, -1.911199519984605),
+        b = (0.001860178914816, 0.001916104193780)
+    )
     
     Vz_ct = new VzControl()
     Va_ct = new VaControl()
@@ -122,12 +240,14 @@ main reactor {
     a.h, a.az, a.Vz, a.q, a.Va -> h.x, az.x, Vz.x, q.x, Va.x
     altitude.c -> h_c.s
     h.y -> h_c.x
-    speed.c -> Va_c.s
-    Va.y -> Va_c.x
     
     Vz.y, az.y, h_c.c, q.y -> Vz_ct.Vzf, Vz_ct.azf, Vz_ct.Vzc, Vz_ct.qf
     Vz_ct.delta_ec -> a.delta_ec
     
-    Va.y, Vz.y, Va_c.c, q.y -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac, Va_ct.qf
+    Va.y, Vz.y, speed.c, q.y -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac, Va_ct.qf
     Va_ct.delta_thc -> a.delta_thc
+    
+    // Print connections.
+    a.h -> p_h.y
+    a.Va -> p_Va.y
 }

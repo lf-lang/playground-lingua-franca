@@ -24,16 +24,18 @@
 target C
 preamble {=
     #include <math.h>
+    // Trimming parameters
+    #define Va_eq (230.0)   // Nominal airspeed?
+    #define h_eq (10000.0)
 =}
 reactor Aircraft(
-    // Timing parameters
-    h_eq: double(10000.0),
-    Va_eq: double(230.0),
-    theta_eq: double(0.026485847681737),
+    period: time(5 ms),
+    // Trimming parameters
+    theta_eq: double(0.026485847681737),  // Initial angle
     
     // Atmosphere parameters
     rho0: double(1.225),
-    g0: double(9.80665),
+    g0: double(9.80665),       // Acceleration of gravity in m/s
     T0_0: double(288.15),
     T0_h: double(-0.0065),
     Rs: double(287.05),
@@ -54,7 +56,7 @@ reactor Aircraft(
     Cm_deltae: double(-1.5),
     Cm_q: double(-30)
 ) {
-    timer t(0, 5 ms)          // 200 Hz Forward Euler simulation rate
+    timer t(0, period)        // 200 Hz Forward Euler simulation rate
     
     input delta_thc: double   // Engine control
     input delta_ec: double    // Elevator control
@@ -68,20 +70,20 @@ reactor Aircraft(
     state u: double(0.0)
     state w: double(0.0)
     state q: double(0.0)
-    state theta: double(0.0)
+    state theta: double(0.0)   // Angle (0.0 is horizontal)
     state h: double(0.0)
     
     reaction(startup) {=
-        self->u     = self->Va_eq * cos(self->theta_eq);
-        self->w     = self->Va_eq * sin(self->theta_eq);
+        self->u     = Va_eq * cos(self->theta_eq);  // Horizontal speed.
+        self->w     = Va_eq * sin(self->theta_eq);  // Vertical speed.
         self->q     = 0.0;
         self->theta = self->theta_eq;
-        self->h     = self->h_eq;
+        self->h     = h_eq;
     =}
     
     reaction(t) delta_ec, delta_thc -> Vz, Va, h, az, q {=
-        const double dt = 1.0/200.0;  // Period as a double.
-        
+        const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
+                
         double u_dot, w_dot, q_dot, theta_dot, h_dot;
         double CD, CL, Cm;
         double Xa, Za, Ma;
