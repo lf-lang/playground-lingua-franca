@@ -207,27 +207,3 @@ reactor Aircraft(
     delta_ec -> el.delta_ec
     el.delta_e -> a.delta_e
 }
-
-main reactor {
-    a = new Aircraft()
-    timer t(0, 5 ms)
-    reaction(t) -> a.delta_ec, a.delta_thc {=
-        lf_set(a.delta_ec, 0.1);
-        lf_set(a.delta_thc, 0.1);
-    =}
-    reaction(
-        a.Vz,          // Vertical speed
-        a.Va,          // True airspeed
-        a.h,           // Altitude
-        a.az,          // Vertical acceleration
-        a.q            // Pitch rate
-    ) {=
-        // Assume all are present.
-        lf_print("Vertical speed: %f", a.Vz->value);
-        lf_print("True airspeed: %f", a.Va->value);
-        lf_print("Altitude: %f", a.h->value);
-        lf_print("Vertical acceleration: %f", a.az->value);
-        lf_print("Pitch rate: %f", a.q->value);
-    =}
-    
-}

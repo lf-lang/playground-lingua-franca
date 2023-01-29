@@ -33,18 +33,11 @@ target C {
     timeout: 10 min
 }
 
-import Aircraft from "lib/AircraftSimulator.lf"
-import PrintToFile from "../lib/PrintToFile.lf"
-
 preamble {=
     // Shared constants.
     #define delta_th_eq (1.5868660794926)
     #define delta_e_eq (0.012009615652468)    
 =}
-
-// Documentation
-@icon("Variables.png")
-reactor Variables {}
 
 reactor Filter(
     period: time(10 ms),
@@ -203,41 +196,55 @@ reactor VaControl(
     =}
 }
 
-main reactor {
-    variables = new Variables()
-    a = new Aircraft()
-    altitude = new Command(value = 11000) // Altitude command
+reactor RosaceController(
+    filter_period: time(10 ms)
+) {
+    // Sensor inputs from aircraft
+    input Vz:double          // Vertical speed
+    input Va:double          // True airspeed
+    input h:double           // Altitude measurement
+    input az:double          // Vertical acceleration
+    input q:double           // Pitch rate
+    
+    // Command inputs
+    input c:double           // Altitude command
+    input s:double           // Speed command
+    
+    output delta_thc: double   // Engine control
+    output delta_ec: double    // Elevator control
+    
     h_c = new Hold()
-    speed = new Command(value = 0.0)      // Delta airspeed from nominal Va_eq (230)
-    
-    p_h = new PrintToFile(filename = "altitude.data")
-    p_Va = new PrintToFile(filename = "airspeed.data")
-    
-    h = new Filter(
+        
+    h_f = new Filter(
+        period = 100 ms,
         init_x1 = {= h_eq * (1.0 - 1.477888930110354 /*a[1]*/ - 0.049596808318647 /*b1*/) =},
         init_x2 = {= h_eq =},
         a = (0.586756156020839, -1.477888930110354),
         b = (0.049596808318647, 0.059270417591839)
     )
-    az = new Filter(
+    az_f = new Filter(
+        period = filter_period,
         init_x1 = 0.0,
         init_x2 = 0.0,
         a = (0.169118914523145, -0.518588903229759),
         b = (0.229019233988375, 0.421510777305010)
     )
-    Vz = new Filter(
+    Vz_f = new Filter(
+        period = filter_period,
         init_x1 = 0.0,
         init_x2 = 0.0,
         a = (0.914975803093201, -1.911199519984605),
         b = (0.001860178914816, 0.001916104193780)
     )
-    q = new Filter(
+    q_f = new Filter(
+        period = filter_period,
         init_x1 = 0.0,
         init_x2 = 0.0,
         a = (0.586756156020839, -1.477888930110354),
         b = (0.049596808318647, 0.059270417591839)
     )
-    Va = new Filter(
+    Va_f = new Filter(
+        period = filter_period,
         init_x1 = {= Va_eq * (1.0 - 1.911199519984605 /*a[1]*/ - 0.001916104193780 /*b[1]*/) =},
         init_x2 = {= Va_eq =},
         a = (0.914975803093201, -1.911199519984605),
@@ -247,17 +254,13 @@ main reactor {
     Vz_ct = new VzControl()
     Va_ct = new VaControl()
     
-    a.h, a.az, a.Vz, a.q, a.Va -> h.x, az.x, Vz.x, q.x, Va.x
-    altitude.c -> h_c.s
-    h.y -> h_c.x
+    h, az, Vz, q, Va -> h_f.x, az_f.x, Vz_f.x, q_f.x, Va_f.x
+    c -> h_c.s
+    h_f.y -> h_c.x
     
-    Vz.y, az.y, h_c.c, q.y -> Vz_ct.Vzf, Vz_ct.azf, Vz_ct.Vzc, Vz_ct.qf
-    Vz_ct.delta_ec -> a.delta_ec
+    Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vzf, Vz_ct.azf, Vz_ct.Vzc, Vz_ct.qf
+    Vz_ct.delta_ec -> delta_ec
     
-    Va.y, Vz.y, speed.c, q.y -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac, Va_ct.qf
-    Va_ct.delta_thc -> a.delta_thc
-    
-    // Print connections.
-    a.h -> p_h.y
-    a.Va -> p_Va.y
+    Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac, Va_ct.qf
+    Va_ct.delta_thc -> delta_thc
 }
