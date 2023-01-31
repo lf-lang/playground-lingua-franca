@@ -81,7 +81,7 @@ reactor Command(
 main reactor(filter_period: time(100 ms)) {
     variables = new Variables()
     a = new Aircraft()
-    c = new RosaceController()
+    c = new RosaceController(filter_period = 10 ms)
     altitude = new Command(value = 11000) // Altitude command
     speed = new Command(value = 0.0)      // Delta airspeed from nominal Va_eq (230)
     
