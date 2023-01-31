@@ -1,0 +1,95 @@
+/**
+ * This program models two aircraft moving in a two-dimensional space
+ * for testing an Advanced Collision Avoidance System (ACAS).
+ * 
+ * It is based on the following paper:
+ * 
+ * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
+ * Christophe Garion, ans Claire Pagetti, "Verification of machine
+ * learning based cyber-physical systems: a comparative study,"
+ * International Conference on Hybrid Systems: Computation and Control
+ * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
+ *
+ * The original Python code on which this is based was provided by Arthur Clavière.
+ * 
+ * # Prerequisites
+ * 
+ * ```
+ *    pip install wheel
+ *    pip install pandas
+ * ```
+ * 
+ * @author Arthur Clavière
+ * @author Edward A. Lee
+ */
+target Python {
+    fast: true,
+    timeout: 16 s
+}
+
+preamble {=
+    import numpy as np
+=}
+
+@icon("state.png")
+reactor State {}
+
+reactor ACASPlant(period(10 ms)) {
+    input command     # Own angle change, in radians/second
+    
+    # Outputs are used as state variables.
+    output x          # x position of intruder relative to own
+    output y          # y position of intruder relative to own
+    output psi_own    # angle of own trajectory
+    output psi_int    # angle of intruder trajectory
+    output v_own      # speed of own trajectory
+    output v_int      # speed of intruder trajectory
+    
+    # Outputs used to generate a meaningful plot
+    output x_own
+    output y_own
+
+    picture = new State()
+    
+    timer t(period, period)  # Offeset of period to not overwrite initial state.
+    
+    reaction(startup) -> x, y, psi_own, psi_int, v_own, v_int, x_own, y_own {=
+        # Initial state
+        # FIXME: Read from CSV file
+        x.set(-6000.0)
+        y.set(0.0)
+        psi_own.set(0.0)
+        psi_int.set(0.9851107833377457)
+        v_own.set(248.74685927665496)
+        v_int.set(450.0)
+        x_own.set(0.0)
+        y_own.set(0.0)
+    =}
+    
+    reaction(t) command -> x, y, psi_own, psi_int, v_own, v_int, x_own, y_own {=
+        delta_t = self.period / 1e9  # Period is seconds
+        
+        # Intruder position
+        x_int = x_own.value + x.value + delta_t * (v_int.value * np.sin(psi_int.value))
+        y_int = y_own.value + y.value + delta_t * (v_int.value * np.cos(psi_int.value))
+
+        # Own position
+        x_own.set(
+            x_own.value + delta_t * (v_own.value * np.sin(psi_own.value))
+        )
+        y_own.set(
+            y_own.value + delta_t * (v_own.value * np.cos(psi_own.value))
+        )
+        
+        x.set(
+            x_int - x_own.value
+        )
+        y.set(
+            y_int - y_own.value
+        )
+        # Update the angle after updating the position.
+        psi_own.set(psi_own.value + delta_t * command.value)
+        
+        # In this model, psi_int, v_int, and v_own remain unchanged.
+    =}
+}
