@@ -30,9 +30,9 @@
  * 
  * ```
  * cd examples-lingua-franca/C
- * lfc src/periodic/Rosace.lf
+ * lfc src/rosace/Rosace.lf
  * bin/Rosace
- * gnuplot src/avionics/rosace.gnuplot
+ * gnuplot src/rosace/rosace.gnuplot
  * open rosace.pdf
  * ```
  * 
