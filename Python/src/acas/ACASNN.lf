@@ -75,10 +75,10 @@ reactor NN(
         x_mean = norm_params[2]
         x_range = norm_params[3]
         x_norm = (vector.value - x_mean) / x_range
-        
+                
         # (iv) evaluate the neural network
         score.set(self.nnets_dict[nnet_name].compute_output(x_norm))
-        
+                
         # score.set([1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
     =}
 }

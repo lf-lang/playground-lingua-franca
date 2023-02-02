@@ -15,6 +15,11 @@
  * 
  * The code was download from https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
  * 
+ * Since that original code bears an LGPL license, so does this program:
+ * 
+ * (c) 2023 Regents of the University of California, LGPL-v3
+ * (https://www.gnu.org/licenses/lgpl-3.0.html)
+ *
  * This is a forward Euler simulation of an aircraft designed to run at 200 Hz.
  * The inputs are elevator controls `delta_ec` and throttle controls `delta_thc`.
  * This runs at a fixed 200 Hz rate reading the most recent inputs.

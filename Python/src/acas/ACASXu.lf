@@ -15,6 +15,8 @@
  *
  * The original Python code on which this is based was provided by Arthur Clavière.
  * 
+ * The ML models come from https://github.com/guykatzz/ReluplexCav2017
+ * 
  * # Prerequisites
  * 
  * ```
@@ -39,7 +41,9 @@ preamble {=
     import math
 =}
 
-reactor PreProcessor {
+reactor PreProcessor(
+    nn_period(10 ms)
+) {
     input x          # x position of intruder relative to own
     input y          # y position of intruder relative to own
     input psi_own    # angle of own trajectory
@@ -49,7 +53,9 @@ reactor PreProcessor {
 
     output vector    # [rho, theta, psi, v_own, v_int]
     
-    reaction(x, y, psi_own, psi_int, v_own, v_int) -> vector {=
+    timer t(0, nn_period)
+    
+    reaction(t) x, y, psi_own, psi_int, v_own, v_int -> vector {=
         
         pi = math.pi
         
@@ -110,12 +116,12 @@ reactor PostProcessor(
 
 main reactor {
     plant = new ACASPlant()
-    pre = new PreProcessor()
+    pre = new PreProcessor(nn_period = 1 s)
     nn = new NN()
     post = new PostProcessor()
     
     plot = new XYPlotter()
-    
+        
     plant.x, plant.y -> pre.x, pre.y
     plant.psi_own, plant.psi_int -> pre.psi_own, pre.psi_int
     plant.v_own, plant.v_int -> pre.v_own, pre.v_int

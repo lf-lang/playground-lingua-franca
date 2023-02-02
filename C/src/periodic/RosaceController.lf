@@ -15,6 +15,11 @@
  * 
  * The code was download from https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
  * 
+ * Since that original code bears an LGPL license, so does this program:
+ * 
+ * (c) 2023 Regents of the University of California, LGPL-v3
+ * (https://www.gnu.org/licenses/lgpl-3.0.html)
+ * 
  * This program uses a forward Euler simulation of aircraft dynamics and implements
  * throttle and elevator control. The parameters specified execute an elevation
  * climb from an initial 10,000 feet to a target 11,000 feet.
