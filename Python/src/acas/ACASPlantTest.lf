@@ -1,0 +1,46 @@
+/**
+ * This program models two aircraft moving in a two-dimensional space
+ * for testing an Advanced Collision Avoidance System (ACAS).
+ * It includes a main reactor that applies a simple test where the
+ * intruder aircraft follows a straight trajectory and the "own" aircraft
+ * applies a constant turn to the right of 0.1 radians/second.
+ * 
+ * It is based on the following paper:
+ * 
+ * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
+ * Christophe Garion, ans Claire Pagetti, "Verification of machine
+ * learning based cyber-physical systems: a comparative study,"
+ * International Conference on Hybrid Systems: Computation and Control
+ * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
+ *
+ * The original Python code on which this is based was provided by Arthur Clavière.
+ * 
+ * # Prerequisites
+ * 
+ * ```
+ *    pip install wheel
+ *    pip install pandas
+ *    pip install matplotlib
+ * ```
+ * 
+ * @author Arthur Clavière
+ * @author Edward A. Lee
+ */
+target Python {
+    fast: true,
+    timeout: 16 s
+}
+import XYPlotter from "XYPlotter.lf"
+import ACASPlant from "ACASPlant.lf"
+
+main reactor {
+    plant = new ACASPlant()
+    plot = new XYPlotter()
+    reaction(startup) -> plant.command {=
+        plant.command.set(0.1)
+    =}
+    plant.x -> plot.x2
+    plant.y -> plot.y2
+    plant.x_own -> plot.x1
+    plant.y_own -> plot.y1
+}

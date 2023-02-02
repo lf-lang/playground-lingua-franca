@@ -7,13 +7,12 @@
  * 
  * This implementation is based on code from:
  * 
- * Deschamps, Henrick and Cappello, Gerlando and Cardoso, Janette and Siron, Pierre
- * Coincidence Problem in CPS Simulations: the R-ROSACE Case Study.
- * (2018) In: 9th European Congress Embedded Real Time Software and Systems ERTS2 2018,
- * 31 January 2018 - 2 February 2018 (Toulouse, France).
- * https://www.erts2018.org/authors_detail_inverted_Cappello%20Gerlando.html
+ *    https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ *
+ * Since that original code bears an LGPL license, so does this program:
  * 
- * The code was download from https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ * (c) 2023 Regents of the University of California, LGPL-v3
+ * (https://www.gnu.org/licenses/lgpl-3.0.html)
  * 
  * This program uses a forward Euler simulation of aircraft dynamics and implements
  * throttle and elevator control. The parameters specified execute an elevation
@@ -31,9 +30,9 @@
  * 
  * ```
  * cd examples-lingua-franca/C
- * lfc src/periodic/Rosace.lf
+ * lfc src/rosace/Rosace.lf
  * bin/Rosace
- * gnuplot src/avionics/rosace.gnuplot
+ * gnuplot src/rosace/rosace.gnuplot
  * open rosace.pdf
  * ```
  * 
@@ -78,10 +77,10 @@ reactor Command(
     =}
 }
 
-main reactor(filter_period: time(100 ms)) {
+main reactor(filter_period: time(10 ms)) {
     variables = new Variables()
     a = new Aircraft()
-    c = new RosaceController(filter_period = 10 ms)
+    c = new RosaceController(filter_period = filter_period)
     altitude = new Command(value = 11000) // Altitude command
     speed = new Command(value = 0.0)      // Delta airspeed from nominal Va_eq (230)
     
