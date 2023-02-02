@@ -6,8 +6,8 @@ This example implements an aircraft autopilot controller and aircraft simulator 
 
 Executing this program with the default parameters should show the aircraft altitude rising smoothly from 10,000 to 11,000 feet with minor variations in aircraft speed, as shown in the following plots:
 
-![aircraft altitude vs. time](altitude.png)
-![aircraft speed vs. time](speed.png)
+<img alt="aircraft altitude vs. time" src="altitude.png" width="400">
+<img alt="aircraft speed vs. time" src="speed.png" width="400">
 
 Although Lingua Franca programs are, in general, event driven, this example is a periodic real-time program with a multiplicity of periods. Each of the reactors is triggered by a timer that specifies its period. If its reactions read data from input ports, those ports are declared in the [*uses* field](https://www.lf-lang.org/docs/handbook/inputs-and-outputs?target=c#triggers-effects-and-uses) of the reactor signature rather than the *triggers* field. The dependencies are automatically handled by the LF code generator so that upstream reactions that execute in the same tag will always complete before a downstream reaction that uses its data.
 
