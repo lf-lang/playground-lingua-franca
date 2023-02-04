@@ -1,0 +1,75 @@
+/**
+ * Model of a constant speed aircraft moving in two dimensions
+ * under control of an input turn command
+ * for testing an Airborne Collision Avoidance System (ACAS).
+ * 
+ * It is based on the following paper:
+ * 
+ * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
+ * Christophe Garion, ans Claire Pagetti, "Verification of machine
+ * learning based cyber-physical systems: a comparative study,"
+ * International Conference on Hybrid Systems: Computation and Control
+ * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
+ *
+ * The original Python code on which this is based was provided by Arthur Clavière.
+ * 
+ * # Prerequisites
+ * 
+ * ```
+ *    pip install wheel
+ *    pip install pandas
+ * ```
+ * 
+ * @author Arthur Clavière
+ * @author Edward A. Lee
+ * @author Claire Pagetti
+ * @author David Saussie
+ */
+target Python
+
+preamble {=
+    import math
+=}
+
+reactor Aircraft(
+    x_init(0.0),   # Initial x position in feet.
+    y_init(0.0),   # Initial y position in feet.
+    psi_init(0.0), # Angle in radians, relative to vertical, positive counterclockwise
+    v_init(250.0), # Initial velocity, in feet/second.
+    period(10 ms)  # Rate of updates.
+) {
+    input turn     # Angle change, in radians/second. Leave unconnected for no turns.
+    
+    # Outputs are used as state variables.
+    output x       # x position
+    output y       # y position
+    output psi     # Angle in radians
+    output v       # Velocity in feet/second
+    
+    state latest_turn(0.0)   # Most recently received turn command.
+
+    timer t(period, period)  # Offset of period to not overwrite initial state.
+    
+    reaction(startup) -> x, y, psi, v {=
+        x.set(self.x_init)
+        y.set(self.y_init)
+        psi.set(self.psi_init)
+        v.set(self.v_init)
+    =}
+    reaction(turn) {=
+        self.latest_turn = turn.value
+    =}
+    reaction(t) -> x, y, psi, v {=
+        delta_t = self.period / 1e9  # Period is seconds
+        x.set(
+            x.value - delta_t * (v.value * np.sin(psi.value))
+        )
+        y.set(
+            y.value + delta_t * (v.value * np.cos(psi.value))
+        )
+        # Update the angle after updating the position.
+        psi.set(
+            psi.value + delta_t * self.latest_turn
+        )            
+    =}
+}

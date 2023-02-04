@@ -1,0 +1,139 @@
+/**
+ * This program realizes a neural-network-based controller for an
+ * Airborne Collision Avoidance System (ACAS).
+ * 
+ * It is based on the following paper:
+ * 
+ * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
+ * Christophe Garion, ans Claire Pagetti, "Verification of machine
+ * learning based cyber-physical systems: a comparative study,"
+ * International Conference on Hybrid Systems: Computation and Control
+ * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
+ *
+ * The original Python code on which this is based was provided by Arthur Clavière.
+ * 
+ * The ML models (in code/src/systems/acasxu/nnets)
+ * come from https://github.com/guykatzz/ReluplexCav2017
+ * 
+ * # Prerequisites
+ * 
+ * ```
+ *    pip install wheel
+ *    pip install pandas
+ *    pip install matplotlib
+ * ```
+ * 
+ * @author Arthur Clavière
+ * @author Edward A. Lee
+ * @author Claire Pagetti
+ * @author David Saussie
+ */
+target Python {
+    fast: true,
+    timeout: 16 s
+}
+import NN from "ACASNN.lf"
+
+preamble {=
+    import numpy as np
+    import math
+=}
+
+reactor PreProcessor(
+    nn_period(10 ms)
+) {
+    input x          # x position of intruder relative to own
+    input y          # y position of intruder relative to own
+    input psi_own    # angle of own trajectory
+    input psi_int    # angle of intruder trajectory
+    input v_own      # speed of own trajectory
+    input v_int      # speed of intruder trajectory
+
+    output vector    # [rho, theta, psi, v_own, v_int]
+    
+    timer t(0, nn_period)
+    
+    reaction(t) x, y, psi_own, psi_int, v_own, v_int -> vector {=
+        
+        pi = math.pi
+        
+        # 1) compute rho
+        rho = np.sqrt(x.value**2 + y.value**2)
+        
+        # 2) compute theta
+        if y.value > 0:
+            angle = -np.arctan(x.value/y.value)
+        elif x.value < 0:
+            angle = pi/2 + np.arctan(y.value/x.value)
+        elif x.value > 0:
+            angle = -pi/2 + np.arctan(y.value/x.value)
+        elif x.value == 0:
+            angle = 0 if y.value==0 else pi
+        theta = angle - psi_own.value
+        # wrap theta into [-pi,pi]
+        while theta < -pi:
+            theta += 2*pi
+        while theta > pi:
+            theta -= 2*pi
+                
+        # 3) compute psi
+        psi = psi_int.value - psi_own.value
+        # wrap psi into [-pi,pi]
+        while psi < -pi:
+            psi += 2*pi
+        while psi > pi:
+            psi -= 2*pi
+            
+        vector.set(np.array([rho, theta, psi, v_own.value, v_int.value]))
+    =}
+}
+
+# Output is produced one microstep later.
+reactor PostProcessor(
+    initial_label(0),
+    available_commands({=[0.0,1.5,-1.5,3.5,-3.5]=}) # Angles in degrees/second
+) {
+    input score
+    output previous_label
+    output command
+    
+    logical action next
+    
+    reaction(startup) -> previous_label, command {=
+        previous_label.set(self.initial_label)
+        command.set(self.available_commands[self.initial_label])
+    =}
+    reaction(next) -> previous_label, command {=
+        previous_label.set(next.value)
+        command.set(self.available_commands[next.value] * math.pi/180.0)
+    =}
+    reaction(score) -> next {=
+        next.schedule(0, np.argmin(score.value))
+    =}
+}
+
+reactor ACASController(
+    period(1 s)
+) {
+    input x          # x position of intruder relative to own
+    input y          # y position of intruder relative to own
+    input psi_own    # angle of own trajectory
+    input psi_int    # angle of intruder trajectory
+    input v_own      # speed of own trajectory
+    input v_int      # speed of intruder trajectory
+
+    output command   # Turn command for own in radians/sec
+
+    pre = new PreProcessor(nn_period = period)
+    nn = new NN()
+    post = new PostProcessor()
+            
+    x, y -> pre.x, pre.y
+    psi_own, psi_int -> pre.psi_own, pre.psi_int
+    v_own, v_int -> pre.v_own, pre.v_int
+    
+    pre.vector -> nn.vector
+    nn.score -> post.score
+    post.command -> command
+    post.previous_label -> nn.index
+}
