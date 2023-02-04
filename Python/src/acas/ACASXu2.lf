@@ -27,7 +27,6 @@
  * @author Arthur Clavière
  * @author Edward A. Lee
  * @author Claire Pagetti
- * @author David Saussie
  */
 target Python {
     fast: true,
