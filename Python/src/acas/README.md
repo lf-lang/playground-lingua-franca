@@ -26,7 +26,7 @@ In both cases, the intruder aircraft is in red; the own aircraft in blue; and bo
 </tr>
 </table>
 
-The Python code on which this is based was originally written by Arthur Clavière and is distributed (see [https://svn.onera.fr/schedmcore/branches/](https://svn.onera.fr/schedmcore/branches/)) under an [LGPL version 3 license](https://www.gnu.org/licenses/lgpl-3.0.html), so this directory also has an LGPL [LICENSE](LICENSE.md), which is non-standard compared to other LF code. The pre-trained neural networks were developed at Stanford University as part of the Reluplex project and are released under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).  The authors are listed in the [AUTHORS](code/src/systems/acasxu/nnets/AUTHORS) file.
+The Python code on which this is based was originally written by Arthur Clavière and is distributed (see [https://svn.onera.fr/schedmcore/branches/](https://svn.onera.fr/schedmcore/branches/)) under an [LGPL version 3 license](https://www.gnu.org/licenses/lgpl-3.0.html), so this directory also has an LGPL [LICENSE](LICENSE.md), which is non-standard compared to other LF code. The pre-trained neural networks were developed at Stanford University as part of the Reluplex project and are released under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).  The authors of the neural nets are listed in the [AUTHORS](code/src/systems/acasxu/nnets/AUTHORS) file.
 
 
 
