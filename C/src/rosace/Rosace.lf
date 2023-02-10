@@ -1,7 +1,7 @@
 /**
  * ROSACE case study, from:
  * 
- * Claire Pagetti , David Saussiéy, Romain Gratia , Eric Noulard , Pierre Siron,
+ * Claire Pagetti , David Saussié, Romain Gratia , Eric Noulard , Pierre Siron,
  * "The ROSACE Case Study: From Simulink Specification to Multi/Many-Core Execution,"
  * RTAS (2014).
  * 
@@ -44,6 +44,8 @@
  * aircraft.
  * 
  * @author Edward A. Lee
+ * @author David Saussie
+ * @author Claire Pagetti
  */
 
 target C {

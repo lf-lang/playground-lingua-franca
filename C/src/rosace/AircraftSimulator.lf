@@ -25,6 +25,8 @@
  * This runs at a fixed 200 Hz rate reading the most recent inputs.
  * 
  * @author Edward A. Lee
+ * @author David Saussie
+ * @author Claire Pagetti
  */
 target C
 preamble {=

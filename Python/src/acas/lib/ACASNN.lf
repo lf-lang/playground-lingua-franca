@@ -1,7 +1,7 @@
 /**
- * A bank of neural networks.  FIXME: More
+ * A bank of neural networks for an ACAS (Airborne Collision Avoidance System).
  * 
- * It is based on the following paper:
+ * This is based on the following paper:
  * 
  * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
  * Christophe Garion, ans Claire Pagetti, "Verification of machine
@@ -10,6 +10,9 @@
  * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
  *
  * The original Python code on which this is based was provided by Arthur Clavière.
+ * 
+ * The ML models (in code/src/systems/acasxu/nnets)
+ * come from https://github.com/guykatzz/ReluplexCav2017
  * 
  * # Prerequisites
  * 
@@ -21,9 +24,10 @@
  * 
  * @author Arthur Clavière
  * @author Edward A. Lee
+ * @author Claire Pagetti
  */
 target Python {
-    files: ["code/src/utils.py", "code/src/mlmodels/ffnn.py"]
+    files: ["../code/src/utils.py", "../code/src/mlmodels/ffnn.py", "../code/src/systems/acasxu/nnets/"]
 }
 
 preamble {=
@@ -31,9 +35,7 @@ preamble {=
     from utils import parse_nnet_format
 =}
 
-# FIXME: Hardwired path to neural network files.
 reactor NN(
-    path_nnets("/Users/eal/git/examples-lingua-franca/Python/src/acas/code/src/systems/acasxu/nnets/"),
     prefix_nnet_names("nnet_acas_")
 ) {
     input vector
@@ -50,7 +52,7 @@ reactor NN(
         for i in range(1,6):
             # retrieve the path to the i^th network
             nnet_filename = "ACASXU_experimental_v2a_{}_1.nnet".format(i)
-            path_nnet = self.path_nnets + nnet_filename
+            path_nnet = os.path.join(os.path.dirname(__file__), "nnets", nnet_filename)
             # parse the network
             (nnet, norm_params) = parse_nnet_format(path_nnet, "relu")
             # name the network

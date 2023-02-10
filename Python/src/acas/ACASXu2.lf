@@ -1,11 +1,7 @@
 /**
  * This program models two aircraft moving in a two-dimensional space
- * for testing an Airborne Collision Avoidance System (ACAS) that is
- * realized using neural networks.
- * 
- * It includes a main reactor that applies a simple test where the
- * intruder aircraft follows a straight trajectory and the "own" aircraft
- * maneuvers to avoid a collision.
+ * for testing an Airborne Collision Avoidance System (ACAS).
+ * In this example, both aircraft are equipped with the same ACAS system.
  * 
  * It is based on the following paper:
  * 
@@ -15,12 +11,7 @@
  * International Conference on Hybrid Systems: Computation and Control
  * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
  *
- * The original Python code on which this is based was provided by
- * Arthur Clavière and can be found at:
- * 
- *    https://svn.onera.fr/schedmcore/branches/ACAS_CaseStudy/
- *
- * Since that original code bears an LGPL license, so does this program:
+ * The original Python code on which this is based was provided by Arthur Clavière.
  * 
  * The ML models (in code/src/systems/acasxu/nnets)
  * come from https://github.com/guykatzz/ReluplexCav2017
@@ -76,19 +67,31 @@ main reactor {
         v_init = 450.0,
         period = 10 ms
     )
-    controller = new ACASController(period = 1 s)
-    diff = new Diff()
+    controller1 = new ACASController(period = 1 s)
+    diff1 = new Diff()
+    
+    controller2 = new ACASController(period = 1 s)
+    diff2 = new Diff()
     
     plot = new XYPlotter()
 
-    intruder.x, intruder.y -> diff.x1, diff.y1
-    own.x, own.y -> diff.x2, diff.y2
+    intruder.x, intruder.y -> diff1.x1, diff1.y1
+    own.x, own.y -> diff1.x2, diff1.y2
     
-    diff.x, diff.y -> controller.x, controller.y
-    own.psi, intruder.psi -> controller.psi_own, controller.psi_int
-    own.v, intruder.v -> controller.v_own, controller.v_int
+    intruder.x, intruder.y -> diff2.x2, diff2.y2
+    own.x, own.y -> diff2.x1, diff2.y1
     
-    controller.command -> own.turn
+    diff1.x, diff1.y -> controller1.x, controller1.y
+    own.psi, intruder.psi -> controller1.psi_own, controller1.psi_int
+    own.v, intruder.v -> controller1.v_own, controller1.v_int
+    controller1.command -> own.turn
+    
+    # Reverse role of intruder and own for second aircraft.
+    diff2.x, diff2.y -> controller2.x, controller2.y
+    own.psi, intruder.psi -> controller2.psi_int, controller2.psi_own
+    own.v, intruder.v -> controller2.v_int, controller2.v_own
+    controller2.command -> intruder.turn
+    
     
     own.x, own.y -> plot.x1, plot.y1
     intruder.x, intruder.y -> plot.x2, plot.y2
