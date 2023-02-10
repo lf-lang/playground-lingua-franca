@@ -6,22 +6,22 @@ This demonstrator application realizes an **ACAS Xu** (airborne collision avoida
 
 There are two examples provided, both of which use the same aircraft plant models and the same controller models. In both cases, one aircraft is the _ownship_ and the other is an _intruder_, and both move in a horizontal plane:
 
-<img alt="aircraft properties" src="state.png" width="200">
+<img alt="aircraft properties" src="img/state.png" width="200">
 
 The controller uses a set of five pre-trained neural networks to determine the turn angle to apply. The plots from each example should look like the following:
 
-<img alt="aircraft trajectories" src="ACASXuPlot.png" width="360">
-<img alt="aircraft trajectories" src="ACASXu2Plot.png" width="400">
+<img alt="aircraft trajectories" src="img/ACASXuPlot.png" width="360">
+<img alt="aircraft trajectories" src="img/ACASXu2Plot.png" width="400">
 
 In both cases, the intruder aircraft is in red; the own aircraft in blue; and both aircraft start at the bottom and move up. In the left plot, the intruder aircraft is not equipped with an ACAS controller and maintains a constant trajectory, oblivious to the possible collision. In the second plot, both aircraft are equipped with ACAS.
 
 <table>
 <tr>
-<td> <img src="ACASXu.png" alt="ACAS Xu" width="400">
+<td> <img src="img/ACASXu.png" alt="ACAS Xu" width="400">
 <td> <a href="ACASXu.lf">ACASXu.lf</a>: Two aircraft, one of which is equipped with neural-network-based ACAS system.</td>
 </tr>
 <tr>
-<td> <img src="ACASXu2.png" alt="ACAS Xu 2" width="400">
+<td> <img src="img/ACASXu2.png" alt="ACAS Xu 2" width="400">
 <td> <a href="ACASXu2.lf">ACASXu2.lf</a>: Two aircraft, both of which are equipped with neural-network-based ACAS systems.</td>
 </tr>
 </table>

@@ -32,9 +32,9 @@ target Python {
     fast: true,
     timeout: 16 s
 }
-import XYPlotter from "XYPlotter.lf"
-import Aircraft from "Aircraft.lf"
-import ACASController from "ACASController.lf"
+import XYPlotter from "lib/XYPlotter.lf"
+import Aircraft from "lib/Aircraft.lf"
+import ACASController from "lib/ACASController.lf"
 
 # Calculate the difference between two x-y positions (x1,y1) - (x2, y2).
 # This assumes that if one input is present, all are present.

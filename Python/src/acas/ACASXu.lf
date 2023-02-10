@@ -1,6 +1,8 @@
 /**
  * This program models two aircraft moving in a two-dimensional space
- * for testing an Airborne Collision Avoidance System (ACAS).
+ * for testing an Airborne Collision Avoidance System (ACAS) that is
+ * realized using neural networks.
+ * 
  * It includes a main reactor that applies a simple test where the
  * intruder aircraft follows a straight trajectory and the "own" aircraft
  * maneuvers to avoid a collision.
@@ -13,7 +15,12 @@
  * International Conference on Hybrid Systems: Computation and Control
  * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
  *
- * The original Python code on which this is based was provided by Arthur Clavière.
+ * The original Python code on which this is based was provided by
+ * Arthur Clavière and can be found at:
+ * 
+ *    https://svn.onera.fr/schedmcore/branches/ACAS_CaseStudy/
+ *
+ * Since that original code bears an LGPL license, so does this program:
  * 
  * The ML models (in code/src/systems/acasxu/nnets)
  * come from https://github.com/guykatzz/ReluplexCav2017
@@ -34,9 +41,9 @@ target Python {
     fast: true,
     timeout: 16 s
 }
-import XYPlotter from "XYPlotter.lf"
-import Aircraft from "Aircraft.lf"
-import ACASController from "ACASController.lf"
+import XYPlotter from "lib/XYPlotter.lf"
+import Aircraft from "lib/Aircraft.lf"
+import ACASController from "lib/ACASController.lf"
 
 # Calculate the difference between two x-y positions (x1,y1) - (x2, y2).
 # This assumes that if one input is present, all are present.

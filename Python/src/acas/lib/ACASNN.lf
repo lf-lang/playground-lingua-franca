@@ -27,7 +27,7 @@
  * @author Claire Pagetti
  */
 target Python {
-    files: ["code/src/utils.py", "code/src/mlmodels/ffnn.py", "code/src/systems/acasxu/nnets/"]
+    files: ["../code/src/utils.py", "../code/src/mlmodels/ffnn.py", "../code/src/systems/acasxu/nnets/"]
 }
 
 preamble {=
