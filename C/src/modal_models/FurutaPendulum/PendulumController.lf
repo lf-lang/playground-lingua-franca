@@ -2,7 +2,7 @@
  * A modal controller for a Furuta pendulum,
  * based on the Ptolemy II model constructed by Johan Eker
  * and described in this paper:
- * 
+ *
  * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
  * “Realistic simulations of embedded control systems,”
  * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
@@ -13,6 +13,7 @@ target C;
 preamble {=
     #include <math.h>
     #define PI 3.14159265
+    #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
     double sign(double x) {
         return (x > 0.0) - (x < 0.0);
     }
@@ -52,8 +53,11 @@ reactor PendulumController(
     initial mode SwingUp {
         reaction(theta, d_theta) d_phi -> control, modeID, energy {=
             double th = restrictAngle(theta->value);
-            double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
-                    + cos(th) - 1.0;
+            double E = 0.5 
+                * d_theta->value 
+                * d_theta->value 
+                / (self->w0 * self->w0)
+                + cos(th) - 1.0;
             double c = sign(d_theta->value * cos(th));
             double out = sign(E) * MIN(fabs(self->k * E), self->n) * c;
             lf_set(control, out);
@@ -77,8 +81,11 @@ reactor PendulumController(
                 + d_phi->value * self->ci4
             ));
             lf_set(modeID, 0);
-            double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
-                    + cos(th) - 1.0;
+            double E = 0.5 
+                * d_theta->value
+                * d_theta->value
+                / (self->w0 * self->w0)
+                + cos(th) - 1.0;
             lf_set(energy, E);
         =}
         reaction(phi, d_phi) -> Stabilize {=
@@ -98,8 +105,11 @@ reactor PendulumController(
                 + (phi->value - self->phi0) * self->si3
                 + d_phi->value * self->si4
             ));
-            double E = 0.5 * d_theta->value * d_theta->value / (self->w0 * self->w0)
-                    + cos(th) - 1.0;
+            double E = 0.5 
+                * d_theta->value 
+                * d_theta->value 
+                / (self->w0 * self->w0)
+                + cos(th) - 1.0;
             lf_set(energy, E);
             lf_set(modeID, 1);
         =}
