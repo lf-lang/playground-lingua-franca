@@ -15,7 +15,6 @@ The program is configured to automatically plot the results of the simulation.
 
 The executable examples use a custom build script that compiles the program, as usual, but also executes the program and processes its output to generate and open a plot. 
 It relies on [cmake](https://cmake.org/) and [gnuplot](http://www.gnuplot.info/) being available on the PATH.
-The script is not compatible to Windows systems.
 
 The script automatically opens the resulting plot.
 By default it uses the 'open' command on MacOS and 'xdg-open' on Linux.
