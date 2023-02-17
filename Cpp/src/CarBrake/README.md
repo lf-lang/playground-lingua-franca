@@ -1,15 +1,16 @@
 # Car Brake Example
 
-This example illustrates a deadline violation in a car brake that can be triggered either by the car's automatic braking assistant or the driver.
-The hypothetical braking assistant would receive a frame from the car's camera and process it to identify potentially dangerous situations.
-This processing takes about 10ms in our hypothetical example.
-Upon identifying a condition requiring intervention, the braking mechanism triggers.
+This example illustrates a fundamental tradeoff between consistency and availability as explained in this paper:
 
-At the same time, the driver may brake at any given time.
+> E. A. Lee, R. Akella, S. Bateni, S. Lin, M. Lohstroh, and C. Menard, "Consistency vs. Availability in Distributed Real-Time Systems," arXiv:2301.08906 [cs.DC], January 21 2023. [Online]. Available: [https://arxiv.org/abs/2109.07771](https://arxiv.org/abs/2109.07771).
 
-## Actual result
+The scenario is an ADAS system (advanced driver assistance system), where images from a forward looking camera are analyzed and may result in a command to sent to a car's braking system.
+These programs are sketches in that no actual image analysis or braking is performed, but rather image analysis is simulated by a reaction that sleeps for some time, emulating significant computation time.
+The code sleeps for 10ms in our hypothetical example.
 
-Currently, the braking mechanism can miss its deadline when hitting the brake, indicating a delayed braking.
+In the first version, a deadline violation in a car brake can be triggered when the driver presses the brake pedal and the system is busy analyzing an image generated at a slightly earlier logical time.
+
+The second version forsakes consistency altogether using a Lingua Franca physical connection, which discards timestamps. In this simple example, this is possibly a reasonable implementation. However, more generally, designs like this where components simply react to the most recent inputs, are deprecated because of the difficulty in testing them. See, for example, [Koopman](https://betterembsw.blogspot.com/2014/09/a-case-study-of-toyota-unintended.html).
 
 ## Variant that fixes this
 
@@ -17,3 +18,10 @@ The CarBrake2.lf variant, if made federated, decouples the vision system from th
 in a way that makes it impossible for the vision system to have any effect on the ability of the other component
 to make deadlines. The price for this decoupling is added nondeterminacy because the physical connection
 reassigns time stamps based on the current physical clock.
+
+<table>
+<tr>
+<td> <img src="img/CarBrake.png" alt="CarBrake" width="400">
+<td> <a href="CarBrake.lf">CarBrake.lf</a>: Sketch of an ADAS implementation that emphasizes strong consistency at the expense of availability and therefore will miss deadlines when the brake pedal is pushed while image analysis is being performed.</td>
+</tr>
+</table>
