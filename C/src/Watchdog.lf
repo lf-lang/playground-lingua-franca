@@ -3,16 +3,16 @@ target C;
 reactor Watcher {
     input x:int;
     output d:int; // Produced if the deadline is violated.
-    reaction(x) -> d {=
-        printf("Normal reaction.\n");
-    =} deadline(10 msec) {=
-        instant_t p = lf_time_physical_elapsed() 
-        		- lf_time_logical_elapsed();
-        printf("Deadline missed! Lag: %lld "
-        		"(too late by %lld nsecs)\n", 
-        		p, p-500000);
-        lf_set(d, x->value);
+
+    watchdog poodle(10 msec) {=
+        instant_t p = lf_time_physical_elapsed() - lf_time_logical_elapsed();
+        printf("Deadline missed! Lag: %lld (too late by %lld nsecs)\n", p, p-500000);
     =}
+
+    reaction(x) -> d, poodle {=
+        lf_watchdog_start(poodle, 0);
+        printf("Normal reaction.\n");
+    =} 
 }
 
 main reactor {
