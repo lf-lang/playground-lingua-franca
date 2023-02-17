@@ -1,0 +1,32 @@
+target Cpp
+
+import AddService from "AddService.lf"
+
+
+reactor Client {
+    timer t(0, 100ms)
+    output add_request: Request<std::pair<int, int>>
+    input add_response: Response<int>
+
+    state counter: int(0)
+
+
+    reaction(t) -> add_request {=
+        auto req = Request(std::make_pair(counter, 42));
+        add_request.set(req);
+        reactor::log::Info() << "Client asks what " << counter << " + 42 is";
+        counter++;
+    =}
+
+    reaction(add_response) {=
+        reactor::log::Info() << "It is " << add_response.get()->data();
+    =}
+}
+
+main reactor {
+    adder = new AddService()
+    client = new Client()
+
+    client.add_request -> adder.request
+    adder.response -> client.add_response
+}

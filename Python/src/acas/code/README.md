@@ -1,0 +1,1 @@
+This is a small subset of the code written by Arthur Clavière and is distributed (see [https://svn.onera.fr/schedmcore/branches/](https://svn.onera.fr/schedmcore/branches/)) under an [LGPL version 3 license](https://www.gnu.org/licenses/lgpl-3.0.html), so this directory also has an LGPL [LICENSE](LICENSE.md), which is non-standard compared to other LF code.

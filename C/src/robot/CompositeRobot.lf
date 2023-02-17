@@ -1,0 +1,94 @@
+/**
+ * This is a (very incomplete) starting point for a composite robot
+ * controller, where a handler coordinates control of a gripper,
+ * an autonomous vehicle, and a robot arm.
+ * 
+ * @author Yi Peng Zhu
+ * @author Edward A. Lee
+ */
+target C
+
+import PoissonClock from "../lib/PoissonClock.lf"
+
+reactor Handler {
+    input job:int
+    input pause:bool         // true to pause, false to resume
+    input arm_status:bool    // true for done, false for error
+    input agv_status:int     // batter full/low, errors, etc.
+    input gripper_status:int
+    
+    output move_arm:int[3]   // assuming vector command
+    output pause_arm:bool    // true to pause, false to resume
+    output detect:bool       // to request vision detection
+    output move_agv:int[3]   // assuming vector command
+    output pause_agv:bool    // true to pause, false to resume
+    output gripper_open:bool // true to open, false to close
+    output pause_gripper:bool
+    
+    initial mode IDLE {
+        reaction(job) -> HANDLING {=
+            lf_print("Received job at %lld ns", lf_time_logical_elapsed());
+            lf_set_mode(HANDLING);
+        =}
+    }
+    mode HANDLING {
+        reaction(arm_status, agv_status, gripper_status) -> IDLE {=
+            lf_set_mode(IDLE);
+        =}
+        reaction(job) {=
+            lf_print("Job rejected at %lld ns. Busy.", lf_time_logical_elapsed());
+        =}
+    }
+}
+reactor Jobs {
+    output job:int
+    state job_count:int(0)
+    
+    p = new PoissonClock()
+    reaction(p.event) -> job {=
+        lf_set(job, self->job_count++);
+    =}
+}
+reactor ManualControl {
+    output pause:bool        // true to pause, false to resume
+}
+reactor Arm {
+    input move:int[3]
+    input[2] pause:bool
+    output status:bool       // true for done, false for error
+}
+reactor Vision {
+    input detect:bool
+}
+reactor AGV {
+    input move:int[3]
+    input[2] pause:bool
+    output status:int
+}
+reactor Gripper {
+    input open:bool         // true for open, false for close
+    input[2] pause:bool
+    output status:int
+}
+main reactor {
+    h = new Handler()
+    j = new Jobs()
+    m = new ManualControl()
+    a = new Arm()
+    i = new Vision()
+    v = new AGV()
+    g = new Gripper()
+    
+    j.job -> h.job
+    m.pause -> h.pause
+    m.pause, h.pause_arm -> a.pause
+    m.pause, h.pause_agv -> v.pause
+    m.pause, h.pause_gripper -> g.pause
+    h.move_arm -> a.move
+    a.status -> h.arm_status
+    h.detect -> i.detect
+    h.move_agv -> v.move
+    v.status -> h.agv_status
+    h.gripper_open -> g.open
+    g.status -> h.gripper_status
+}
