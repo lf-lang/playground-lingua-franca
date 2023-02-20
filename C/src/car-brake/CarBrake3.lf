@@ -1,0 +1,20 @@
+/**
+ * This version of the CarBreak example decouples the Vision analysis
+ * using a physical connection, which gives up consistency (and determinacy).
+ * The execution is federated, so the Vision component has no effect
+ * on the ability to meet deadlines in the response to brake pedal actions.
+ * This version is far less likely to experience deadline violations.
+ */
+target C {
+    keepalive: true,
+    timeout: 10s
+};
+
+import Braking, Vision from "CarBrake.lf"
+
+federated reactor {
+    braking = new Braking();
+    vision = new Vision();
+
+    vision.trigger_brake -> braking.brake_assistant after 20ms;
+}
