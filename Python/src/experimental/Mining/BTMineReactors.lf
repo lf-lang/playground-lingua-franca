@@ -1,0 +1,323 @@
+/** Reactors for Behavior Tree Impl of BusyMine 
+* @author Benjamin Asch: <benjamintasch@berkeley.edu>
+**/
+target Python {
+    files: ["include/hbphosphate.py", "include/images", "include/AIPhosphate.py"]
+};
+
+preamble {=
+    import hbphosphate as mine
+    import AIPhosphate as ai
+=}
+
+reactor BehaviorNode {
+    input start
+    output success
+    output failure
+}
+
+reactor MergeOr {
+    input right
+    input left
+    output merged
+
+    reaction(left, right) -> merged {=
+        if left.is_present:
+            merged.set(left.value)
+        else:
+            merged.set(right.value)
+    =}
+}
+
+reactor GeneralArrow extends BehaviorNode {
+    #need to define left, right, and merge
+    #output stays the same for arrow nodes, however
+    #NOTE: do not use, just for reference
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+reactor GeneralQ extends BehaviorNode {
+    #need to define left, right and merge
+    #this is general output order for question nodes
+    #NOTE: do not use, just for reference
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+/*
+    Behavior nodes in this example are referenced by a binary code
+    0 means left, 1 right.
+    This is not a prefix-free code. The first node to the right would be 1.
+    The first behavior node to the left of the aformentioned node would be 10.
+    The root node is marked as X.
+
+    (Q): fallback node (question mark)
+    (A): sequence node (arrow)
+*/
+
+# Root Node (Q)
+reactor MineX extends BehaviorNode {
+    left = new Mine0()
+    right = new Mine1()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Check if close and avoid (A)
+reactor Mine0 extends BehaviorNode {
+    left = new Close()
+    right = new Avoid()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+# Charge check and continue logic (A)
+reactor Mine1 extends BehaviorNode {
+    left = new Charge_check()
+    right = new Mine11()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+# Lead to findspot and continue logic (Q)
+reactor Mine11 extends BehaviorNode {
+    left = new Mine110()
+    right = new Mine111()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Determine whether at spot and findspot (A)
+reactor Mine110 extends BehaviorNode {
+    left = new Spot_check()
+    right = new Find_spot()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+# Leads to charge? continues logic (Q)
+reactor Mine111 extends BehaviorNode {
+    left = new Mine1110()
+    right = new Mine1111()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Charge? Charge (A)
+reactor Mine1110 extends BehaviorNode {
+    left = new Charging()
+    right = new Charge()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Leads to filter? and continues logic (Q)
+reactor Mine1111 extends BehaviorNode {
+    left = new Mine11110()
+    right = new Mine11111()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Filter? Filter (A)
+reactor Mine11110 extends BehaviorNode {
+    left = new Filtering()
+    right = new Filter()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+# Leads to wash? and continues logic (Q)
+reactor Mine11111 extends BehaviorNode {
+    left = new Mine111110()
+    right = new Mine111111()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Wash? Wash (A)
+reactor Mine111110 extends BehaviorNode {
+    left = new Washing()
+    right = new Wash()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+# Leads to mine? (0) and store? (1) (Q)
+reactor Mine111111 extends BehaviorNode {
+    left = new Mine1111110()
+    right = new Mine1111111()
+    merge = new MergeOr()
+
+    left.success -> merge.left
+    left.failure -> right.start
+    right.success -> merge.right
+    right.failure -> failure
+    merge.merged -> success
+}
+
+# Mine? Mine (A)
+reactor Mine1111110 extends BehaviorNode {
+    left = new Mining()
+    right = new Mine()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+# Store? Store (A)
+reactor Mine1111111 extends BehaviorNode {
+    left = new Storing()
+    right = new Store()
+    merge = new MergeOr()
+
+    left.success -> right.start
+    left.failure -> merge.left
+    right.success -> success
+    right.failure -> merge.right
+    merge.merged -> failure
+}
+
+
+# Close? Node
+reactor Close extends BehaviorNode {
+
+}
+
+# Avoid Action Node
+reactor Avoid extends BehaviorNode {
+
+}
+
+# Charge check action
+reactor Charge_check extends BehaviorNode {
+
+}
+
+# @spot node?
+reactor Spot_check extends BehaviorNode {
+
+}
+
+# Find spot action 
+reactor Find_spot extends BehaviorNode {
+
+}
+
+# Charge? 
+reactor Charging extends BehaviorNode {
+
+}
+
+# Charge.
+reactor Charge extends BehaviorNode {
+
+}
+
+# Filter?
+reactor Filtering extends BehaviorNode {
+
+}
+
+# Filter.
+reactor Filter extends BehaviorNode {
+
+}
+
+# Wash?
+reactor Washing extends BehaviorNode {
+
+}
+
+# Wash.
+reactor Wash extends BehaviorNode {
+
+}
+
+# Mining?
+reactor Mining extends BehaviorNode {
+
+}
+
+# Mine.
+reactor Mine extends BehaviorNode {
+
+}
+
+# Storing?
+reactor Storing extends BehaviorNode {
+
+}
+
+# Store.
+reactor Store extends BehaviorNode {
+
+}
