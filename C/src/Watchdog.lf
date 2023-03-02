@@ -6,7 +6,7 @@ reactor Watcher {
 
     watchdog poodle(10 msec) {=
         instant_t p = lf_time_physical_elapsed() - lf_time_logical_elapsed();
-        printf("Deadline missed! Lag: %lld (too late by %lld nsecs)\n", p, p-500000);
+        printf("Deadline missed! Lag: %ld (too late by %ld nsecs)\n", p, p-500000);
     =}
 
     reaction(x) -> d, poodle {=
