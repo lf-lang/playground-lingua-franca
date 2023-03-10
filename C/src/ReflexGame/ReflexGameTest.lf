@@ -1,7 +1,8 @@
 target C {
     keepalive: true,
     timeout: 5 sec
-};
+}
+
 main reactor {
     preamble {=
         // Specify a thread that sends all keyboard characters
@@ -18,11 +19,11 @@ main reactor {
         }
     =}
 
-    state thread_id:lf_thread_t(0);
-    state request_time:time(0);
-    // NOTE: The following will get the default 1 nsec minimum
-    // interarrival time.
-    physical action a:char*;
+    state thread_id: lf_thread_t = 0
+    state request_time: time = 0
+    // NOTE: The following will get the default 1 nsec minimum interarrival
+    // time.
+    physical action a: char*
 
     reaction(startup) -> a {=
         // Start listening for key strokes.
@@ -31,7 +32,7 @@ main reactor {
         printf("Enter character(s) followed by return: ");
         self->request_time = lf_time_logical();
     =}
-   
+
     reaction(a) {=
         if (*a->value == EOF) {
             printf("\nEnd of file received.\n");

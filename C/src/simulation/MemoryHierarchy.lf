@@ -1,23 +1,20 @@
 /**
- * This program simulates a simple memory hierarchy
- * where a random client (with Poisson arrivals) accesses
- * a cache. With a specified probability, the cache misses
- * and delegates the request to a memory controller.
- * The memory controller, in turn farms out the request
- * to a bank of memories, which return after a random
- * amount of time (with an exponential distribution).
- * When all the requests have sent responses to the cache,
- * the cache replies to the client.
- * If a request arrives while there are requests pending,
- * then it queues the request in finite-size queue.
- * If the queue is full, then it returns an error signal
- * to the client.
- * 
+ * This program simulates a simple memory hierarchy where a random client (with
+ * Poisson arrivals) accesses a cache. With a specified probability, the cache
+ * misses and delegates the request to a memory controller. The memory
+ * controller, in turn farms out the request to a bank of memories, which return
+ * after a random amount of time (with an exponential distribution). When all
+ * the requests have sent responses to the cache, the cache replies to the
+ * client. If a request arrives while there are requests pending, then it queues
+ * the request in finite-size queue. If the queue is full, then it returns an
+ * error signal to the client.
+ *
  * @author Edward A. Lee
  */
 target C {
     timeout: 10 us
 }
+
 import Random from "../lib/Random.lf"
 import PoissonClock from "../lib/PoissonClock.lf"
 import RandomDelay from "../lib/RandomDelay.lf"
@@ -27,29 +24,29 @@ main reactor {
     cache = new Cache(seed = 0, miss_probability = 0.3)
     memory = new Memory(seed = 0, average_delay = 100 ns)
     client.request -> cache.request
-    cache.response ->client.response
+    cache.response -> client.response
     cache.miss -> memory.request
     memory.response -> cache.fill
 }
 
 /**
- * Generate requests according to a PoissonProcess with rate lambda
- * (1/lambda is the average time between requests).
- * This defaults to 10,000,000 requests per second (100 ns
- * average time between requests).
- * Each request carries the time that the request is initiated.
- * When the same time-value is received at the response input,
- * print the time it took for that response to be received.
- * If a negative time is received at the response input, then
- * interpret this to be an error and print an error message.
+ * Generate requests according to a PoissonProcess with rate lambda (1/lambda is
+ * the average time between requests). This defaults to 10,000,000 requests per
+ * second (100 ns average time between requests). Each request carries the time
+ * that the request is initiated. When the same time-value is received at the
+ * response input, print the time it took for that response to be received. If a
+ * negative time is received at the response input, then interpret this to be an
+ * error and print an error message.
  */
-reactor Client(seed:int(0), lambda:double(10000000.0)) {
-    input response:time
-    output request:time
+reactor Client(seed: int = 0, lambda: double = 10000000.0) {
+    input response: time
+    output request: time
     p = new PoissonClock(seed = seed, lambda = lambda)
+
     reaction(p.event) -> request {=
         lf_set(request, lf_time_logical_elapsed());
     =}
+
     reaction(response) {=
         if (response->value > 0) {
             interval_t delay = lf_time_logical_elapsed() - response->value;
@@ -62,33 +59,27 @@ reactor Client(seed:int(0), lambda:double(10000000.0)) {
 }
 
 /**
- * Simulate a cache.  A cache miss will occur at
- * random with the probability given by miss_probability,
- * a double between 0.0 and 1.0, with default 0.1.
- * The input is a time value and the response will be
- * either the same value or its negative if an error occurs.
- * Upon a cache hit, the output will be delayed by the
- * time value given by hit_delay.
- * Upon a cache miss, the memory fetch will be delegated
- * to the miss output and the Cache will wait for a
- * response on the fill input.  If a miss occurs
- * while it is waiting, then an error will occur.
- * Upon an error, the response will be sent immediately
- * and will have the negative of the request value.
+ * Simulate a cache. A cache miss will occur at random with the probability
+ * given by miss_probability, a double between 0.0 and 1.0, with default 0.1.
+ * The input is a time value and the response will be either the same value or
+ * its negative if an error occurs. Upon a cache hit, the output will be delayed
+ * by the time value given by hit_delay. Upon a cache miss, the memory fetch
+ * will be delegated to the miss output and the Cache will wait for a response
+ * on the fill input. If a miss occurs while it is waiting, then an error will
+ * occur. Upon an error, the response will be sent immediately and will have the
+ * negative of the request value.
  */
-reactor Cache(
-    miss_probability:double(0.1),
-    hit_delay:time(10 ns)
-) extends Random {
-    input request:time
-    output response:time
-    output miss:time
-    input fill:time
-    state pending:bool(false)
-    logical action a:time
-    reaction(a) -> response {=
-        lf_set(response, a->value);
-    =}
+reactor Cache(miss_probability: double = 0.1, hit_delay: time = 10 ns)
+        extends Random {
+    input request: time
+    output response: time
+    output miss: time
+    input fill: time
+    state pending: bool = false
+    logical action a: time
+
+    reaction(a) -> response {= lf_set(response, a->value); =}
+
     reaction(request) -> a, response, miss {=
         bool hit = random() >= (int)(self->miss_probability * RAND_MAX);
         if (self->pending && !hit) {
@@ -101,23 +92,20 @@ reactor Cache(
             lf_set(miss, request->value);
         }
     =}
+
     reaction(fill) -> response {=
         lf_set(response, fill->value);
         self->pending = false;
     =}
 }
 
-/**
- * Simulate a memory that responds after a random time.
- */
-reactor Memory(seed:int(0), average_delay:time(100 ns)) {
-    input request:time
-    output response:time
+/** Simulate a memory that responds after a random time. */
+reactor Memory(seed: int = 0, average_delay: time = 100 ns) {
+    input request: time
+    output response: time
     delay = new RandomDelay(average = average_delay)
-    reaction(request) -> delay.in {=
-        lf_set(delay.in, request->value);
-    =}
-    reaction(delay.out) -> response {=
-        lf_set(response, delay.out->value);
-    =}
+
+    reaction(request) -> delay.in {= lf_set(delay.in, request->value); =}
+
+    reaction(delay.out) -> response {= lf_set(response, delay.out->value); =}
 }

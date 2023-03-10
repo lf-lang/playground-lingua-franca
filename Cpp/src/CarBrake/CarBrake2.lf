@@ -1,45 +1,45 @@
 /**
- * This version of the CarBreak example decouples the Vision analysis.
- * If this execution is federated, then the Vision component has no effect
- * on the ability to meet deadlines in the response to brake pedal actions.
+ * This version of the CarBreak example decouples the Vision analysis. If this
+ * execution is federated, then the Vision component has no effect on the
+ * ability to meet deadlines in the response to brake pedal actions.
  */
 target Cpp {
     keepalive: true,
     cmake-include: "threads.cmake"
-};
+}
 
 reactor Camera {
-    timer t(20msecs, 20msecs)
+    timer t(20 msecs, 20 msecs)
     output frame: void
 
-    reaction (t) -> frame {=
+    reaction(t) -> frame {=
         frame.set(); // send a "frame"
     =}
 }
 
 reactor BrakingAssistant {
-    input frame: void;
-	  output trigger_brake: void;
+    input frame: void
+    output trigger_brake: void
 
-	  state counter: int(0);
+    state counter: int(0)
 
-	  reaction(frame) -> trigger_brake {=
-        // processing takes some time
- 		    std::this_thread::sleep_for(10ms);
- 		
-        if (counter % 10 == 0) {
-            std::cout << "[automatic] Send the brake signal - " << get_physical_time() << std::endl;
-            trigger_brake.set();
-        }
-        counter++;  
+    reaction(frame) -> trigger_brake {=
+         // processing takes some time
+        std::this_thread::sleep_for(10ms);
+
+         if (counter % 10 == 0) {
+             std::cout << "[automatic] Send the brake signal - " << get_physical_time() << std::endl;
+             trigger_brake.set();
+         }
+         counter++;
     =}
 }
 
 reactor BrakePedal {
-    physical action pedal;
-    output trigger_brake: void;
+    physical action pedal
+    output trigger_brake: void
 
-    state thread: std::thread;
+    state thread: std::thread
 
     reaction(startup) -> pedal {=
         this->thread = std::thread([&] () {
@@ -54,13 +54,11 @@ reactor BrakePedal {
     =}
 
     reaction(pedal) -> trigger_brake {=
-		    std::cout << "[manual] Send the brake signal - " << get_physical_time() << std::endl;
-		    trigger_brake.set();
+        std::cout << "[manual] Send the brake signal - " << get_physical_time() << std::endl;
+        trigger_brake.set();
     =}
 
-    reaction(shutdown) {=
-        thread.join();
-    =}
+    reaction(shutdown) {= thread.join(); =}
 }
 
 reactor Brake {
@@ -68,45 +66,45 @@ reactor Brake {
         #include <thread>
     =}
 
-    input brake_assistant: void;
-    input brake_pedal: void;
+    input brake_assistant: void
+    input brake_pedal: void
 
     reaction(brake_pedal) {=
         std::cout << "[system] Brake triggered - " << get_physical_time() << std::endl;
         std::cout << "[system] source: manual" << std::endl;
-    =} deadline (3msecs) {=
+    =} deadline(3 msecs) {=
         std::cout << "\033[1;31m[error]\033[0m Deadline on manual braking violated - " << get_physical_time() << std::endl;
     =}
 
     reaction(brake_assistant) {=
         std::cout << "[system] Brake triggered - " << get_physical_time() << std::endl;
         std::cout << "[system] source: assistant" << std::endl;
-    =} deadline (15msecs) {=
+    =} deadline(15 msecs) {=
         std::cout << "\033[1;31m[error]\033[0m Deadline on automatic braking violated - " << get_physical_time() << std::endl;
     =}
 }
 
 reactor Braking {
-    input brake_assistant: void;
-    pedal = new BrakePedal();
-    brake = new Brake();
+    input brake_assistant: void
+    pedal = new BrakePedal()
+    brake = new Brake()
 
-    pedal.trigger_brake -> brake.brake_pedal;
-    brake_assistant -> brake.brake_assistant;
+    pedal.trigger_brake -> brake.brake_pedal
+    brake_assistant -> brake.brake_assistant
 }
 
 reactor Vision {
-    output trigger_brake: void;
-    camera = new Camera();
-    assistant = new BrakingAssistant();
+    output trigger_brake: void
+    camera = new Camera()
+    assistant = new BrakingAssistant()
 
-    camera.frame -> assistant.frame;
-    assistant.trigger_brake -> trigger_brake;
+    camera.frame -> assistant.frame
+    assistant.trigger_brake -> trigger_brake
 }
 
 main reactor {
-    braking = new Braking();
-    vision = new Vision();
+    braking = new Braking()
+    vision = new Vision()
 
-    vision.trigger_brake ~> braking.brake_assistant;
+    vision.trigger_brake ~> braking.brake_assistant
 }

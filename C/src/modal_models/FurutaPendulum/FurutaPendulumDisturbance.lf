@@ -1,7 +1,7 @@
 /**
- * This variant of the Furuta pendulum example introduces
- * a disturbance to bring the pendulum out of balance.
- * 
+ * This variant of the Furuta pendulum example introduces a disturbance to bring
+ * the pendulum out of balance.
+ *
  * @author Edward A. Lee
  * @author Alexander Schulz-Rosengarten
  */
@@ -11,28 +11,27 @@ target C {
     flags: "-lm",
     build: "./build_run_plot.sh FurutaPendulumDisturbance"
 }
-import PendulumController from "PendulumController.lf";
-import PendulumSimulation from "PendulumSimulation.lf";
-import Print from "Print.lf";
+
+import PendulumController from "PendulumController.lf"
+import PendulumSimulation from "PendulumSimulation.lf"
+import Print from "Print.lf"
 
 main reactor {
-    s = new PendulumSimulation();
-    c = new PendulumController();
-    p = new Print();
+    s = new PendulumSimulation()
+    c = new PendulumController()
+    p = new Print()
 
-    timer disturb(3 sec);
-    
-    reaction(disturb) -> s.d {=
-        lf_set(s.d, 0.5);
-    =}
+    timer disturb(3 sec)
 
-    s.phi, s.d_phi -> c.phi, c.d_phi;
-    s.theta, s.d_theta -> c.theta, c.d_theta;
-    c.control -> s.u;
+    s.phi, s.d_phi -> c.phi, c.d_phi
+    s.theta, s.d_theta -> c.theta, c.d_theta
+    c.control -> s.u
 
-    c.control -> p.control;
-    c.modeID -> p.modeID;
-    c.energy -> p.energy;
-    s.theta -> p.theta;
-    s.phi -> p.phi;
+    c.control -> p.control
+    c.modeID -> p.modeID
+    c.energy -> p.energy
+    s.theta -> p.theta
+    s.phi -> p.phi
+
+    reaction(disturb) -> s.d {= lf_set(s.d, 0.5); =}
 }

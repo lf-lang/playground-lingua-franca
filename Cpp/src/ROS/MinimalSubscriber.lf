@@ -1,7 +1,7 @@
 target Cpp {
     ros2: true,
     keepalive: true,
-    ros2-dependencies: ["std_msgs"],
+    ros2-dependencies: ["std_msgs"]
 }
 
 public preamble {=
@@ -15,10 +15,12 @@ main reactor {
         extern rclcpp::Node* lf_node;
     =}
 
-    state subscription: {= rclcpp::Subscription<std_msgs::msg::String>::SharedPtr =}
+    state subscription: {=
+        rclcpp::Subscription<std_msgs::msg::String>::SharedPtr
+    =}
     state count: unsigned(0)
 
-    physical action message: std::string;
+    physical action message: std::string
 
     reaction(startup) -> message {=
         subscription = lf_node->create_subscription<std_msgs::msg::String>(

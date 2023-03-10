@@ -13,7 +13,6 @@ public preamble {=
 =}
 
 reactor MACService {
-
     input request: Request<MACData>
     output response: Response<int>
 
@@ -23,8 +22,25 @@ reactor MACService {
     output add_request: Request<std::pair<int, int>>
     input add_response: Response<int>
 
-    add_cm = new ContextManager<{=Request<std::pair<int, int>>=}, {=Response<int>=}, {=Request<MACData>=}>()
-    mul_cm = new ContextManager<{=Request<std::pair<int, int>>=}, {=Response<int>=}, {=Request<MACData>=}>()
+    add_cm = new ContextManager<
+        {= Request<std::pair<int, int>> =},
+        {= Response<int> =},
+        {= Request<MACData> =}
+    >(
+
+    )
+    mul_cm = new ContextManager<
+        {= Request<std::pair<int, int>> =},
+        {= Response<int> =},
+        {= Request<MACData> =}
+    >(
+
+    )
+
+    mul_cm.request_out -> mul_request
+    add_cm.request_out -> add_request
+    mul_response -> mul_cm.response_in
+    add_response -> add_cm.response_in
 
     reaction(request) -> mul_cm.request_in {=
         auto& original_request = *request.get();
@@ -45,27 +61,31 @@ reactor MACService {
         auto& original_request = add_cm.response_out.get()->second;
         response.set(original_request.make_response(result));
     =}
-
-    mul_cm.request_out -> mul_request
-    add_cm.request_out -> add_request
-    mul_response -> mul_cm.response_in
-    add_response -> add_cm.response_in
 }
 
 reactor Client {
-    timer t(0, 100ms)
+    timer t(0, 100 ms)
     output mac_request: Request<MACData>
     input mac_response: Response<int>
 
     state counter: int(0)
 
-    mac_cm = new ContextManager<{=Request<MACData>=}, {=Response<int>=}, MACData>()
+    mac_cm = new ContextManager<
+        {= Request<MACData> =},
+        {= Response<int> =},
+        MACData
+    >(
+
+    )
+
+    mac_cm.request_out -> mac_request
+    mac_response -> mac_cm.response_in
 
     reaction(t) -> mac_cm.request_in {=
         auto data = MACData{counter, counter + 1, counter + 2};
         auto req = Request(data);
         mac_cm.request_in.set(std::make_pair(req, data));
-        reactor::log::Info() << "Client asks what " << data.factor1 << " * " << data.factor2 
+        reactor::log::Info() << "Client asks what " << data.factor1 << " * " << data.factor2
                                  << " + " << data.summand << " is";
         counter++;
     =}
@@ -73,12 +93,9 @@ reactor Client {
     reaction(mac_cm.response_out) {=
         auto const result = mac_cm.response_out.get()->first.data();
         auto const& data = mac_cm.response_out.get()->second;
-        reactor::log::Info() << "Result: " << data.factor1 << " * " << data.factor2 
+        reactor::log::Info() << "Result: " << data.factor1 << " * " << data.factor2
                                  << " + " << data.summand << " = " << result;
     =}
-
-    mac_cm.request_out -> mac_request
-    mac_response -> mac_cm.response_in
 }
 
 main reactor {

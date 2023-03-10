@@ -1,36 +1,36 @@
 /**
- * Sketch of an ADAS system illustrating tradeoffs between consistency and availability.
- * This version experiences deadline violations in the Brake component because of
- * processing times in the BrakingAssistant component.
- * This version is federated for fair comparison with the other two versions.
- * 
+ * Sketch of an ADAS system illustrating tradeoffs between consistency and
+ * availability. This version experiences deadline violations in the Brake
+ * component because of processing times in the BrakingAssistant component. This
+ * version is federated for fair comparison with the other two versions.
+ *
  * @author Christian Menard
  * @author Edward A. Lee
  */
 target C {
-    timeout: 10s,
+    timeout: 10 s,
     keepalive: true
-};
+}
 
 reactor Camera {
-    timer t(20ms, 33ms)
+    timer t(20 ms, 33 ms)
     output frame: bool
 
-    reaction (t) -> frame {=
+    reaction(t) -> frame {=
         lf_set(frame, true); // send a "frame"
     =}
 }
 
 reactor BrakingAssistant {
-    input frame: bool;
-    output trigger_brake: bool;
-    
-    state counter: int(0);
+    input frame: bool
+    output trigger_brake: bool
+
+    state counter: int = 0
 
     reaction(frame) -> trigger_brake {=
         // processing takes some time (10 ms)
         lf_sleep(MSEC(10));
-                 
+
         if (self->counter % 10 == 0) {
             lf_print("[automatic] Send the brake signal at physical time " PRINTF_TIME, lf_time_physical_elapsed());
             lf_set(trigger_brake, true);
@@ -54,14 +54,14 @@ reactor Braking {
             return NULL;
         }
     =}
-    input brake_assistant: bool;
+    input brake_assistant: bool
 
-    physical action pedal;
+    physical action pedal
 
-    state thread: lf_thread_t;
+    state thread: lf_thread_t
 
     reaction(startup) -> pedal {=
-        lf_thread_create(&self->thread, &press_pedal, pedal);        
+        lf_thread_create(&self->thread, &press_pedal, pedal);
     =}
 
     reaction(shutdown) {=
@@ -74,17 +74,17 @@ reactor Braking {
         lf_print("[system] Brake manually triggered at physical time " PRINTF_TIME,
             lf_time_physical_elapsed()
         );
-    =} deadline (3msecs) {=
+    =} deadline(3 msecs) {=
         lf_print("\033[1;31m[ERROR]\033[0m Deadline on manual braking violated at physical time " PRINTF_TIME,
             lf_time_physical_elapsed()
         );
     =}
-    
+
     reaction(brake_assistant) {=
         lf_print("[system] Brake automatically triggered at physical time " PRINTF_TIME,
             lf_time_physical_elapsed()
         );
-    =} deadline (25msecs) {=
+    =} deadline(25 msecs) {=
         lf_print("\033[1;31m[error]\033[0m Deadline on automatic braking violated "
             "at physical time " PRINTF_TIME, lf_time_physical_elapsed()
         );
@@ -92,17 +92,17 @@ reactor Braking {
 }
 
 reactor Vision {
-    output trigger_brake: bool;
-    camera = new Camera();
-    assistant = new BrakingAssistant();
+    output trigger_brake: bool
+    camera = new Camera()
+    assistant = new BrakingAssistant()
 
-    camera.frame -> assistant.frame;
-    assistant.trigger_brake -> trigger_brake;
+    camera.frame -> assistant.frame
+    assistant.trigger_brake -> trigger_brake
 }
 
 federated reactor {
-    braking = new Braking();
-    vision = new Vision();
+    braking = new Braking()
+    vision = new Vision()
 
-    vision.trigger_brake -> braking.brake_assistant;
+    vision.trigger_brake -> braking.brake_assistant
 }

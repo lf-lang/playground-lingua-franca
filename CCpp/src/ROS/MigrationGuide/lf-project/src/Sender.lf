@@ -1,7 +1,7 @@
 // src/Sender.lf
 target CCpp {
     cmake-include: "include/composition.cmake"
-};
+}
 
 preamble {=
     #include "publisher_member_function.h"
@@ -9,10 +9,10 @@ preamble {=
 
 reactor Sender {
     // Instantiate the publisher node as a sate variable
-    state publisher_node : std::shared_ptr<MinimalPublisher>;
-    output out:std::shared_ptr<std_msgs::msg::String>;
-    timer t(0, 1 sec);
-    state count:int(0);
+    state publisher_node: std::shared_ptr<MinimalPublisher>
+    output out: std::shared_ptr<std_msgs::msg::String>
+    timer t(0, 1 sec)
+    state count: int = 0
 
     reaction(startup) {=
         // Initialize rclcpp
@@ -28,7 +28,5 @@ reactor Sender {
         lf_set(out, message);
     =}
 
-    reaction(shutdown) {=
-        rclcpp::shutdown();
-    =}
+    reaction(shutdown) {= rclcpp::shutdown(); =}
 }

@@ -4,22 +4,19 @@
  * @author David Chemouil
  */
 target C
-reactor Node(
-    id:int(0)
-) {
-    input in:int
-    output out:int
-    
-    logical action a:int
-    
+
+reactor Node(id: int = 0) {
+    input in: int
+    output out: int
+
+    logical action a: int
+
     initial mode NotElected {
-        reaction(startup) -> out {=
-            lf_set(out, self->id);
-        =}
-        reaction(a) -> out {=
-            lf_set(out, a->value);
-        =}
-        reaction(in) -> a, Elected {=
+        reaction(startup) -> out {= lf_set(out, self->id); =}
+
+        reaction(a) -> out {= lf_set(out, a->value); =}
+
+        reaction(in) -> a, reset(Elected) {=
             if (in->value > self->id) {
                 lf_schedule_int(a, MSEC(10), in->value);
             } else if (in->value == self->id) {
@@ -28,10 +25,11 @@ reactor Node(
             }
         =}
     }
+
     mode Elected {
-        
     }
 }
+
 federated reactor {
     i0 = new Node()
     i1 = new Node(id = 1)

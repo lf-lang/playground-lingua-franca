@@ -1,19 +1,18 @@
 /**
- * Simulate authentication. This simulator rejects
- * authentication one of every five attempts, prints
- * a message, and produces no output.
- * 
+ * Simulate authentication. This simulator rejects authentication one of every
+ * five attempts, prints a message, and produces no output.
+ *
  * @author Ravi Akella
  * @author Edward A. Lee
  */
 target CCpp
 
 reactor AuthSim {
-    input in:LockCommand
-    output out:LockCommand
+    input in: LockCommand
+    output out: LockCommand
 
-    state count:int(0)
-    
+    state count: int = 0
+
     reaction(in) -> out {=
         if (++self->count % 5 == 0) {
             lf_print("!!! Authentication rejected.");

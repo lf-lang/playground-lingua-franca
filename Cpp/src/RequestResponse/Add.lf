@@ -2,14 +2,12 @@ target Cpp
 
 import AddService from "AddService.lf"
 
-
 reactor Client {
-    timer t(0, 100ms)
+    timer t(0, 100 ms)
     output add_request: Request<std::pair<int, int>>
     input add_response: Response<int>
 
     state counter: int(0)
-
 
     reaction(t) -> add_request {=
         auto req = Request(std::make_pair(counter, 42));

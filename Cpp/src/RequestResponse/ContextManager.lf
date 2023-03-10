@@ -13,14 +13,14 @@ reactor ContextManager<Req, Resp, Ctx> {
 
     state context_buffer: {= std::map<unsigned long, Ctx> =}
 
-    reaction (request_in) -> request_out {=
+    reaction(request_in) -> request_out {=
         const auto& req = request_in.get()->first;
         const auto& ctx = request_in.get()->second;
         context_buffer[req.uid()] = ctx;
         request_out.set(req);
     =}
 
-    reaction (response_in) -> response_out {=
+    reaction(response_in) -> response_out {=
         const auto& resp = *response_in.get();
         const auto& ctx = context_buffer[resp.uid()];
         response_out.set(std::make_pair(resp, ctx));

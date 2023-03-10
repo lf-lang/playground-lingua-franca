@@ -1,23 +1,23 @@
-/*
- * Implements a modal LF version of the hierarchical statemachine 
- * for the behavior tree in presented in this article:
+/**
+ * Implements a modal LF version of the hierarchical statemachine for the
+ * behavior tree in presented in this article:
  * https://robohub.org/introduction-to-behavior-trees/
- * 
- * It implements the core behavior sequence by chaining up reactors.
- * However, this currently does not work correctly with modes because
- * there is no support for reacting to entering a mode.
- * Hence, when switching to Charging the task is not started and if
- * switching back to Nominal the sequence would not restart.
+ *
+ * It implements the core behavior sequence by chaining up reactors. However,
+ * this currently does not work correctly with modes because there is no support
+ * for reacting to entering a mode. Hence, when switching to Charging the task
+ * is not started and if switching back to Nominal the sequence would not
+ * restart.
  */
-target C;
+target C
 
-reactor GenericTask(name:string("")) {
-    input start:bool
-    output success:bool
-    output failure:bool
-    
+reactor GenericTask(name: string = "") {
+    input start: bool
+    output success: bool
+    output failure: bool
+
     logical action continue_task
-    
+
     reaction(start, continue_task) -> continue_task, success, failure {=
         printf("%s\n", self->name);
         int r = rand() % 10;
@@ -32,50 +32,45 @@ reactor GenericTask(name:string("")) {
 }
 
 reactor Robot {
-    input start:bool
-    input BatteryOK:bool
-    output success:bool
-    output failure:bool
-    
+    input start: bool
+    input BatteryOK: bool
+    output success: bool
+    output failure: bool
+
     initial mode Nominal {
-        MoveToObj = new GenericTask(name="MoveToObj")
-        CloseGrip = new GenericTask(name="CloseGrip")
-        MoveHome = new GenericTask(name="MoveHome")
-        
-        start -> MoveToObj.start // No resume after charging
+        MoveToObj = new GenericTask(name = "MoveToObj")
+        CloseGrip = new GenericTask(name = "CloseGrip")
+        MoveHome = new GenericTask(name = "MoveHome")
+
+        start -> MoveToObj.start  // No resume after charging
         MoveToObj.success -> CloseGrip.start
         CloseGrip.success -> MoveHome.start
         MoveHome.success -> success
-        
+
         MoveToObj.failure -> failure
         CloseGrip.failure -> failure
         MoveHome.failure -> failure
-        
-        // Potential solution for resuming after charging
-//        reaction(entry) -> MoveToObj.start {=
-//            // PROBLEM!!
-//            lf_set(MoveToObj.start, true);
-//        =}
-        
-        reaction(BatteryOK) -> Charging {=
+        // Potential solution for resuming after charging reaction(entry) ->
+        // MoveToObj.start {=
+        // // PROBLEM!! lf_set(MoveToObj.start, true);
+        // =}
+        reaction(BatteryOK) -> reset(Charging) {=
             if (!BatteryOK->value) {
                 lf_set_mode(Charging);
                 printf("Battery empty\n");
             }
         =}
     }
-    
+
     mode Charging {
-        GoCharge = new GenericTask(name="GoCharge")
-        
+        GoCharge = new GenericTask(name = "GoCharge")
+
         GoCharge.failure -> failure
-        
-        // Potential solution for starting task when mode is entered because no start event is provided
-//        reaction(entry) -> GoCharge.start {=
-//            lf_set(GoCharge.start, true);
-//        =}
-        
-        reaction(BatteryOK, GoCharge.success) -> Nominal {=
+        // Potential solution for starting task when mode is entered because no
+        // start event is provided reaction(entry) -> GoCharge.start {=
+        // lf_set(GoCharge.start, true);
+        // =}
+        reaction(BatteryOK, GoCharge.success) -> reset(Nominal) {=
             // Assumes simultaneous presence
             if (BatteryOK->value && GoCharge.success->value) {
                 lf_set_mode(Nominal);
@@ -86,14 +81,12 @@ reactor Robot {
 }
 
 main reactor {
-    timer Battery(1sec, 1sec)
-    state battery_state:int(1)
-    
+    timer Battery(1 sec, 1 sec)
+    state battery_state: int = 1
+
     robot = new Robot()
-    
-    reaction(startup) -> robot.start {=
-        lf_set(robot.start, true);
-    =}
+
+    reaction(startup) -> robot.start {= lf_set(robot.start, true); =}
 
     reaction(Battery) -> robot.BatteryOK {=
         self->battery_state--;
@@ -102,15 +95,14 @@ main reactor {
             self->battery_state = 5;
         }
     =}
-    
+
     reaction(robot.success) {=
         printf("Total success\n");
         lf_request_stop();
     =}
-    
+
     reaction(robot.failure) {=
         printf("Utter failure\n");
         lf_request_stop();
     =}
-
 }
