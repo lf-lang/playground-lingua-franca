@@ -1,0 +1,90 @@
+target C
+
+// comments.stream()
+//     .mapToInt(String::length)
+//     .max()
+//     .orElse(0);
+
+preamble {=
+    typedef struct optional_int {
+        bool present;
+        int value;
+    } optional_int;
+=}
+
+reactor StringList {
+    input stream: bool
+    output out: string
+    output done: bool
+    state strings: string*
+    state iterator: int(0)
+    logical action a
+    reaction(startup) {=
+        self->strings = (string*) malloc(sizeof(string) * 5);
+        self->strings[0] = "comments";
+        self->strings[1] = "stream";
+        self->strings[2] = "mapToInt";
+        self->strings[3] = "list";
+        self->strings[4] = "stream";
+    =}
+    reaction(stream, a) -> a, out, done {=
+        lf_set(out, self->strings[self->iterator]);
+        if (++self->iterator < 5) lf_schedule(a, 0);
+        else lf_set(done, true);
+    =}
+}
+
+reactor StringLength {
+    input in: string
+    output out: int
+    input done_in: bool
+    output done_out: bool
+    done_in -> done_out
+    reaction(in) -> out {=
+        lf_set(out, strlen(in->value));
+    =}
+}
+
+reactor Max {
+    input in: int
+    input done: bool
+    output out: optional_int
+    state max: optional_int({= { .present=0, .value=0 } =})
+    reaction(in) {=
+        if (in->value > self->max.value || !self->max.present) {
+            self->max.present = 1;
+            self->max.value = in->value;
+        }
+    =}
+    reaction(done) -> out {=
+        lf_set(out, self->max);
+        self->max.present = 0;
+    =}
+}
+
+reactor OrElse(default_value: int(0)) {
+    input in: optional_int
+    output out: int
+    reaction(in) -> out {=
+        if (in->is_present) lf_set(out, in->value.value);
+        else lf_set(out, self->default_value);
+    =}
+}
+
+main reactor {
+    list = new StringList()
+    length = new StringLength()
+    max = new Max()
+    or_else = new OrElse()
+    reaction(startup) -> list.stream {=
+        lf_set(list.stream, true);
+    =}
+    list.out -> length.in
+    list.done -> length.done_in
+    length.out -> max.in
+    length.done_out -> max.done
+    max.out -> or_else.in
+    reaction(or_else.out) {=
+        printf("%d\n", or_else.out->value);
+    =}
+}
