@@ -79,6 +79,7 @@ main reactor {
     reaction(startup) -> list.stream {=
         lf_set(list.stream, true);
     =}
+    // list -> length -> max -> or_else
     list.out -> length.in
     list.done -> length.done_in
     length.out -> max.in
