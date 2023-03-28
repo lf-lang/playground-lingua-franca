@@ -1,5 +1,5 @@
 /**
- * ROSACE case study, from:
+ * Controller for the ROSACE case study, from:
  * 
  * Claire Pagetti , David Saussié, Romain Gratia , Eric Noulard , Pierre Siron,
  * "The ROSACE Case Study: From Simulink Specification to Multi/Many-Core Execution,"
@@ -20,9 +20,7 @@
  * (c) 2023 Regents of the University of California, LGPL-v3
  * (https://www.gnu.org/licenses/lgpl-3.0.html)
  * 
- * This program uses a forward Euler simulation of aircraft dynamics and implements
- * throttle and elevator control. The parameters specified execute an elevation
- * climb from an initial 10,000 feet to a target 11,000 feet.
+ * This program implements throttle and elevator control.
  * 
  * The style of execution is that each component has a `period` parameter that
  * determines the frequency at which it runs. The program relies on persistence
@@ -34,16 +32,18 @@
  * @author Claire Pagetti
  */
 
-target C {
-    fast: true,
-    // build: "./build_run_plot.sh Rosace",   // FIXME: Doesn't find it.
-    timeout: 10 min
-}
+target C
 
 preamble {=
-    // Shared constants.
+    // Trimming parameters
+    // These may be overridden in the top-level .lf file.
+    #ifndef Va_eq
+    #define Va_eq (230.0)   // Nominal airspeed?
+    #define h_eq (10000.0)
+
     #define delta_th_eq (1.5868660794926)
-    #define delta_e_eq (0.012009615652468)    
+    #define delta_e_eq (0.012009615652468)
+    #endif
 =}
 
 reactor Filter(

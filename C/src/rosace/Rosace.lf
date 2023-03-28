@@ -61,6 +61,10 @@ import PrintToFile from "../lib/PrintToFile.lf"
 
 preamble {=
     // Shared constants.
+    // Trimming parameters
+    #define Va_eq (230.0)   // Nominal airspeed?
+    #define h_eq (10000.0)
+
     #define delta_th_eq (1.5868660794926)
     #define delta_e_eq (0.012009615652468)    
 =}

@@ -32,11 +32,14 @@ target C
 preamble {=
     #include <math.h>
     // Trimming parameters
+    // These may be overridden in the top-level .lf file.
+    #ifndef Va_eq
     #define Va_eq (230.0)   // Nominal airspeed?
     #define h_eq (10000.0)
 
     #define delta_th_eq (1.5868660794926)
     #define delta_e_eq (0.012009615652468)
+    #endif
 =}
 reactor AircraftDynamics(
     period: time(5 ms),
