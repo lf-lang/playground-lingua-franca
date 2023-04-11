@@ -14,6 +14,10 @@ preamble {=
     #include <arpa/inet.h>
     #include <unistd.h>     // Defined read()
     
+    typedef struct browser_ui_t {
+        bool running;  // indicator that listener thread is running.
+    } browser_ui_t;
+    
     // Initial web page
     char initial_page[] = "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html; charset=UTF-8\r\n\r\n"
@@ -61,7 +65,7 @@ preamble {=
     }
 
     void* listener_thread(void* args) {
-        int* running = (int*)args;
+        browser_ui_t* browser_ui = (browser_ui_t*)args;
         
         int server_socket = socket(AF_INET, SOCK_STREAM, 0);
         if (server_socket < 0) {
@@ -86,7 +90,7 @@ preamble {=
         
         lf_print("*** Point your browser to http://localhost:8080");
 
-        while(*running) {
+        while(browser_ui->running) {
             struct sockaddr_in client_address;
             int client_address_length = sizeof(client_address);
     
@@ -103,13 +107,13 @@ preamble {=
 =}
 
 main reactor {
-    state running:int = 0
+    state browser_ui:browser_ui_t
     reaction(startup) {=
-        self->running = true;
+        self->browser_ui.running = true;
         lf_thread_t listener;
-        lf_thread_create(&listener, &listener_thread, &self->running);
+        lf_thread_create(&listener, &listener_thread, &self->browser_ui);
     =}
     reaction(shutdown) {=
-        self->running = false;
+        self->browser_ui.running = false;
     =}
 }
