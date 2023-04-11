@@ -1,0 +1,115 @@
+/**
+ * A basic user interface realized in the browser.
+ * 
+ * @author Edward A. Lee
+ */
+target C {
+    keepalive: true
+}
+preamble {=
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+    #include <sys/socket.h>
+    #include <arpa/inet.h>
+    #include <unistd.h>     // Defined read()
+    
+    // Initial web page
+    char initial_page[] = "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=UTF-8\r\n\r\n"
+        "<!DOCTYPE html><html><head><title>Initial web page</title>"
+        "</head><body>"
+            "<h1>Console</h1>"
+            "<button id=\"append-button\">Press me!</button>"
+            "<p id=\"content-container\"></p>"
+        "<script>"
+"  document.getElementById('content-container').innerHTML += 'NOTHING';"
+"  document.getElementById('append-button').addEventListener('click', function() {"
+"    var xhttp = new XMLHttpRequest();"
+"    xhttp.onload = function() {"
+"      if (this.status == 200) {"
+"        var response = JSON.parse(this.responseText);"
+"        var newContent = response.content;"
+"        document.getElementById('content-container').innerHTML = newContent;"
+"      } else {"
+"        document.getElementById('content-container').innerHTML = \"Error: \" + this.statusText;"
+"      }"
+"    };"
+"    xhttp.open('GET', '/request', true);"
+"    xhttp.send(null);"
+"  });" 
+        "</script>"
+        "</body></html>\r\n";
+    
+    void handle_request(int socket) {
+        char buffer[1024] = {0};
+        read(socket, buffer, 1024);
+        printf("Received request: %s\n", buffer);
+    
+        // The response depends on the path part of the request.
+        const char *start_of_path = strchr(buffer, ' ') + 1;
+        if (start_of_path != NULL && strncmp("/request", start_of_path, 8) == 0) {
+            char *http_response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
+            write(socket, http_response, strlen(http_response));
+            char* response = "{\"content\": \"new content\"}\r\n";
+            write(socket, response, strlen(response));
+        } else {
+            // Default is to write initial page.
+            write(socket, initial_page, sizeof(initial_page));
+        }
+        close(socket);
+    }
+
+    void* listener_thread(void* args) {
+        int* running = (int*)args;
+        
+        int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (server_socket < 0) {
+            lf_print_error_and_exit("Error creating socket.");
+        }
+
+        int one = 1;
+        // Allow reusing of local addresses.
+        setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
+
+        struct sockaddr_in server_address;
+        server_address.sin_family = AF_INET;
+        server_address.sin_addr.s_addr = INADDR_ANY;
+        server_address.sin_port = htons(8080);
+
+        if (bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+            close(server_socket);
+            lf_print_error_and_exit("Error binding socket.");
+        }
+        // Pending queue length of 5.
+        listen(server_socket, 5);
+        
+        lf_print("*** Point your browser to http://localhost:8080");
+
+        while(*running) {
+            struct sockaddr_in client_address;
+            int client_address_length = sizeof(client_address);
+    
+            int client_socket = accept(server_socket, (struct sockaddr *)&client_address, (socklen_t*)&client_address_length);
+    
+            if (client_socket < 0) {
+                lf_print_error_and_exit("Error accepting connection.");
+            }
+    
+            handle_request(client_socket);
+        }
+        return NULL;
+    }
+=}
+
+main reactor {
+    state running:int = 0
+    reaction(startup) {=
+        self->running = true;
+        lf_thread_t listener;
+        lf_thread_create(&listener, &listener_thread, &self->running);
+    =}
+    reaction(shutdown) {=
+        self->running = false;
+    =}
+}
