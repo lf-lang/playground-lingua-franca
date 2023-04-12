@@ -1,0 +1,24 @@
+target TypeScript {
+	timeout: 1000 sec,
+    coordination-options: {
+        advance-message-interval: 100 msec
+    }
+}
+
+import Sensor from "PhysicalSensor.lf"
+import Arbiter from "Arbiter.lf"
+
+// Assumptions:
+// - cars travel with a maximum speed of 11.2 m/s (25 mph)
+// - cars travel with a minimum distance of .2 m between them
+// - cars have a minimum length of 3m
+// - the single-lane passage way is walled and 3m wide
+
+federated reactor {
+    s1 = new Sensor();
+    s2 = new Sensor();
+    a = new Arbiter();
+
+    s1.blocked -> a.sensorOut;
+    s2.blocked -> a.sensorIn;
+}

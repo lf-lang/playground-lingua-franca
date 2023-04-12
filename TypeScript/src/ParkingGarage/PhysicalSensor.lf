@@ -1,0 +1,75 @@
+target TypeScript
+
+/**
+ * Sensor that outputs true when an obstacle appears and 
+ * subsequently outputs false when the obstacle disappears.
+ */
+reactor Sensor {
+    preamble {=
+        const VL53L1X = require("vl53l1x");
+        const driver = "i2c-bus";
+        const busNumber = 1;
+    =}
+
+    // timer for a dummy reaction
+    timer dummy(100ms, 100ms);
+
+    // Appear/disappear events reported by the sensor.
+    physical action event: boolean
+
+    state count: number(0)
+    
+    // Whether there is currently something in front of the sensor.
+    state present: boolean(false)
+    
+    state appeared_count: number(0)
+    state disappeared_count: number(0)
+    
+    output blocked: boolean
+
+    reaction(startup) -> event {=
+        VL53L1X(busNumber, 0x29, {driver:driver}).then(async (device:any) => {
+
+            await device.mode("short");
+            //Set a timing settings. It receives (dwell, mode)
+            //dwell: Time in milliseconds the device will spend collecting signals.
+            //We can selet 20, 50, 100, 200, 500 as the dwell value.
+            //mode: Time in milliseconds the device will wait between measurements
+            await device.timing(20, 40);
+
+            device.on("data", (data:any) => {
+                //console.log(data)
+                var distance = Number(data.distance);
+                if (!present && distance < 500) {
+                    actions.event.schedule(0, true);
+                    present = true;
+                }
+                if (present && distance >= 500) {
+                    actions.event.schedule(0, false);
+                    present = false;
+                }
+            })
+
+            await device.start()
+
+            process.on("exit", async (code) => {
+                await device.stop()
+            })
+        });
+    =}
+
+    reaction(event) -> blocked {=
+        blocked = event
+        if (event === true) {
+            console.log("Obstacle appeared")
+            appeared_count++
+        } else {
+            console.log("Obstacle disappeared")
+            disappeared_count++
+        }
+    =}
+
+    reaction(dummy) {=
+        // This reaction sends LTC to the Arbiter to let it proceed.
+    =}
+}

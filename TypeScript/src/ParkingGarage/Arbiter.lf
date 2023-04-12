@@ -1,0 +1,47 @@
+target TypeScript
+
+reactor Arbiter {
+    input sensorOut: boolean;
+    input sensorIn: boolean;
+
+    state insideAppeared: TimeValue;
+    state insideDisappeared: TimeValue;
+    state outsideAppeared: TimeValue;
+    state outsideDisappeared: TimeValue;
+
+    reaction(sensorOut) {=
+        if (sensorOut) {
+            outsideAppeared = util.getElapsedLogicalTime()
+        } else {
+            outsideDisappeared = util.getElapsedLogicalTime()
+        }
+    =}
+
+    reaction(sensorIn) {=
+        if (sensorIn) {
+            insideAppeared = util.getElapsedLogicalTime()
+        } else {
+            insideDisappeared = util.getElapsedLogicalTime()
+        }
+    =}
+
+    reaction (sensorOut, sensorIn) {=
+        if (insideAppeared !== undefined
+            && insideDisappeared !== undefined
+            && outsideAppeared !== undefined
+            && outsideDisappeared !== undefined) {
+                if (outsideAppeared.isEarlierThan(insideAppeared)
+                    && insideAppeared.isEarlierThan(outsideDisappeared)
+                    && outsideDisappeared.isEarlierThan(insideDisappeared)){
+                    // Entering
+			        //console.log(`Enter: ${++enterNumber}`);
+                    console.log(`Entered at ${util.getElapsedLogicalTime()}`);
+                } else if (insideAppeared.isEarlierThan(outsideAppeared)
+                    && outsideAppeared.isEarlierThan(insideDisappeared)
+                    && insideDisappeared.isEarlierThan(outsideDisappeared)) {
+			        //console.log(`Exit: ${++exitNumber}`);
+                    console.log(`Exited at ${util.getElapsedLogicalTime()}`);
+                }
+        }
+    =}
+} 

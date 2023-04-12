@@ -1,0 +1,9 @@
+target TypeScript {
+    keepAlive: true
+}
+
+import Sensor from "PhysicalSensor.lf"
+
+main reactor {
+    s = new Sensor();
+}
