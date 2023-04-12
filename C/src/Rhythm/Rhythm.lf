@@ -1,49 +1,61 @@
 /**
- * Rhythm generator using samples of percussion instruments.
- * This program runs on MacOS and Linux, at least.
- * 
- * This program opens a simple, terminal-based user interface for
- * specifying a rhythmic audio output. The rhythm is displayed in
- * the terminal as it is generated and produced as audio using
- * sample audio files.
- * 
+ * Rhythm generator using samples of percussion instruments. This program runs
+ * on MacOS and Linux, at least.
+ *
+ * This program opens a simple, terminal-based user interface for specifying a
+ * rhythmic audio output. The rhythm is displayed in the terminal as it is
+ * generated and produced as audio using sample audio files.
+ *
  * This program also uses ncurses, which needs to be installed on your machine
- * for this to work. It also uses the library utility sensor_simulator,
- * provided with Lingua Franca, which uses keyboard input to simulate
- * asynchronous sensors and beeps to simulate timed output.
- * See sensor_simulator.h for documentation.
- * 
- * The merengue rhythm comes from here: 
+ * for this to work. It also uses the library utility sensor_simulator, provided
+ * with Lingua Franca, which uses keyboard input to simulate asynchronous
+ * sensors and beeps to simulate timed output. See sensor_simulator.h for
+ * documentation.
+ *
+ * The merengue rhythm comes from here:
  * https://www.8notes.com/school/lessons/percussion/merengue.asp
- * 
- * The sound files come from here:
- * https://freewavesamples.com
- * 
- * Sound files are assumed to be wav files with sample rate 44,100,
- * 16-bit samples, linear PCM encoded.
- * Use afconvert on Mac to convert to the assumed input format.
- * 
+ *
+ * The sound files come from here: https://freewavesamples.com
+ *
+ * Sound files are assumed to be wav files with sample rate 44,100, 16-bit
+ * samples, linear PCM encoded. Use afconvert on Mac to convert to the assumed
+ * input format.
+ *
  * @author Edward A. Lee
- * 
+ *
  * @see RhythmDistributed.lf
  * @see RhythmDistributedNoUI.lf
  */
 target C {
-    tracing: true,
+    keepalive: true,
     files: [
-        "/lib/c/reactor-c/util/sensor_simulator.c", "/lib/c/reactor-c/util/sensor_simulator.h",
-        "/lib/c/reactor-c/util/wave_file_reader.c", "/lib/c/reactor-c/util/wave_file_reader.h",
-        "/lib/c/reactor-c/util/audio_loop_mac.c", "/lib/c/reactor-c/util/audio_loop.h",
+        "/lib/c/reactor-c/util/sensor_simulator.c",
+        "/lib/c/reactor-c/util/sensor_simulator.h",
+        "/lib/c/reactor-c/util/wave_file_reader.c",
+        "/lib/c/reactor-c/util/wave_file_reader.h",
+        "/lib/c/reactor-c/util/audio_loop_mac.c",
+        "/lib/c/reactor-c/util/audio_loop.h",
         "/lib/c/reactor-c/util/audio_loop_linux.c",
-        "sounds/Bass-Drum-1.wav", "sounds/Hi-Bongo.wav", "sounds/Claves.wav", "sounds/High-Conga-1.wav",
-        "sounds/Cowbell-1.wav", "sounds/Cuica-1.wav", "sounds/Guiro.wav",
-        "sounds/Ensoniq-ESQ-1-Snare.wav", "sounds/Floor-Tom-1.wav"],
-    // Include cmake support for some needed functionality
+        "sounds/Bass-Drum-1.wav",
+        "sounds/Hi-Bongo.wav",
+        "sounds/Claves.wav",
+        "sounds/High-Conga-1.wav",
+        "sounds/Cowbell-1.wav",
+        "sounds/Cuica-1.wav",
+        "sounds/Guiro.wav",
+        "sounds/Ensoniq-ESQ-1-Snare.wav",
+        "sounds/Floor-Tom-1.wav"
+    ],
+    // Include cmake support for some needed functionality Enable support for
+    // the math lib
     cmake-include: [
-        "/lib/c/reactor-c/util/sensor_simulator.cmake", // Enable support for the sensor simulator
-        "include/ncurses-extension.cmake", // Enable support for ncurses
-        "include/mlib-extension.cmake"] // Enable support for the math lib
-};
+        // Enable support for the sensor simulator
+        "/lib/c/reactor-c/util/sensor_simulator.cmake",
+        // Enable support for ncurses
+        "include/ncurses-extension.cmake",
+        "include/mlib-extension.cmake"
+    ]
+}
 
 import PlayWaveform from "PlayWaveform.lf"
 
@@ -51,33 +63,33 @@ preamble {=
     #include <ncurses.h>
     #include <sys/stat.h> // Defines mkdir.
     #include "sensor_simulator.h"
-    
+
     /////////////////////////////
     // Configuration of the audio.
-    
+
     // Beat pattern with 1 note followed by 7 silences, repeated.
     #define DOWNBEAT 0x0101
-    
+
     // Merenque in binary covers two bars (in temporal order):  1001 1010 1010 1111
     // Reverse the order to get the bit sequence: 1111 0101 0101 1001
     #define MERENGUE 0xf559
     // Merengue emphasis in binary (in temporal order): 1001 0010 0010 1000
     // Reverse the order to get the bit sequence: 0001 0100 0100 1001
     #define MERENGUE_EMPHASIS 0x1449
-    
+
     // Bossa nova: In temporal order: 1001 0010 0010 0110
     // Note: last '1' is questionable. Held over from previous '1'.
     // Reverse order: 0110 0100 0100 1001
     #define BOSSA_NOVA 0x6449
     #define BOSSA_NOVA_EMPHASIS 0x2449
-    
+
     // Samba: Temporal order: 0000 1010 1101 1010
     // Reversed: 0101 1011 0101 0000
     // Alt: 0101 1011 1011 1011
     // Rev: 1101 1101 1101 1010
     #define SAMBA 0xddda
     #define SAMBA_EMPHASIS 0x99ca
-    
+
     //////////////////////////////////////
     // Configuration of the user interface.
 
@@ -107,60 +119,64 @@ preamble {=
 =}
 
 /**
- * Reactor that outputs notes (which carry an emphasis))
- * according to a specified rhythm. The minimum time
- * between notes is given by the 'tick_duration' state
- * variable. This can be adjusted up or down.
- * This is designed to coordinate between multiple
- * instances of this RhythmSource so each can change
- * the rhythm and tempo while keeping the others in sync.
- * 
+ * Reactor that outputs notes (which carry an emphasis)) according to a
+ * specified rhythm. The minimum time between notes is given by the
+ * 'tick_duration' state variable. This can be adjusted up or down. This is
+ * designed to coordinate between multiple instances of this RhythmSource so
+ * each can change the rhythm and tempo while keeping the others in sync.
+ *
  * @param sixteenth Initial duration of one sixteenth note.
- * @param delta The amount by which to change sixteenth when tempo is increased or decreased.
+ * @param delta The amount by which to change sixteenth when tempo is increased
+ * or decreased.
  * @param message An array of strings to display.
  * @param message_length The length of the message array.
  */
 reactor RhythmSource(
-    sixteenth:time(200 msec),
-    delta:time(10 msec),
-    message:char**({=instructions=}),
-    message_length:int({=instructions_length=}),
-    log_to_file:bool(false)
-) {    
-    input rhythm_change_in:char;  // To change the rhythm.
-    input tempo_change_in:interval_t;    // To change the tempo.
+    sixteenth: time = 200 msec,
+    delta: time = 10 msec,
+    message: char** = {= instructions =},
+    message_length: int = {= instructions_length =},
+    log_to_file: bool = false
+) {
+    // To change the rhythm.
+    input rhythm_change_in: char
+    // To change the tempo.
+    input tempo_change_in: interval_t
 
-    output note:float;         // To play a note with the given emphasis.
-    output instrument:int;     // Instrument selection.
-    output rhythm_change:char; // To change the rhythm.
-    output tempo_change:interval_t;   // To change the tempo.
-    
-    state tick_duration:time(200 msec);
-    logical action tick;
-    
+    // To play a note with the given emphasis.
+    output note: float
+    // Instrument selection.
+    output instrument: int
+    // To change the rhythm.
+    output rhythm_change: char
+    // To change the tempo.
+    output tempo_change: interval_t
+
+    state tick_duration: time = 200 msec
+    logical action tick
+
     // Count of sixteenth notes.
-    state count:int(0);
-    
-    // Action to be invoked when a key is pressed.
-    physical action key:char;
-    
-    // Indicator of when to make a sound.
-    state rhythm:int({=DOWNBEAT=});
-    
-    // Indicator of whether to emphasize the sound.
-    state emphasis:int({=DOWNBEAT=});
+    state count: int = 0
 
-   // Currently active rhythm. This becomes
-    // active from rhythm on the downbeat.
-    state active_rhythm:int({=DOWNBEAT=});
-    
-    // Currently active emphasis. This becomes
-    // active from rhythm on the downbeat.
-    state active_emphasis:int({=DOWNBEAT=});
-        
+    // Action to be invoked when a key is pressed.
+    physical action key: char
+
+    // Indicator of when to make a sound.
+    state rhythm: int = {= DOWNBEAT =}
+
+    // Indicator of whether to emphasize the sound.
+    state emphasis: int = {= DOWNBEAT =}
+
+    // Currently active rhythm. This becomes active from rhythm on the downbeat.
+    state active_rhythm: int = {= DOWNBEAT =}
+
+    // Currently active emphasis. This becomes active from rhythm on the
+    // downbeat.
+    state active_emphasis: int = {= DOWNBEAT =}
+
     // Position of the cursor in the terminal window.
-    state cursor:int(0);
-    
+    state cursor: int = 0
+
     reaction(startup) -> key, note, tick {=
         // Start the sensor simulator, which starts ncurses.
         char* log_file_name = NULL;
@@ -171,7 +187,7 @@ reactor RhythmSource(
         	int fed_id = lf_fed_id();
         	if (fed_id < 0) {
         		sprintf(log_file_name, "log/Rhythm_%lld.log", lf_time_logical());
-      		} else {
+        } else {
         		sprintf(log_file_name, "log/Rhythm_%d_%lld.log", fed_id, lf_time_logical());
         	}
         }
@@ -180,16 +196,14 @@ reactor RhythmSource(
         )) {
             lf_print_error_and_exit("ERROR: Failed to start sensor simulator.");
         }
-        
+
         // Register action to trigger on key press.
         register_sensor_key('\0', key);
-        
+
         lf_schedule(tick, self->tick_duration);
     =}
-    
-    /**
-     * React to a key press.
-     */
+
+    /** React to a key press. */
     reaction(key) -> instrument, rhythm_change, tempo_change {=
         int numeric;
         switch (key->value) {
@@ -246,9 +260,7 @@ reactor RhythmSource(
         }
     =}
 
-	/**
-	 * React to a remote rhythm change.
-	 */
+    /** React to a remote rhythm change. */
     reaction(rhythm_change_in) {=
         switch (rhythm_change_in->value) {
             case 'm':
@@ -273,7 +285,7 @@ reactor RhythmSource(
                 break;
         }
     =}
-    
+
     reaction(tempo_change_in) {=
         self->tick_duration -= tempo_change_in->value;
         lf_print("REMOTE: Changing the tempo period by %lld ns.",
@@ -308,18 +320,16 @@ reactor RhythmSource(
             self->active_emphasis = self->emphasis;
             self->count = 0;
         }
-        
+
         lf_schedule(tick, self->tick_duration);
     =}
-    
-    reaction(shutdown) {=
-        end_sensor_simulator();
-    =}
+
+    reaction(shutdown) {= end_sensor_simulator(); =}
 }
 
 main reactor {
-    source = new RhythmSource();
-    play = new PlayWaveform();
-    source.note -> play.note;
-    source.instrument -> play.waveform;
+    source = new RhythmSource()
+    play = new PlayWaveform()
+    source.note -> play.note
+    source.instrument -> play.waveform
 }

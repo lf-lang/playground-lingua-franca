@@ -18,7 +18,7 @@ fi
 
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
-cmake .
+cmake -DLF_THREADED=1 .
 cmake --build .
 
 # Move the executable to the bin directory.

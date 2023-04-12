@@ -23,6 +23,7 @@
 target C
 preamble {=
     #include <stdlib.h>
+    #include <math.h>
 =}
 reactor Random(seed:{=unsigned int=}(0)) {
     reaction(startup) {=

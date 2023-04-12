@@ -23,10 +23,11 @@
  * of inputs in the C target and on the dependency analysis of the *uses* field
  * of reactor signature.
  * 
- * To run this, you could ideally uncomment the `build` attribute of the target
- * declaration, and everything would be taken care of. But for reasons I cannot
- * fathom, `lfc` cannot find the shell file referred to in that attribute.
- * So for now, you have to do it by hand:
+ * To run this, it should be sufficient to just run `lfc` to compile it.
+ * The "build" parameter of the target provides a script that compiles the
+ * generated code, runs it, runs gnuplot to generate the plots, and then
+ * opens the resulting PDF files. If this script fails for any reason,
+ * comment the `build` attribute of the target declaration and do this by hand:
  * 
  * ```
  * cd examples-lingua-franca/C
@@ -50,7 +51,7 @@
 
 target C {
     fast: true,
-    // build: "./build_run_plot.sh Rosace",   // FIXME: Doesn't find it.
+    build: "./build_run_plot.sh Rosace",
     timeout: 10 min
 }
 
@@ -60,6 +61,10 @@ import PrintToFile from "../lib/PrintToFile.lf"
 
 preamble {=
     // Shared constants.
+    // Trimming parameters
+    #define Va_eq (230.0)   // Nominal airspeed?
+    #define h_eq (10000.0)
+
     #define delta_th_eq (1.5868660794926)
     #define delta_e_eq (0.012009615652468)    
 =}

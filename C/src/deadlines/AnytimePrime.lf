@@ -1,13 +1,15 @@
 /**
  * This program is a concept demonstration showing how the lf_check_deadline()
- * function works. This program performs "anytime computation" (https://en.wikipedia.org/wiki/Anytime_algorithm)
- * to find the largest prime within the given deadline. The lf_check_deadline()
- * function is called after checking whether each number is prime. If
- * lf_check_deadline() is called after the deadline has passed, the function calls
- * the deadline handler and returns true. Then the reaction outputs the largest
- * prime found by that time and exits.
+ * function works. This program performs "anytime computation"
+ * (https://en.wikipedia.org/wiki/Anytime_algorithm) to find the largest prime
+ * within the given deadline. The lf_check_deadline() function is called after
+ * checking whether each number is prime. If lf_check_deadline() is called after
+ * the deadline has passed, the function calls the deadline handler and returns
+ * true. Then the reaction outputs the largest prime found by that time and
+ * exits.
  *
- * For more discussion on lf_check_deadline(), see: https://github.com/lf-lang/lingua-franca/issues/403
+ * For more discussion on lf_check_deadline(), see:
+ * https://github.com/lf-lang/lingua-franca/issues/403
  *
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  * @author Edward A. Lee (eal@berkeley.edu)
@@ -15,17 +17,20 @@
  */
 target C {
     fast: true,
-    files: ["/lib/c/reactor-c/core/utils/vector.h",
-            "/lib/c/reactor-c/core/utils/vector.c"],
+    files: [
+        "/lib/c/reactor-c/include/core/utils/vector.h",
+        "/lib/c/reactor-c/core/utils/vector.c"
+    ],
     cmake-include: ["/lib/c/reactor-c/core/utils/vector.cmake"]
-};
+}
 
 preamble {=
-#include "vector.h"
+    #include "vector.h"
 =}
 
 reactor Prime {
-    output out: {=long long=};
+    output out: {= long long =}
+
     reaction(startup) -> out {=
         int num_primes = 1;
         long long current_num = 2;
@@ -49,20 +54,19 @@ reactor Prime {
 
         // Output the largest prime found.
         lf_set(out, (long long)primes.start[num_primes - 1]);
-    =} deadline (3 sec) {=
-        lf_print("Deadline handler called!");
-    =}
+    =} deadline(3 sec) {= lf_print("Deadline handler called!"); =}
 }
 
 reactor Print {
-    input in:{=long long=};
+    input in: {= long long =}
+
     reaction(in) {=
         printf("Largest prime found within the deadline: %lld\n", in->value);
     =}
 }
 
 main reactor AnytimePrime {
-    p = new Prime();
-    d = new Print();
-    p.out -> d.in;
+    p = new Prime()
+    d = new Print()
+    p.out -> d.in
 }

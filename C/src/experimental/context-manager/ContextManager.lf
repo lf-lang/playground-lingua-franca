@@ -1,0 +1,152 @@
+/**
+ * Request-response pattern where a client asks for the sum of two numbers
+ * (a counter value plus 42).  A response is provided by an AddService some random
+ * amount of logical time later. The client is able to match the response with the
+ * request so that, even though the response includes only the sum, the client knows
+ * which number was added to 42.
+ * 
+ * To accomplish this, the client provides to the wrapper Manager the two
+ * numbers to add plus a "context" that is the client's own information that it wants
+ * back with the response.  In this case, the context is is just its local counter value
+ * when it makes the request.
+ * 
+ * This implementation predates generics in the C target, so all types here are int.
+ * Replace these with generics when available, to become function pointers, structs, etc.
+ * 
+ * Also, for simplicity, the Manager limits the number of pending requests to
+ * 10 and does a very brute-force approximation to a hashtable.
+ * This would be easy to replace with an unbounded hash table.
+ * 
+ * If the generics mechanism is further extended that the Manager can have a
+ * reactor class as a parameter, then the same Manager could wrap any number of
+ * different services.
+ */
+target C {
+    timeout: 1s
+}
+import Random from "../../lib/Random.lf"
+preamble {=   
+    #include <math.h>  // FIXME: should not be needed. Should get from Random.lf.
+     
+    // Pair of numbers to be added.
+    typedef struct pair_t {
+        int first;
+        int second;
+    } pair_t;
+        
+    // Request structure, input data and the context.
+    typedef struct request_t {
+        pair_t data;
+        int context;
+    } request_t;
+
+    // Tagged request. Service should include the tag in its response.
+    typedef struct tagged_request_t {
+        request_t request;
+        tag_t tag;
+    } tagged_request_t;
+    
+    // Response data type, the sum plus the context.
+    typedef struct response_t {
+        int data;
+        int context;
+    } response_t;
+
+    // Tagged response.
+    typedef struct tagged_response_t {
+        response_t response;
+        tag_t tag;
+    } tagged_response_t;
+=}
+
+// Interface definition for the service.
+reactor ServiceInterface {
+    input in:tagged_request_t
+    output out:tagged_response_t
+}
+
+reactor AddService extends ServiceInterface, Random {    
+    logical action pending:tagged_request_t
+    
+    reaction(in) -> pending {=
+        // Random delay between 100 and 500 msec.
+        interval_t delay = MSEC(1) * (random() % 400 + 100);
+        lf_schedule_copy(pending, delay, &in->value, 1);
+    =}
+    reaction(pending) -> out {=
+        tagged_response_t response;
+        response.response.data = pending->value.request.data.first + pending->value.request.data.second;
+        response.response.context = pending->value.request.context;
+        response.tag = pending->value.tag;
+        lf_set(out, response);
+    =}
+}
+reactor Manager {
+    input request:request_t
+    output response:response_t
+
+    state pending:tagged_request_t[10] = {= { 0 } =}
+    
+    service = new AddService()
+    
+    reaction(startup) {=
+        // Initialize brute force hashtable.
+        for(int i = 0; i < 10; i++) {
+            self->pending[i].tag = NEVER_TAG;
+        }
+    =}
+
+    reaction(request) -> service.in {=
+        // Find an empty slot in the pending requests. BRUTE FORCE.
+        for(int i = 0; i < 10; i++) {
+            if (lf_tag_compare(self->pending[i].tag, NEVER_TAG) == 0) {
+                // Found one.
+                self->pending[i].request = request->value;
+                self->pending[i].tag = lf_tag();
+                lf_set(service.in, self->pending[i]);
+                return;
+            }
+        }
+        lf_print_error("Maximum number of pending requests exceeded.");
+    =}
+    
+    reaction(service.out) -> response {=
+        // Find the pending requests. BRUTE FORCE.
+        for(int i = 0; i < 10; i++) {
+            if (lf_tag_compare(self->pending[i].tag, service.out->value.tag) == 0) {
+                // Found it. Reset so slot can be reused.
+                self->pending[i].tag = NEVER_TAG;
+                lf_set(response, service.out->value.response);
+                return;
+            }
+        }
+        lf_print_error("Pending requests not found.");
+    =}
+}
+reactor Client {
+    timer t(0, 100ms)
+    state counter:int = 0
+    m = new Manager();
+    
+    reaction(t) -> m.request {=
+        lf_print("Client asks what %d + 42 is.", self->counter);
+        
+        pair_t to_sum = {
+            .first = self->counter, 
+            .second = 42
+        };
+        request_t request = {
+            .data = to_sum, 
+            .context = self->counter
+        };
+        lf_set(m.request, request);
+        self->counter++;
+    =}
+    
+    reaction(m.response) {=
+        lf_print("Result: %d + 42 = %d.", m.response->value.context, m.response->value.data);
+    =}
+}
+main reactor {
+    c = new Client();
+}
