@@ -12,7 +12,14 @@ preamble {=
     #include <string.h>
     #include <sys/socket.h>
     #include <arpa/inet.h>
-    #include <unistd.h>     // Defined read()
+    #include <unistd.h>     // Defines read()
+    #include <libgen.h>     // Defines dirname()
+    
+    #if _WIN32 || WIN32
+    #define FILE_PATH_SEPARATOR '\\'
+    #else
+    #define FILE_PATH_SEPARATOR '/'
+    #endif
     
     typedef struct browser_ui_t {
         bool running;       // Indicator that listener thread is running.
@@ -21,31 +28,9 @@ preamble {=
     } browser_ui_t;
     
     // Initial web page
-    char initial_page[] = "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html; charset=UTF-8\r\n\r\n"
-        "<!DOCTYPE html><html><head><title>Initial web page</title>"
-        "</head><body>"
-            "<h1>Browser UI for Lingua Franca</h1>"
-            "<button id=\"append-button\">Press me!</button>"
-            "<p id=\"content-container\"></p>"
-        "<script>"
-"  document.getElementById('content-container').innerHTML += 'NOTHING';"
-"  document.getElementById('append-button').addEventListener('click', function() {"
-"    var xhttp = new XMLHttpRequest();"
-"    xhttp.onload = function() {"
-"      if (this.status == 200) {"
-"        var response = JSON.parse(this.responseText);"
-"        var newContent = response.path;"
-"        document.getElementById('content-container').innerHTML = newContent;"
-"      } else {"
-"        document.getElementById('content-container').innerHTML = \"Error: \" + this.statusText;"
-"      }"
-"    };"
-"    xhttp.open('GET', '/request', true);"
-"    xhttp.send(null);"
-"  });" 
-        "</script>"
-        "</body></html>\r\n";
+    char* initial_page;
+    const char html_header[] =  "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=UTF-8\r\n\r\n";
     
     void* listener_thread(void* args) {
         browser_ui_t* browser_ui = (browser_ui_t*)args;
@@ -98,7 +83,8 @@ preamble {=
                 lf_schedule_value(browser_ui->req_action, 0, path, length + 1);
             } else {
                 // Default is to write initial page.
-                write(browser_ui->client_socket, initial_page, sizeof(initial_page));
+                write(browser_ui->client_socket, html_header, strlen(html_header));
+                write(browser_ui->client_socket, initial_page, strlen(initial_page));
                 close(browser_ui->client_socket);
                 browser_ui->client_socket = -1;
             }
@@ -107,7 +93,10 @@ preamble {=
     }
 =}
 
-reactor ServerUI {
+/**
+ * @param initial_file Path to the initial HTML file to serve, relative to the source directory.
+ */
+reactor ServerUI(initial_file:string = "page.html") {
     output request:char*
     input response:char*
     
@@ -115,7 +104,50 @@ reactor ServerUI {
     
     state browser_ui:browser_ui_t
     
+    /**
+     * Read a file at path relative to the source .lf file
+     * and return dynamically-allocated memory with its contents.
+     * The caller is responsible for freeing the pointer returned.
+     * @param path File path relative to the source .lf file.
+     */
+    method read_file(path:{=const char*=}): char* {=
+        // Get the full path of the executing binary
+        char* bin_path = strdup(__FILE__);
+        if (bin_path == NULL) lf_print_error_and_exit("Error getting path to executing binary.");
+
+        // Construct the path to the file to be read
+        char* file_path = (char *) malloc(strlen(bin_path) + strlen(path) + 2);
+        if (file_path == NULL) lf_print_error_and_exit("Out of memory.");
+
+        sprintf(file_path, "%s%c%s", dirname(bin_path), FILE_PATH_SEPARATOR, path);
+
+        // Open the file for reading
+        FILE* file = fopen(file_path, "rb");
+        if (file == NULL) lf_print_error_and_exit("Error opening file at path %s.", file_path);
+
+        // Determine the file size
+        fseek(file, 0, SEEK_END);
+        long file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        // Allocate memory for the buffer
+        char* buffer = (char *) malloc(file_size + 1);
+        if (buffer == NULL) lf_print_error_and_exit("Out of memory.");
+
+        // Read the file into the buffer
+        fread(buffer, file_size, 1, file);
+        buffer[file_size] = '\0';
+
+        free(file_path);
+        free(bin_path);
+        fclose(file);
+        return buffer;
+    =}
+    
     reaction(startup) -> req_action {=
+        // Read the default file to serve.
+        initial_page = read_file(self->initial_file);
+        
         self->browser_ui.running = true;
         self->browser_ui.client_socket = -1; // No client socket awaiting response.
         self->browser_ui.req_action = req_action;
@@ -140,11 +172,12 @@ reactor ServerUI {
     
     reaction(shutdown) {=
         self->browser_ui.running = false;
+        free(initial_page);
     =}
 }
 
 main reactor {
-    s = new ServerUI()
+    s = new ServerUI(initial_file = "Test.html")
     
     reaction(s.request) -> s.response {=
         char* response = (char*)malloc(strlen(s.request->value + 13));
