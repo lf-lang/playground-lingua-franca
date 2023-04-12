@@ -5,7 +5,7 @@
  * request so that, even though the response includes only the sum, the client knows
  * which number was added to 42.
  * 
- * To accomplish this, the client provides to the mediator Manager the two
+ * To accomplish this, the client provides to the wrapper Manager the two
  * numbers to add plus a "context" that is the client's own information that it wants
  * back with the response.  In this case, the context is is just its local counter value
  * when it makes the request.
@@ -16,6 +16,10 @@
  * Also, for simplicity, the Manager limits the number of pending requests to
  * 10 and does a very brute-force approximation to a hashtable.
  * This would be easy to replace with an unbounded hash table.
+ * 
+ * If the generics mechanism is further extended that the Manager can have a
+ * reactor class as a parameter, then the same Manager could wrap any number of
+ * different services.
  */
 target C {
     timeout: 1s
@@ -55,10 +59,13 @@ preamble {=
     } tagged_response_t;
 =}
 
-reactor AddService extends Random {
+// Interface definition for the service.
+reactor ServiceInterface {
     input in:tagged_request_t
     output out:tagged_response_t
-    
+}
+
+reactor AddService extends ServiceInterface, Random {    
     logical action pending:tagged_request_t
     
     reaction(in) -> pending {=
