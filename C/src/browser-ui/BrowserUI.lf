@@ -1,5 +1,7 @@
 /**
  * A basic user interface realized in the browser.
+ * This program simply counts the number of times the user pushes a button.
+ * It reports that number on the web page.
  * 
  * @author Edward A. Lee
  */
@@ -177,11 +179,15 @@ reactor ServerUI(initial_file:string = "page.html") {
 }
 
 main reactor {
+    state count:int = 0
     s = new ServerUI(initial_file = "Test.html")
     
     reaction(s.request) -> s.response {=
-        char* response = (char*)malloc(strlen(s.request->value + 13));
-        sprintf(response, "{\"path\": \"%s\"}", s.request->value);
+        char* response;
+        asprintf(&response, "You have pushed %d times. Path of GET request: %s", 
+            ++self->count,
+            s.request->value
+        );
         lf_set(s.response, response);
     =}
 }

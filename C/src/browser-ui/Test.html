@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Browser UI for Lingua Franca</title></head>
+  <body>
+    <h1>Browser UI for Lingua Franca</h1>
+    <button id="button">Press me!</button>
+    <p id="count">You have not pushed the button yet.</p>
+    <script>
+  document.getElementById('button').addEventListener('click', function() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onload = function() {
+      if (this.status == 200) {
+        document.getElementById('count').innerHTML = this.responseText;
+      } else {
+        document.getElementById('count').innerHTML = "Error: " + this.statusText;
+      }
+    };
+    xhttp.open('GET', '/count', true);
+    xhttp.send(null);
+  }); 
+    </script>
+  </body>
+</html>
