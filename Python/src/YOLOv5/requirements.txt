@@ -1,4 +1,4 @@
-opencv-python
+opencv-python==4.5.5.64   # Later versions give error: Submodule name should always start with a parent module name. Parent name: cv2.cv2. Submodule name: cv2
 pandas
 tqdm
 seaborn
