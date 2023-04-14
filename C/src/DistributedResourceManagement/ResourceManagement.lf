@@ -71,7 +71,7 @@ reactor Client(
             lf_print("%s (ID %d): At tag (%lld, %u), released access.",
                 self->name,
                 self->id,
-                tag.time - start_time, tag.microstep
+                tag.time - lf_time_start(), tag.microstep
             );
             lf_set(release, true);
         }
@@ -83,7 +83,7 @@ reactor Client(
         lf_print("%s (ID %d): At tag (%lld, %u), requesting access.",
             self->name,
             self->id,
-            tag.time - start_time, tag.microstep
+            tag.time - lf_time_start(), tag.microstep
         );
         self->requests_outstanding++;
         lf_set(request, true);
@@ -94,7 +94,7 @@ reactor Client(
         lf_print("%s (ID %d): At tag (%lld, %u), granted access.",
             self->name,
             self->id,
-            tag.time - start_time, tag.microstep
+            tag.time - lf_time_start(), tag.microstep
         );
         self->requests_outstanding--;
         lf_schedule(release_trigger, 0);

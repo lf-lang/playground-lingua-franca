@@ -182,7 +182,7 @@ reactor MQTTPublisher (
                 (unsigned char*)(self->inflight.message + length - sizeof(instant_t))
             );
             LF_PRINT_LOG("MQTTPublisher: Timestamp (elapsed) of sending message: " PRINTF_TIME,
-                timestamp - start_time
+                timestamp - lf_time_start()
             );
         }
         self->mqtt_msg.payload = self->inflight.message;

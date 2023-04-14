@@ -136,8 +136,8 @@ reactor RSU (
                 
                 lf_print("*** Grant access to vehicle %d to enter at time %lld. Next available time is %lld",
                     i,
-                    response.arrival_time - start_time,
-                    self->earliest_free - start_time
+                    response.arrival_time - lf_time_start(),
+                    self->earliest_free - lf_time_start()
                 );
             }
         }

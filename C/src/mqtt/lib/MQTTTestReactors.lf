@@ -31,7 +31,7 @@ reactor MessageGenerator(root:string(""), period:time(1 sec)) {
         snprintf(message->value, length, "%s %d", self->root, self->count++);
         tag_t tag = lf_tag();
         lf_print("MessageGenerator: At (elapsed) tag " PRINTF_TAG ", publish message: %s",
-            tag.time - start_time, tag.microstep,
+            tag.time - lf_time_start(), tag.microstep,
             message->value
         );
     =}
@@ -47,7 +47,7 @@ reactor PrintMessage {
     reaction(message) {=
         tag_t tag = lf_tag();
         lf_print("PrintMessage: At (elapsed) time " PRINTF_TAG ", subscriber receives: %s",
-            tag.time - start_time, tag.microstep,
+            tag.time - lf_time_start(), tag.microstep,
             message->value
         );
     =}

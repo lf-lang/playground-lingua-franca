@@ -52,7 +52,7 @@ reactor MessageGenerator(prefix:string("")) {
 
         tag_t tag = lf_tag();
         lf_print("At (elapsed) logical tag (%lld, %u), source sends message: %s",
-            tag.time - start_time, tag.microstep,
+            tag.time - lf_time_start(), tag.microstep,
             message->value
         );
     =}
@@ -68,7 +68,7 @@ reactor PrintMessage {
     reaction(message) {=
         tag_t tag = lf_tag();
         lf_print("At (elapsed) logical tag (%lld, %u), print receives: %s",
-            tag.time - start_time, tag.microstep,
+            tag.time - lf_time_start(), tag.microstep,
             message->value
         );
     =}

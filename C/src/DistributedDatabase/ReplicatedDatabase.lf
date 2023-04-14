@@ -86,7 +86,7 @@ reactor Server(
         tag_t tag = lf_tag();
         lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
                 "     Elapsed physical time is %lld.",
-                tag.time - start_time, 
+                tag.time - lf_time_start(), 
                 tag.microstep,
                 self->name,
                 lf_time_physical_elapsed()
@@ -174,7 +174,7 @@ reactor Database(
         }
         lf_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
                 "     Elapsed physical time is %lld.",
-                lf_time_logical() - start_time, lf_tag().microstep,
+                lf_time_logical() - lf_time_start(), lf_tag().microstep,
                 self->name,
                 self->record,
                 lf_time_physical_elapsed()
@@ -187,11 +187,11 @@ reactor Database(
                         "received remote update (%d) with intended tag (%lld, %u).\n"
                         "     Balance previously reported may have been incorrect.\n"
                         "     Elapsed physical time is %lld.",
-                        current_tag.time - start_time,
+                        current_tag.time - lf_time_start(),
                         current_tag.microstep,
                         self->name,
                         remote_update[i]->value,
-                        remote_update[i]->intended_tag.time - start_time,
+                        remote_update[i]->intended_tag.time - lf_time_start(),
                         remote_update[i]->intended_tag.microstep,
                         lf_time_physical_elapsed()
                 );

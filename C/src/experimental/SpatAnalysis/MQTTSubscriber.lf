@@ -108,8 +108,6 @@ reactor MQTTSubscriber (
             
             instant_t timestamp = extract_ll((unsigned char*)message->payload + message->payloadlen - sizeof(instant_t));
             interval_t delay = timestamp - lf_time_logical();
-            // printf("DEBUG: MQTTSubscriber.message_arrived: received timestamp that is %lld ahead of current_time %lld.\n", *timestamp - start_time, current_time);
-            // printf("DEBUG: MQTTSubscriber.message_arrived: physical time is ahead of current logical time by: %lld.\n", receive_physical_time - current_time);
                         
             // Schedule the event. Since incoming_message is a physical action,
             // the offset specified in the second argument will be added to current_time
