@@ -1,13 +1,26 @@
 /**
  * A basic user interface realized in the browser.
- * This program simply counts the number of times the user pushes a button.
- * It reports that number on the web page.
+ * This creates a basic web server that listens on a port (default 8080)
+ * for requests. When it receives a request with no path
+ * (e.g. "http://localhost:8080/"), it responds with the contents
+ * of a file specified by the `initial_file` parameter, which is expected
+ * to be an HTML file.
+ * 
+ * When it receives a request with a path (e.g. "http://localhost:8080/test"),
+ * it responds with text. Normally, this would be JSON-formatted, but in this
+ * simple illustration, it is just plain text that reports the count of the
+ * number of requests that have been received.
+ * 
+ * The default `initial_file` provides HTML containing a button that the user
+ * can push to issue a request with a path. This results in a display in the
+ * web page of the number of times the button has been pushed.
  * 
  * @author Edward A. Lee
  */
 target C {
     keepalive: true
 }
+import FileReader from "../lib/FileReader.lf"
 preamble {=
     #include <stdio.h>
     #include <stdlib.h>
@@ -16,6 +29,9 @@ preamble {=
     #include <arpa/inet.h>
     #include <unistd.h>     // Defines read()
     #include <libgen.h>     // Defines dirname()
+    
+    #include "util.h"       // Defines lf_print() FIXME: Should not be necessary.
+    #include "platform.h"   // Defines lf_thread_t, etc. FIXME: Should not be necessary.
     
     #if _WIN32 || WIN32
     #define FILE_PATH_SEPARATOR '\\'
@@ -27,10 +43,10 @@ preamble {=
         bool running;       // Indicator that listener thread is running.
         int client_socket;  // If non-negative, client socket awaiting response.
         void* req_action;   // The physical action triggered upon request.
+        uint16_t hostport;  // The port to use for HTTP access.
+        char* initial_page; // Initial web page contents.
     } browser_ui_t;
-    
-    // Initial web page
-    char* initial_page;
+        
     const char html_header[] =  "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html; charset=UTF-8\r\n\r\n";
     
@@ -49,7 +65,7 @@ preamble {=
         struct sockaddr_in server_address;
         server_address.sin_family = AF_INET;
         server_address.sin_addr.s_addr = INADDR_ANY;
-        server_address.sin_port = htons(8080);
+        server_address.sin_port = htons(browser_ui->hostport);
 
         if (bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
             close(server_socket);
@@ -58,7 +74,7 @@ preamble {=
         // Pending queue length of 5.
         listen(server_socket, 5);
         
-        lf_print("*** Point your browser to http://localhost:8080");
+        lf_print("****** Point your browser to http://localhost:%d", browser_ui->hostport);
 
         while(browser_ui->running) {
             struct sockaddr_in client_address;
@@ -72,7 +88,6 @@ preamble {=
 
             char buffer[1024] = {0};
             read(browser_ui->client_socket, buffer, 1024);
-            printf("Received request: %s\n", buffer);
     
             // The response depends on the path part of the request.
             const char *start_of_path = strchr(buffer, ' ') + 1;
@@ -86,7 +101,11 @@ preamble {=
             } else {
                 // Default is to write initial page.
                 write(browser_ui->client_socket, html_header, strlen(html_header));
-                write(browser_ui->client_socket, initial_page, strlen(initial_page));
+                write(
+                    browser_ui->client_socket,
+                    browser_ui->initial_page,
+                    strlen(browser_ui->initial_page)
+                );
                 close(browser_ui->client_socket);
                 browser_ui->client_socket = -1;
             }
@@ -97,62 +116,29 @@ preamble {=
 
 /**
  * @param initial_file Path to the initial HTML file to serve, relative to the source directory.
+ *  Defaults to "page.html".
+ * @param hostport The host port number, which defults to 8080.
  */
-reactor ServerUI(initial_file:string = "page.html") {
+reactor ServerUI(
+    initial_file:string = "page.html",
+    hostport:uint16_t = 8080
+) extends FileReader {
     output request:char*
     input response:char*
     
     physical action req_action:char*
     
     state browser_ui:browser_ui_t
-    
-    /**
-     * Read a file at path relative to the source .lf file
-     * and return dynamically-allocated memory with its contents.
-     * The caller is responsible for freeing the pointer returned.
-     * @param path File path relative to the source .lf file.
-     */
-    method read_file(path:{=const char*=}): char* {=
-        // Get the full path of the executing binary
-        char* bin_path = strdup(__FILE__);
-        if (bin_path == NULL) lf_print_error_and_exit("Error getting path to executing binary.");
-
-        // Construct the path to the file to be read
-        char* file_path = (char *) malloc(strlen(bin_path) + strlen(path) + 2);
-        if (file_path == NULL) lf_print_error_and_exit("Out of memory.");
-
-        sprintf(file_path, "%s%c%s", dirname(bin_path), FILE_PATH_SEPARATOR, path);
-
-        // Open the file for reading
-        FILE* file = fopen(file_path, "rb");
-        if (file == NULL) lf_print_error_and_exit("Error opening file at path %s.", file_path);
-
-        // Determine the file size
-        fseek(file, 0, SEEK_END);
-        long file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-
-        // Allocate memory for the buffer
-        char* buffer = (char *) malloc(file_size + 1);
-        if (buffer == NULL) lf_print_error_and_exit("Out of memory.");
-
-        // Read the file into the buffer
-        fread(buffer, file_size, 1, file);
-        buffer[file_size] = '\0';
-
-        free(file_path);
-        free(bin_path);
-        fclose(file);
-        return buffer;
-    =}
-    
+        
     reaction(startup) -> req_action {=
         // Read the default file to serve.
-        initial_page = read_file(self->initial_file);
+        self->browser_ui.initial_page = read_file(self->initial_file);
         
         self->browser_ui.running = true;
         self->browser_ui.client_socket = -1; // No client socket awaiting response.
         self->browser_ui.req_action = req_action;
+        self->browser_ui.hostport = self->hostport;
+        
         lf_thread_t listener;
         lf_thread_create(&listener, &listener_thread, &self->browser_ui);
     =}
@@ -174,13 +160,13 @@ reactor ServerUI(initial_file:string = "page.html") {
     
     reaction(shutdown) {=
         self->browser_ui.running = false;
-        free(initial_page);
+        free(self->browser_ui.initial_page);
     =}
 }
 
 main reactor {
     state count:int = 0
-    s = new ServerUI(initial_file = "Test.html")
+    s = new ServerUI()
     
     reaction(s.request) -> s.response {=
         char* response;
