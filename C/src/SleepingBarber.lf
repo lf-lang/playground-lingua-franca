@@ -38,7 +38,8 @@ target C {
     files: ["/lib/c/reactor-c/util/deque.h", "/lib/c/reactor-c/util/deque.c"]
 };
 
-preamble {=    
+preamble {=
+    #include "deque.h"
     /**
      * Return a random time that is uniformly distributed between
      * 0 and max. This assumes interval_t is a 64-bit integer and
