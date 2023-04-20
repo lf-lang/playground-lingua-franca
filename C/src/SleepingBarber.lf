@@ -46,10 +46,7 @@ preamble {=
      * that max is less that (2^63)/RAND_MAX so that RAND_MAX * max
      * does not overflow.
      */
-    interval_t random_time(interval_t max) {
-        interval_t result = (((interval_t)rand()) * RAND_MAX) % max;
-        return result;
-    }
+    interval_t random_time(interval_t max);
 =}
 
 /**
@@ -72,6 +69,13 @@ reactor CustomerFactory(
     num_customers:size_t(20), 
     max_time_between_customers:time(10 minutes)
 ) {    
+    preamble {=
+        /* Note that this function is shared with Barber reactor. */
+        interval_t random_time(interval_t max) {
+            interval_t result = (((interval_t)rand()) * RAND_MAX) % max;
+            return result;
+        }
+    =}
     output send_customer: size_t;
     input[num_customers] customer_done: bool;
     input[num_customers] customer_returned: bool;
@@ -124,7 +128,7 @@ reactor CustomerFactory(
     reaction (shutdown) {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        lf_print("Finished: %d customers got haircuts in %d attempts over %s.", 
+        lf_print("Finished: %zu customers got haircuts in %zu attempts over %s.", 
                 self->done_customers, self->attempts, buffer
         );
     =}
@@ -203,7 +207,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (room_full) -> returned {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        lf_print("Customer %d: Turned away at %s. Will try later.",
+        lf_print("Customer %zu: Turned away at %s. Will try later.",
                 self->bank_index, buffer
         );
         lf_set(returned, true);
@@ -212,7 +216,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (wait) {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        lf_print("Customer %d: Entered waiting room at %s. Waiting.",
+        lf_print("Customer %zu: Entered waiting room at %s. Waiting.",
                 self->bank_index, buffer
         );
     =}
@@ -220,7 +224,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (start_cutting) {= 
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        lf_print("Customer %d: Started a haircut at %s.",
+        lf_print("Customer %zu: Started a haircut at %s.",
                 self->bank_index, buffer
         );
     =}
@@ -228,7 +232,7 @@ reactor Customer(bank_index:size_t(0)) {
     reaction (done_cutting) -> done {=
         char buffer[LF_TIME_BUFFER_LENGTH];
         lf_readable_time(buffer, lf_time_logical_elapsed());
-        lf_print("Customer %d: Finished a haircut at %s.",
+        lf_print("Customer %zu: Finished a haircut at %s.",
                 self->bank_index, buffer
         );
         lf_set(done, true);
