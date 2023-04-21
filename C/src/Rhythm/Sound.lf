@@ -13,13 +13,6 @@
  */
 target C {
     keepalive: true,
-    files: [
-        "/lib/c/reactor-c/util/wave_file_reader.c",
-        "/lib/c/reactor-c/util/wave_file_reader.h",
-        "/lib/c/reactor-c/util/audio_loop_mac.c",
-        "/lib/c/reactor-c/util/audio_loop.h",
-        "/lib/c/reactor-c/util/audio_loop_linux.c",
-    ]
 }
 
 import PlayWaveform from "PlayWaveform.lf"
@@ -39,7 +32,10 @@ preamble {=
  * Reactor that outputs notes (which carry an emphasis)) according to a
  * specified rhythm. The minimum time between notes is given by the
  * 'sixteenth' parameter.
+ * 
  * @param sixteenth Duration of one sixteenth note.
+ * @param rhythm Binary specification of a rhythm in reverse order.
+ * @param emphasis Binary specification of emphasis in reverse order.
  */
 reactor RhythmSource(
     sixteenth: time = 200 msec,
