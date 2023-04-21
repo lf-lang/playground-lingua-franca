@@ -41,30 +41,6 @@ target C {
     // Include the cmake support for the audio loop
     cmake-include: ["/lib/c/reactor-c/util/audio_loop.cmake"]
 }
-preamble {= 
-    #include "wave_file_reader.c"
-    #include "audio_loop.h"
-        
-    // wav files giving the waveforms.
-    // These have to also be included in the files target directive.
-    #define NUM_WAVEFORMS 9  // Number of waveforms.
-    char* waveform_files[] = { 
-    	TARGET_FILES_DIRECTORY "/Bass-Drum-1.wav",
-    	TARGET_FILES_DIRECTORY "/Hi-Bongo.wav",
-        TARGET_FILES_DIRECTORY "/Claves.wav",
-        TARGET_FILES_DIRECTORY "/High-Conga-1.wav",
-        TARGET_FILES_DIRECTORY "/Cowbell-1.wav",
-        TARGET_FILES_DIRECTORY "/Cuica-1.wav",
-        TARGET_FILES_DIRECTORY "/Guiro.wav",
-        TARGET_FILES_DIRECTORY "/Ensoniq-ESQ-1-Snare.wav",
-        TARGET_FILES_DIRECTORY "/Floor-Tom-1.wav"
-    };
-            
-    // The waveforms themselves.
-    lf_waveform_t* waveforms[NUM_WAVEFORMS + 1];
-    
-    lf_waveform_t empty_waveform = { 0 };
-=}
  
 /**
  * Produce a note when a `note` input is received.
@@ -72,6 +48,35 @@ preamble {=
 reactor PlayWaveform (
     default_waveform_id:int(0)  // Silent waveform
 ) {
+    preamble {= 
+        #include <string.h>       // Defines strlen()
+        #include "audio_loop.h"
+        #include "wave_file_reader.c"
+        
+        // FIXME:
+        // #define LF_SOURCE_DIRECTORY "/Users/eal/git/examples-lingua-franca/C/src/Rhythm/sounds"
+            
+        // wav files giving the waveforms.
+        // These have to also be included in the files target directive.
+        #define NUM_WAVEFORMS 9  // Number of waveforms.
+        char* waveform_files[] = { 
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Bass-Drum-1.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Hi-Bongo.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Claves.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "High-Conga-1.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Cowbell-1.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Cuica-1.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Guiro.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Ensoniq-ESQ-1-Snare.wav",
+            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Floor-Tom-1.wav"
+        };
+                
+        // The waveforms themselves.
+        lf_waveform_t* waveforms[NUM_WAVEFORMS + 1];
+        
+        lf_waveform_t empty_waveform = { 0 };
+    =}
+
     input note:float;
     input waveform:int;
     
