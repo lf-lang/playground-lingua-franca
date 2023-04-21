@@ -15,7 +15,7 @@ target C {
 main reactor {
     preamble {=
         #include "sensor_simulator.h"
-        char* messages[] = {"Hello", "World"};
+        const char* messages[] = {"Hello", "World"};
         int num_messages = 2;
     =}
     timer t(0, 1 sec);

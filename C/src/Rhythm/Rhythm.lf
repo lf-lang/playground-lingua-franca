@@ -29,32 +29,12 @@
 target C {
     keepalive: true,
     files: [
-        "/lib/c/reactor-c/util/sensor_simulator.c",
+        "/lib/c/reactor-c/util/sensor_simulator.c", 
         "/lib/c/reactor-c/util/sensor_simulator.h",
-        "/lib/c/reactor-c/util/wave_file_reader.c",
-        "/lib/c/reactor-c/util/wave_file_reader.h",
-        "/lib/c/reactor-c/util/audio_loop_mac.c",
-        "/lib/c/reactor-c/util/audio_loop.h",
-        "/lib/c/reactor-c/util/audio_loop_linux.c",
-        "sounds/Bass-Drum-1.wav",
-        "sounds/Hi-Bongo.wav",
-        "sounds/Claves.wav",
-        "sounds/High-Conga-1.wav",
-        "sounds/Cowbell-1.wav",
-        "sounds/Cuica-1.wav",
-        "sounds/Guiro.wav",
-        "sounds/Ensoniq-ESQ-1-Snare.wav",
-        "sounds/Floor-Tom-1.wav"
     ],
-    // Include cmake support for some needed functionality Enable support for
-    // the math lib
     cmake-include: [
-        // Enable support for the sensor simulator
         "/lib/c/reactor-c/util/sensor_simulator.cmake",
-        // Enable support for ncurses
-        "include/ncurses-extension.cmake",
-        "include/mlib-extension.cmake"
-    ]
+    ] 
 }
 
 import PlayWaveform from "PlayWaveform.lf"
@@ -66,7 +46,7 @@ preamble {=
 
     /////////////////////////////
     // Configuration of the audio.
-
+    #ifndef DOWNBEAT
     // Beat pattern with 1 note followed by 7 silences, repeated.
     #define DOWNBEAT 0x0101
 
@@ -89,33 +69,10 @@ preamble {=
     // Rev: 1101 1101 1101 1010
     #define SAMBA 0xddda
     #define SAMBA_EMPHASIS 0x99ca
-
-    //////////////////////////////////////
-    // Configuration of the user interface.
-
-    char* instructions[] = {
-        "Basic control:",
-        "  x: quit",
-        "  +: speed up",
-        "  -: slow down",
-        "Instrument:",
-        "  0: none",
-        "  1: bass drum",
-        "  2: bongo",
-        "  3: claves",
-        "  4: conga",
-        "  5: cowbell",
-        "  6: cuica",
-        "  7: guiro",
-        "  8: snare",
-        "  9: tom",
-        "Rhythm:",
-        "  d: down beat",
-        "  m: merengue",
-        "  b: bossa nova",
-        "  s: samba"
-    };
-    int instructions_length = 20;
+    #endif
+    
+    extern const char* instructions[];
+    extern int instructions_length;
 =}
 
 /**
@@ -134,10 +91,35 @@ preamble {=
 reactor RhythmSource(
     sixteenth: time = 200 msec,
     delta: time = 10 msec,
-    message: char** = {= instructions =},
+    message: {= const char** =} = {= instructions =},
     message_length: int = {= instructions_length =},
     log_to_file: bool = false
 ) {
+    preamble {=
+        const char* instructions[] = {
+            "Basic control:",
+            "  x: quit",
+            "  +: speed up",
+            "  -: slow down",
+            "Instrument:",
+            "  0: none",
+            "  1: bass drum",
+            "  2: bongo",
+            "  3: claves",
+            "  4: conga",
+            "  5: cowbell",
+            "  6: cuica",
+            "  7: guiro",
+            "  8: snare",
+            "  9: tom",
+            "Rhythm:",
+            "  d: down beat",
+            "  m: merengue",
+            "  b: bossa nova",
+            "  s: samba"
+        };
+        int instructions_length = 20;      
+    =}
     // To change the rhythm.
     input rhythm_change_in: char
     // To change the tempo.
