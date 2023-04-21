@@ -12,12 +12,12 @@ target C {
         "/lib/c/reactor-c/util/sensor_simulator.cmake",
     ] 
 };
-preamble {=
-    #include "sensor_simulator.h"
-    char* messages[] = {"Hello", "World"};
-    int num_messages = 2;
-=}
 main reactor {
+    preamble {=
+        #include "sensor_simulator.h"
+        char* messages[] = {"Hello", "World"};
+        int num_messages = 2;
+    =}
     timer t(0, 1 sec);
     timer r(0, 2 sec);
     physical action key:char*;
