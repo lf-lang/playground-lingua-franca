@@ -1,0 +1,82 @@
+/**
+ * Sound test. This program runs on MacOS and Linux, at least.
+ * This program plays a simple rhythm.
+ *
+ * The merengue rhythm comes from here:
+ * https://www.8notes.com/school/lessons/percussion/merengue.asp
+ *
+ * The sound file comes from here: https://freewavesamples.com
+ *
+ * @author Edward A. Lee
+ *
+ * @see Rhythm.lf
+ */
+target C {
+    keepalive: true,
+    files: [
+        "/lib/c/reactor-c/util/wave_file_reader.c",
+        "/lib/c/reactor-c/util/wave_file_reader.h",
+        "/lib/c/reactor-c/util/audio_loop_mac.c",
+        "/lib/c/reactor-c/util/audio_loop.h",
+        "/lib/c/reactor-c/util/audio_loop_linux.c",
+    ]
+}
+
+import PlayWaveform from "PlayWaveform.lf"
+
+preamble {=
+    #ifndef MERENGUE
+    // Merenque in binary covers two bars (in temporal order):  1001 1010 1010 1111
+    // Reverse the order to get the bit sequence: 1111 0101 0101 1001
+    #define MERENGUE 0xf559
+    // Merengue emphasis in binary (in temporal order): 1001 0010 0010 1000
+    // Reverse the order to get the bit sequence: 0001 0100 0100 1001
+    #define MERENGUE_EMPHASIS 0x1449
+    #endif
+=}
+
+/**
+ * Reactor that outputs notes (which carry an emphasis)) according to a
+ * specified rhythm. The minimum time between notes is given by the
+ * 'sixteenth' parameter.
+ * @param sixteenth Duration of one sixteenth note.
+ */
+reactor RhythmSource(
+    sixteenth: time = 200 msec,
+    rhythm: int = {= MERENGUE =},
+    emphasis: int = {= MERENGUE_EMPHASIS =}
+) {
+    output note: float
+    
+    logical action tick
+
+    // Count of sixteenth notes.
+    state count: int = 0
+
+    reaction(startup) -> note, tick {=
+        lf_schedule(tick, self->sixteenth);
+    =}
+
+    reaction(tick) -> note, tick {=
+        int position = 1 << self->count;
+        if (position & self->rhythm) {
+            double emphasis = 0.25;
+            if (position & self->emphasis) {
+                emphasis = 1.0;
+            }
+            lf_set(note, emphasis);
+        }
+        self->count++;
+        if (self->count == 16) {
+            self->count = 0;
+        }
+
+        lf_schedule(tick, self->sixteenth);
+    =}
+}
+
+main reactor {
+    source = new RhythmSource()
+    play = new PlayWaveform(default_waveform_id = 1)
+    source.note -> play.note
+}
