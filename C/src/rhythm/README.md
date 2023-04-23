@@ -4,11 +4,11 @@ These examples illustrate the use of **audio drivers** on Mac and Linux and the 
 <table>
 <tr>
 <td> <img src="img/Sound.svg" alt="Sound" width="100%"> </td>
-<td> <a href="Sound.lf">Sound.lf</a>: This example plays a simple sound (a drum generating a merengue rhythm). This illustrtes the use of the PlayWaveform reactor, which illustrates the use of the <a href="https://www.lf-lang.org/reactor-c/d1/dcb/audio__loop_8h.html"> audio\_loop.h</a> and <a href="https://www.lf-lang.org/reactor-c/d3/d8a/wave__file__reader_8h.html"> wave\_file\_reader.h</a> APIs.</td>
+<td> <a href="Sound.lf">Sound.lf</a>: This example plays a simple sound (a drum generating a merengue rhythm). This illustrtes the use of the PlayWaveform reactor, which illustrates the use of the <a href="https://www.lf-lang.org/reactor-c/d1/dcb/audio__loop_8h.html"> audio_loop.h</a> and <a href="https://www.lf-lang.org/reactor-c/d3/d8a/wave__file__reader_8h.html"> wave_file_reader.h</a> APIs.</td>
 </tr>
 <tr>
 <td> <img src="img/SensorSimulator.svg" alt="SensorSimulator" width="100%"> </td>
-<td> <a href="SensorSimulator.lf"> SensorSimulator.lf</a>: This example illustrates the use of the <a href="https://www.lf-lang.org/reactor-c/dc/de9/sensor__simulator_8h.html"> sensor\_simulator.h</a> API, which turns a terminal into a rudimentary user interface using ncurses. This enables simple  text-and-keyboard interactions with Lingua Franca programs in a portable way.</td>
+<td> <a href="SensorSimulator.lf"> SensorSimulator.lf</a>: This example illustrates the use of the <a href="https://www.lf-lang.org/reactor-c/dc/de9/sensor__simulator_8h.html"> sensor_simulator.h</a> API, which turns a terminal into a rudimentary user interface using ncurses. This enables simple  text-and-keyboard interactions with Lingua Franca programs in a portable way.</td>
 </tr>
 <tr>
 <td> <img src="img/Rhythm.svg" alt="Rhythm" width="100%"> </td>
