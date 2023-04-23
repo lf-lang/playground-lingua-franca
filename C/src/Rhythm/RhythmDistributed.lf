@@ -11,8 +11,8 @@
  * and run the following generated binaries, one in each window:
  * 
  * * RTI -n 2
- * * bin/RhythmDistributed_player1
- * * bin/RhythmDistributed_player2
+ * * fed-gen/RhythmDistributed/bin/player1
+ * * fed-gen/RhythmDistributed/bin/player2
  * 
  * The `-n 2` argument specifies the number of federates.
  * Note that you have to have installed the RTI on your path.
@@ -29,17 +29,7 @@
  *
  * @author Edward A. Lee
  */
-target C {
-    coordination: centralized,
-    files: [
-        "/lib/c/reactor-c/util/sensor_simulator.c", "/lib/c/reactor-c/util/sensor_simulator.h",
-        "/lib/c/reactor-c/util/wave_file_reader.c", "/lib/c/reactor-c/util/wave_file_reader.h",
-        "/lib/c/reactor-c/util/audio_loop_mac.c", "/lib/c/reactor-c/util/audio_loop.h",
-        "/lib/c/reactor-c/util/audio_loop_linux.c",
-        "sounds/Bass-Drum-1.wav", "sounds/Hi-Bongo.wav", "sounds/Claves.wav", "sounds/High-Conga-1.wav",
-        "sounds/Cowbell-1.wav", "sounds/Cuica-1.wav", "sounds/Guiro.wav",
-        "sounds/Ensoniq-ESQ-1-Snare.wav", "sounds/Floor-Tom-1.wav"]
-};
+target C
  
 import RhythmSource from "Rhythm.lf"
 import PlayWaveform from "PlayWaveform.lf"

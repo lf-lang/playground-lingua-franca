@@ -23,9 +23,8 @@
  * a machine on which you want to run the particular component.
  * See [[https://github.com/icyphy/lingua-franca/wiki/Distributed-Execution]].
  * 
- * @see RhythmMac.lf
- * @see RhythmMacDistributed.lf
- * @see RhythmMacDistributedIndependent.lf
+ * @see Rhythm.lf
+ * @see RhythmDistributed.lf
  * 
  * @author Edward A. Lee
  */
@@ -39,14 +38,7 @@ target C {
         period: 5 msec,
         trials: 10,
         attenuation: 10
-    },
-    files: [
-        "/lib/c/reactor-c/util/wave_file_reader.c", "/lib/c/reactor-c/util/wave_file_reader.h",
-        "/lib/c/reactor-c/util/audio_loop_mac.c", "/lib/c/reactor-c/util/audio_loop.h",
-        "/lib/c/reactor-c/util/audio_loop_linux.c",
-        "sounds/Bass-Drum-1.wav", "sounds/Hi-Bongo.wav", "sounds/Claves.wav", "sounds/High-Conga-1.wav",
-        "sounds/Cowbell-1.wav", "sounds/Cuica-1.wav", "sounds/Guiro.wav",
-        "sounds/Ensoniq-ESQ-1-Snare.wav", "sounds/Floor-Tom-1.wav"]
+    }
 };
 import PlayWaveform from "PlayWaveform.lf"
 

@@ -5,3 +5,4 @@
 * [Simulation](src/simulation/README.md): Using Lingua Franca for simulation.
 * [MQTT](src/mqtt/README.md): Interacting with MQTT-based services.
 * [Furuta Pendulum](src/modal_models/FurutaPendulum/README.md): A controller and simulation illustrating a modal reactor.
+* [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
