@@ -1,3 +1,18 @@
+/**
+ * This Lingua Franca (LF) program represents a real-time control system composed
+ * of a physical plant, a controller, and a planner. The physical plant generates
+ * sensor data at regular intervals and sends this data to the controller. The
+ * controller forwards the sensor data to the planner, which simulates latency
+ * through a brief sleep period before sending a response back to the controller.
+ * The controller maintains the latest control value received from the planner and
+ * sends it back to the physical plant as a control signal after receiving the next
+ * sensor data. Additionally, the program calculates and displays the latency
+ * between sensor readings and the control signal transmission. It also monitors
+ * the Signal Transmission Period (STP) and issues a warning if a violation occurs.
+ * Overall, this program simulates a real-time, feedback control system with
+ * planning, similar to those found in industrial automation or robotics, while
+ * accounting for latency and timing constraints. 
+ */
 target C {
     timeout: 1 sec
 }

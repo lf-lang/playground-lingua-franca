@@ -1,3 +1,25 @@
+/**
+ * This Lingua Franca (LF) program simulates an autonomous driving system inspired
+ * by Autoware's general graph structure and constraints. The system involves two
+ * sensors, a Camera and a LIDAR, generating periodic image and point-cloud data
+ * respectively. These data are processed by two object detection reactors, which
+ * simulate GPU computation using simulated delays and threading. The detected
+ * objects from both the image and LIDAR data are then merged in a DataFusion
+ * reactor. This fusion reactor is designed to handle the arrival of data from both
+ * inputs before proceeding, implementing a choke point that collapses multiple
+ * logical timelines into one.  
+ * 
+ * The fused data is passed to a Semantics reactor, which makes driving decisions
+ * based on the fused data, and the resultant actuation command is passed to an
+ * Actuator reactor. The Actuator reactor operates under a deadline, issuing a
+ * warning if this deadline is violated. Moreover, an alternative SafetyBreak path
+ * exists that can trigger the actuation based on LIDAR input directly. The whole
+ * system is designed to enforce a Logical Execution Time (LET) and meet end-to-end
+ * deadlines while taking into account the worst-case execution times of different
+ * components. This program offers a high-level simulation of real-time data
+ * processing and decision-making in autonomous driving systems. 
+ */
+
 // A lingua franca program with Autoware's general graph structure and constraints
 // The tentative constraints are:
 // - Sensors: Camera(phase=3, period=33) and LIDAR(phase=10, period=10)

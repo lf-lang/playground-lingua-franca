@@ -1,3 +1,14 @@
+/**
+ * This Lingua Franca (LF) program is designed to interact with an InfluxDB
+ * database and process event trace data. Upon startup, the program checks if the
+ * specified database exists and creates it if necessary. Then, it reads a trace
+ * file line by line, processing and extracting event information. The program
+ * writes the processed data as points to the InfluxDB database. Upon shutdown, the
+ * program queries the database for the last 10 records, sorted by descending
+ * timestamp, and prints the results to the console. This LF program demonstrates
+ * how to work with time-series data and interact with InfluxDB using the Influx
+ * package in TypeScript. 
+ */
 target TypeScript;
 
 /*

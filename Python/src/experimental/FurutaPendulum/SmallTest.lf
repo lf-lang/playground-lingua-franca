@@ -1,3 +1,17 @@
+/**
+ * This Lingua Franca program models a simple simulation and visualization of a
+ * physical system subjected to an impulsive disturbance. The Simulation reactor
+ * generates the state of the system at regular intervals specified by the sample
+ * period, which it updates based on the time elapsed since the last state update.
+ * It also incorporates any disturbances, which are modeled as instantaneous
+ * changes in the rate of change of the system state. These states are then sent to
+ * the Plotter reactor, which collects these data points over time. Upon the
+ * termination of the simulation, the Plotter reactor generates a plot displaying
+ * the state of the system over time, marking each data point with its respective
+ * time and value, and indicating the disturbances with stem lines. The main
+ * reactor triggers a one-shot disturbance three and a half seconds into the
+ * simulation. 
+ */
 target Python {
     timeout: 8 secs,
     fast: true

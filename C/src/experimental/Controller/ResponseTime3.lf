@@ -1,3 +1,15 @@
+/**
+ * This Lingua Franca (LF) program simulates a digital control system with a
+ * feedback loop between a physical plant, a controller, and a planner. The
+ * physical plant periodically sends sensor data and computes latencies based on
+ * control inputs, also alerting when a certain synchronization tolerance property
+ * (STP) is violated. The controller, which receives the sensor data, communicates
+ * with the planner before sending control signals back to the physical plant,
+ * skipping the first control action. The planner, upon receiving a request, takes
+ * some time to respond with the same value as the request. The program simulates
+ * real-time control mechanisms common in industrial automation, robotics, and
+ * embedded systems, including latency measurements and STP checks. 
+ */
 target C {
     timeout: 1 sec,
     keepalive: true

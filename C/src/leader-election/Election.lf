@@ -1,4 +1,15 @@
 /**
+ * The Lingua Franca (LF) program above represents a distributed leader election
+ * system with three nodes. Each node has an associated unique ID, and their goal
+ * is to elect the node with the highest ID as the leader. The program consists of
+ * a federated reactor that connects three Node reactors in a ring topology. Each
+ * node initially broadcasts its ID, and upon receiving an incoming ID, it compares
+ * it with its own. If the received ID is greater than its own, the node forwards
+ * the received ID after a 10 ms delay. If the received ID is equal to the node's
+ * own ID, it declares itself as the elected leader and transitions to the Elected
+ * mode. The leader election process continues until the node with the highest ID
+ * is elected. 
+ * 
  * @author Edward A. Lee
  * @author Julien Brunel
  * @author David Chemouil
