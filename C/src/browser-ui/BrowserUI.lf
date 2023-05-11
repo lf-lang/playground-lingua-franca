@@ -4,7 +4,7 @@
  * for requests. When it receives a request with no path
  * (e.g. "http://localhost:8080/"), it responds with the contents
  * of a file specified by the `initial_file` parameter, which is expected
- * to be an HTML file.
+ * to be an HTML file and outputs a true on its initialized output.
  * 
  * When it receives a request with a path (e.g. "http://localhost:8080/test"),
  * it responds with text. Normally, this would be JSON-formatted, but in this
@@ -22,6 +22,8 @@ target C {
 }
 
 preamble {=
+    #ifndef BROWSERUI_H
+    #define BROWSERUI_H
     #include "util.h"       // Defines lf_print() FIXME: Should not be necessary.
     #include "platform.h"   // Defines lf_thread_t, etc. FIXME: Should not be necessary.
 
@@ -38,6 +40,7 @@ preamble {=
         uint16_t hostport;  // The port to use for HTTP access.
         char* initial_page; // Initial web page contents.
     } browser_ui_t;
+    #endif // BROWSERUI_H
 =}
 /**
  * @param initial_file Path to the initial HTML file to serve, relative to the source directory.
@@ -48,6 +51,7 @@ reactor ServerUI(
     initial_file:string = "page.html",
     hostport:uint16_t = 8080
 ) {
+    output initialized:bool
     output request:char*
     input response:char*
     
@@ -68,8 +72,12 @@ reactor ServerUI(
         lf_thread_create(&listener, &listener_thread, &self->browser_ui);
     =}
     
-    reaction(req_action) -> request {=
-        lf_set_token(request, req_action->token);
+    reaction(req_action) -> request, initialized {=
+        if (strlen(req_action->value) == 0) {
+            lf_set(initialized, true);
+        } else {
+            lf_set_token(request, req_action->token);
+        }
     =}
     
     reaction(response) {=
@@ -96,23 +104,11 @@ reactor ServerUI(
      */
     method read_file(path:{=const char*=}): char* {=
         
-        // Convenience declaration of FILE_PATH_SEPARATOR
-        // FIXME: This should be in a preamble, but preambles are not inherited (issue #1712)
-        #if _WIN32 || WIN32
-        #define FILE_PATH_SEPARATOR '\\'
-        #else
-        #define FILE_PATH_SEPARATOR '/'
-        #endif
-        
-        // Get the full path of the source file.
-        char* bin_path = strdup(__FILE__);
-        if (bin_path == NULL) lf_print_error_and_exit("Error getting path to executing binary.");
-
         // Construct the path to the file to be read
-        char* file_path = (char *) malloc(strlen(bin_path) + strlen(path) + 2);
+        char* file_path = (char *) malloc(strlen(LF_SOURCE_DIRECTORY) + strlen(path) + 2);
         if (file_path == NULL) lf_print_error_and_exit("Out of memory.");
 
-        sprintf(file_path, "%s%c%s", dirname(bin_path), FILE_PATH_SEPARATOR, path);
+        sprintf(file_path, "%s%s%s", LF_SOURCE_DIRECTORY, LF_FILE_SEPARATOR, path);
 
         // Open the file for reading
         FILE* file = fopen(file_path, "rb");
@@ -132,7 +128,6 @@ reactor ServerUI(
         buffer[file_size] = '\0';
 
         free(file_path);
-        free(bin_path);
         fclose(file);
         return buffer;
     =}
@@ -199,6 +194,7 @@ reactor ServerUI(
                     );
                     close(browser_ui->client_socket);
                     browser_ui->client_socket = -1;
+                    lf_schedule_copy(browser_ui->req_action, 0, "", 1);
                 }
             }
             return NULL;
@@ -210,6 +206,9 @@ main reactor {
     state count:int = 0
     s = new ServerUI()
     
+    reaction(s.initialized) {=
+        self->count = 0;
+    =}
     reaction(s.request) -> s.response {=
         char* response;
         asprintf(&response, "You have pushed %d times. Path of GET request: %s", 
