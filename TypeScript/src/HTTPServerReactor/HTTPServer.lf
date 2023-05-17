@@ -1,3 +1,14 @@
+/**
+ * This Lingua Franca program sets up a simple HTTP server that listens on port
+ * 8000 and responds to incoming requests. On startup, the server is created and
+ * starts listening for incoming connections. When a request is received, it is
+ * scheduled as a physical action, which triggers a reaction that writes a response
+ * back to the client. This response includes a count of the number of requests
+ * processed so far, incremented each time a new request is received. The program
+ * also ensures proper cleanup on shutdown by closing the server. This reactor
+ * serves as a basic example of how to integrate network interactions within the
+ * Lingua Franca framework. 
+ */
 target TypeScript {
     keepalive : true
     //logging : "debug"

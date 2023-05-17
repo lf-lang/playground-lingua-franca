@@ -1,3 +1,13 @@
+/**
+ * This Lingua Franca program is designed to retrieve content from a webpage using
+ * HTTPS GET request. Upon startup, it sends a GET request to the specified URL
+ * ("https://ptolemy.berkeley.edu/projects/icyphy/"). As it receives data from the
+ * server, it schedules a physical action to process that data, which is then
+ * printed to the console. When the server indicates that there is no more data to
+ * be sent, another physical action is scheduled which ends the program. This
+ * reactor demonstrates the capability of Lingua Franca to handle and react to
+ * asynchronous network events in a timely manner. 
+ */
 target TypeScript{
     keepalive : true
     //logging : "debug"

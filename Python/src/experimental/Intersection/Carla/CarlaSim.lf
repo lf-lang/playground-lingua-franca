@@ -1,3 +1,16 @@
+/**
+ * This Lingua Franca program facilitates the simulation of a vehicle, specifically
+ * a Tesla Model 3, within the CARLA simulator environment. It utilizes a Python
+ * interface to interact with the simulator and manage the vehicle's state. Upon
+ * startup, the program initiates a connection to CARLA, sets up the world
+ * parameters, and spawns the vehicle at a specified location with an initial
+ * velocity. Once the world is initialized and the vehicle is spawned, the program
+ * continuously updates the vehicle's state at a specified interval. It also
+ * accepts external control commands for the vehicle's throttle and brake and
+ * applies them to the vehicle in the simulation. The program provides the
+ * vehicle's velocity and position as output, which can be used for further
+ * processing or analysis. 
+ */
 target Python {
     files: [
         "ROS/carla_intersection/src/carla_sim.py",

@@ -1,3 +1,14 @@
+/**
+ * This Lingua Franca program implements a simple reaction game, where the user
+ * interacts with a graphical user interface (GUI) and responds to prompts that
+ * appear at random intervals. The user is asked to press any key in response to
+ * these prompts, with the time taken to respond being calculated and displayed.
+ * The game ends when a user presses a key before a prompt shows up, indicating
+ * they have cheated, with the average response time displayed at the end. This
+ * program integrates threading for listening to user input, randomization of
+ * prompt intervals, and inter-process communication to update the GUI, providing
+ * an interactive, real-time game experience. 
+ */
 target Python {
     keepalive: true,
     files: [gui.py]
