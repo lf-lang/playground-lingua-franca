@@ -1,3 +1,16 @@
+/**
+ * This Lingua Franca program simulates a Road Side Unit (RSU), a component
+ * critical in Intelligent Transportation Systems for managing vehicle interactions
+ * at an intersection. Upon startup, the RSU is initialized with specific
+ * parameters such as intersection width, nominal speed in the intersection, and
+ * the intersection position. The RSU then listens for incoming requests from
+ * vehicles. These requests, which include information about the vehicle's current
+ * state and its intentions, are processed, and the RSU determines if the vehicle
+ * is granted access to the intersection. If access is granted, a grant message is
+ * sent back to the vehicle with key information such as the intersection position,
+ * target speed, and arrival time. The RSU can handle multiple vehicle requests and
+ * issue corresponding grants simultaneously. 
+ */
 target Python {
     files: [
         "ROS/carla_intersection/src/rsu.py",

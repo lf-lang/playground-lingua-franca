@@ -1,3 +1,17 @@
+/**
+ * The Lingua Franca (LF) program presented defines a Behavior Tree (BT) structure
+ * for controlling the actions of a Pac-Man agent in a game environment. The BT
+ * alternates between different actions, such as "EatPills", "AvoidGhost", and
+ * "ChaseGhost", based on conditions "GhostClose" and "GhostScared". The tree's
+ * structure is hierarchical and prioritizes actions based on sequences and
+ * fallbacks (decision points that go down different branches depending on the
+ * success or failure of a condition). This tree structure allows for more complex
+ * and layered decision making. The program then has a main reactor that triggers
+ * the root of the BT (PacMan0) periodically every 5 milliseconds, essentially
+ * making decisions at a high frequency. In summary, the LF program uses the BT
+ * model to dictate Pac-Man's behavior in response to different game states, with a
+ * high-frequency decision-making loop. 
+ */
 target C;
 
 // Utilities

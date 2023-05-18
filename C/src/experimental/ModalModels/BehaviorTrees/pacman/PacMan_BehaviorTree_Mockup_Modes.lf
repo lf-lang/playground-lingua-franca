@@ -1,3 +1,16 @@
+/**
+ * The provided Lingua Franca (LF) program models a simple decision-making system
+ * that transitions between different modes of operation based on certain implied
+ * conditions. The program starts in the HandleGhostClose mode, where it
+ * instantiates an instance of GhostCloseBehavior. This GhostCloseBehavior reactor
+ * toggles between two modes, ChaseGhost and AvoidGhost, representing different
+ * behaviors. In the main reactor, if the implied condition GhostClose becomes
+ * true, the program transitions to the EatPills mode. In this mode, it executes an
+ * action represented as EatPills, and if the condition changes to GhostClose
+ * again, it reverts back to the HandleGhostClose mode, resetting the state. The
+ * program essentially demonstrates a simple state machine that switches between
+ * different states or behaviors based on the changes in the assumed conditions. 
+ */
 target C;
 
 reactor GhostCloseBehavior {

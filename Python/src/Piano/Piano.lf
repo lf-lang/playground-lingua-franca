@@ -1,3 +1,14 @@
+/**
+ * This Lingua Franca program simulates a virtual piano that listens for user key
+ * presses, translates them into corresponding piano notes, plays the associated
+ * sounds, and updates the graphical interface accordingly. At the start, it
+ * initializes a FluidSynth instance for playing MIDI sounds and a GUI for the
+ * piano interface. As the user interacts with the program by pressing keys, these
+ * key presses are captured and translated into notes. The program then plays the
+ * corresponding sounds using FluidSynth and updates the GUI to reflect the keys
+ * that are currently being pressed. The program is designed to run continuously
+ * until the user decides to stop. 
+ */
 target Python {
     files: [gui.py, keys.png, soundfont.sf2],
     threading: true,

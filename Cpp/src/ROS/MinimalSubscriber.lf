@@ -1,3 +1,12 @@
+/**
+ * The provided Lingua Franca (LF) program represents a simple ROS2 subscriber that
+ * listens for messages on a particular topic. Specifically, it subscribes to a
+ * topic named "topic" and waits for 'std_msgs/msg/String' type messages. When a
+ * message arrives, it is scheduled as a physical action, triggering a reaction
+ * that logs the received message. Therefore, this program demonstrates how an LF
+ * program can interface with ROS2 to receive and process messages from a ROS2
+ * topic in a reactive manner. 
+ */
 target Cpp {
     ros2: true,
     keepalive: true,

@@ -1,3 +1,13 @@
+//! This Lingua Franca program captures asynchronous key press events in a terminal
+//! and sends them through an output port. It is primarily designed to interact with
+//! the arrow keys (up, down, left, right) and the Ctrl+C key combination. When the
+//! program starts, it enters a raw mode, allowing it to capture individual key
+//! presses. These key presses are then sent through the 'arrow_key_pressed' output.
+//! If the Ctrl+C combination is detected, the program requests to stop. Upon
+//! shutdown, the program exits the raw mode. This reactor is designed to support
+//! other applications that require real-time keyboard interaction, particularly
+//! within terminal-based interfaces. 
+//!
 //! Support reactor for the Snake.lf example.
 
 target Rust {

@@ -1,3 +1,15 @@
+/**
+ * This Lingua Franca program interfaces with the Robot Operating System (ROS) to
+ * periodically publish messages on a specific topic using the MinimalPublisher
+ * class from the ROS py_pubsub package. The program initializes ROS communication
+ * and creates an instance of MinimalPublisher upon startup. Using a timer, it
+ * generates and publishes a new "Hello World" message every 500 milliseconds,
+ * incrementing a counter with each message. The message is output to the defined
+ * topic for consumption by other systems or processes. On shutdown, the program
+ * destroys the node and shuts down ROS communication, ensuring a clean exit. This
+ * program showcases the utility of Lingua Franca in enabling deterministic,
+ * real-time communication in robotics applications using ROS. 
+ */
 // Sender.lf
 target Python;
 

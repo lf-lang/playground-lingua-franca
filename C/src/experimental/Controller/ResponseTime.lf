@@ -1,3 +1,16 @@
+/**
+ * This Lingua Franca (LF) program models a real-time control system consisting of
+ * a physical plant, a controller, and a planner. The physical plant produces
+ * sensor data at regular intervals, which are then sent to the controller. The
+ * controller sends this sensor data to the planner, which takes a brief pause to
+ * plan and then sends back a response, mimicking the latency often encountered in
+ * real-world control systems. The controller then sends a control signal back to
+ * the physical plant based on this response. The program also monitors the time
+ * taken for the control signal to reach the physical plant from the controller and
+ * issues a warning if the signal transmission time exceeds a certain threshold.
+ * This setup mimics a real-time, latency-sensitive, feedback control system with
+ * planning involved, such as those found in industrial automation or robotics. 
+ */
 target C {
     timeout: 1 sec
 }

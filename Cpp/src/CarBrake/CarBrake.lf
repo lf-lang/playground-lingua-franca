@@ -1,3 +1,17 @@
+/**
+ * The given Lingua Franca (LF) program models a simplified automatic braking
+ * system in a car, which consists of a camera, a braking assistant, a brake pedal,
+ * and a brake. The camera continuously generates frames at a regular interval of
+ * 20 milliseconds. The braking assistant processes these frames and sends a brake
+ * signal every 10 frames, simulating an automatic braking decision based on the
+ * image processing. Simultaneously, a simulated brake pedal is "pressed" roughly
+ * every second, triggering a manual brake signal. Both automatic and manual brake
+ * signals are directed to the brake reactor, which reacts by outputting a message
+ * indicating that the brake has been triggered and the source of the signal. It
+ * also checks whether the reactions to these signals meet certain deadlines (3
+ * milliseconds for manual and 15 milliseconds for automatic braking), printing an
+ * error message if a deadline is violated. 
+ */
 target Cpp {
     keepalive: true,
     cmake-include: "threads.cmake"

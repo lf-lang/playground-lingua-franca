@@ -1,3 +1,12 @@
+/**
+ * This Lingua Franca program creates a simple web server that responds to HTTP
+ * requests. Upon startup, the server is initiated and begins to listen on port
+ * 8000. When an HTTP request is received that is not for the favicon.ico file, the
+ * server schedules a reaction that processes the request and sends a response with
+ * the message "Hello world!". This program efficiently handles incoming requests
+ * and performs the necessary actions in response to each request. The server stops
+ * and closes upon the shutdown of the program. 
+ */
 target TypeScript {
     keepalive : true
 };
