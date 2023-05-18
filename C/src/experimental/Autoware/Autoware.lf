@@ -12,7 +12,7 @@
  * The fused data is passed to a Semantics reactor, which makes driving decisions
  * based on the fused data, and the resultant actuation command is passed to an
  * Actuator reactor. The Actuator reactor operates under a deadline, issuing a
- * warning if this deadline is violated. Moreover, an alternative SafetyBreak path
+ * warning if this deadline is violated. Moreover, an alternative SafetyBrake path
  * exists that can trigger the actuation based on LIDAR input directly. The whole
  * system is designed to enforce a Logical Execution Time (LET) and meet end-to-end
  * deadlines while taking into account the worst-case execution times of different
@@ -267,8 +267,8 @@ reactor Actuator(threshold:time(33 msec)){
     =}
 }
 
-/* An alternative path exists between the LIDAR and the actuator for the safety break system */
-reactor SafetyBreak {
+/* An alternative path exists between the LIDAR and the actuator for the safety brake system */
+reactor SafetyBrake {
     input LIDARPointCloud:string;
     output actuation:int;
 
@@ -305,8 +305,8 @@ main reactor Autoware {
     ac = new Actuator();
     sem.actuation -> ac.actuation;
 
-    // An alternative path that activates the safety break system based on LIDAR input
-    sb = new SafetyBreak();
+    // An alternative path that activates the safety brake system based on LIDAR input
+    sb = new SafetyBrake();
     l.pointcloud -> sb.LIDARPointCloud;
     // sb.actuation -> ac.actuation; // Cannot construct the alternative path because actuation may only be connected to a single upstream port
 
