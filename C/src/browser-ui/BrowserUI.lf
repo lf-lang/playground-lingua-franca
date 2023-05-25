@@ -42,7 +42,17 @@ preamble {=
     } browser_ui_t;
     #endif // BROWSERUI_H
 =}
+
 /**
+ * Start an HTTP server, listen for requests, and provide responses.
+ * When an HTTP request comes in, this reactor outputs on the request
+ * output the part of the path starting with the first slash.
+ * For example, if the URL is http://localhost:8080/foo, then the
+ * request output will produce "/foo".
+ * If there is nothing after the first slash or no first slash,
+ * then this reactor will instead return the contents of the initial_file
+ * parameter, output true on the initialized output, and output nothing
+ * on the request output.
  * @param initial_file Path to the initial HTML file to serve, relative to the source directory.
  *  Defaults to "page.html".
  * @param hostport The host port number, which defults to 8080.

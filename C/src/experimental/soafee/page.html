@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Browser UI for Lingua Franca</title>
+    <style>
+        #rectangle {
+            width: 100px;
+            height: 100px;
+            background-color: red;
+            position: relative;
+        }
+    </style>
+  </head>
+  <body>
+    <h1>Browser UI for Lingua Franca</h1>
+    <p id="message"></p>
+    <p><button id="start">start</button></p>
+    <div id="playground">
+        <div id="rectangle"></div>
+    </div>
+    <script>
+  document.getElementById('start').addEventListener('click', function() {
+    setInterval(function() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {
+          if (this.status == 200) {
+            document.getElementById('message').innerHTML = "Position: " + this.responseText;
+            
+            var position = JSON.parse(this.responseText);
+            const rectangle = document.getElementById('rectangle');
+            rectangle.style.left = position.x * 10 + 'px';
+            rectangle.style.top = position.y * 10 + 'px';
+          } else {
+            document.getElementById('message').innerHTML = "Error: " + this.statusText;
+          }
+        };
+        xhttp.open('GET', '/count', true);
+        xhttp.send(null);
+    }, 1000);
+  }); 
+    </script>
+  </body>
+</html>

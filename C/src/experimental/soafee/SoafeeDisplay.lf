@@ -1,0 +1,41 @@
+target C {
+    keepalive: true,
+    files: [
+        "/lib/c/reactor-c/util/sensor_simulator.c", 
+        "/lib/c/reactor-c/util/sensor_simulator.h",
+    ],
+    cmake-include: [
+        "/lib/c/reactor-c/util/sensor_simulator.cmake",
+    ] 
+}
+import ServerUI from "../../browser-ui/BrowserUI.lf"
+main reactor {
+    preamble {=
+        #include "sensor_simulator.h"
+        const char* messages[] = {"Hello", "World"};
+        int num_messages = 2;
+    =}
+    state horizontal:int = 0;
+    state vertical:int = 0;
+    s = new ServerUI()
+    physical action key:char*;
+    reaction(startup) -> key {=
+        lf_print("Starting sensor simulator.");
+        start_sensor_simulator(messages, num_messages, 16, NULL, LOG_LEVEL_INFO);
+        register_sensor_key('\0', key);
+   =}
+    reaction(key) {=
+        lf_print("You typed '%s' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
+        if (strcmp("B", key->value) == 0) self->vertical++;
+        if (strcmp("A", key->value) == 0) self->vertical--;
+        if (strcmp("C", key->value) == 0) self->horizontal++;
+        if (strcmp("D", key->value) == 0) self->horizontal--;
+    =}
+    reaction(s.initialized) {=
+    =}
+    reaction(s.request) -> s.response {=
+        char* response;
+        asprintf(&response, "{\"x\": %d, \"y\": %d}", self->horizontal, self->vertical);
+        lf_set(s.response, response);
+    =}
+}
