@@ -1,37 +1,86 @@
 target C {
     keepalive: true,
-    files: [
-        "/lib/c/reactor-c/util/sensor_simulator.c", 
-        "/lib/c/reactor-c/util/sensor_simulator.h",
-    ],
     cmake-include: [
-        "/lib/c/reactor-c/util/sensor_simulator.cmake",
+        "curses.cmake",
     ] 
 }
 import ServerUI from "../../browser-ui/BrowserUI.lf"
+
+/**
+ * Listen for user input. When the user hits a key,
+ * then schedule a physical action to produce an output on key.
+ * The startup is delayed to give the server a chance to print
+ * its instruction message before curses takes over the terminal.
+ */
+reactor UserInput {
+    preamble {=
+        #include "platform.h"
+        #include <curses.h>
+        // Thread to read input characters until an EOF is received.
+        // Each time a character is received, schedule a keypress action.
+        void* read_input(void* keypress) {
+            int c;
+            printw("Type q or x to exit.\n"
+                    "Point your browser to http://localhost:8080\n"
+                    "Type the arrow keys to move the vehicle.\n");
+            refresh();
+            while((c = getch()) != EOF) {
+                if (c == 120 || c == 113) {
+                    lf_request_stop();
+                    break;
+                }
+                lf_schedule_copy(keypress, 0, &c, 1);
+            }
+            return NULL;
+        }
+        // Function to direct printed messages to the curses-managed terminal.
+        void print_to_terminal(const char* format, va_list args) {
+            vwprintw(NULL, format, args);
+            refresh();
+        }
+    =}
+    physical action keypress:int;
+    
+    timer start(1 s)
+    
+    output key:int;
+    
+    reaction(start) -> keypress {=
+        initscr();  // Initialize the curses library
+        cbreak();   // Disable line buffering
+        noecho();   // Disable automatic echoing of typed characters
+        keypad(stdscr, TRUE);  // Enable special keys
+        // Register a print function handler so lf_print works.
+        lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
+        
+        // Start the thread that listens for Enter or Return.
+        lf_thread_t thread_id;
+        lf_thread_create(&thread_id, &read_input, keypress);        
+    =}
+        
+    reaction(keypress) -> key {=
+        lf_set(key, keypress->value);
+    =}
+    reaction(shutdown) {=
+        endwin();
+        lf_register_print_function(NULL, -1);
+    =}
+}
+
 main reactor {
     preamble {=
-        #include "sensor_simulator.h"
-        const char* messages[] = {"Hello", "World"};
-        int num_messages = 2;
+        #include <ncurses.h>
     =}
     state horizontal:int = 0;
     state vertical:int = 0;
     s = new ServerUI()
-    physical action key:char*;
-    reaction(startup) -> key {=
-        lf_print("Starting sensor simulator.");
-        start_sensor_simulator(messages, num_messages, 16, NULL, LOG_LEVEL_INFO);
-        register_sensor_key('\0', key);
-   =}
-    reaction(key) {=
-        lf_print("You typed '%s' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
-        if (strcmp("B", key->value) == 0) self->vertical++;
-        if (strcmp("A", key->value) == 0) self->vertical--;
-        if (strcmp("C", key->value) == 0) self->horizontal++;
-        if (strcmp("D", key->value) == 0) self->horizontal--;
-    =}
-    reaction(s.initialized) {=
+    u = new UserInput()
+    reaction(u.key) {=
+        lf_print("You typed '%d' at elapsed time %lld.", u.key->value, lf_time_logical_elapsed());
+        if (u.key->value == KEY_DOWN) self->vertical++;
+        else if (u.key->value == KEY_UP) self->vertical--;
+        else if (u.key->value == KEY_RIGHT) self->horizontal++;
+        else if (u.key->value == KEY_LEFT) self->horizontal--;
     =}
     reaction(s.request) -> s.response {=
         char* response;
