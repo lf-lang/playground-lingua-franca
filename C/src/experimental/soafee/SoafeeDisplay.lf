@@ -5,6 +5,7 @@ target C {
     ] 
 }
 import ServerUI from "../../browser-ui/BrowserUI.lf"
+import PlayWaveform from "../../rhythm/PlayWaveform.lf"
 
 /**
  * Listen for user input. When the user hits a key,
@@ -139,9 +140,44 @@ reactor Dashboard {
     =}
 }
 
+reactor SoundAlert {
+    input front_distance:int
+    logical action ding
+    state ding_interval: time = 0  // 0 means no sound
+    p = new PlayWaveform(default_waveform_id = 1)
+    reaction(front_distance) -> ding {=
+        instant_t previous_interval = self->ding_interval;
+        // Change the period of the sound.
+        if (front_distance->value > 75) {
+            // Go silent.
+            self->ding_interval = MSEC(0);
+        } else if (front_distance->value > 50) {
+            self->ding_interval = MSEC(2000);
+        } else if (front_distance->value > 25) {
+            self->ding_interval = MSEC(1000);
+        } else if (front_distance->value > 15) {
+            self->ding_interval = MSEC(500);
+        } else {
+            self->ding_interval = MSEC(200);
+        }
+        // If no sound is playing, start it playing.
+        if (self->ding_interval > MSEC(0) && previous_interval == MSEC(0)) {
+            lf_schedule(ding, 0);
+        }
+    =}
+    reaction(ding) -> p.note, ding {=
+        if (self->ding_interval > MSEC(0)) {
+            lf_set(p.note, 1);
+            lf_schedule(ding, self->ding_interval);
+        }
+    =}
+}
+
 main reactor {
     s = new Sensors()
     d = new Dashboard()
+    a = new SoundAlert()
     s.speed -> d.speed
     s.front_distance -> d.front_distance
+    s.front_distance -> a.front_distance
 }
