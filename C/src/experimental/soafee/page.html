@@ -47,11 +47,14 @@
         var xhttp = new XMLHttpRequest();
         xhttp.onload = function() {
           if (this.status == 200) {
-            document.getElementById('message').innerHTML = "Position: " + this.responseText;
+            document.getElementById('message').innerHTML = "Sensor data: " + this.responseText;
             
-            var position = JSON.parse(this.responseText);
+            var data = JSON.parse(this.responseText);
             const front = document.getElementById('front');
-            front.style.left = position.x * 10 + 'px';
+            console.log("Distance: " + data.front_distance);
+            // FIXME: Contain position to be between 0 and 100.
+            // Change color when greater than 100.
+            front.style.left = (100 - data.front_distance) + 'px';
           } else {
             document.getElementById('message').innerHTML = "Error: " + this.statusText;
           }

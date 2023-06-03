@@ -20,10 +20,6 @@ reactor UserInput {
         // Each time a character is received, schedule a keypress action.
         void* read_input(void* keypress) {
             int c;
-            printw("Type q or x to exit.\n"
-                    "Point your browser to http://localhost:8080\n"
-                    "Type the left and right arrow keys to move the vehicle.\n");
-            refresh();
             while((c = getch()) != EOF) {
                 if (c == 120 || c == 113) {
                     lf_request_stop();
@@ -35,7 +31,8 @@ reactor UserInput {
         }
         // Function to direct printed messages to the curses-managed terminal.
         void print_to_terminal(const char* format, va_list args) {
-            vwprintw(NULL, format, args);
+            move(8, 0);
+            vwprintw(stdscr, format, args);
             refresh();
         }
     =}
@@ -50,6 +47,17 @@ reactor UserInput {
         cbreak();   // Disable line buffering
         noecho();   // Disable automatic echoing of typed characters
         keypad(stdscr, TRUE);  // Enable special keys
+        
+        move(0, 0);
+        printw("Type q or x to exit.\n"
+                "Point your browser to http://localhost:8080\n"
+                "Type:\n"
+                "   b to brake\n"
+                "   UP to accelerate\n"
+                "   DOWN to decelerate or reverse\n"
+                "   r to reset\n");
+        refresh();
+
         // Register a print function handler so lf_print works.
         lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
         
@@ -67,22 +75,73 @@ reactor UserInput {
     =}
 }
 
-main reactor {
+/**
+ * Emulator for automotive sensors. It outputs sensor data periodically
+ * with the specified sample interval.
+ * This reactor uses curses to listen
+ * for keyboard entry and provides a simple test case where
+ * pressing the up arrow increases the speed and pressing the
+ * down arrow decrease the speed. To test the dashboard display,
+ * this reactor assumes that the vehicle has an obstacle in front
+ * of it at the specified initial front distance.
+ */
+reactor Sensors(
+    sample_interval: time = 100 ms,
+    initial_front_distance: int = 100   // In pixels
+) {
     preamble {=
         #include <ncurses.h>
+        #include <stdlib.h>    // Defines abs()
+        #include <math.h>      // Defines lround()
     =}
-    state horizontal:int = 0;
-    state vertical:int = 0;
-    s = new ServerUI()
+    output speed: int          // In pixels/second
+    output front_distance: int // In pixels
+    
+    state velocity: double = 0    // In pixels/second
+    state position: double = 0    // In pixels
+    
+    timer t(0, sample_interval)
+    
     u = new UserInput()
+    
     reaction(u.key) {=
-        lf_print("You typed '%d' at elapsed time %lld.", u.key->value, lf_time_logical_elapsed());
-        if (u.key->value == KEY_RIGHT) self->horizontal--;
-        else if (u.key->value == KEY_LEFT) self->horizontal++;
+        if (u.key->value == KEY_UP) self->velocity++;
+        else if (u.key->value == KEY_DOWN) self->velocity--;
+        else if (u.key->value == 'b') self->velocity = 0;
+        else if (u.key->value == 'r') {
+            self->velocity = 0;
+            self->position = 0.0;
+        }
     =}
-    reaction(s.request) -> s.response {=
+    
+    reaction(t) -> speed, front_distance {=
+        lf_set(speed, abs((int)lround(self->velocity)));
+
+        // Update position.
+        // Careful with rounding.
+        self->position += self->velocity * (self->sample_interval / MSEC(1)) / 1000.0;
+        
+        lf_print("Position: %d\n", (int)lround(self->position));
+        
+        lf_set(front_distance, self->initial_front_distance - (int)lround(self->position));
+    =}
+}
+
+reactor Dashboard {
+    input speed:int
+    input front_distance:int
+    s = new ServerUI()
+
+    reaction(s.request) speed, front_distance -> s.response {=
         char* response;
-        asprintf(&response, "{\"x\": %d, \"y\": %d}", self->horizontal, self->vertical);
+        asprintf(&response, "{\"front_distance\": %d, \"speed\": %d}", front_distance->value, speed->value);
         lf_set(s.response, response);
     =}
+}
+
+main reactor {
+    s = new Sensors()
+    d = new Dashboard()
+    s.speed -> d.speed
+    s.front_distance -> d.front_distance
 }
