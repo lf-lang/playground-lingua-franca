@@ -2,21 +2,45 @@
 <html>
   <head><title>Browser UI for Lingua Franca</title>
     <style>
-        #rectangle {
-            width: 100px;
-            height: 100px;
+        #dashboard {
+            width: 500px;
+            height: 200px;
+            background-color:antiquewhite;
+            position: relative;
+        }
+        #car {
+            width: 300px;
+            height: 200px;
+            position: relative;
+            top: 40px;
+            left: 100px;
+            overflow: hidden;
+        }
+        #front {
+            width: 10px;
+            height: 120px;
+            top: 40px;
+            float: left;
             background-color: red;
             position: relative;
         }
     </style>
   </head>
   <body>
-    <h1>Browser UI for Lingua Franca</h1>
-    <p id="message"></p>
+    <h1>Dashboard Display</h1>
     <p><button id="start">start</button></p>
-    <div id="playground">
-        <div id="rectangle"></div>
+    <div id="dashboard">
+        <div id="front"></div>
+        <div id="car">
+            <svg width="300" height="120">
+                <rect fill="cadetblue" x="0" y="0" width="300" height="120" rx="15"/>
+                <rect fill="cadetblue" stroke="aliceblue" x="100" y="15" width="120" height="90"/>
+                <polygon fill="aliceblue" points="70,0 100,15 100,105 70,120"/>
+                <polygon fill="aliceblue" points="220,15 240,0 240,120 220,105"/>
+            <svg>
+        </div>
     </div>
+    <p id="message"></p>
     <script>
   document.getElementById('start').addEventListener('click', function() {
     setInterval(function() {
@@ -26,16 +50,15 @@
             document.getElementById('message').innerHTML = "Position: " + this.responseText;
             
             var position = JSON.parse(this.responseText);
-            const rectangle = document.getElementById('rectangle');
-            rectangle.style.left = position.x * 10 + 'px';
-            rectangle.style.top = position.y * 10 + 'px';
+            const front = document.getElementById('front');
+            front.style.left = position.x * 10 + 'px';
           } else {
             document.getElementById('message').innerHTML = "Error: " + this.statusText;
           }
         };
         xhttp.open('GET', '/count', true);
         xhttp.send(null);
-    }, 1000);
+    }, 500);
   }); 
     </script>
   </body>

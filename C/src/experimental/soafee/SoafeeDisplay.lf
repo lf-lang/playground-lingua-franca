@@ -22,7 +22,7 @@ reactor UserInput {
             int c;
             printw("Type q or x to exit.\n"
                     "Point your browser to http://localhost:8080\n"
-                    "Type the arrow keys to move the vehicle.\n");
+                    "Type the left and right arrow keys to move the vehicle.\n");
             refresh();
             while((c = getch()) != EOF) {
                 if (c == 120 || c == 113) {
@@ -77,10 +77,8 @@ main reactor {
     u = new UserInput()
     reaction(u.key) {=
         lf_print("You typed '%d' at elapsed time %lld.", u.key->value, lf_time_logical_elapsed());
-        if (u.key->value == KEY_DOWN) self->vertical++;
-        else if (u.key->value == KEY_UP) self->vertical--;
-        else if (u.key->value == KEY_RIGHT) self->horizontal++;
-        else if (u.key->value == KEY_LEFT) self->horizontal--;
+        if (u.key->value == KEY_RIGHT) self->horizontal--;
+        else if (u.key->value == KEY_LEFT) self->horizontal++;
     =}
     reaction(s.request) -> s.response {=
         char* response;
