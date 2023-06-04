@@ -23,7 +23,8 @@
  * <li> The sound files are from the rhythm example and are not really
  * appropriate for this use. They should be replaced with suitable sound files,
  * which will require parameterizing the PlayWaveform reactor.
- * <li> The graphics are primitive. The vehicle icon could be replaced by a gif.
+ * <li> The graphics are primitive. E.g., the vehicle icon could be replaced by a gif.
+ * The speed should be displayed.
  * <li> There is only one distance sensor and no mechanism for setting up a test
  * environment where obstacles are placed.
  * <li> The web server works by being polled. It should instead accept a web
@@ -39,8 +40,8 @@ target C {
     cmake-include: ["curses.cmake"]
 }
 
-import ServerUI from "../../browser-ui/BrowserUI.lf"
-import PlayWaveform from "../../rhythm/PlayWaveform.lf"
+import ServerUI from "../browser-ui/BrowserUI.lf"
+import PlayWaveform from "../rhythm/PlayWaveform.lf"
 
 /**
  * Listen for user input. When the user hits a key, then schedule a physical
@@ -163,7 +164,7 @@ reactor Sensors(
 reactor Dashboard {
     input speed: int
     input front_distance: int
-    s = new ServerUI()
+    s = new ServerUI(initial_file = "dashboard.html")
 
     reaction(s.request) speed, front_distance -> s.response {=
         char* response;
