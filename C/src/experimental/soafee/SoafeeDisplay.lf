@@ -1,5 +1,5 @@
 /**
- * Illustration of how to build a software-defined vehicle. This program has
+ * This is an illustration of how to build a software-defined vehicle. The program has
  * three components, one that emulates the sensors in a vehicle, one that
  * provides a dashboard display, and one that provides sound alerts.
  *
@@ -23,8 +23,12 @@
  * <li> The sound files are from the rhythm example and are not really
  * appropriate for this use. They should be replaced with suitable sound files,
  * which will require parameterizing the PlayWaveform reactor.
+ * <li> The graphics are primitive. The vehicle icon could be replaced by a gif.
  * <li> There is only one distance sensor and no mechanism for setting up a test
  * environment where obstacles are placed.
+ * <li> The web server works by being polled. It should instead accept a web
+ * socket connection so that the program can push data to the display.
+ * <li> The web server has no security.
  * </ul>
  *
  * @author Edward A. Lee
