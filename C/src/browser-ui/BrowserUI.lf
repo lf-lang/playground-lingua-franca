@@ -24,8 +24,8 @@ target C {
 preamble {=
     #ifndef BROWSERUI_H
     #define BROWSERUI_H
-    #include "util.h"       // Defines lf_print() FIXME: Should not be necessary.
-    #include "platform.h"   // Defines lf_thread_t, etc. FIXME: Should not be necessary.
+    #include "util.h"       // Defines lf_print()
+    #include "platform.h"   // Defines lf_thread_t, etc.
 
     #include <sys/socket.h>
     #include <arpa/inet.h>
