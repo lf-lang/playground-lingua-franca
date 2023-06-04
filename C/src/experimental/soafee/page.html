@@ -28,7 +28,6 @@
   </head>
   <body>
     <h1>Dashboard Display</h1>
-    <p><button id="start">start</button></p>
     <div id="dashboard">
         <div id="front"></div>
         <div id="car">
@@ -42,7 +41,6 @@
     </div>
     <p id="message"></p>
     <script>
-  document.getElementById('start').addEventListener('click', function() {
     setInterval(function() {
         var xhttp = new XMLHttpRequest();
         xhttp.onload = function() {
@@ -72,7 +70,6 @@
         xhttp.open('GET', '/count', true);
         xhttp.send(null);
     }, 500);
-  }); 
     </script>
   </body>
 </html>

@@ -1,17 +1,48 @@
+/**
+ * Illustration of how to build a software-defined vehicle. This program has
+ * three components, one that emulates the sensors in a vehicle, one that
+ * provides a dashboard display, and one that provides sound alerts.
+ *
+ * The sensors are emulated with keyboard entries, where pressing the up arrow
+ * will accelerate the vehicle forward, pressing the down arrow will decelerate
+ * or go into reverse, pressing 'b' will brake, and pressing 'r' will reset.
+ * This sensor emulator assumes that there is an obstacle in front of the
+ * vehicle, so if you accelerate forward, the vehicle will approach and
+ * eventually hit the obstacle.
+ *
+ * The dashboard display is emulated by a web server. After starting the
+ * program, point your browser to http://localhost:8080, and a simple prototype
+ * of a dashboard display will appear. It shows the distance to the obstacle in
+ * front, changing its color as the obstacle gets closer.
+ *
+ * The sound alert plays audio waveforms with a frequency that varies as the
+ * vehicle gets closer to the obstacle in front.
+ *
+ * There are a number of FIXMEs:
+ * <ul>
+ * <li> The sound files are from the rhythm example and are not really
+ * appropriate for this use. They should be replaced with suitable sound files,
+ * which will require parameterizing the PlayWaveform reactor.
+ * <li> There is only one distance sensor and no mechanism for setting up a test
+ * environment where obstacles are placed.
+ * </ul>
+ *
+ * @author Edward A. Lee
+ * @author Ravi Akella
+ */
 target C {
     keepalive: true,
-    cmake-include: [
-        "curses.cmake",
-    ] 
+    cmake-include: ["curses.cmake"]
 }
+
 import ServerUI from "../../browser-ui/BrowserUI.lf"
 import PlayWaveform from "../../rhythm/PlayWaveform.lf"
 
 /**
- * Listen for user input. When the user hits a key,
- * then schedule a physical action to produce an output on key.
- * The startup is delayed to give the server a chance to print
- * its instruction message before curses takes over the terminal.
+ * Listen for user input. When the user hits a key, then schedule a physical
+ * action to produce an output on key. The startup is delayed to give the server
+ * a chance to print its instruction message before curses takes over the
+ * terminal.
  */
 reactor UserInput {
     preamble {=
@@ -37,18 +68,18 @@ reactor UserInput {
             refresh();
         }
     =}
-    physical action keypress:int;
-    
+    physical action keypress: int
+
     timer start(1 s)
-    
-    output key:int;
-    
+
+    output key: int
+
     reaction(start) -> keypress {=
         initscr();  // Initialize the curses library
         cbreak();   // Disable line buffering
         noecho();   // Disable automatic echoing of typed characters
         keypad(stdscr, TRUE);  // Enable special keys
-        
+
         move(0, 0);
         printw("Type q or x to exit.\n"
                 "Point your browser to http://localhost:8080\n"
@@ -61,15 +92,14 @@ reactor UserInput {
 
         // Register a print function handler so lf_print works.
         lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
-        
+
         // Start the thread that listens for Enter or Return.
         lf_thread_t thread_id;
-        lf_thread_create(&thread_id, &read_input, keypress);        
+        lf_thread_create(&thread_id, &read_input, keypress);
     =}
-        
-    reaction(keypress) -> key {=
-        lf_set(key, keypress->value);
-    =}
+
+    reaction(keypress) -> key {= lf_set(key, keypress->value); =}
+
     reaction(shutdown) {=
         endwin();
         lf_register_print_function(NULL, -1);
@@ -77,34 +107,32 @@ reactor UserInput {
 }
 
 /**
- * Emulator for automotive sensors. It outputs sensor data periodically
- * with the specified sample interval.
- * This reactor uses curses to listen
- * for keyboard entry and provides a simple test case where
- * pressing the up arrow increases the speed and pressing the
- * down arrow decrease the speed. To test the dashboard display,
- * this reactor assumes that the vehicle has an obstacle in front
- * of it at the specified initial front distance.
+ * Emulator for automotive sensors. It outputs sensor data periodically with the
+ * specified sample interval. This reactor uses curses to listen for keyboard
+ * entry and provides a simple test case where pressing the up arrow increases
+ * the speed and pressing the down arrow decrease the speed. To test the
+ * dashboard display, this reactor assumes that the vehicle has an obstacle in
+ * front of it at the specified initial front distance.
  */
 reactor Sensors(
     sample_interval: time = 100 ms,
-    initial_front_distance: int = 100   // In pixels
+    initial_front_distance: int = 100  // In pixels
 ) {
     preamble {=
         #include <ncurses.h>
         #include <stdlib.h>    // Defines abs()
         #include <math.h>      // Defines lround()
     =}
-    output speed: int          // In pixels/second
-    output front_distance: int // In pixels
-    
-    state velocity: double = 0    // In pixels/second
-    state position: double = 0    // In pixels
-    
+    output speed: int           // In pixels/second
+    output front_distance: int  // In pixels
+
+    state velocity: double = 0  // In pixels/second
+    state position: double = 0  // In pixels
+
     timer t(0, sample_interval)
-    
+
     u = new UserInput()
-    
+
     reaction(u.key) {=
         if (u.key->value == KEY_UP) self->velocity++;
         else if (u.key->value == KEY_DOWN) self->velocity--;
@@ -114,23 +142,23 @@ reactor Sensors(
             self->position = 0.0;
         }
     =}
-    
+
     reaction(t) -> speed, front_distance {=
         lf_set(speed, abs((int)lround(self->velocity)));
 
         // Update position.
         // Careful with rounding.
         self->position += self->velocity * (self->sample_interval / MSEC(1)) / 1000.0;
-        
+
         lf_print("Position: %d\n", (int)lround(self->position));
-        
+
         lf_set(front_distance, self->initial_front_distance - (int)lround(self->position));
     =}
 }
 
 reactor Dashboard {
-    input speed:int
-    input front_distance:int
+    input speed: int
+    input front_distance: int
     s = new ServerUI()
 
     reaction(s.request) speed, front_distance -> s.response {=
@@ -141,30 +169,40 @@ reactor Dashboard {
 }
 
 reactor SoundAlert {
-    input front_distance:int
+    input front_distance: int
     logical action ding
     state ding_interval: time = 0  // 0 means no sound
-    p = new PlayWaveform(default_waveform_id = 1)
-    reaction(front_distance) -> ding {=
+    p = new PlayWaveform(default_waveform_id = 3)
+
+    reaction(front_distance) -> ding, p.waveform {=
         instant_t previous_interval = self->ding_interval;
         // Change the period of the sound.
         if (front_distance->value > 75) {
             // Go silent.
             self->ding_interval = MSEC(0);
+            lf_set(p.waveform, 0);
         } else if (front_distance->value > 50) {
             self->ding_interval = MSEC(2000);
+            lf_set(p.waveform, 3);
         } else if (front_distance->value > 25) {
             self->ding_interval = MSEC(1000);
+            lf_set(p.waveform, 3);
         } else if (front_distance->value > 15) {
             self->ding_interval = MSEC(500);
-        } else {
+            lf_set(p.waveform, 9);
+        } else if (front_distance->value > 5) {
             self->ding_interval = MSEC(200);
+            lf_set(p.waveform, 9);
+        } else {
+            self->ding_interval = MSEC(100);
+            lf_set(p.waveform, 8);
         }
         // If no sound is playing, start it playing.
         if (self->ding_interval > MSEC(0) && previous_interval == MSEC(0)) {
             lf_schedule(ding, 0);
         }
     =}
+
     reaction(ding) -> p.note, ding {=
         if (self->ding_interval > MSEC(0)) {
             lf_set(p.note, 1);
