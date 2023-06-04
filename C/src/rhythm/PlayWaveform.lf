@@ -51,23 +51,21 @@ reactor PlayWaveform (
         #include <string.h>       // Defines strlen()
         #include "audio_loop.h"
         #include "wave_file_reader.h"
-        
-        // FIXME:
-        // #define LF_SOURCE_DIRECTORY "/Users/eal/git/examples-lingua-franca/C/src/Rhythm/sounds"
-            
+                    
         // wav files giving the waveforms.
         // These have to also be included in the files target directive.
         #define NUM_WAVEFORMS 9  // Number of waveforms.
+        #define SOUNDS LF_PACKAGE_DIRECTORY LF_FILE_SEPARATOR "src" LF_FILE_SEPARATOR "rhythm" LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR
         char* waveform_files[] = { 
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Bass-Drum-1.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Hi-Bongo.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Claves.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "High-Conga-1.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Cowbell-1.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Cuica-1.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Guiro.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Ensoniq-ESQ-1-Snare.wav",
-            LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR "Floor-Tom-1.wav"
+            SOUNDS "Bass-Drum-1.wav",
+            SOUNDS "Hi-Bongo.wav",
+            SOUNDS "Claves.wav",
+            SOUNDS "High-Conga-1.wav",
+            SOUNDS "Cowbell-1.wav",
+            SOUNDS "Cuica-1.wav",
+            SOUNDS "Guiro.wav",
+            SOUNDS "Ensoniq-ESQ-1-Snare.wav",
+            SOUNDS "Floor-Tom-1.wav"
         };
                 
         // The waveforms themselves.
