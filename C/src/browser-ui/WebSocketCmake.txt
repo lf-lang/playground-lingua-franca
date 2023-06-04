@@ -1,0 +1,3 @@
+find_package(libwebsockets REQUIRED) # Finds the libwebsockets library
+
+target_link_libraries( ${LF_MAIN_TARGET} websockets ) # Links the websockets library
