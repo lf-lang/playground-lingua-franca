@@ -33,6 +33,8 @@ preamble {=
     #include <libwebsockets.h>
 
     typedef struct server_status_t {
+        void* connected_action;       // Action to notify of changes in connected status.
+        void* received_action;        // Action to notify of messages received.
         struct lws_context* context;  // The context.
         struct lws* wsi;       // Web socket instance. Only one instance allowed.
         bool running;          // Indicator that the listening thread is running.
@@ -51,6 +53,7 @@ reactor WebSocketServer(hostport: int = 8000) {
     output received: char*
     input send: char*
 
+    physical action connected_action: bool
     physical action received_action: char*
 
     state status: server_status_t
@@ -69,29 +72,51 @@ reactor WebSocketServer(hostport: int = 8000) {
 
         // Callback handling HTTP requests.
         static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
+            bool result;
             server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
-            if (status != NULL) {
-                status->wsi = wsi; // FIXME: Just one connection?
-            } else {
-                lf_print_warning("User struct NULL in callback!");
+            if (status == NULL) {
+                lf_print_error_and_exit("User struct NULL in callback!");
             }
             // FIXME: produce outputs.
             printf("HTTP callback invoked with reason: %d\n", reason);
             switch(reason) {
+                case LWS_CALLBACK_WSI_CREATE:
+                    lf_print("**** Web socket connection requested.");
+                    break;
+                case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
+                    lf_print("**** Web socket new client.");
+                    break;
                 case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
                     lf_print("**** Web socket connection established.");
+                    // If we are already connected, refuse the new connection.
+                    if (status->wsi != NULL) {
+                        lf_print("**** Web socket connection refused.");
+                        // Returning -1 hangs up the connection, according to lws-callbacks.h.
+                        // Return +1 "if you have rejected the connection by returning http headers
+                        // and response code yourself" (How to do that?)
+                        return -1; // FIXME: This breaks the previous connection!
+                    }
+                    status->wsi = wsi;
                     status->connected = true;
+                    result = true;
+                    lf_schedule_copy(status->connected_action, 0, &result, 1);
                     break;
                 case LWS_CALLBACK_WSI_DESTROY:
                     lf_print("**** Connection closed.");
+                    status->wsi = NULL;
                     status->connected = false;
                     status->running = false;
+                    result = false;
+                    lf_schedule_copy(status->connected_action, 0, &result, 1);
                     break;
                 case LWS_CALLBACK_CLOSED:
                 case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
                     lf_print_error("*** connection error.");
+                    status->wsi = NULL;
                     status->connected = false;
                     status->running = false;
+                    result = false;
+                    lf_schedule_copy(status->connected_action, 0, &result, 1);
                     break;
                 default:
                     break;
@@ -101,31 +126,32 @@ reactor WebSocketServer(hostport: int = 8000) {
 
         // Callback handling web socket requests.
         static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
+            printf("WS callback invoked with reason: %d\n", reason);
             server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
-            if (status != NULL) {
-                status->wsi = wsi; // FIXME: Just one connection?
-            } else {
-                lf_print_warning("User struct null in callback!");
+            if (status == NULL || status->wsi == NULL && reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED) {
+                // FIXME: LWS_CALLBACK_PROTOCOL_DESTROY reason seems to occur after closing. Why?
+                lf_print_warning("**** No connection!");
+                return -1;
             }
-            // FIXME: produce outputs.
-          printf("Message length: %zu\n", len);
-          if (len > 0) {
-            char string[len + 1];
-            strncpy(string, (char*)in, len);
-            string[len] = 0;
-            printf("Server received message: %s\n", string);
-
-            // Send a message back
-            // The buffer needs LWS_PRE bytes _before_ the message.
-            char buffer[LWS_PRE + 6];
-            strcpy(buffer + LWS_PRE, "Hello");
-            lws_write(wsi,(unsigned char*)(buffer + LWS_PRE), 6, LWS_WRITE_TEXT);
-          }
-          return 0;
+            switch(reason) {
+                case LWS_CALLBACK_RECEIVE:
+                    if (len > 0) {
+                        lf_print("**** Server received WS message.");
+                        // Message is not NULL terminated, so created a NULL-terminated version.
+                        char string[len + 1];
+                        strncpy(string, (char*)in, len);
+                        string[len] = 0;
+                        lf_schedule_copy(status->received_action, 0, string, len + 1);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return 0;
         }
     =}
 
-    reaction(startup) -> received_action {=
+    reaction(startup) -> connected_action, received_action {=
         struct lws_context_creation_info info;
         memset(&info, 0, sizeof(info));
         info.port = self->hostport;
@@ -143,28 +169,28 @@ reactor WebSocketServer(hostport: int = 8000) {
           },
           { NULL, NULL, 0 }
         };
+        // To get callbacks to be passed a pointer to the status struct:
         info.user = &self->status;
 
         self->status.context = lws_create_context(&info);
         if (!self->status.context) {
           lf_print_error_and_exit("Failed to create server for web sockets.");
         }
+        
+        self->status.connected_action = connected_action;
+        self->status.received_action = received_action;
 
         lf_thread_t listener;
         lf_thread_create(&listener, &websocket_thread, &self->status);
         self->status.running = true;
     =}
+    
+    reaction(connected_action) -> connected {=
+        lf_set(connected, connected_action->value);
+    =}
 
-    reaction(received_action) -> received, connected {=
-        lf_print("Action triggered");
-        /* FIXME
-        if (strlen(req_action->value) == 0) {
-            lf_set(initialized, true);
-        } else {
-            lf_set_token(request, req_action->token);
-        }
-        *
-        */
+    reaction(received_action) -> received {=
+        lf_set_token(received, received_action->token);
     =}
 
     reaction(send) {=
@@ -187,18 +213,41 @@ reactor WebSocketServer(hostport: int = 8000) {
 
 main reactor {
     state count: int = 0
-    timer t(1 s, 1 s)
+    state connected: bool = false
+    logical action send
+
     s = new WebSocketServer()
-
-    reaction(s.connected) {= lf_print("Connected %d", s.connected->value); =}
-
-    reaction(s.received) {=
-        lf_print("Server received: %s", s.received->value);
+    
+    reaction(startup) {=
+        lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
     =}
 
-    reaction(t) -> s.send {=
-        char* message;
-        asprintf(&message, "Count is: %d", self->count++);
-        lf_set(s.send, message);
+    reaction(s.connected) -> send {=
+        lf_print("======== Connected %d", s.connected->value);
+        if (s.connected->value) {
+            self->connected = true;
+            // Start sending.
+            // FIXME: Delay is required here. If we send right away, we get disconnected.
+            lf_schedule(send, SEC(1));
+        } else {
+            self->connected = false;
+            // Stop execution.
+            lf_print("======= Connection closed. Exiting.");
+            lf_request_stop();
+        }
+    =}
+
+    reaction(s.received) {=
+        lf_print("======== Application received: %s", s.received->value);
+    =}
+
+    reaction(send) -> s.send, send {=
+        if (self->connected) {
+            char* message;
+            asprintf(&message, "Count is: %d", self->count++);
+            lf_set(s.send, message);
+            // Schedule the next send.
+            lf_schedule(send, SEC(1));
+        }
     =}
 }
