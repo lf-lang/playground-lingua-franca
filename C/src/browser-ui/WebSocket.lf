@@ -35,9 +35,10 @@ preamble {=
     #include <libwebsockets.h>
 
     typedef struct websocket_t {
-        bool running;          // Indicator that listener thread is running.
         struct lws_context* context;  // The context.
-        struct lws* connection;  // FIXME: Assumes just one connection?
+        struct lws* wsi;       // Web socket instance. FIXME: Assumes just one connection?
+        bool running;          // Indicator that the listening thread is running.
+        bool connected;        // Indicator that socket connection is open.
     } websocket_t;
 
     #endif // WEBSOCKET_H
@@ -82,10 +83,10 @@ reactor WebSocketServer(
       if (!self->context.context) {
         lf_print_error_and_exit("Failed to create server for web sockets.");
       }
-      self->context.running = true;
 
       lf_thread_t listener;
       lf_thread_create(&listener, &websocket_thread, &self->context);
+      self->context.running = true;
     =}
     
     reaction(received_action) -> received, connected {=
@@ -101,11 +102,18 @@ reactor WebSocketServer(
     =}
     
     reaction(send) {=
-        // The buffer needs LWS_PRE bytes _before_ the message.
-        char buffer[LWS_PRE + strlen(send->value) + 1];
-        strcpy(buffer + LWS_PRE, send->value);
-        lws_write(self->context.connection,(unsigned char*)(buffer + LWS_PRE), strlen(send->value) + 1, LWS_WRITE_TEXT); // FIXME: binary?
-        // FIXME: return value?
+        if (!self->context.connected) {
+            lf_print_warning("Web socket connection not open. Dropping message: %s", send->value);
+        } else {
+            // The buffer needs LWS_PRE bytes _before_ the message.
+            char buffer[LWS_PRE + strlen(send->value) + 1];
+            strcpy(buffer + LWS_PRE, send->value);
+            int result = lws_write(self->context.wsi,(unsigned char*)(buffer + LWS_PRE), strlen(send->value) + 1, LWS_WRITE_TEXT); // FIXME: binary?
+            if (result < 0) {
+                lf_print_error("Send on web socket failed.");
+                lf_request_stop();
+            }
+        }
     =}
     
     reaction(shutdown) {=
@@ -113,6 +121,7 @@ reactor WebSocketServer(
     =}
 
     preamble {=
+        // Thread handling incoming messages.
         void* websocket_thread(void* args) {
             websocket_t* context = (websocket_t*)args;
             while(context->running) {
@@ -122,10 +131,12 @@ reactor WebSocketServer(
             lws_context_destroy(context->context);
             return NULL;
         };
+        
+        // Callback handling HTTP requests.
         static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
             websocket_t* context = (websocket_t*)lws_context_user(lws_get_context(wsi));
             if (context != NULL) {
-                context->connection = wsi; // FIXME: Just one connection?
+                context->wsi = wsi; // FIXME: Just one connection?
             } else {
                 lf_print_warning("User struct NULL in callback!");
             }
@@ -134,13 +145,18 @@ reactor WebSocketServer(
             switch(reason) {
                 case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
                     lf_print("**** Web socket connection established.");
+                    context->connected = true;
                     break;
                 case LWS_CALLBACK_WSI_DESTROY:
                     lf_print("**** Connection closed.");
+                    context->connected = false;
+                    context->running = false;
                     break;
                 case LWS_CALLBACK_CLOSED:
                 case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
                     lf_print_error("*** connection error.");
+                    context->connected = false;
+                    context->running = false;
                     break;
                 default:
                     break;
@@ -148,18 +164,21 @@ reactor WebSocketServer(
             return 0;
         }
         
+        // Callback handling web socket requests.
         static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
             websocket_t* context = (websocket_t*)lws_context_user(lws_get_context(wsi));
             if (context != NULL) {
-                context->connection = wsi; // FIXME: Just one connection?
+                context->wsi = wsi; // FIXME: Just one connection?
             } else {
                 lf_print_warning("User struct null in callback!");
             }
             // FIXME: produce outputs.
           printf("Message length: %zu\n", len);
           if (len > 0) {
-            // FIXME: 
-            printf("Message: %s\n", (char*)in);
+            char string[len + 1];
+            strncpy(string, (char*)in, len);
+            string[len] = 0;
+            printf("Server received message: %s\n", string);
             
             // Send a message back
             // The buffer needs LWS_PRE bytes _before_ the message.
@@ -174,16 +193,18 @@ reactor WebSocketServer(
 
 main reactor {
     state count:int = 0
+    timer t(1 s, 1 s)
     s = new WebSocketServer()
     
     reaction(s.connected) {=
         lf_print("Connected %d", s.connected->value);
     =}
-    reaction(s.received) -> s.send {=
-        char* response;
-        asprintf(&response, "Message received: %s", 
-            s.received->value
-        );
-        lf_set(s.send, response);
+    reaction(s.received) {=
+        lf_print("Server received: %s", s.received->value);
+    =}
+    reaction(t) -> s.send {=
+        char* message;
+        asprintf(&message, "Count is: %d", self->count++);
+        lf_set(s.send, message);
     =}
 }

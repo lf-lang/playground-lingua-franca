@@ -53,7 +53,7 @@ form.onsubmit = function(e) {
 // Handle messages sent by the server.
 socket.onmessage = function(event) {
   var message = event.data;
-  messagesList.innerHTML += '<li class="received"><span>Received:</span>' +
+  messagesList.innerHTML = '<li class="received"><span>Received:</span>' +
                              message + '</li>';
 };
 // Show a disconnected message when the WebSocket is closed.
