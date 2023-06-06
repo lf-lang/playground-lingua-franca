@@ -11,5 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: lf-lang/action-check-lf-files@main
+      - uses: lf-lang/action-check-lf-files@1a9e423ce7129f8c4ece3a9a949cfe71547d12de
+        with:
+          no-compile-flag: true
     
