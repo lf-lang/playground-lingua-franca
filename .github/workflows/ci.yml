@@ -19,5 +19,5 @@ jobs:
         shell: bash
       - uses: lf-lang/action-check-lf-files@new-parameters
         with:
-          no-compile-flag: true
-          exclude-dirs: '["failing", "experimental"]'
+          no_compile_flag: false
+          exclude_dirs: '["failing", "experimental"]'
