@@ -1,3 +1,5 @@
+[![CI](https://github.com/lf-lang/examples-lingua-franca/actions/workflows/ci.yml/badge.svg)](https://github.com/lf-lang/examples-lingua-franca/actions/workflows/ci.yml)
+
 This repository contains example Lingua Franca programs that are useful to get to know the language.
 The examples are organized by target language:
 
@@ -8,6 +10,4 @@ The examples are organized by target language:
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/new#https://github.com/lf-lang/lingua-franca-playground/tree/main)
 
-**NOTE: This is a work in progress.**
-These examples may not keep up with changes in the language and compiler.
-See the regression tests for validated examples.
+NOTE: Examples located in an `experimental` directory may not work as expected or may require the installation of additional dependencies.
