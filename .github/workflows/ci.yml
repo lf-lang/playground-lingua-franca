@@ -14,7 +14,6 @@ jobs:
       - name: Set up Java 17
         run: |
           echo "$JAVA_HOME_17_X64/bin" >> $GITHUB_PATH
-          echo "org.gradle.java.home=${JAVA_HOME_17_X64//\\/\/}" >> gradle.properties
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
         shell: bash
       - uses: lf-lang/action-check-lf-files@new-parameters
