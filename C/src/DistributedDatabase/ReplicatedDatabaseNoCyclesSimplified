@@ -1,0 +1,334 @@
+/**
+ * Test program illustrating the architecture of a replicated distributed
+ * database. This models a simple banking system that maintains a single
+ * balance in multiple locations. Deposits and withdrawals (updates) can
+ * be performed at any of the locations. In the model, these updates
+ * are performed by a "Server" model emulating a web server. The server
+ * also periodically queries for the balance. All locations are required
+ * to report the same balance given the same time-stamped query.
+ *
+ * If the two servers simultaneously update the record, then both updates
+ * are applied.  Any query at the time of these updates is required to
+ * report the result after both updates have been performed.
+ *
+ * @author Edward A. Lee
+ * @author Soroush Bateni
+ */
+target C {
+    timeout: 5 sec
+}
+
+main reactor (
+    query_period:time = 1 sec,
+    num_remote_inputs:int = 1
+) {
+    // a platform reactor
+    a_sh = new ServerHead(
+        name = "San Francisco",
+        query_period = query_period,
+        update_period = 5 sec,
+        update_amount = 100,
+        server_name = "San Francisco"
+    )
+    a_st = new ServerTail(
+        name = "San Francisco",
+        query_period = query_period,
+        update_period = 5 sec,
+        update_amount = 100,
+        server_name = "San Francisco"
+    )
+    a_dbh = new DatabaseHead(
+        name = "San Francisco",
+        num_remote_inputs = num_remote_inputs
+    )
+    a_dbt = new DatabaseTail(num_remote_inputs = num_remote_inputs);
+    // connections within a platform reactor
+    a_sh.query -> a_dbh.query
+    a_sh.update -> a_dbh.local_update
+    a_sh.query -> a_dbt.query
+    a_sh.update -> a_dbt.local_update
+    a_dbt.balance -> a_st.reply
+    // state transfer connections
+    a_sh.current_state -> a_st.current_state
+    a_st.next_state -> a_sh.next_state after 0
+    // state transfer connections
+    a_dbh.current_state -> a_dbt.current_state
+    a_dbt.next_state -> a_dbh.next_state after 0
+
+    // b platform reactor
+    b_sh = new ServerHead(
+        name = "Berkeley",
+        query_period = query_period,
+        update_period = 1 sec,
+        update_amount = -20,
+        server_name = "Berkeley"
+    )
+    b_st = new ServerTail(
+        name = "Berkeley",
+        query_period = query_period,
+        update_period = 1 sec,
+        update_amount = -20,
+        server_name = "Berkeley"
+    )
+    // b database reactor
+    b_dbh = new DatabaseHead(
+        name = "Berkeley",
+        num_remote_inputs = num_remote_inputs
+    )
+    b_dbt = new DatabaseTail(num_remote_inputs = num_remote_inputs)
+    // connections within b platform reactor
+    b_sh.query -> b_dbh.query
+    b_sh.update -> b_dbh.local_update
+    b_sh.query -> b_dbt.query
+    b_sh.update -> b_dbt.local_update
+    b_dbt.balance -> b_st.reply
+    // connections between platform reactors
+    b_sh.update -> a_dbh.remote_update;
+    a_sh.update -> b_dbh.remote_update;
+    // state transfer connections
+    b_sh.current_state -> b_st.current_state
+    b_st.next_state -> b_sh.next_state after 0
+    // state transfer connections
+    b_dbh.current_state -> b_dbt.current_state
+    b_dbt.next_state -> b_dbh.next_state after 0
+}
+
+/**
+ * Mockup for a web server that issues deposits or withdrawals
+ * as well as periodic queries for the balance in the database.
+ * The queries and updates are issued periodically with the period
+ * and amount of the update controlled by parameters.
+ * In a real server, these outputs would not be periodic, but
+ * rather would be triggered by external events, such as incoming
+ * HTTP requests.
+ *
+ * This reactor expects a reply to each query. It prints those
+ * replies. It produces an error in its shutdown reaction if
+ * the number of replies does not match the number of queries.
+ *
+ * @param query_period The period of query outputs.
+ * @param update_period The period of update outputs.
+ * @param update_amount The amount of each deposit (or withdrawal if negative).
+ * @param server_name The name (for reporting).
+ *
+ * @input reply Accepts the reply to a query for the balance.
+ *
+ * @output query Issue a query, expecting a reply.
+ * @output update Issue an update.
+ */
+reactor ServerHead(
+    name:char* = "unnamed server",
+    query_period:time = 150 msec,
+    update_period:time = 100 msec,
+    update_deadline:time = 200 msec,
+    update_amount:int = 0,
+    server_name:char* = "unnamed server"
+) {
+    timer query_trigger(0, query_period);
+    timer update_trigger(0, update_period);
+    input reply:int;
+    output query:bool;
+    output update:int;
+    state queries_outstanding:int = 0;
+
+    input next_state: int
+    output current_state: int
+
+    reaction(next_state) {=
+        self->queries_outstanding = next_state->value;
+    =}
+
+    reaction(query_trigger) -> query {=
+        lf_set(query, true);
+        self->queries_outstanding++;
+    =}
+
+    reaction(update_trigger) -> update {=
+        lf_set(update, self->update_amount);
+    =} deadline(update_deadline) {=
+        tag_t tag = lf_tag();
+        lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
+                "     Elapsed physical time is %lld.",
+                tag.time - start_time,
+                tag.microstep,
+                self->name,
+                lf_time_physical_elapsed()
+        );
+    =}
+
+    reaction(query_trigger, update_trigger, reply) -> current_state {=
+        lf_set(current_state, self->queries_outstanding);
+    =}
+}
+
+reactor ServerTail(
+    name:char* = "unnamed server",
+    query_period:time = 150 msec,
+    update_period:time = 100 msec,
+    update_deadline:time = 200 msec,
+    update_amount:int = 0,
+    server_name:char* = "unnamed server"
+) {
+    timer query_trigger(0, query_period);
+    timer update_trigger(0, update_period);
+    input reply:int;
+    output query:bool;
+    output update:int;
+    state queries_outstanding:int = 0;
+
+    output next_state: int
+    input current_state: int
+
+    reaction(current_state) {=
+        self->queries_outstanding = current_state->value;
+    =}
+
+    reaction(reply) {=
+        lf_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
+            lf_time_logical_elapsed(), lf_tag().microstep, self->server_name, reply->value
+        );
+        self->queries_outstanding--;
+    =}
+
+    reaction(shutdown) {=
+        if (self->queries_outstanding != 0) {
+            lf_print_error("Server \"%s\": Number of queries with no reply: %d.",
+                self->server_name,
+                self->queries_outstanding
+            );
+        } else {
+            lf_print("Server \"%s\" successfully replied to all queries.",
+                self->server_name
+            );
+        }
+    =}
+
+    reaction(query_trigger, update_trigger, reply) -> next_state {=
+        lf_set(next_state, self->queries_outstanding);
+    =}
+}
+
+/**
+ * A mockup for a replicated database. This simple database contains
+ * only one record, and the value of that record is an integer.
+ * It represents a bank balance, where deposits and withdrawals
+ * (updates) can occur at any node in the system.
+ * If two or more updates occur at the same logical time, then all
+ * are applied.
+ *
+ * This reactor has two update inputs, `local_update` and `remote_update`.
+ * The first is intended to be used for updates to the database that are
+ * generated on the local platform. The second receives notifications
+ * of updates on remote platforms. When a `local_update` is received,
+ * the update will also be sent to the `publish` output so that it can
+ * be forwarded to other replicas. When any `remote_update` input arrives,
+ * its value will be added to the balance.
+ *
+ * The `query` input is used to retrieve the current balance. The
+ * balance will be sent to the `balance` output in response.
+ * If a `query` and an update arrive simultaneously, the reply
+ * will include the cumulative effect of all the updates.
+ *
+ * Instances of these `Database` reactors can be arranged in ring
+ * or in a broadcast configuration, where each replica sends updates to
+ * all other replicas.
+ *
+ * There is a deadline on the `local_update` inputs. If this deadline is
+ * violated, then the update is rejected and has no effect on the balance.
+ *
+ * @param update_deadline A deadline imposed on the reaction to `local_update` inputs.
+ * @param name A name for the database instance (used in reporting).
+ * @param num_remote_inputs The number of inputs from other database replicas.
+ *
+ * @input local_update An update (deposit or withdrawal) to add to the record.
+ * @input remote_update A multiport input for receiving updates from other replicas.
+ * @input query A trigger to read the current value of the record.
+ *
+ * @output publish This is just the update passed through.
+ * @output balance The time value of the record.
+ */
+reactor DatabaseHead(
+    name:char* = "unnamed database",
+    num_remote_inputs:int = 1
+) {
+    input local_update:int;
+    input[num_remote_inputs] remote_update:int;
+    input query:bool;
+    state record:int = 0;
+
+    input next_state: int
+    output current_state: int
+
+    reaction(next_state) {=
+        self->record = next_state->value;
+    =}
+
+    reaction(local_update, remote_update) {=
+        if (local_update->is_present) {
+            self->record += local_update->value;
+        }
+        for (int i = 0; i < remote_update_width; i++) {
+            if (remote_update[i]->is_present) {
+                self->record += remote_update[i]->value;
+            }
+        }
+        lf_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
+                "     Elapsed physical time is %lld.",
+                lf_time_logical() - start_time, lf_tag().microstep,
+                self->name,
+                self->record,
+                lf_time_physical_elapsed()
+        );
+    =} STP (4 msec) {=
+#ifdef FEDERATED_DECENTRALIZED
+        for (int i = 0; i < remote_update_width; i++) {
+            if (remote_update[i]->is_present) {
+                lf_print_warning("At tag (%lld, %u), database \"%s\" "
+                        "received remote update (%d) with intended tag (%lld, %u).\n"
+                        "     Balance previously reported may have been incorrect.\n"
+                        "     Elapsed physical time is %lld.",
+                        current_tag.time - start_time,
+                        current_tag.microstep,
+                        self->name,
+                        remote_update[i]->value,
+                        remote_update[i]->intended_tag.time - start_time,
+                        remote_update[i]->intended_tag.microstep,
+                        lf_time_physical_elapsed()
+                );
+                self->record += remote_update[i]->value;
+            }
+        }
+#else
+        // The tardy handler should not be invoked
+        lf_print_error_and_exit("FATAL: Update is tardy and coordination is not decentralized.");
+#endif
+    =}
+
+    reaction (local_update, remote_update, query) -> current_state {=
+        lf_set(current_state, self->record);
+    =}
+}
+
+reactor DatabaseTail(name: string = "dbtail", num_remote_inputs: int = 1) {
+    input local_update:int;
+    input[num_remote_inputs] remote_update:int;
+    input query:bool;
+    output balance:int;
+    state record:int = 0;
+
+    input current_state: int
+    output next_state: int
+
+    reaction(current_state) {=
+        self->record = current_state->value;
+    =}
+
+    reaction(query) -> balance {=
+        lf_set(balance, self->record);
+    =}
+
+    reaction(local_update, remote_update, query) -> next_state {=
+        lf_set(next_state, self->record);
+    =}
+}
+
