@@ -15,7 +15,7 @@
  * <pre> brew install libwebsockets
  * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these
  * libraries can be linked to providing the {@code -lwebsockets} compile option.
- *
+ * 
  * @author Edward A. Lee
  */
 target C {
@@ -24,11 +24,14 @@ target C {
     cmake-include: ["WebSocketCmake.txt"]
 }
 
+// FIXME: Separate WebSocketServer into another file. Doesn't need hashset.
+
 preamble {=
     #ifndef WEBSOCKET_H
     #define WEBSOCKET_H
     #include "util.h"       // Defines lf_print()
     #include "platform.h"   // Defines lf_thread_t, etc.
+    #include "hashset/hashset.h"  // For storing web socket instances that are connected.
 
     #include <libwebsockets.h>
 
@@ -40,21 +43,53 @@ preamble {=
         bool running;          // Indicator that the listening thread is running.
         bool connected;        // Indicator that socket connection is open.
     } server_status_t;
+    
+    /**
+     * Identifier for a web socket instance together with its connected state.
+     * No need for a destructor or copy constructor here because the libwebsockets
+     * code handles deallocating the wsi when the WS is closed.
+     */
+    typedef struct web_socket_instance_t {
+        struct lws* wsi;       // Web socket instance.
+        bool connected;
+    } web_socket_instance_t;
 
+    /**
+     * A web socket string message together with its web socket instance.
+     * This needs a destructor and copy constructor because the message
+     * is assumed to be in allocated memory.
+     */
+    typedef struct web_socket_message_t {
+        struct lws* wsi;       // Web socket instance.
+        size_t length;
+        char* message;
+    } web_socket_message_t;
+    
+    /** Destructor for an instance of web_socket_message_t. */
+    void web_socket_message_destructor(void* message);
+    
+    /** Copy constructor for an instance of web_socket_message_t. */
+    void* web_socket_message_copy_constructor(void* message);
+    
     #endif // WEBSOCKET_H
 =}
 
 /**
- * FIXME
- * @param hostport The host port number, which defults to 8080.
+ * There are a number of limitations:
+ * <ol>
+ * <li> **FIXME:** This should use the secure sockets API in libwebsockets to get SSL.
+ * <li> **FIXME:** Support binary data?
+ * </ol>
+ * 
+ * @param hostport The host port number, which defults to 8000.
  */
 reactor WebSocketServer(hostport: int = 8000) {
-    output connected: bool
-    output received: char*
-    input send: char*
+    output connected: web_socket_instance_t
+    output received: web_socket_message_t*
+    input send: web_socket_message_t*
 
-    physical action connected_action: bool
-    physical action received_action: char*
+    physical action connected_action: web_socket_instance_t
+    physical action received_action: web_socket_message_t*
 
     state status: server_status_t
 
@@ -79,6 +114,7 @@ reactor WebSocketServer(hostport: int = 8000) {
             }
             // FIXME: produce outputs.
             printf("HTTP callback invoked with reason: %d\n", reason);
+            web_socket_instance_t ws_instance;
             switch(reason) {
                 case LWS_CALLBACK_WSI_CREATE:
                     lf_print("**** Web socket connection requested.");
@@ -96,27 +132,39 @@ reactor WebSocketServer(hostport: int = 8000) {
                         // and response code yourself" (How to do that?)
                         return -1; // FIXME: This breaks the previous connection!
                     }
+                    // FIXME: Next two fields not needed.
                     status->wsi = wsi;
                     status->connected = true;
-                    result = true;
-                    lf_schedule_copy(status->connected_action, 0, &result, 1);
+                    
+                    ws_instance.wsi = wsi;
+                    ws_instance.connected = true;
+                    
+                    lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
                     break;
                 case LWS_CALLBACK_WSI_DESTROY:
                     lf_print("**** Connection closed.");
+                    // FIXME: Next two fields not needed.
                     status->wsi = NULL;
                     status->connected = false;
-                    status->running = false;
-                    result = false;
-                    lf_schedule_copy(status->connected_action, 0, &result, 1);
+                    
+                    ws_instance.wsi = wsi;
+                    ws_instance.connected = false;
+                    
+                    status->running = false; // FIXME
+                    lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
                     break;
                 case LWS_CALLBACK_CLOSED:
                 case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
                     lf_print_error("*** connection error.");
+                    // FIXME: Next three fields not needed.
                     status->wsi = NULL;
                     status->connected = false;
                     status->running = false;
-                    result = false;
-                    lf_schedule_copy(status->connected_action, 0, &result, 1);
+
+                    ws_instance.wsi = wsi;
+                    ws_instance.connected = false;
+
+                    lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
                     break;
                 default:
                     break;
@@ -137,11 +185,17 @@ reactor WebSocketServer(hostport: int = 8000) {
                 case LWS_CALLBACK_RECEIVE:
                     if (len > 0) {
                         lf_print("**** Server received WS message.");
+                        
+                        web_socket_message_t* received = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+                        received->wsi = wsi;
+                        
                         // Message is not NULL terminated, so created a NULL-terminated version.
-                        char string[len + 1];
+                        char* string = (char*)malloc((len + 1) * sizeof(char));
                         strncpy(string, (char*)in, len);
                         string[len] = 0;
-                        lf_schedule_copy(status->received_action, 0, string, len + 1);
+                        received->length = len + 1;
+                        received->message = string;
+                        lf_schedule_value(status->received_action, 0, received, len + 1);
                     }
                     break;
                 default:
@@ -149,9 +203,30 @@ reactor WebSocketServer(hostport: int = 8000) {
             }
             return 0;
         }
+        
+        void web_socket_message_destructor(void* message) {
+            free(((web_socket_message_t*)message)->message);
+            free(message);
+        }
+        
+        void* web_socket_message_copy_constructor(void* message) {
+            web_socket_message_t* cast = (web_socket_message_t*)message;
+            web_socket_message_t* result = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+            size_t length = cast->length;
+            char* copy = (char*)malloc(length * sizeof(char) + 1);
+            result->message = strncpy(copy, cast->message, length);
+            result->message[length] = 0;
+            result->wsi = cast->wsi;
+            return result;
+        }
     =}
 
     reaction(startup) -> connected_action, received_action {=
+        // The receiving thread dynamically allocates memory for messages.
+        // Set the destructor and copy constructor.
+        lf_set_destructor(received_action, web_socket_message_destructor);
+        lf_set_copy_constructor(received_action, web_socket_message_copy_constructor);
+        
         struct lws_context_creation_info info;
         memset(&info, 0, sizeof(info));
         info.port = self->hostport;
@@ -194,43 +269,53 @@ reactor WebSocketServer(hostport: int = 8000) {
     =}
 
     reaction(send) {=
-        if (!self->status.connected) {
-            lf_print_warning("Web socket connection not open. Dropping message: %s", send->value);
-        } else {
-            // The buffer needs LWS_PRE bytes _before_ the message.
-            char buffer[LWS_PRE + strlen(send->value) + 1];
-            strcpy(buffer + LWS_PRE, send->value);
-            int result = lws_write(self->status.wsi,(unsigned char*)(buffer + LWS_PRE), strlen(send->value) + 1, LWS_WRITE_TEXT); // FIXME: binary?
-            if (result < 0) {
-                lf_print_error("Send on web socket failed.");
-                lf_request_stop();
-            }
+        int length = strlen(send->value->message);
+        // The buffer needs LWS_PRE bytes _before_ the message.
+        char buffer[LWS_PRE + length + 1];
+        strcpy(buffer + LWS_PRE, send->value->message);
+        int result = lws_write(send->value->wsi,(unsigned char*)(buffer + LWS_PRE), length + 1, LWS_WRITE_TEXT);
+        if (result < length) {
+            lf_print_warning("Send on web socket failed. Dropping message.");
         }
     =}
 
-    reaction(shutdown) {= self->status.running = false; =}
+    reaction(shutdown) {=
+        self->status.running = false;
+     =}
 }
 
 main reactor {
     state count: int = 0
     state connected: bool = false
-    logical action send
+    logical action send_action: web_socket_instance_t*
+    
+    state connected_instances: hashset_t = {= NULL =}
 
     s = new WebSocketServer()
     
-    reaction(startup) {=
+    reaction(startup) -> s.send {=
+        lf_set_destructor(s.send, web_socket_message_destructor);
+        lf_set_copy_constructor(s.send, web_socket_message_copy_constructor);
+        
         lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
+        self->connected_instances = hashset_create(2); // Default capacity for four instances.
     =}
 
-    reaction(s.connected) -> send {=
-        lf_print("======== Connected %d", s.connected->value);
-        if (s.connected->value) {
-            self->connected = true;
+    reaction(s.connected) -> send_action {=
+        lf_print("======== Connected %d", s.connected->value.connected);
+        if (s.connected->value.connected) {
+            // New connection.
+            hashset_add(self->connected_instances, s.connected->value.wsi);
+            
+            self->connected = true; // FIXME
             // Start sending.
             // FIXME: Delay is required here. If we send right away, we get disconnected.
-            lf_schedule(send, SEC(1));
+            lf_schedule_copy(send_action, SEC(1), &s.connected->value, 1);
         } else {
-            self->connected = false;
+            // Disconnecting.
+            hashset_remove(self->connected_instances, s.connected->value.wsi);
+
+            self->connected = false; // FIXME
             // Stop execution.
             lf_print("======= Connection closed. Exiting.");
             lf_request_stop();
@@ -238,16 +323,29 @@ main reactor {
     =}
 
     reaction(s.received) {=
-        lf_print("======== Application received: %s", s.received->value);
+        lf_print("!!!!!!!!!!!!!!!!!!!! FIXME2 %zu", s.received->value->length);
+        lf_print("======== Application received: %s", s.received->value->message);
     =}
 
-    reaction(send) -> s.send, send {=
-        if (self->connected) {
+    reaction(send_action) -> s.send, send_action {=
+        if (hashset_is_member(self->connected_instances, send_action->value->wsi)) {
             char* message;
             asprintf(&message, "Count is: %d", self->count++);
-            lf_set(s.send, message);
+            
+            web_socket_message_t* container = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+            container->message = message;
+            container->length = strlen(message) + 1;
+            container->wsi = send_action->value->wsi;
+            
+            lf_set(s.send, container);
             // Schedule the next send.
-            lf_schedule(send, SEC(1));
+            lf_schedule_token(send_action, SEC(1), send_action->token);
+        }
+    =}
+    
+    reaction(shutdown) {=
+        if (self->connected_instances != NULL) {
+            hashset_destroy(self->connected_instances);
         }
     =}
 }
