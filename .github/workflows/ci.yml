@@ -7,7 +7,7 @@ on:
       - 'releases/*'
 
 jobs:
-  check-lf-files:
+  check-compile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -16,7 +16,21 @@ jobs:
           echo "$JAVA_HOME_17_X64/bin" >> $GITHUB_PATH
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
         shell: bash
-      - uses: lf-lang/action-check-lf-files@new-parameters
+      - uses: lf-lang/action-check-lf-files@main
         with:
+          mode: "compile"
           no_compile_flag: false
+          exclude_dirs: '["failing", "experimental"]'
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Java 17
+        run: |
+          echo "$JAVA_HOME_17_X64/bin" >> $GITHUB_PATH
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
+        shell: bash
+      - uses: lf-lang/action-check-lf-files@main
+        with:
+          check_mode: "format"
           exclude_dirs: '["failing", "experimental"]'
