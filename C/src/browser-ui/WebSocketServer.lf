@@ -282,13 +282,18 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     reaction(send) {=
         // NOTE: This send must be before the reaction to connected_action
         // because the latter could cause a disconnection.
-        int length = strlen(send->value->message);
-        // The buffer needs LWS_PRE bytes _before_ the message.
-        char buffer[LWS_PRE + length + 1];
-        strcpy(buffer + LWS_PRE, send->value->message);
-        int result = lws_write(send->value->wsi, (unsigned char*)(buffer + LWS_PRE), length + 1, LWS_WRITE_TEXT);
-        if (result < length) {
-            lf_print_warning("Send on web socket failed. Dropping message.");
+        if(send->value->message == NULL) {
+            lf_print_error("NULL message received.");
+        } else {
+            int length = strlen(send->value->message);
+            // The buffer needs LWS_PRE bytes _before_ the message.
+            // Do not include the null terminator, because this make JSON unable to parse it.
+            char buffer[LWS_PRE + length];
+            strcpy(buffer + LWS_PRE, send->value->message);
+            int result = lws_write(send->value->wsi, (unsigned char*)(buffer + LWS_PRE), length, LWS_WRITE_TEXT);
+            if (result < length) {
+                lf_print_warning("Send on web socket failed. Dropping message.");
+            }
         }
     =}
 
