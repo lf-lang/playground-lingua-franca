@@ -41,35 +41,44 @@
     </div>
     <p id="message"></p>
     <script>
-    setInterval(function() {
-        var xhttp = new XMLHttpRequest();
-        xhttp.onload = function() {
-          if (this.status == 200) {
-            document.getElementById('message').innerHTML = "Sensor data: " + this.responseText;
-            
-            var data = JSON.parse(this.responseText);
-            const front = document.getElementById('front');
-            console.log("Distance: " + data.front_distance);
-            var position = 100 - data.front_distance;
-            if (position >= 100) {
-                front.style.backgroundColor = "fuchsia";
-                position = 100;
-            } else if (position > 50) {
-                front.style.backgroundColor = "red";
-            } else if (position > 0) {
-                front.style.backgroundColor = "gold";
-            } else {
-                front.style.backgroundColor = "blue";
-                position = 0;
-            }
-            front.style.left = position + 'px';
-          } else {
-            document.getElementById('message').innerHTML = "Error: " + this.statusText;
-          }
+    window.onload = function() {
+        const socket = new WebSocket('ws://localhost:8000', 'ws');
+    
+        socket.addEventListener('open', (event) => {
+            console.log('WebSocket connection established');
+        });
+    
+        socket.onerror = function(error) {
+            console.log('WebSocket Error: ' + error);
         };
-        xhttp.open('GET', '/count', true);
-        xhttp.send(null);
-    }, 500);
+        
+        socket.addEventListener('message', (event) => {
+            var message = event.data;
+            console.log(`WebSocket message received: ${message}`);
+            
+            try {
+                console.log('"' + message + '"');
+                var data = JSON.parse(message);
+                const front = document.getElementById('front');
+                console.log("Distance: " + data.front_distance);
+                var position = 100 - data.front_distance;
+                if (position >= 100) {
+                    front.style.backgroundColor = "fuchsia";
+                    position = 100;
+                } else if (position > 50) {
+                    front.style.backgroundColor = "red";
+                } else if (position > 0) {
+                    front.style.backgroundColor = "gold";
+                } else {
+                    front.style.backgroundColor = "blue";
+                    position = 0;
+                }
+                front.style.left = position + 'px';
+            } catch(error) {
+                console.error(error);
+            }
+        });
+    }
     </script>
   </body>
 </html>
