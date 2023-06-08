@@ -32,5 +32,5 @@ jobs:
         shell: bash
       - uses: lf-lang/action-check-lf-files@main
         with:
-          mode: "format"
+          check_mode: "format"
           exclude_dirs: '["failing", "experimental"]'
