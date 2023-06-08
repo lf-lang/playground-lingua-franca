@@ -87,7 +87,10 @@ reactor WebSocketServer(
     output received: web_socket_message_t*
     input send: web_socket_message_t*
 
-    physical action connected_action: web_socket_instance_t
+    // NOTE: Seem to need a delay in this action because otherwise
+    // the application may try to send a message to the socket before
+    // opening has completed.
+    physical action connected_action(500 ms): web_socket_instance_t
     physical action received_action: web_socket_message_t*
 
     state status: server_status_t
