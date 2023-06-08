@@ -6,20 +6,21 @@
  * When a connection is established with a client, an output is produced on the
  * connected port that is a struct with a unique wsi (web socket interface) for
  * the client and a boolean indicating whether the connection is being opened or
- * closed. The wsi can be used to provide input at the send port that will target
- * this specific client.
- * 
- * To send messages to a client, construct a dynamically allocated struct of type
- * web_socket_message_t, set its wsi field to the value provided by the connected
- * output, and set its message and length. Only strings can be sent.
- * 
- * When a message is received from a client, a struct of type web_socket_message_t
- * will be produced on the received output port.  You can use the wsi field to
- * determine which client sent the message.
- * 
- * You can limit the number of clients by setting the max_clients parameter.
- * It defaults to 0, which means there is no limit. A common case for an embedded
- * application might be 1 to ensure that only one client connects to your application.
+ * closed. The wsi can be used to provide input at the send port that will
+ * target this specific client.
+ *
+ * To send messages to a client, construct a dynamically allocated struct of
+ * type web_socket_message_t, set its wsi field to the value provided by the
+ * connected output, and set its message and length. Only strings can be sent.
+ *
+ * When a message is received from a client, a struct of type
+ * web_socket_message_t will be produced on the received output port. You can
+ * use the wsi field to determine which client sent the message.
+ *
+ * You can limit the number of clients by setting the max_clients parameter. It
+ * defaults to 0, which means there is no limit. A common case for an embedded
+ * application might be 1 to ensure that only one client connects to your
+ * application.
  *
  * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API
@@ -29,13 +30,14 @@
  * <pre> brew install libwebsockets
  * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these
  * libraries can be linked to providing the {@code -lwebsockets} compile option.
- * 
+ *
  * There are a number of limitations:
  * <ol>
- * <li> **FIXME:** This should use the secure sockets API in libwebsockets to get SSL.
+ * <li> **FIXME:** This should use the secure sockets API in libwebsockets to
+ * get SSL.
  * <li> **FIXME:** This currently only supports sending and receiving text.
  * </ol>
- * 
+ *
  * @param hostport The host port number, which defults to 8000.
  * @max_clients Maximum number of clients, or 0 for no upper bound.
  *
@@ -62,7 +64,7 @@ preamble {=
         int* client_count;            // Pointer to the client_count state variable.
         bool running;                 // Indicator that the listening thread is running.
     } server_status_t;
-    
+
     /**
      * Identifier for a web socket instance together with its connected state.
      * No need for a destructor or copy constructor here because the libwebsockets
@@ -83,20 +85,17 @@ preamble {=
         size_t length;
         char* message;
     } web_socket_message_t;
-    
+
     /** Destructor for an instance of web_socket_message_t. */
     void web_socket_message_destructor(void* message);
-    
+
     /** Copy constructor for an instance of web_socket_message_t. */
     void* web_socket_message_copy_constructor(void* message);
-    
+
     #endif // WEBSOCKET_H
 =}
 
-reactor WebSocketServer(
-    hostport: int = 8000,
-    max_clients: int = 0
-) {
+reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     output connected: web_socket_instance_t
     output received: web_socket_message_t*
     input send: web_socket_message_t*
@@ -136,7 +135,7 @@ reactor WebSocketServer(
                     LF_PRINT_LOG("**** Web socket new client.");
                     break;
                 case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
-                    
+
                     // Check against maximum number of connections.
                     if (status->max_clients > 0 && *status->client_count >= status->max_clients) {
                         // Deny the connection.
@@ -150,10 +149,10 @@ reactor WebSocketServer(
                     *status->client_count = *status->client_count + 1;
 
                     LF_PRINT_LOG("**** Web socket connection established for client %d.", *status->client_count);
-                    
+
                     ws_instance.wsi = wsi;
                     ws_instance.connected = true;
-                    
+
                     // NOTE: Seem to need a delay in this action because otherwise
                     // the application may try to send a message to the socket before
                     // opening has completed.
@@ -161,12 +160,12 @@ reactor WebSocketServer(
                     break;
                 case LWS_CALLBACK_WSI_DESTROY:
                     LF_PRINT_LOG("**** Connection closed.");
-                    
+
                     *status->client_count = *status->client_count - 1;
-                    
+
                     ws_instance.wsi = wsi;
                     ws_instance.connected = false;
-                    
+
                     lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
                     break;
                 case LWS_CALLBACK_CLOSED:
@@ -194,10 +193,10 @@ reactor WebSocketServer(
                 case LWS_CALLBACK_RECEIVE:
                     if (len > 0) {
                         LF_PRINT_LOG("**** Server received WS message.");
-                        
+
                         web_socket_message_t* received = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
                         received->wsi = wsi;
-                        
+
                         // Message is not NULL terminated, so created a NULL-terminated version.
                         char* string = (char*)malloc((len + 1) * sizeof(char));
                         strncpy(string, (char*)in, len);
@@ -207,21 +206,21 @@ reactor WebSocketServer(
                         lf_schedule_value(status->received_action, 0, received, len + 1);
                     }
                     break;
-                    
+
                 // Do we need to handle LWS_CALLBACK_CLOSED?
                 // Seems to be handled in the HTTP callback.
-                
+
                 default:
                     break;
             }
             return 0;
         }
-        
+
         void web_socket_message_destructor(void* message) {
             free(((web_socket_message_t*)message)->message);
             free(message);
         }
-        
+
         void* web_socket_message_copy_constructor(void* message) {
             web_socket_message_t* cast = (web_socket_message_t*)message;
             web_socket_message_t* result = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
@@ -239,7 +238,7 @@ reactor WebSocketServer(
         // Set the destructor and copy constructor.
         lf_set_destructor(received_action, web_socket_message_destructor);
         lf_set_copy_constructor(received_action, web_socket_message_copy_constructor);
-        
+
         struct lws_context_creation_info info;
         memset(&info, 0, sizeof(info));
         info.port = self->hostport;
@@ -264,7 +263,7 @@ reactor WebSocketServer(
         if (!self->status.context) {
           lf_print_error_and_exit("Failed to create server for web sockets.");
         }
-        
+
         self->status.connected_action = connected_action;
         self->status.received_action = received_action;
 
@@ -292,12 +291,10 @@ reactor WebSocketServer(
             lf_print_warning("Send on web socket failed. Dropping message.");
         }
     =}
-    
+
     reaction(connected_action) -> connected {=
         lf_set(connected, connected_action->value);
     =}
 
-    reaction(shutdown) {=
-        self->status.running = false;
-     =}
+    reaction(shutdown) {= self->status.running = false; =}
 }

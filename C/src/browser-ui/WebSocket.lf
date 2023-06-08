@@ -1,25 +1,26 @@
 /**
- * Demo of a use of WebSocketServer enabling a user interface realized in the browser.
- * Compile and run this program, then open WebSocket.html in your favorite browser.
- * This example program sends to the web page a counting sequence. It also accepts
- * text messages from the web page and prints them on standard output.
- * 
+ * Demo of a use of WebSocketServer enabling a user interface realized in the
+ * browser. Compile and run this program, then open WebSocket.html in your
+ * favorite browser. This example program sends to the web page a counting
+ * sequence. It also accepts text messages from the web page and prints them on
+ * standard output.
+ *
  * This example also shows how to limit the number of connections to just two.
- * If you try to open the WebSocket.html web page more than twice, only the first
- * two attempts will succeed in connecting.  By default, WebSocketServer imposes no
- * such limit.
- * 
- * This example also shows one way to keep track of multiple connections.
- * It uses a hashset containing pointers to the wsi (web socket interface)
- * fields, which are unique to each connection. In this example, if you
- * connect two clients, one will receive even numbered counts, and the other
- * will receive odd numbered counts.
+ * If you try to open the WebSocket.html web page more than twice, only the
+ * first two attempts will succeed in connecting. By default, WebSocketServer
+ * imposes no such limit.
+ *
+ * This example also shows one way to keep track of multiple connections. It
+ * uses a hashset containing pointers to the wsi (web socket interface) fields,
+ * which are unique to each connection. In this example, if you connect two
+ * clients, one will receive even numbered counts, and the other will receive
+ * odd numbered counts.
  *
  * @author Edward A. Lee
  */
 target C {
     keepalive: true,
-    build-type: RelWithDebInfo, // Release with debug info FIXME
+    build-type: RelWithDebInfo,  // Release with debug info FIXME
     cmake-include: ["WebSocketCmake.txt"]
 }
 
@@ -32,15 +33,15 @@ preamble {=
 main reactor {
     state count: int = 0
     logical action send_action: web_socket_instance_t*
-    
+
     state connected_instances: hashset_t = {= NULL =}
 
     s = new WebSocketServer(max_clients = 2)  // Limit number of clients to 2.
-    
+
     reaction(startup) -> s.send {=
         lf_set_destructor(s.send, web_socket_message_destructor);
         lf_set_copy_constructor(s.send, web_socket_message_copy_constructor);
-        
+
         lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
         self->connected_instances = hashset_create(2); // Default capacity for four instances.
     =}
@@ -50,18 +51,18 @@ main reactor {
         if (hashset_is_member(self->connected_instances, send_action->value->wsi)) {
             char* message;
             asprintf(&message, "Count is: %d", self->count++);
-            
+
             web_socket_message_t* container = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
             container->message = message;
             container->length = strlen(message) + 1;
             container->wsi = send_action->value->wsi;
-            
+
             lf_set(s.send, container);
             // Schedule the next send.
             lf_schedule_token(send_action, SEC(1), send_action->token);
         }
     =}
-    
+
     reaction(s.connected) -> send_action {=
         if (s.connected->value.connected) {
             lf_print("======== Connected a new client");
@@ -71,7 +72,7 @@ main reactor {
         if (s.connected->value.connected) {
             // New connection.
             hashset_add(self->connected_instances, s.connected->value.wsi);
-            
+
             // Start sending.
             lf_schedule_copy(send_action, 0, &s.connected->value, 1);
         } else {
