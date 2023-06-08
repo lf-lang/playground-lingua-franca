@@ -36,7 +36,7 @@ main reactor {
     
     state connected_instances: hashset_t = {= NULL =}
 
-    s = new WebSocketServer()
+    s = new WebSocketServer(max_clients = 1)
     
     reaction(startup) -> s.send {=
         lf_set_destructor(s.send, web_socket_message_destructor);

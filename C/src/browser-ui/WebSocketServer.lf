@@ -23,7 +23,8 @@
  * </ol>
  * 
  * @param hostport The host port number, which defults to 8000.
- 
+ * @max_clients Maximum number of clients, or 0 for no upper bound.
+ *
  * @author Edward A. Lee
  */
 target C {
@@ -43,7 +44,9 @@ preamble {=
         void* connected_action;       // Action to notify of changes in connected status.
         void* received_action;        // Action to notify of messages received.
         struct lws_context* context;  // The context.
-        bool running;          // Indicator that the listening thread is running.
+        int max_clients;              // Maximum number of clients.
+        int* client_count;            // Pointer to the client_count state variable.
+        bool running;                 // Indicator that the listening thread is running.
     } server_status_t;
     
     /**
@@ -76,7 +79,10 @@ preamble {=
     #endif // WEBSOCKET_H
 =}
 
-reactor WebSocketServer(hostport: int = 8000) {
+reactor WebSocketServer(
+    hostport: int = 8000,
+    max_clients: int = 0
+) {
     output connected: web_socket_instance_t
     output received: web_socket_message_t*
     input send: web_socket_message_t*
@@ -85,6 +91,7 @@ reactor WebSocketServer(hostport: int = 8000) {
     physical action received_action: web_socket_message_t*
 
     state status: server_status_t
+    state client_count: int = 0
 
     preamble {=
         // Thread handling incoming messages.
@@ -116,9 +123,20 @@ reactor WebSocketServer(hostport: int = 8000) {
                     lf_print("**** Web socket new client.");
                     break;
                 case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
-                    lf_print("**** Web socket connection established.");
                     
-                    // FIXME: Check against maximum number of connections.
+                    // Check against maximum number of connections.
+                    if (status->max_clients > 0 && *status->client_count >= status->max_clients) {
+                        // Deny the connection.
+                        lf_print("**** Maximum number of clients reached. Denying connection.");
+                        // Increment the client count past the maximum because it will be
+                        // decremented when this closes and the browser will retry.
+                        *status->client_count = *status->client_count + 1;
+                        return 1;
+                    }
+
+                    *status->client_count = *status->client_count + 1;
+
+                    lf_print("**** Web socket connection established for client %d.", *status->client_count);
                     
                     ws_instance.wsi = wsi;
                     ws_instance.connected = true;
@@ -128,7 +146,7 @@ reactor WebSocketServer(hostport: int = 8000) {
                 case LWS_CALLBACK_WSI_DESTROY:
                     lf_print("**** Connection closed.");
                     
-                    // FIXME: Decrement connection count.
+                    *status->client_count = *status->client_count - 1;
                     
                     ws_instance.wsi = wsi;
                     ws_instance.connected = false;
@@ -139,7 +157,7 @@ reactor WebSocketServer(hostport: int = 8000) {
                 case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
                     lf_print_error("*** connection error.");
 
-                    // FIXME: Decrement connection count.
+                    *status->client_count = *status->client_count - 1;
 
                     ws_instance.wsi = wsi;
                     ws_instance.connected = false;
@@ -232,6 +250,9 @@ reactor WebSocketServer(hostport: int = 8000) {
         
         self->status.connected_action = connected_action;
         self->status.received_action = received_action;
+
+        self->status.max_clients = self->max_clients;
+        self->status.client_count = &self->client_count;
 
         lf_thread_t listener;
         lf_thread_create(&listener, &websocket_thread, &self->status);
