@@ -30,7 +30,7 @@ jobs:
               echo "$JAVA_HOME_17_X64/bin" >> $GITHUB_PATH
               echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
           shell: bash
-          - uses: lf-lang/action-check-lf-files@new-parameters
+        - uses: lf-lang/action-check-lf-files@new-parameters
           with:
               mode: "format"
               no_compile_flag: false
