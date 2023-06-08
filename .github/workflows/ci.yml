@@ -18,7 +18,7 @@ jobs:
         shell: bash
       - uses: lf-lang/action-check-lf-files@main
         with:
-          mode: "compile"
+          check_mode: "compile"
           no_compile_flag: false
           exclude_dirs: '["failing", "experimental"]'
   check-format:
