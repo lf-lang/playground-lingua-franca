@@ -20,7 +20,7 @@
  */
 target C {
     keepalive: true,
-    build-type: RelWithDebInfo,  // Release with debug info
+    build-type: RelWithDebInfo,  // Release with debug info   FIXME
     cmake-include: ["WebSocketCmake.txt"]
 }
 
@@ -39,9 +39,7 @@ preamble {=
         void* connected_action;       // Action to notify of changes in connected status.
         void* received_action;        // Action to notify of messages received.
         struct lws_context* context;  // The context.
-        struct lws* wsi;       // Web socket instance. Only one instance allowed.
         bool running;          // Indicator that the listening thread is running.
-        bool connected;        // Indicator that socket connection is open.
     } server_status_t;
     
     /**
@@ -124,17 +122,8 @@ reactor WebSocketServer(hostport: int = 8000) {
                     break;
                 case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
                     lf_print("**** Web socket connection established.");
-                    // If we are already connected, refuse the new connection.
-                    if (status->wsi != NULL) {
-                        lf_print("**** Web socket connection refused.");
-                        // Returning -1 hangs up the connection, according to lws-callbacks.h.
-                        // Return +1 "if you have rejected the connection by returning http headers
-                        // and response code yourself" (How to do that?)
-                        return -1; // FIXME: This breaks the previous connection!
-                    }
-                    // FIXME: Next two fields not needed.
-                    status->wsi = wsi;
-                    status->connected = true;
+                    
+                    // FIXME: Check against maximum number of connections.
                     
                     ws_instance.wsi = wsi;
                     ws_instance.connected = true;
@@ -143,23 +132,19 @@ reactor WebSocketServer(hostport: int = 8000) {
                     break;
                 case LWS_CALLBACK_WSI_DESTROY:
                     lf_print("**** Connection closed.");
-                    // FIXME: Next two fields not needed.
-                    status->wsi = NULL;
-                    status->connected = false;
+                    
+                    // FIXME: Decrement connection count.
                     
                     ws_instance.wsi = wsi;
                     ws_instance.connected = false;
                     
-                    status->running = false; // FIXME
                     lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
                     break;
                 case LWS_CALLBACK_CLOSED:
                 case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
                     lf_print_error("*** connection error.");
-                    // FIXME: Next three fields not needed.
-                    status->wsi = NULL;
-                    status->connected = false;
-                    status->running = false;
+
+                    // FIXME: Decrement connection count.
 
                     ws_instance.wsi = wsi;
                     ws_instance.connected = false;
@@ -176,11 +161,6 @@ reactor WebSocketServer(hostport: int = 8000) {
         static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
             printf("WS callback invoked with reason: %d\n", reason);
             server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
-            if (status == NULL || status->wsi == NULL && reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED) {
-                // FIXME: LWS_CALLBACK_PROTOCOL_DESTROY reason seems to occur after closing. Why?
-                lf_print_warning("**** No connection!");
-                return -1;
-            }
             switch(reason) {
                 case LWS_CALLBACK_RECEIVE:
                     if (len > 0) {
@@ -198,6 +178,9 @@ reactor WebSocketServer(hostport: int = 8000) {
                         lf_schedule_value(status->received_action, 0, received, len + 1);
                     }
                     break;
+                    
+                // FIXME: Handle LWS_CALLBACK_CLOSED?
+                
                 default:
                     break;
             }
@@ -286,7 +269,6 @@ reactor WebSocketServer(hostport: int = 8000) {
 
 main reactor {
     state count: int = 0
-    state connected: bool = false
     logical action send_action: web_socket_instance_t*
     
     state connected_instances: hashset_t = {= NULL =}
@@ -307,27 +289,22 @@ main reactor {
             // New connection.
             hashset_add(self->connected_instances, s.connected->value.wsi);
             
-            self->connected = true; // FIXME
             // Start sending.
             // FIXME: Delay is required here. If we send right away, we get disconnected.
             lf_schedule_copy(send_action, SEC(1), &s.connected->value, 1);
         } else {
-            // Disconnecting.
+            // Disconnecting. Remove from hashset to prevent further scheduling.
             hashset_remove(self->connected_instances, s.connected->value.wsi);
-
-            self->connected = false; // FIXME
-            // Stop execution.
-            lf_print("======= Connection closed. Exiting.");
-            lf_request_stop();
         }
     =}
 
     reaction(s.received) {=
-        lf_print("!!!!!!!!!!!!!!!!!!!! FIXME2 %zu", s.received->value->length);
+        // FIXME: Replace lf_print with LF_PRINT_LOG
         lf_print("======== Application received: %s", s.received->value->message);
     =}
 
     reaction(send_action) -> s.send, send_action {=
+        // If the web socket is no longer connected, the instance will not be in the hashset.
         if (hashset_is_member(self->connected_instances, send_action->value->wsi)) {
             char* message;
             asprintf(&message, "Count is: %d", self->count++);

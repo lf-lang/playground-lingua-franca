@@ -6,70 +6,70 @@
 <script>
 window.onload = function() {
 
-  // Get references to elements on the page.
-  var form = document.getElementById('message-form');
-  var messageField = document.getElementById('message');
-  var messagesList = document.getElementById('messages');
-  var socketStatus = document.getElementById('status');
-  var closeBtn = document.getElementById('close');
+    // Get references to elements on the page.
+    var form = document.getElementById('message-form');
+    var messageField = document.getElementById('message');
+    var messagesList = document.getElementById('messages');
+    var socketStatus = document.getElementById('status');
+    var closeBtn = document.getElementById('close');
+    
+    const socket = new WebSocket('ws://localhost:8000', 'ws');
+    
+    socket.addEventListener('open', (event) => {
+        console.log('WebSocket connection established');
+        socketStatus.innerHTML = 'Connected to: ' + event.currentTarget.url;
+        socketStatus.className = 'open';
+    });
 
-  const socket = new WebSocket('ws://localhost:8000', 'ws');
+    socket.onerror = function(error) {
+      console.log('WebSocket Error: ' + error);
+    };
+    
+    socket.addEventListener('message', (event) => {
+      console.log(`WebSocket message received: ${event.data}`);
+    });
 
-  socket.addEventListener('open', (event) => {
-    console.log('WebSocket connection established');
-    socketStatus.innerHTML = 'Connected to: ' + event.currentTarget.url;
-    socketStatus.className = 'open';
-  });
-
-socket.onerror = function(error) {
-  console.log('WebSocket Error: ' + error);
-};
-
-socket.addEventListener('message', (event) => {
-  console.log(`WebSocket message received: ${event.data}`);
-});
-
-socket.addEventListener('close', (event) => {
-  console.log('WebSocket connection closed');
-});
-form.onsubmit = function(e) {
-  e.preventDefault();
-
-  // Retrieve the message from the textarea.
-  var message = messageField.value;
-
-  // Send the message through the WebSocket.
-  socket.send(message);
-
-  // Add the message to the messages list.
-  messagesList.innerHTML += '<li class="sent"><span>Sent:</span>' + message +
-                            '</li>';
-
-  // Clear out the message field.
-  messageField.value = '';
-
-  return false;
-};
-// Handle messages sent by the server.
-socket.onmessage = function(event) {
-  var message = event.data;
-  messagesList.innerHTML = '<li class="received"><span>Received:</span>' +
-                             message + '</li>';
-};
-// Show a disconnected message when the WebSocket is closed.
-socket.onclose = function(event) {
-  socketStatus.innerHTML = 'Disconnected from WebSocket.';
-  socketStatus.className = 'closed';
-};
-// Close the WebSocket connection when the close button is clicked.
-closeBtn.onclick = function(e) {
-  e.preventDefault();
-
-  // Close the WebSocket.
-  socket.close();
-
-  return false;
-};
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        
+        // Retrieve the message from the textarea.
+        var message = messageField.value;
+    
+        // Send the message through the WebSocket.
+        if (socket.readyState == WebSocket.OPEN) {
+            socket.send(message);
+            messagesList.innerHTML = '<li class="sent"><span>Sent:</span>' + message + '</li>';
+        } else {
+            messagesList.innerHTML = '<li class="sent"><span>Socket is not open!</span></li>';
+        }
+    
+        // Clear out the message field.
+        messageField.value = '';
+    
+        return true;
+    };
+    
+    // Handle messages sent by the server.
+    socket.onmessage = function(event) {
+        var message = event.data;
+        messagesList.innerHTML = '<li class="received"><span>Received:</span>' +
+                                 message + '</li>';
+    };
+    
+    // Show a disconnected message when the WebSocket is closed.
+    socket.onclose = function(event) {
+        event.preventDefault();
+        socketStatus.innerHTML = 'Disconnected from WebSocket.';
+        socketStatus.className = 'closed';
+        console.log('WebSocket connection closed');
+    };
+    
+    // Close the WebSocket connection when the close button is clicked.
+    closeBtn.onclick = function(e) {
+        // Close the WebSocket.
+        socket.close();
+        return true;
+    };
 };
 </script>
   <div id="page-wrapper">
