@@ -21,7 +21,7 @@ jobs:
           wget https://github.com/CrowCpp/Crow/releases/download/v1.0%2B5/crow-v1.0+5.deb
           sudo apt install ./crow-v1.0+5.deb
       - name: Install ROS2
-        uses: ./.github/actions/setup-ros2
+        uses: lf-lang/lingua-franca/.github/actions/setup-ros2@master
       - name: Setup ROS2
         run: source /opt/ros/*/setup.bash
       - uses: lf-lang/action-check-lf-files@main
