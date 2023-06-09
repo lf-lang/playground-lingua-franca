@@ -13,7 +13,6 @@
  * error message if a deadline is violated. 
  */
 target Cpp {
-    keepalive: true,
     cmake-include: "threads.cmake"
 };
 
