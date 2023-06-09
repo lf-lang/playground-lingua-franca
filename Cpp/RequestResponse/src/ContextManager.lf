@@ -1,7 +1,7 @@
 target Cpp
 
 public preamble {=
-    #include "RequestResponse/request_response.hh"
+    #include "request_response.hh"
 =}
 
 reactor ContextManager<Req, Resp, Ctx> {
