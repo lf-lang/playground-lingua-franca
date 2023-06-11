@@ -25,8 +25,7 @@ jobs:
       - name: Setup ROS2
         run: | 
           source /opt/ros/*/setup.bash
-          printenv
-          printenv >> GITHUB_ENV
+          printenv >> "$GITHUB_ENV"
       - uses: lf-lang/action-check-lf-files@main
         with:
           check_mode: "compile"
