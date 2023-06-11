@@ -23,7 +23,10 @@ jobs:
       - name: Install ROS2
         uses: lf-lang/lingua-franca/.github/actions/setup-ros2@master
       - name: Setup ROS2
-        run: source /opt/ros/*/setup.bash
+        run: | 
+          source /opt/ros/*/setup.bash
+          printenv
+          printenv >> GITHUB_ENV
       - uses: lf-lang/action-check-lf-files@main
         with:
           check_mode: "compile"
