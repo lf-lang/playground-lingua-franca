@@ -1,59 +1,57 @@
 /**
- * Demonstration of timed distributed Lingua Franca programs.
- * This program runs on MacOS and Linux, at least.
- * 
- * This program elaborates Rhythm to have two players that
- * run on different machines. Both players can select a musical
- * instrument, but only one of the players can control the rhythm
- * and the tempo.
- * 
- * To run this program, open three distinct terminal windows
- * and run the following generated binaries, one in each window:
- * 
+ * Demonstration of timed distributed Lingua Franca programs. This program runs on MacOS and Linux,
+ * at least.
+ *
+ * This program elaborates Rhythm to have two players that run on different machines. Both players
+ * can select a musical instrument, but only one of the players can control the rhythm and the
+ * tempo.
+ *
+ * To run this program, open three distinct terminal windows and run the following generated
+ * binaries, one in each window:
+ *
  * * RTI -n 2
  * * fed-gen/RhythmDistributed/bin/player1
  * * fed-gen/RhythmDistributed/bin/player2
- * 
- * The `-n 2` argument specifies the number of federates.
- * Note that you have to have installed the RTI on your path.
- * See the instructions in the README file in this directory in the LF repo:
- * 
- *     org.lflang/src/lib/core/federated/RTI
- * 
- * You can also map these three to distinct machines by specifying an `at` clause
- * on the lines at the end of this file that instantiate the reactors.
- * See [[https://github.com/icyphy/lingua-franca/wiki/Distributed-Execution]].
- * 
+ *
+ * The `-n 2` argument specifies the number of federates. Note that you have to have installed the
+ * RTI on your path. See the instructions in the README file in this directory in the LF repo:
+ *
+ * org.lflang/src/lib/core/federated/RTI
+ *
+ * You can also map these three to distinct machines by specifying an `at` clause on the lines at
+ * the end of this file that instantiate the reactors. See
+ * [[https://github.com/icyphy/lingua-franca/wiki/Distributed-Execution]].
+ *
  * @see Rhythm.lf
  * @see RhythmDistributedNoUI.lf
  *
  * @author Edward A. Lee
  */
 target C
- 
+
 import RhythmSource from "Rhythm.lf"
 import PlayWaveform from "PlayWaveform.lf"
 
 reactor Player {
-    input tempo_change_in:interval_t; // To accept a tempo change.
-    input rhythm_change_in:char;      // To accept a rhythm change.
-    output tempo_change:interval_t;   // To change the tempo.
-    output rhythm_change:char;        // To change the rhythm.
-    source = new RhythmSource();
-    play = new PlayWaveform();
-    source.note -> play.note;
-    source.instrument -> play.waveform;
-    source.rhythm_change -> rhythm_change;
-    source.tempo_change -> tempo_change;
-    rhythm_change_in -> source.rhythm_change_in;
-    tempo_change_in -> source.tempo_change_in;
+  input tempo_change_in: interval_t  // To accept a tempo change.
+  input rhythm_change_in: char       // To accept a rhythm change.
+  output tempo_change: interval_t    // To change the tempo.
+  output rhythm_change: char         // To change the rhythm.
+  source = new RhythmSource()
+  play = new PlayWaveform()
+  source.note -> play.note
+  source.instrument -> play.waveform
+  source.rhythm_change -> rhythm_change
+  source.tempo_change -> tempo_change
+  rhythm_change_in -> source.rhythm_change_in
+  tempo_change_in -> source.tempo_change_in
 }
 
 federated reactor {
-    player1 = new Player();
-    player2 = new Player();
-    player1.rhythm_change -> player2.rhythm_change_in;
-    player1.tempo_change -> player2.tempo_change_in;
-    player2.rhythm_change -> player1.rhythm_change_in;
-    player2.tempo_change -> player1.tempo_change_in;
+  player1 = new Player()
+  player2 = new Player()
+  player1.rhythm_change -> player2.rhythm_change_in
+  player1.tempo_change -> player2.tempo_change_in
+  player2.rhythm_change -> player1.rhythm_change_in
+  player2.tempo_change -> player1.tempo_change_in
 }

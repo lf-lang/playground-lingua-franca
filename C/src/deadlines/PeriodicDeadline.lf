@@ -1,105 +1,103 @@
 /**
- * In a periodic sense-compute-actuate system, we can put a deadline on the actuator
- * to specify a real-time requirement. However, a common situation is that there is
- * an initialization phase that takes considerable physical time to complete.
- * Without some precautions, this can lead to the deadline being violated during
- * the first few cycles.
- * 
- * This example illustrates the problem and two solutions. There are three parallel
- * subsystems:
- * 
- * 1. This naive system is the only one that should miss deadlines.
- *    It starts its periodic sensing at the starting logical time, ignoring the
- *    lengthy time taken by the startup reaction.
- * 
- * 2. This better system introduces an offset in the timer that an estimate
- *    of the maximum time that the startup reaction is likely to take.
- *    Only after that offset does it start periodic sensing.
- * 
- * 3. This even better system does not assume any knowledge of how long the
- *    startup reaction will take. Instead, at the conclusion of the startup
- *    reaction, it schedules an action that starts the periodic sensing at
- *    the current physical time.
+ * In a periodic sense-compute-actuate system, we can put a deadline on the actuator to specify a
+ * real-time requirement. However, a common situation is that there is an initialization phase that
+ * takes considerable physical time to complete. Without some precautions, this can lead to the
+ * deadline being violated during the first few cycles.
+ *
+ * This example illustrates the problem and two solutions. There are three parallel subsystems:
+ *
+ * 1. This naive system is the only one that should miss deadlines. It starts its periodic sensing
+ * at the starting logical time, ignoring the lengthy time taken by the startup reaction.
+ *
+ * 2. This better system introduces an offset in the timer that an estimate of the maximum time that
+ * the startup reaction is likely to take. Only after that offset does it start periodic sensing.
+ *
+ * 3. This even better system does not assume any knowledge of how long the startup reaction will
+ * take. Instead, at the conclusion of the startup reaction, it schedules an action that starts the
+ * periodic sensing at the current physical time.
  *
  * @author Edward A. Lee
  */
 target C {
-    timeout: 5s
+  timeout: 5 s
 }
 
 reactor Sensor {
-    output y:int
-    state count:int = 0
+  output y: int
+  state count: int = 0
 }
 
-reactor OffsetSensor(offset:time = 0) extends Sensor {
-    timer t(offset, 500ms)
-    reaction(startup) {=
-        // Take a long time.
-        lf_sleep(SEC(2));
-    =}
-    reaction(t) -> y {=
-        lf_set(y, self->count++);
-    =}
+reactor OffsetSensor(offset: time = 0) extends Sensor {
+  timer t(offset, 500 ms)
+
+  reaction(startup) {=
+    // Take a long time.
+    lf_sleep(SEC(2));
+  =}
+
+  reaction(t) -> y {= lf_set(y, self->count++); =}
 }
 
 reactor StartupSensor extends Sensor {
-    logical action a
-    reaction(startup) -> a {=
-        // Take a long time.
-        lf_sleep(SEC(2));
-        // After startup phase is over, start periodic cycle.
-        // Calculate an offset for a reasonable starting logical time.
-        instant_t offset = lf_time_physical_elapsed();
-        lf_schedule(a, offset);
-    =}
-    reaction(a) -> y, a {=
-        lf_set(y, self->count++);
-        lf_schedule(a, MSEC(500));
-    =}
+  logical action a
+
+  reaction(startup) -> a {=
+    // Take a long time.
+    lf_sleep(SEC(2));
+    // After startup phase is over, start periodic cycle.
+    // Calculate an offset for a reasonable starting logical time.
+    instant_t offset = lf_time_physical_elapsed();
+    lf_schedule(a, offset);
+  =}
+
+  reaction(a) -> y, a {=
+    lf_set(y, self->count++);
+    lf_schedule(a, MSEC(500));
+  =}
 }
 
 reactor Compute {
-    input x: int
-    output y: int
+  input x: int
+  output y: int
 
-    reaction(x) -> y {=
-        // Do some work...
-        lf_set(y, x->value);
-    =}
+  reaction(x) -> y {=
+    // Do some work...
+    lf_set(y, x->value);
+  =}
 }
 
-reactor Actuator(id:int = 1) {
-    input x: int
-    reaction(x) {=
-        lf_print("Actuator %d: Actuating with lag " PRINTF_TIME,
-            self->id,
-            lf_time_physical_elapsed() - lf_time_logical_elapsed()
-        );
-    =} deadline(30ms) {=
-        lf_print("Actuator %d: **** Deadline missed with lag " PRINTF_TIME,
-            self->id,
-            lf_time_physical_elapsed() - lf_time_logical_elapsed()
-        );
-    =}
+reactor Actuator(id: int = 1) {
+  input x: int
+
+  reaction(x) {=
+    lf_print("Actuator %d: Actuating with lag " PRINTF_TIME,
+        self->id,
+        lf_time_physical_elapsed() - lf_time_logical_elapsed()
+    );
+  =} deadline(30 ms) {=
+    lf_print("Actuator %d: **** Deadline missed with lag " PRINTF_TIME,
+        self->id,
+        lf_time_physical_elapsed() - lf_time_logical_elapsed()
+    );
+  =}
 }
 
 main reactor {
-    s1 = new OffsetSensor(offset = 0)
-    c1 = new Compute()
-    a1 = new Actuator(id = 1)
-    s1.y -> c1.x
-    c1.y -> a1.x
-    
-    s2 = new OffsetSensor(offset = 2s)
-    c2 = new Compute()
-    a2 = new Actuator(id = 2)
-    s2.y -> c2.x
-    c2.y -> a2.x
+  s1 = new OffsetSensor(offset = 0)
+  c1 = new Compute()
+  a1 = new Actuator(id = 1)
+  s1.y -> c1.x
+  c1.y -> a1.x
 
-    s3 = new StartupSensor()
-    c3 = new Compute()
-    a3 = new Actuator(id = 3)
-    s3.y -> c3.x
-    c3.y -> a3.x
+  s2 = new OffsetSensor(offset = 2 s)
+  c2 = new Compute()
+  a2 = new Actuator(id = 2)
+  s2.y -> c2.x
+  c2.y -> a2.x
+
+  s3 = new StartupSensor()
+  c3 = new Compute()
+  a3 = new Actuator(id = 3)
+  s3.y -> c3.x
+  c3.y -> a3.x
 }
