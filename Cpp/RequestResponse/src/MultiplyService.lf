@@ -1,10 +1,10 @@
 target Cpp
 
 public preamble {=
-    #include "RequestResponse/request_response.hh"
+    #include "request_response.hh"
 =}
 
-reactor AddService {
+reactor MultiplyService {
     input request: Request<std::pair<int, int>>
     output response: Response<int>
 
@@ -17,7 +17,7 @@ reactor AddService {
 
     reaction(request_queue) -> response {=
         auto req = request_queue.get();
-        int sum = req->data().first + req->data().second;
-        response.set(req->make_response(sum));
+        int res = req->data().first * req->data().second;
+        response.set(req->make_response(res));
     =}
 }

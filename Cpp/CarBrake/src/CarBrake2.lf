@@ -4,7 +4,6 @@
  * on the ability to meet deadlines in the response to brake pedal actions.
  */
 target Cpp {
-    keepalive: true,
     cmake-include: "threads.cmake"
 };
 
