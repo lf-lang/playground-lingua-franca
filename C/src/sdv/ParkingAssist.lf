@@ -36,7 +36,6 @@
  */
 target C {
   keepalive: true,
-  build-type: RelWithDebInfo,  // Release with debug info
   cmake-include: ["curses.cmake"]
 }
 
