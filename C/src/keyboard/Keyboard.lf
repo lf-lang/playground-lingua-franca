@@ -1,15 +1,13 @@
 /**
- * Output the key code for any key pressed on the keyboard.
- * The timestamp of the output is the physical time at which the key is pressed.
- * 
- * This reactor uses curses, a reasonably portable C library for terminal interactions.
- * If your program sends messages to the standard output, then you should print the
- * messages using `lf_print` rather than `printf` so that they are cleanly displayed
- * on the terminal.
- * 
- * If a non-zero exit_key parameter is given, then it is the key code for a key
- * that, when pressed, will cause this reactor to call lf_request_stop(), bringing
- * the program to exit.
+ * Output the key code for any key pressed on the keyboard. The timestamp of the output is the
+ * physical time at which the key is pressed.
+ *
+ * This reactor uses curses, a reasonably portable C library for terminal interactions. If your
+ * program sends messages to the standard output, then you should print the messages using
+ * `lf_print` rather than `printf` so that they are cleanly displayed on the terminal.
+ *
+ * If a non-zero exit_key parameter is given, then it is the key code for a key that, when pressed,
+ * will cause this reactor to call lf_request_stop(), bringing the program to exit.
  *
  * @see ../rhythm/SensorSimulator.lf
  * @author Edward A. Lee
@@ -18,13 +16,15 @@ target C {
   keepalive: true,
   cmake-include: ["curses.cmake"]
 }
+
 preamble {=
-    typedef struct keyboard_input_t {
-        void* keypress; // Pointer to physical action.
-        int exit_key;   // Keycode for exiting.
-    } keyboard_input_t;
+  typedef struct keyboard_input_t {
+      void* keypress; // Pointer to physical action.
+      int exit_key;   // Keycode for exiting.
+  } keyboard_input_t;
 =}
-reactor KeyboardInput(exit_key:int = 0) {
+
+reactor KeyboardInput(exit_key: int = 0) {
   output key: int
   physical action keypress: int
 
@@ -73,11 +73,11 @@ reactor KeyboardInput(exit_key:int = 0) {
 
     // Register a print function handler so lf_print works.
     lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
-    
+
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
         lf_print_warning("Failed to register signal handler. After exit, may have to reset terminal using 'reset'.");
     }
-    
+
     static keyboard_input_t keyboard_input;
     keyboard_input.keypress = keypress;
     keyboard_input.exit_key = self->exit_key;
@@ -87,9 +87,7 @@ reactor KeyboardInput(exit_key:int = 0) {
     lf_thread_create(&thread_id, &read_input, &keyboard_input);
   =}
 
-  reaction(keypress) -> key {=
-    lf_set(key, keypress->value);
-  =}
+  reaction(keypress) -> key {= lf_set(key, keypress->value); =}
 
   reaction(shutdown) {=
     endwin();
@@ -98,8 +96,7 @@ reactor KeyboardInput(exit_key:int = 0) {
 }
 
 main reactor {
-    k = new KeyboardInput(exit_key = 120)
-    reaction(k.key) {=
-        lf_print("You typed %c (keycode %d).", k.key->value, k.key->value);
-    =}
+  k = new KeyboardInput(exit_key = 120)
+
+  reaction(k.key) {= lf_print("You typed %c (keycode %d).", k.key->value, k.key->value); =}
 }
