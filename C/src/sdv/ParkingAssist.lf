@@ -1,16 +1,14 @@
 /**
- * This is an illustration of how to build a software-defined vehicle. The program has three
+ * This is an illustration of one way to build a software-defined vehicle. The program has three
  * components, one that emulates the sensors in a vehicle, one that provides a dashboard display,
- * and one that provides sound alerts.
- *
- * The sensors are emulated with keyboard entries, where pressing the up arrow will accelerate the
- * vehicle forward, pressing the down arrow will decelerate or go into reverse, pressing 'b' will
- * brake, and pressing 'r' will reset. This sensor emulator assumes that there is an obstacle in
- * front of the vehicle, so if you accelerate forward, the vehicle will approach and eventually hit
- * the obstacle.
+ * and one that provides sound alerts. The ParkingAssist.html page provides a user interface
+ * with a dashboard display at the top and controls at the bottom.
+ * 
+ * The program assumes that the vehicle starts in a position with an obstacle in front of it.
+ * FIXME: more detail.
  *
  * The dashboard display is emulated by an HTML page that connects to this application via a web
- * socket. After starting the program, open dashboard.html in your favorite browser and a simple
+ * socket. After starting the program, open ParkingAssist.html in your favorite browser and a simple
  * prototype of a dashboard display will appear. It shows the distance to the obstacle in front,
  * changing its color as the obstacle gets closer.
  *
@@ -43,73 +41,6 @@ import WebSocketServer from "../browser-ui/WebSocketServer.lf"
 import PlayWaveform from "../rhythm/PlayWaveform.lf"
 
 /**
- * Listen for user input. When the user hits a key, then schedule a physical action to produce an
- * output on key. The startup is delayed to give the server a chance to print its instruction
- * message before curses takes over the terminal.
- */
-reactor UserInput {
-  preamble {=
-    #include "platform.h"
-    #include <curses.h>
-    // Thread to read input characters until an EOF is received.
-    // Each time a character is received, schedule a keypress action.
-    void* read_input(void* keypress) {
-        int c;
-        while((c = getch()) != EOF) {
-            if (c == 120 || c == 113) {
-                lf_request_stop();
-                break;
-            }
-            lf_schedule_copy(keypress, 0, &c, 1);
-        }
-        return NULL;
-    }
-    // Function to direct printed messages to the curses-managed terminal.
-    void print_to_terminal(const char* format, va_list args) {
-        move(8, 0);
-        vwprintw(stdscr, format, args);
-        refresh();
-    }
-  =}
-  physical action keypress: int
-
-  timer start(1 s)
-
-  output key: int
-
-  reaction(start) -> keypress {=
-    initscr();  // Initialize the curses library
-    cbreak();   // Disable line buffering
-    noecho();   // Disable automatic echoing of typed characters
-    keypad(stdscr, TRUE);  // Enable special keys
-
-    move(0, 0);
-    printw("Type q or x to exit.\n"
-            "Open dashboard.html in your browser.\n"
-            "Type:\n"
-            "   b to brake\n"
-            "   UP to accelerate\n"
-            "   DOWN to decelerate or reverse\n"
-            "   r to reset\n");
-    refresh();
-
-    // Register a print function handler so lf_print works.
-    lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
-
-    // Start the thread that listens for Enter or Return.
-    lf_thread_t thread_id;
-    lf_thread_create(&thread_id, &read_input, keypress);
-  =}
-
-  reaction(keypress) -> key {= lf_set(key, keypress->value); =}
-
-  reaction(shutdown) {=
-    endwin();
-    lf_register_print_function(NULL, -1);
-  =}
-}
-
-/**
  * Emulator for automotive sensors. It outputs sensor data periodically with the specified sample
  * interval. This reactor uses curses to listen for keyboard entry and provides a simple test case
  * where pressing the up arrow increases the speed and pressing the down arrow decrease the speed.
@@ -121,7 +52,6 @@ reactor Sensors(
   initial_front_distance: int = 100  // In pixels
 ) {
   preamble {=
-    #include <ncurses.h>
     #include <stdlib.h>    // Defines abs()
     #include <math.h>      // Defines lround()
   =}
@@ -130,18 +60,53 @@ reactor Sensors(
 
   state velocity: double = 0  // In pixels/second
   state position: double = 0  // In pixels
+  state gear: int = 1         // 1 for forward, -1 for reverse.
 
   timer t(0, sample_interval)
 
-  u = new UserInput()
-
-  reaction(u.key) {=
-    if (u.key->value == KEY_UP) self->velocity++;
-    else if (u.key->value == KEY_DOWN) self->velocity--;
-    else if (u.key->value == 'b') self->velocity = 0;
-    else if (u.key->value == 'r') {
-        self->velocity = 0;
+  s = new WebSocketServer(hostport=240, max_clients = 1)  // Allow only one client
+  
+  /**
+   * Given JSON of the form {..., "key":"value", ... }, if the value is an int,
+   * put that int value into the result and return 0. Otherwise, return -1 if the
+   * key is not present, -2 if the value is not an int, and -3 if the JSON string
+   * does not have the expected form.
+   */
+  method json_to_int(
+    json: {= const char* =},
+    key: {= const char* =},
+    result: int*
+  ): int {=
+    char* key_position = strstr(json, key);
+    if (key_position == NULL) return -1;
+    // Check that the next character is closing quotation mark.
+    if (strncmp((key_position + strlen(key)), "\"", 1) != 0) return -3;
+    // Find the opening quotation mark for the value string.
+    char* start = strchr((key_position + strlen(key) + 1), '"');
+    if (start == NULL) return -3;
+    *result = atoi(start + 1);
+    return 0;
+  =}
+  
+  reaction(s.received) {=
+    char* json = s.received->value->message;
+    lf_print("Received control: %s", json);
+    int accelerator;
+    if (json_to_int(json, "accelerator", &accelerator) == 0) {
+        // FIXME: Setting the velocity to be a simple linear
+        // function of the accelerator position. Pretty naive
+        // vehicle model.
+        self->velocity = accelerator * 0.1;
+    }
+    int reset_value;
+    if (json_to_int(json, "reset", &reset_value) == 0) {
+        self->velocity = 0.0;
         self->position = 0.0;
+        self->gear = 1;
+    }
+    int gear;
+    if (json_to_int(json, "gear", &gear) == 0) {
+        self->gear = gear;
     }
   =}
 
@@ -150,9 +115,9 @@ reactor Sensors(
 
     // Update position.
     // Careful with rounding.
-    self->position += self->velocity * (self->sample_interval / MSEC(1)) / 1000.0;
+    self->position += self->gear * self->velocity * (self->sample_interval / MSEC(1)) / 1000.0;
 
-    lf_print("Position: %d\n", (int)lround(self->position));
+    // lf_print("Position: %d\n", (int)lround(self->position));
 
     lf_set(front_distance, self->initial_front_distance - (int)lround(self->position));
   =}
@@ -164,7 +129,7 @@ reactor Dashboard {
 
   state connection: web_socket_instance_t = {= {0} =}
 
-  s = new WebSocketServer(max_clients = 1)  // Allow only one client
+  s = new WebSocketServer(hostport = 241, max_clients = 1)  // Allow only one client
 
   reaction(speed, front_distance) -> s.send {=
     // Ignore the inputs if we are not connected.

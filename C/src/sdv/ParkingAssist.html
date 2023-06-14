@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Browser UI for Lingua Franca</title>
+    <style>
+        #dashboard {
+            width: 500px;
+            height: 200px;
+            background-color:antiquewhite;
+            position: relative;
+        }
+        #car {
+            width: 300px;
+            height: 200px;
+            position: relative;
+            top: 40px;
+            left: 100px;
+            overflow: hidden;
+        }
+        #front {
+            width: 10px;
+            height: 120px;
+            top: 40px;
+            float: left;
+            background-color: blue;
+            position: relative;
+        }
+    </style>
+  </head>
+  <body>
+    <h1>Dashboard Display</h1>
+    <div id="dashboard">
+        <div id="front"></div>
+        <div id="car">
+            <svg width="300" height="120">
+                <rect fill="cadetblue" x="0" y="0" width="300" height="120" rx="15"/>
+                <rect fill="cadetblue" stroke="aliceblue" x="100" y="15" width="120" height="90"/>
+                <polygon fill="aliceblue" points="70,0 100,15 100,105 70,120"/>
+                <polygon fill="aliceblue" points="220,15 240,0 240,120 220,105"/>
+            <svg>
+        </div>
+    </div>
+    <p id="message"></p>
+    
+    <h1>Controls</h1>
+    <div class="accelerator">
+        <p>Accelerator position:</p>
+        <input type="range" min="0" max="100" value="0" class="pedal" id="accelerator">
+    </div>
+    
+    <input type="radio" id="forward" name="option" value="forward" checked="checked"/>
+    <label for="forward">Forward</label>
+
+    <input type="radio" id="reverse" name="option" value="reverse"/>
+    <label for="reverse">Reverse</label>
+  
+    <button type="button" id="reset">Reset</button>
+
+    <script>
+    window.onload = function() {
+        
+        // Create the web socket connection for the dashboard display.
+        const socket = new WebSocket('ws://localhost:241', 'ws');
+    
+        socket.addEventListener('open', (event) => {
+            console.log('WebSocket connection established for dashboard display');
+        });
+    
+        socket.onerror = function(error) {
+            console.log('Dashboard WebSocket Error: ' + error);
+        };
+        
+        socket.addEventListener('message', (event) => {
+            var message = event.data;
+            console.log(`WebSocket message received: ${message}`);
+            
+            try {
+                console.log('"' + message + '"');
+                var data = JSON.parse(message);
+                const front = document.getElementById('front');
+                console.log("Distance: " + data.front_distance);
+                var position = 100 - data.front_distance;
+                if (position >= 100) {
+                    front.style.backgroundColor = "fuchsia";
+                    position = 100;
+                } else if (position > 50) {
+                    front.style.backgroundColor = "red";
+                } else if (position > 0) {
+                    front.style.backgroundColor = "gold";
+                } else {
+                    front.style.backgroundColor = "blue";
+                    position = 0;
+                }
+                front.style.left = position + 'px';
+            } catch(error) {
+                console.error(error);
+            }
+        });
+        
+        // Create the web socket connection for the controls.
+        const socket2 = new WebSocket('ws://localhost:240', 'ws');
+    
+        socket2.addEventListener('open', (event) => {
+            console.log('WebSocket connection established for the controls.');
+        });
+    
+        socket2.onerror = function(error) {
+            console.log('Controls WebSocket Error: ' + error);
+        };
+        
+        // Send JSON data.
+        function sendJSON(data) {
+            var message = JSON.stringify(data);
+            // Send the message through the WebSocket.
+            if (socket2.readyState == WebSocket.OPEN) {
+                socket2.send(message);
+                console.log('Sent: ' + message);
+            } else {
+                console.error('Socket is not open! Discarding message: ' + message);
+            }
+        }
+
+        // Function to handle accelerator change:
+        function handleAcceleratorChange() {
+            var sliderValue = document.getElementById("accelerator").value;
+            // var radioValue = document.querySelector('input[name="option"]:checked').value;
+            console.log('sent value: ' + sliderValue);
+      
+            var data = {
+                accelerator: sliderValue
+            };
+            sendJSON(data);
+        }
+    
+        // Add event listener for accelerator change
+        document.getElementById("accelerator").addEventListener("input", handleAcceleratorChange);
+        
+        // Reset button.
+        var resetBtn = document.getElementById('reset');
+        resetBtn.onclick = function(e) {
+            document.getElementById("accelerator").value = 0;
+            document.getElementById("forward").checked = "checked";
+            var data = {
+                reset: "1"
+            }
+            sendJSON(data);
+            return true;
+        };
+        
+        // Direction change.
+        function direction(dir) {
+            console.log('Setting direction: ' + dir);
+            var gear = (dir > 0) ? "1" : "-1";
+            var data = {
+                gear: gear
+            };
+            sendJSON(data);
+        }
+        document.getElementById('forward').onclick = function() {
+            direction(1.0);
+        }
+        document.getElementById('reverse').onclick = function() {
+            direction(-1.0);
+        }
+    }
+    </script>
+  </body>
+</html>
