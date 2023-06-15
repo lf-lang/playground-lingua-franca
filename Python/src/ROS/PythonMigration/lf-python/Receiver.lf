@@ -1,53 +1,51 @@
 /**
- * This Lingua Franca program interfaces with the Robot Operating System (ROS) to
- * receive and handle data from a specific topic using the MinimalSubscriber class
- * from the ROS py_pubsub package. Upon startup, the program initializes the ROS
- * communication and creates a MinimalSubscriber instance. When data arrives on the
- * subscribed topic, it is passed to a callback function on the ROS side for
- * further processing. Upon shutdown, the program destroys the node and shuts down
- * the ROS communication, ensuring a clean exit. The program serves as an example
- * of real-time, event-driven programming using Lingua Franca in combination with
- * ROS. 
+ * This Lingua Franca program interfaces with the Robot Operating System (ROS) to receive and handle
+ * data from a specific topic using the MinimalSubscriber class from the ROS py_pubsub package. Upon
+ * startup, the program initializes the ROS communication and creates a MinimalSubscriber instance.
+ * When data arrives on the subscribed topic, it is passed to a callback function on the ROS side
+ * for further processing. Upon shutdown, the program destroys the node and shuts down the ROS
+ * communication, ensuring a clean exit. The program serves as an example of real-time, event-driven
+ * programming using Lingua Franca in combination with ROS.
  */
-// Receiver.lf
-target Python;
+# Receiver.lf
+target Python
 
 preamble {=
-    # Locate the MinimalPublisher class written for ROS
-    # After source the ros package, 
-    # Python import would be:
-    # from [package name].[file name] import [class name]
-    from py_pubsub.subscriber_member_function import MinimalSubscriber
+  # Locate the MinimalPublisher class written for ROS
+  # After source the ros package,
+  # Python import would be:
+  # from [package name].[file name] import [class name]
+  from py_pubsub.subscriber_member_function import MinimalSubscriber
 
-    # copy and paste all imports from python file to here
-    import rclpy
-    from rclpy.node import Node
-    from std_msgs.msg import String
+  # copy and paste all imports from python file to here
+  import rclpy
+  from rclpy.node import Node
+  from std_msgs.msg import String
 =}
 
 reactor Receiver {
-    state minimal_subscriber;
-    input topic;
+  state minimal_subscriber
+  input topic
 
-    reaction(startup) {=
-        rclpy.init(args=None)
-        self.minimal_subscriber = MinimalSubscriber()
+  reaction(startup) {=
+    rclpy.init(args=None)
+    self.minimal_subscriber = MinimalSubscriber()
 
-        # rclpy.spin is commented out.
-        #rclpy.spin(self.minimal_subscriber)
-    =}
+    # rclpy.spin is commented out.
+    #rclpy.spin(self.minimal_subscriber)
+  =}
 
-    reaction(topic) {=
-        # Lingua Franca subscriber can receive the message,
-        # and deliver it to the listener_callback function.
+  reaction(topic) {=
+    # Lingua Franca subscriber can receive the message,
+    # and deliver it to the listener_callback function.
 
-        print("[LF] Topic data received on LF side: " + str(topic.value.data))
-        print("[LF] Calling callback function on ROS side: ")
-        self.minimal_subscriber.listener_callback(topic.value)
-    =}
+    print("[LF] Topic data received on LF side: " + str(topic.value.data))
+    print("[LF] Calling callback function on ROS side: ")
+    self.minimal_subscriber.listener_callback(topic.value)
+  =}
 
-    reaction(shutdown) {=
-        self.minimal_subscriber.destroy_node()
-        rclpy.shutdown()
-    =}
+  reaction(shutdown) {=
+    self.minimal_subscriber.destroy_node()
+    rclpy.shutdown()
+  =}
 }

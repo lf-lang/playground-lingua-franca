@@ -5,94 +5,105 @@ import MultiplyService from "MultiplyService.lf"
 import ContextManager from "ContextManager.lf"
 
 public preamble {=
-    struct MACData {
-        int factor1;
-        int factor2;
-        int summand;
-    };
+  struct MACData {
+      int factor1;
+      int factor2;
+      int summand;
+  };
 =}
 
 reactor MACService {
+  input request: Request<MACData>
+  output response: Response<int>
 
-    input request: Request<MACData>
-    output response: Response<int>
+  output mul_request: Request<std::pair<int, int>>
+  input mul_response: Response<int>
 
-    output mul_request: Request<std::pair<int, int>>
-    input mul_response: Response<int>
+  output add_request: Request<std::pair<int, int>>
+  input add_response: Response<int>
 
-    output add_request: Request<std::pair<int, int>>
-    input add_response: Response<int>
+  add_cm = new ContextManager<
+    {= Request<std::pair<int, int>> =},
+    {= Response<int> =},
+    {= Request<MACData> =}
+  >(
 
-    add_cm = new ContextManager<{=Request<std::pair<int, int>>=}, {=Response<int>=}, {=Request<MACData>=}>()
-    mul_cm = new ContextManager<{=Request<std::pair<int, int>>=}, {=Response<int>=}, {=Request<MACData>=}>()
+  )
+  mul_cm = new ContextManager<
+    {= Request<std::pair<int, int>> =},
+    {= Response<int> =},
+    {= Request<MACData> =}
+  >(
 
-    reaction(request) -> mul_cm.request_in {=
-        auto& original_request = *request.get();
-        auto& data = original_request.data();
-        auto multiply = std::make_pair(data.factor1, data.factor2);
-        mul_cm.request_in.set(std::make_pair(Request(multiply), original_request));
-    =}
+  )
 
-    reaction(mul_cm.response_out) -> add_cm.request_in {=
-        auto mul_result = mul_cm.response_out.get()->first.data();
-        auto& original_request = mul_cm.response_out.get()->second;
-        auto add = std::make_pair(mul_result, original_request.data().summand);
-        add_cm.request_in.set(std::make_pair(Request(add), original_request));
-    =}
+  mul_cm.request_out -> mul_request
+  add_cm.request_out -> add_request
+  mul_response -> mul_cm.response_in
+  add_response -> add_cm.response_in
 
-    reaction(add_cm.response_out) -> response {=
-        auto result = add_cm.response_out.get()->first.data();
-        auto& original_request = add_cm.response_out.get()->second;
-        response.set(original_request.make_response(result));
-    =}
+  reaction(request) -> mul_cm.request_in {=
+    auto& original_request = *request.get();
+    auto& data = original_request.data();
+    auto multiply = std::make_pair(data.factor1, data.factor2);
+    mul_cm.request_in.set(std::make_pair(Request(multiply), original_request));
+  =}
 
-    mul_cm.request_out -> mul_request
-    add_cm.request_out -> add_request
-    mul_response -> mul_cm.response_in
-    add_response -> add_cm.response_in
+  reaction(mul_cm.response_out) -> add_cm.request_in {=
+    auto mul_result = mul_cm.response_out.get()->first.data();
+    auto& original_request = mul_cm.response_out.get()->second;
+    auto add = std::make_pair(mul_result, original_request.data().summand);
+    add_cm.request_in.set(std::make_pair(Request(add), original_request));
+  =}
+
+  reaction(add_cm.response_out) -> response {=
+    auto result = add_cm.response_out.get()->first.data();
+    auto& original_request = add_cm.response_out.get()->second;
+    response.set(original_request.make_response(result));
+  =}
 }
 
 reactor Client {
-    timer t(0, 100ms)
-    output mac_request: Request<MACData>
-    input mac_response: Response<int>
+  timer t(0, 100 ms)
+  output mac_request: Request<MACData>
+  input mac_response: Response<int>
 
-    state counter: int(0)
+  state counter: int(0)
 
-    mac_cm = new ContextManager<{=Request<MACData>=}, {=Response<int>=}, MACData>()
+  mac_cm = new ContextManager<{= Request<MACData> =}, {= Response<int> =}, MACData>()
 
-    reaction(t) -> mac_cm.request_in {=
-        auto data = MACData{counter, counter + 1, counter + 2};
-        auto req = Request(data);
-        mac_cm.request_in.set(std::make_pair(req, data));
-        reactor::log::Info() << "Client asks what " << data.factor1 << " * " << data.factor2 
-                                 << " + " << data.summand << " is";
-        counter++;
-    =}
+  mac_cm.request_out -> mac_request
+  mac_response -> mac_cm.response_in
 
-    reaction(mac_cm.response_out) {=
-        auto const result = mac_cm.response_out.get()->first.data();
-        auto const& data = mac_cm.response_out.get()->second;
-        reactor::log::Info() << "Result: " << data.factor1 << " * " << data.factor2 
-                                 << " + " << data.summand << " = " << result;
-    =}
+  reaction(t) -> mac_cm.request_in {=
+    auto data = MACData{counter, counter + 1, counter + 2};
+    auto req = Request(data);
+    mac_cm.request_in.set(std::make_pair(req, data));
+    reactor::log::Info() << "Client asks what " << data.factor1 << " * " << data.factor2
+                             << " + " << data.summand << " is";
+    counter++;
+  =}
 
-    mac_cm.request_out -> mac_request
-    mac_response -> mac_cm.response_in
+  reaction(mac_cm.response_out) {=
+    auto const result = mac_cm.response_out.get()->first.data();
+    auto const& data = mac_cm.response_out.get()->second;
+    reactor::log::Info() << "Result: " << data.factor1 << " * " << data.factor2
+                             << " + " << data.summand << " = " << result;
+  =}
 }
 
 main reactor {
-    client = new Client()
-    mac = new MACService()
-    adder = new AddService()
-    multiplier = new MultiplyService()
+  client = new Client()
+  mac = new MACService()
+  adder = new AddService()
+  multiplier = new MultiplyService()
 
-    client.mac_request -> mac.request
-    mac.response -> client.mac_response
+  client.mac_request -> mac.request
+  mac.response -> client.mac_response
 
-    mac.mul_request -> multiplier.request
-    multiplier.response -> mac.mul_response
+  mac.mul_request -> multiplier.request
+  multiplier.response -> mac.mul_response
 
-    mac.add_request -> adder.request
-    adder.response -> mac.add_response
+  mac.add_request -> adder.request
+  adder.response -> mac.add_response
 }

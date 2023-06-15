@@ -1,42 +1,44 @@
 /**
  * Plotter that accepts two x-y input sets and plots them.
- * 
+ *
  * @author Edward A. Lee
  */
 target Python
+
 preamble {=
-    import numpy as np
-    import matplotlib.pyplot as plt
+  import numpy as np
+  import matplotlib.pyplot as plt
 =}
 
 reactor XYPlotter {
-    input x1
-    input y1
-    input x2
-    input y2
-    
-    state x1_list({=[]=})   # collected x values
-    state y1_list({=[]=})   # collected y values
-    state x2_list({=[]=})   # collected x values
-    state y2_list({=[]=})   # collected y values
+  input x1
+  input y1
+  input x2
+  input y2
 
-    reaction(x1, y1, x2, y2) {=
-        self.x1_list.append(x1.value)
-        self.y1_list.append(y1.value)
-        self.x2_list.append(x2.value)
-        self.y2_list.append(y2.value)
-    =}
-    reaction(shutdown) {=        
-        # make data
-        x1 = np.array(self.x1_list)
-        y1 = np.array(self.y1_list)
-        x2 = np.array(self.x2_list)
-        y2 = np.array(self.y2_list)
-        
-        # plot
-        plt.plot(x1, y1, "b")
-        plt.plot(x2, y2, "r")
-        
-        plt.show()
-    =}
+  state x1_list = {= [] =}  # collected x values
+  state y1_list = {= [] =}  # collected y values
+  state x2_list = {= [] =}  # collected x values
+  state y2_list = {= [] =}  # collected y values
+
+  reaction(x1, y1, x2, y2) {=
+    self.x1_list.append(x1.value)
+    self.y1_list.append(y1.value)
+    self.x2_list.append(x2.value)
+    self.y2_list.append(y2.value)
+  =}
+
+  reaction(shutdown) {=
+    # make data
+            x1 = np.array(self.x1_list)
+            y1 = np.array(self.y1_list)
+            x2 = np.array(self.x2_list)
+            y2 = np.array(self.y2_list)
+
+            # plot
+            plt.plot(x1, y1, "b")
+            plt.plot(x2, y2, "r")
+
+            plt.show()
+  =}
 }

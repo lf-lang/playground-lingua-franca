@@ -1,170 +1,161 @@
-target C;
+target C
+
 /**
- * A simple forward-Euler simulation of a Furuta pendulum,
- * based on the Ptolemy II model constructed by Johan Eker
- * and described in this paper:
+ * A simple forward-Euler simulation of a Furuta pendulum, based on the Ptolemy II model constructed
+ * by Johan Eker and described in this paper:
  *
- * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
- * “Realistic simulations of embedded control systems,”
- * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
- * 
- * The Ptolemy II model is more accurate because it uses an
- * RK-45 solver, but this is adequate for many purposes.
- * 
- * This outputs its state every `sample_period`.
- * It updates the state before outputting it
- * using the most recently received control input.
- * 
- * The `theta` output is the angle of the pendulum,
- * which is 0 when the pendulum is pointing straight up,
- * and `d_theta` is its initial angular velocity.
- * The `phi` output is the angle of the horizontal
- * arm and `d_phi` is its angular velocity.
- * 
- * The `u` input is the control input, which applies
- * torque to the arm. The `d` input is an impulsive
- * disturbance applied to the pendulum, as if you were
- * to tap it with a hard object. When an input is
- * received on `d`, its value provides an instantaneous
- * increment or decrement to `d_theta`.
- * Notice that no output is produced when an input
- * is received on `d` unless that input is simultaneous
- * with the sampling period. The effect of the disturbance
- * will not be seen on the outputs until the next sample,
- * as would usually be the case for digital controller.
+ * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee, “Realistic simulations of embedded control
+ * systems,” IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
+ *
+ * The Ptolemy II model is more accurate because it uses an RK-45 solver, but this is adequate for
+ * many purposes.
+ *
+ * This outputs its state every `sample_period`. It updates the state before outputting it using the
+ * most recently received control input.
+ *
+ * The `theta` output is the angle of the pendulum, which is 0 when the pendulum is pointing
+ * straight up, and `d_theta` is its initial angular velocity. The `phi` output is the angle of the
+ * horizontal arm and `d_phi` is its angular velocity.
+ *
+ * The `u` input is the control input, which applies torque to the arm. The `d` input is an
+ * impulsive disturbance applied to the pendulum, as if you were to tap it with a hard object. When
+ * an input is received on `d`, its value provides an instantaneous increment or decrement to
+ * `d_theta`. Notice that no output is produced when an input is received on `d` unless that input
+ * is simultaneous with the sampling period. The effect of the disturbance will not be seen on the
+ * outputs until the next sample, as would usually be the case for digital controller.
  *
  * @author Edward A. Lee
  */
 reactor PendulumSimulation(
-    initial_theta:double(-3.14159),   // Initial pendulum angle.
-    sample_period:time(5 msec),   // Sample period.
-    g:double(9.81),               // Acceleration of gravity.
-    alpha:double(0.00260569),
-    beta:double(0.05165675),
-    gamma:double(9.7055e-4),
-    epsilon:double(0.08103060)
-){
-    preamble {=
-        #include <math.h>
-    =}
-    input u:double;         // Control input.
-    input d:double;         // Impulsive disturbance
-    
-    output theta:double;    // Pendulum angle.
-    output d_theta:double;  // Pendulum angular velocity.
-    output phi:double;      // Arm angle.
-    output d_phi:double;    // Arm angular velocity.
-    
-    state x:double[4](0.0, 0.0, 0.0, 0.0); // [theta, d_theta, phi, d_phi]
-    state first:bool(true);
-    state latest_u:double(0.0);
-    
-    timer t(0, sample_period);
-    
-    reaction(t) -> theta, d_theta, phi, d_phi {=
-        if (!self->first) {
-            // Update the state.
-            double x0_dot = self->x[1];
-            double x1_dot = 1.0/(
-                    self->alpha * self->beta
-                    + pow(self->alpha * sin(self->x[0]), 2.0)
-                    - pow(self->gamma * cos(self->x[0]), 2.0)
-                ) * (
-                    (
-                        self->alpha
-                        * self->beta
-                        + pow(self->alpha * sin(self->x[0]), 2.0)
-                    )
-                    * pow(self->x[3], 2.0)
-                    * sin(self->x[0])
-                    * cos(self->x[0])
-                -
-                    pow(self->gamma * self->x[1], 2.0)
-                    * sin(self->x[0])
-                    * cos(self->x[0])
-                +
-                    2.0
-                    * self->alpha
-                    * self->gamma\
-                    * self->x[1]
-                    * self->x[3]
-                    * sin(self->x[0])
-                    * pow(cos(self->x[0]), 2.0)
-                -
-                    self->gamma
-                    * cos(self->x[0])
-                    * self->g
-                    * self->latest_u
-                + 
-                    (
-                        self->alpha 
-                        * self->beta 
-                        + pow(self->alpha * sin(self->x[0]), 2.0)
-                    )
-                    * self->epsilon / self->alpha * sin(self->x[0])
-                );
-            double x2_dot = self->x[3];
-            double x3_dot = (1.0 / (
-                    self->alpha * self->beta 
-                    + pow(self->alpha * sin(self->x[0]), 2.0)
-                    - pow(self->gamma * cos(self->x[0]), 2.0)
-                )) * (
-                    -self->gamma
-                    * self->alpha
-                    * pow(self->x[3], 2.0)
-                    * sin(self->x[0])
-                    * pow(cos(self->x[1]), 2.0)
-                -
-                    self->gamma
-                    * self->epsilon
-                    * sin(self->x[0])
-                    * cos(self->x[0])
-                +
-                    self->gamma
-                    * self->alpha
-                    * pow(self->x[1], 2.0)
-                    * sin(self->x[0])
-                -
-                    2
-                    * pow(self->alpha, 2.0)
-                    * self->x[1]
-                    * self->x[3]
-                    * sin(self->x[0])
-                    * cos(self->x[0])
-                +
+  initial_theta: double = -3.14159,  // Initial pendulum angle.
+  sample_period: time = 5 msec,      // Sample period.
+  g: double = 9.81,                  // Acceleration of gravity.
+  alpha: double = 0.00260569,
+  beta: double = 0.05165675,
+  gamma: double = 9.7055e-4,
+  epsilon: double = 0.08103060
+) {
+  preamble {=
+    #include <math.h>
+  =}
+  input u: double         // Control input.
+  input d: double         // Impulsive disturbance
+
+  output theta: double    // Pendulum angle.
+  output d_theta: double  // Pendulum angular velocity.
+  output phi: double      // Arm angle.
+  output d_phi: double    // Arm angular velocity.
+
+  state x: double[4] = {0.0, 0.0, 0.0, 0.0}  // [theta, d_theta, phi, d_phi]
+  state first: bool = true
+  state latest_u: double = 0.0
+
+  timer t(0, sample_period)
+
+  reaction(t) -> theta, d_theta, phi, d_phi {=
+    if (!self->first) {
+        // Update the state.
+        double x0_dot = self->x[1];
+        double x1_dot = 1.0/(
+                self->alpha * self->beta
+                + pow(self->alpha * sin(self->x[0]), 2.0)
+                - pow(self->gamma * cos(self->x[0]), 2.0)
+            ) * (
+                (
                     self->alpha
-                    * self->g
-                    * self->latest_u
-                );
-            double sample_period = self->sample_period * 1e-9;
-            self->x[0] += x0_dot * sample_period;
-            self->x[1] += x1_dot * sample_period;
-            self->x[2] += x2_dot * sample_period;
-            self->x[3] += x3_dot * sample_period;
-        } else {
-            self->x[0] = self->initial_theta;
-            self->first = false;
-        }
-        // Output the state.
-        lf_set(theta, self->x[0]);
-        lf_set(d_theta, self->x[1]);
-        lf_set(phi, self->x[2]);
-        lf_set(d_phi, self->x[3]);
-    =}
-    reaction(d) {=
-        // NOTE: If the disturbance is coincident with a sample,
-        // then it won't have any effect on theta until the next sample.
-        // Hence, this reaction needs to be after the previous.
-        // NOTE: If the disturbance is in between samples, then
-        // we effectively shift the disturbance to be
-        // simultaneous with the next sample. A more accurate model
-        // would apply the disturbance immediately.
-        // The update of the state vector in the reaction below
-        // should first be factored out to a method, when methods
-        // are implemented in C.
-        self->x[1] += d->value;
-    =}
-    reaction(u) {=
-        self->latest_u = u->value;
-    =}
+                    * self->beta
+                    + pow(self->alpha * sin(self->x[0]), 2.0)
+                )
+                * pow(self->x[3], 2.0)
+                * sin(self->x[0])
+                * cos(self->x[0])
+            -
+                pow(self->gamma * self->x[1], 2.0)
+                * sin(self->x[0])
+                * cos(self->x[0])
+            +
+                2.0
+                * self->alpha
+                * self->gamma\
+                * self->x[1]
+                * self->x[3]
+                * sin(self->x[0])
+                * pow(cos(self->x[0]), 2.0)
+            -
+                self->gamma
+                * cos(self->x[0])
+                * self->g
+                * self->latest_u
+            +
+                (
+                    self->alpha
+                    * self->beta
+                    + pow(self->alpha * sin(self->x[0]), 2.0)
+                )
+                * self->epsilon / self->alpha * sin(self->x[0])
+            );
+        double x2_dot = self->x[3];
+        double x3_dot = (1.0 / (
+                self->alpha * self->beta
+                + pow(self->alpha * sin(self->x[0]), 2.0)
+                - pow(self->gamma * cos(self->x[0]), 2.0)
+            )) * (
+                -self->gamma
+                * self->alpha
+                * pow(self->x[3], 2.0)
+                * sin(self->x[0])
+                * pow(cos(self->x[1]), 2.0)
+            -
+                self->gamma
+                * self->epsilon
+                * sin(self->x[0])
+                * cos(self->x[0])
+            +
+                self->gamma
+                * self->alpha
+                * pow(self->x[1], 2.0)
+                * sin(self->x[0])
+            -
+                2
+                * pow(self->alpha, 2.0)
+                * self->x[1]
+                * self->x[3]
+                * sin(self->x[0])
+                * cos(self->x[0])
+            +
+                self->alpha
+                * self->g
+                * self->latest_u
+            );
+        double sample_period = self->sample_period * 1e-9;
+        self->x[0] += x0_dot * sample_period;
+        self->x[1] += x1_dot * sample_period;
+        self->x[2] += x2_dot * sample_period;
+        self->x[3] += x3_dot * sample_period;
+    } else {
+        self->x[0] = self->initial_theta;
+        self->first = false;
+    }
+    // Output the state.
+    lf_set(theta, self->x[0]);
+    lf_set(d_theta, self->x[1]);
+    lf_set(phi, self->x[2]);
+    lf_set(d_phi, self->x[3]);
+  =}
+
+  reaction(d) {=
+    // NOTE: If the disturbance is coincident with a sample,
+    // then it won't have any effect on theta until the next sample.
+    // Hence, this reaction needs to be after the previous.
+    // NOTE: If the disturbance is in between samples, then
+    // we effectively shift the disturbance to be
+    // simultaneous with the next sample. A more accurate model
+    // would apply the disturbance immediately.
+    // The update of the state vector in the reaction below
+    // should first be factored out to a method, when methods
+    // are implemented in C.
+    self->x[1] += d->value;
+  =}
+
+  reaction(u) {= self->latest_u = u->value; =}
 }

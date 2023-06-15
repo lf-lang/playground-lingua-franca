@@ -1,11 +1,11 @@
 /**
  * This is an illustration of one way to build a software-defined vehicle. The program has three
  * components, one that emulates the sensors in a vehicle, one that provides a dashboard display,
- * and one that provides sound alerts. The ParkingAssist.html page provides a user interface
- * with a dashboard display at the top and controls at the bottom.
- * 
- * The program assumes that the vehicle starts in a position with an obstacle in front of it.
- * FIXME: more detail.
+ * and one that provides sound alerts. The ParkingAssist.html page provides a user interface with a
+ * dashboard display at the top and controls at the bottom.
+ *
+ * The program assumes that the vehicle starts in a position with an obstacle in front of it. FIXME:
+ * more detail.
  *
  * The dashboard display is emulated by an HTML page that connects to this application via a web
  * socket. After starting the program, open ParkingAssist.html in your favorite browser and a simple
@@ -64,19 +64,14 @@ reactor Sensors(
 
   timer t(0, sample_interval)
 
-  s = new WebSocketServer(hostport=240, max_clients = 1)  // Allow only one client
-  
+  s = new WebSocketServer(hostport = 240, max_clients = 1)  // Allow only one client
+
   /**
-   * Given JSON of the form {..., "key":"value", ... }, if the value is an int,
-   * put that int value into the result and return 0. Otherwise, return -1 if the
-   * key is not present, -2 if the value is not an int, and -3 if the JSON string
-   * does not have the expected form.
+   * Given JSON of the form {..., "key":"value", ... }, if the value is an int, put that int value
+   * into the result and return 0. Otherwise, return -1 if the key is not present, -2 if the value
+   * is not an int, and -3 if the JSON string does not have the expected form.
    */
-  method json_to_int(
-    json: {= const char* =},
-    key: {= const char* =},
-    result: int*
-  ): int {=
+  method json_to_int(json: {= const char* =}, key: {= const char* =}, result: int*): int {=
     char* key_position = strstr(json, key);
     if (key_position == NULL) return -1;
     // Check that the next character is closing quotation mark.
@@ -87,7 +82,7 @@ reactor Sensors(
     *result = atoi(start + 1);
     return 0;
   =}
-  
+
   reaction(s.received) {=
     char* json = s.received->value->message;
     lf_print("Received control: %s", json);

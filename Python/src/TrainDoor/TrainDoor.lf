@@ -1,106 +1,108 @@
 /**
- * Program that emulates a train door controller. It has two components: 
- * one that controls the door and one that senses motion. When the door 
- * controller receives a request to open the door (a button press), it has
- * to first check whether the vehicle was recently in motion. The request
- * will be denied if motion has been detected less than two seconds ago.
+ * Program that emulates a train door controller. It has two components: one that controls the door
+ * and one that senses motion. When the door controller receives a request to open the door (a
+ * button press), it has to first check whether the vehicle was recently in motion. The request will
+ * be denied if motion has been detected less than two seconds ago.
  */
 target Python
 
 reactor MotionDetector {
-    preamble {=
-        import threading
-        def listen_for_input(self):
-            print("***************************************************************")
-            print("Press 'o' and hit return or enter to open the door")
-            print("Press 'c' and hit return or enter to close the door")
-            print("Press 'm' and hit return or enter perturb the motion sensor")
-            print("Press 'Control-d' to exit")
-            
-            global move_action
-            global open_action
-            global close_action
-            
-            while 1:
-                try:
-                    c = input("> ")
-                except EOFError:
-                    request_stop()
-                    return
-                if c == 'm':
-                    move_action.schedule(0)
-                elif c == 'o':
-                    open_action.schedule(0)
-                elif c == 'c':
-                    close_action.schedule(0)
-    =}
-    physical action movement
-    state timestamp(0)
-    input check
-    output ok
-    reaction(startup) -> movement {=
+  preamble {=
+    import threading
+    def listen_for_input(self):
+        print("***************************************************************")
+        print("Press 'o' and hit return or enter to open the door")
+        print("Press 'c' and hit return or enter to close the door")
+        print("Press 'm' and hit return or enter perturb the motion sensor")
+        print("Press 'Control-d' to exit")
+
         global move_action
-        move_action = movement
-        
-        t = self.threading.Thread(target=self.listen_for_input)
-        t.start()
-    =}
-    reaction(movement) {=
-        print("Motion detected!")
-        self.timestamp = lf.time.logical_elapsed()
-    =}
-    reaction(check) -> ok {=
-        if self.timestamp == 0 or lf.time.logical_elapsed() - self.timestamp > SECS(2):
-            ok.set(True)
-        else:
-            ok.set(False)
-    =}
+        global open_action
+        global close_action
+
+        while 1:
+            try:
+                c = input("> ")
+            except EOFError:
+                request_stop()
+                return
+            if c == 'm':
+                move_action.schedule(0)
+            elif c == 'o':
+                open_action.schedule(0)
+            elif c == 'c':
+                close_action.schedule(0)
+  =}
+  physical action movement
+  state timestamp = 0
+  input check
+  output ok
+
+  reaction(startup) -> movement {=
+    global move_action
+    move_action = movement
+
+    t = self.threading.Thread(target=self.listen_for_input)
+    t.start()
+  =}
+
+  reaction(movement) {=
+    print("Motion detected!")
+    self.timestamp = lf.time.logical_elapsed()
+  =}
+
+  reaction(check) -> ok {=
+    if self.timestamp == 0 or lf.time.logical_elapsed() - self.timestamp > SECS(2):
+        ok.set(True)
+    else:
+        ok.set(False)
+  =}
 }
 
 reactor DoorController {
-    
-    physical action open
-    physical action close
-    
-    output check
-    input ok
-    state opened(False)
-    state requested(False)
-    reaction(startup) -> open, close {=
-        global open_action
-        open_action = open
-        global close_action
-        close_action = close
-    =}
-    
-    reaction(open) -> check {=
-        if self.opened:
-            print("The door is already open")
-        else:
-            print("Checking the motion sensor")
-            check.set(False)
-            self.requested = True
-    =}
-    
-    reaction(close) {=
-        print("Closing the door")
-        self.opened = False
-    =}
-    
-    reaction(ok) {=
-        if self.requested and ok.value:
-            self.opened = True
-            print("Opening the door.")   
-        else:
-            print("Cannot open the door recent motion detected.")
+  physical action open
+  physical action close
 
-        self.requested = False
-    =}
+  output check
+  input ok
+  state opened = False
+  state requested = False
+
+  reaction(startup) -> open, close {=
+    global open_action
+    open_action = open
+    global close_action
+    close_action = close
+  =}
+
+  reaction(open) -> check {=
+    if self.opened:
+        print("The door is already open")
+    else:
+        print("Checking the motion sensor")
+        check.set(False)
+        self.requested = True
+  =}
+
+  reaction(close) {=
+    print("Closing the door")
+    self.opened = False
+  =}
+
+  reaction(ok) {=
+    if self.requested and ok.value:
+        self.opened = True
+        print("Opening the door.")
+    else:
+        print("Cannot open the door recent motion detected.")
+
+    self.requested = False
+  =}
 }
 
 main reactor TrainDoor {
-    motion = new MotionDetector()
-    door = new DoorController()
-    door.check -> motion.check
-    motion.ok -> door.ok
+  motion = new MotionDetector()
+  door = new DoorController()
+  door.check -> motion.check
+  motion.ok -> door.ok
 }

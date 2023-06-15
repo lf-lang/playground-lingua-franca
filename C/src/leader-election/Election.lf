@@ -1,53 +1,49 @@
 /**
- * The Lingua Franca (LF) program above represents a distributed leader election
- * system with three nodes. Each node has an associated unique ID, and their goal
- * is to elect the node with the highest ID as the leader. The program consists of
- * a federated reactor that connects three Node reactors in a ring topology. Each
- * node initially broadcasts its ID, and upon receiving an incoming ID, it compares
- * it with its own. If the received ID is greater than its own, the node forwards
- * the received ID after a 10 ms delay. If the received ID is equal to the node's
- * own ID, it declares itself as the elected leader and transitions to the Elected
- * mode. The leader election process continues until the node with the highest ID
- * is elected. 
- * 
+ * The Lingua Franca (LF) program above represents a distributed leader election system with three
+ * nodes. Each node has an associated unique ID, and their goal is to elect the node with the
+ * highest ID as the leader. The program consists of a federated reactor that connects three Node
+ * reactors in a ring topology. Each node initially broadcasts its ID, and upon receiving an
+ * incoming ID, it compares it with its own. If the received ID is greater than its own, the node
+ * forwards the received ID after a 10 ms delay. If the received ID is equal to the node's own ID,
+ * it declares itself as the elected leader and transitions to the Elected mode. The leader election
+ * process continues until the node with the highest ID is elected.
+ *
  * @author Edward A. Lee
  * @author Julien Brunel
  * @author David Chemouil
  */
 target C
-reactor Node(
-    id:int(0)
-) {
-    input in:int
-    output out:int
-    
-    logical action a:int
-    
-    initial mode NotElected {
-        reaction(startup) -> out {=
-            lf_set(out, self->id);
-        =}
-        reaction(a) -> out {=
-            lf_set(out, a->value);
-        =}
-        reaction(in) -> a, Elected {=
-            if (in->value > self->id) {
-                lf_schedule_int(a, MSEC(10), in->value);
-            } else if (in->value == self->id) {
-                printf("I'm elected (node %d)!\n", self->id);
-                lf_set_mode(Elected);
-            }
-        =}
-    }
-    mode Elected {
-        
-    }
+
+reactor Node(id: int = 0) {
+  input in: int
+  output out: int
+
+  logical action a: int
+
+  initial mode NotElected {
+    reaction(startup) -> out {= lf_set(out, self->id); =}
+
+    reaction(a) -> out {= lf_set(out, a->value); =}
+
+    reaction(in) -> a, reset(Elected) {=
+      if (in->value > self->id) {
+          lf_schedule_int(a, MSEC(10), in->value);
+      } else if (in->value == self->id) {
+          printf("I'm elected (node %d)!\n", self->id);
+          lf_set_mode(Elected);
+      }
+    =}
+  }
+
+  mode Elected {
+  }
 }
+
 federated reactor {
-    i0 = new Node()
-    i1 = new Node(id = 1)
-    i2 = new Node(id = 2)
-    i0.out -> i1.in
-    i1.out -> i2.in
-    i2.out -> i0.in
+  i0 = new Node()
+  i1 = new Node(id = 1)
+  i2 = new Node(id = 2)
+  i0.out -> i1.in
+  i1.out -> i2.in
+  i2.out -> i0.in
 }

@@ -1,63 +1,57 @@
 /**
- * This is a federated LF program consisting of two unconnected federates
- * that communicate via MQTT. The publisher has `include_timestamp` set
- * to `true`, and the subscriber has `use_physical_time` set to `false`.
- * Like `MQTTLogical`, there is no other activity
- * in this program, so the subscriber's timestamps will deterministically
- * match those of the publisher. Unlike `MQTTLogical`, however, the microstep
- * will be zero at the subscriber end. Also, the tags will be deterministic
- * at the receiving end regardless of the communication latency because the
- * receiving federate has no reason to advance its logical time unless it
- * receives an MQTT subscription message. You can change the `use_physical_time`
- * parameter of the `MQTTSubscriber` to `true` to get a (nondeterministic)
- * physical connection, similar to `MQTTPhysical`.
- * 
- * The code generator produces three programs, bin/MQTTDistributed_RTI,
- * bin/MQTTDistributed_source, and bin/MQTTDistributed_destination,
- * plus a script bin/MQTTDistributed that runs all three.
- * 
- * Since the source and destination are running in the same
- * executable, there is no clock synchronization error.
- * 
+ * This is a federated LF program consisting of two unconnected federates that communicate via MQTT.
+ * The publisher has `include_timestamp` set to `true`, and the subscriber has `use_physical_time`
+ * set to `false`. Like `MQTTLogical`, there is no other activity in this program, so the
+ * subscriber's timestamps will deterministically match those of the publisher. Unlike
+ * `MQTTLogical`, however, the microstep will be zero at the subscriber end. Also, the tags will be
+ * deterministic at the receiving end regardless of the communication latency because the receiving
+ * federate has no reason to advance its logical time unless it receives an MQTT subscription
+ * message. You can change the `use_physical_time` parameter of the `MQTTSubscriber` to `true` to
+ * get a (nondeterministic) physical connection, similar to `MQTTPhysical`.
+ *
+ * The code generator produces three programs, bin/MQTTDistributed_RTI, bin/MQTTDistributed_source,
+ * and bin/MQTTDistributed_destination, plus a script bin/MQTTDistributed that runs all three.
+ *
+ * Since the source and destination are running in the same executable, there is no clock
+ * synchronization error.
+ *
  * See README.md for prerequisites and further information.
- * 
+ *
  * @author Ravi Akella
  * @author Edward A. Lee
  */
 target C {
-    cmake-include: [
-        "include/paho-extension.cmake", 
-        "include/mosquitto-extension.cmake"],
-    timeout: 10 secs,
-    coordination: centralized,
-};
+  cmake-include: ["include/paho-extension.cmake", "include/mosquitto-extension.cmake"],
+  timeout: 10 secs,
+  coordination: centralized
+}
 
-import MQTTPublisher from "lib/MQTTPublisher.lf";
-import MQTTSubscriber from "lib/MQTTSubscriber.lf";
-import MessageGenerator, PrintMessage from "lib/MQTTTestReactors.lf";
+import MQTTPublisher from "lib/MQTTPublisher.lf"
+import MQTTSubscriber from "lib/MQTTSubscriber.lf"
+import MessageGenerator, PrintMessage from "lib/MQTTTestReactors.lf"
 
 reactor Source {
-    msg = new MessageGenerator(root = "Hello World");
-    pub = new MQTTPublisher(
-        topic = "my/test",
-        address = "tcp://localhost:1883",
-        include_timestamp = true
-    );
-    msg.message->pub.in;
+  msg = new MessageGenerator(root = "Hello World")
+  pub = new MQTTPublisher(
+    topic = "my/test",
+    address = "tcp://localhost:1883",
+    include_timestamp = true
+  )
+  msg.message -> pub.in
 }
 
 reactor Destination {
-    sub = new MQTTSubscriber(
-        address = "tcp://localhost:1883",
-        topic = "my/test",
-        use_physical_time = false,
-        offset = 0 sec
-    );
-    dsp = new PrintMessage();
-    sub.message->dsp.message;
+  sub = new MQTTSubscriber(
+    address = "tcp://localhost:1883",
+    topic = "my/test",
+    use_physical_time = false,
+    offset = 0 sec
+  )
+  dsp = new PrintMessage()
+  sub.message -> dsp.message
 }
 
 federated reactor {
-    source = new Source();
-    destination = new Destination();
+  source = new Source()
+  destination = new Destination()
 }
