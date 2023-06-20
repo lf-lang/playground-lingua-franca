@@ -9,55 +9,55 @@
  * Control-D or Control-Z), the program stops execution.
  */
 target C {
-    keepalive: true,
-    timeout: 5 sec
+  keepalive: true,
+  timeout: 5 sec
 }
 
 preamble {=
-    #include "include/core/platform.h"
+  #include "include/core/platform.h"
 =}
 
 main reactor {
-    preamble {=
-        // Specify a thread that sends all keyboard characters
-        // as valued physical actions until an EOF (control-d or
-        // control-z) is received.
-        void* read_char(void* a) {
-            while(1) {
-                char* c = (char*)malloc(sizeof(char));
-                *c = getchar();
-                lf_schedule_value(a, 0, c, 1);
-                if (*c == EOF) break;
-            }
-            return NULL;
-        }
-    =}
+  preamble {=
+    // Specify a thread that sends all keyboard characters
+    // as valued physical actions until an EOF (control-d or
+    // control-z) is received.
+    void* read_char(void* a) {
+      while(1) {
+        char* c = (char*)malloc(sizeof(char));
+        *c = getchar();
+        lf_schedule_value(a, 0, c, 1);
+        if (*c == EOF) break;
+      }
+      return NULL;
+    }
+  =}
 
-    state thread_id: lf_thread_t = 0
-    state request_time: time = 0
-    // NOTE: The following will get the default 1 nsec minimum interarrival
-    // time.
-    physical action a: char*
+  state thread_id: lf_thread_t = 0
+  state request_time: time = 0
+  // NOTE: The following will get the default 1 nsec minimum interarrival
+  // time.
+  physical action a: char*
 
-    reaction(startup) -> a {=
-        // Start listening for key strokes.
-        // Note that these will not be received until Enter.
-        lf_thread_create(&self->thread_id, &read_char, a);
-        printf("Enter character(s) followed by return: ");
-        self->request_time = lf_time_logical();
-    =}
+  reaction(startup) -> a {=
+    // Start listening for key strokes.
+    // Note that these will not be received until Enter.
+    lf_thread_create(&self->thread_id, &read_char, a);
+    printf("Enter character(s) followed by return: ");
+    self->request_time = lf_time_logical();
+  =}
 
-    reaction(a) {=
-        if (*a->value == EOF) {
-            printf("\nEnd of file received.\n");
-            lf_request_stop();
-        } else if (*a->value == '\n') {
-            printf("Enter character(s) followed by return: ");
-            self->request_time = lf_time_logical();
-            fflush(stdout);
-        } else {
-            interval_t elapsed = lf_time_logical() - self->request_time;
-            printf("Character entered: %c after %lld nsec.\n", *a->value, elapsed);
-        }
-    =}
+  reaction(a) {=
+    if (*a->value == EOF) {
+      printf("\nEnd of file received.\n");
+      lf_request_stop();
+    } else if (*a->value == '\n') {
+      printf("Enter character(s) followed by return: ");
+      self->request_time = lf_time_logical();
+      fflush(stdout);
+    } else {
+      interval_t elapsed = lf_time_logical() - self->request_time;
+      printf("Character entered: %c after %lld nsec.\n", *a->value, elapsed);
+    }
+  =}
 }

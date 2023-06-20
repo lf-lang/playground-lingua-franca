@@ -19,9 +19,9 @@
  * # Prerequisites
  * 
  * ```
- *    pip install wheel
- *    pip install pandas
- *    pip install matplotlib
+ *  pip install wheel
+ *  pip install pandas
+ *  pip install matplotlib
  * ```
  * 
  * @author Arthur Clavière
@@ -29,8 +29,8 @@
  * @author Claire Pagetti
  */
 target Python {
-    fast: true,
-    timeout: 16 s
+  fast: true,
+  timeout: 16 s
 }
 import XYPlotter from "lib/XYPlotter.lf"
 import Aircraft from "lib/Aircraft.lf"
@@ -39,60 +39,60 @@ import ACASController from "lib/ACASController.lf"
 # Calculate the difference between two x-y positions (x1,y1) - (x2, y2).
 # This assumes that if one input is present, all are present.
 reactor Diff {
-    input x1
-    input y1
-    input x2
-    input y2
-    output x
-    output y
-    reaction(x1, y1, x2, y2) -> x, y {=
-        x.set(x1.value - x2.value)
-        y.set(y1.value - y2.value)
-    =}
+  input x1
+  input y1
+  input x2
+  input y2
+  output x
+  output y
+  reaction(x1, y1, x2, y2) -> x, y {=
+    x.set(x1.value - x2.value)
+    y.set(y1.value - y2.value)
+  =}
 }
 
 main reactor {
-    own = new Aircraft(
-        x_init = 0.0,   # Initial x position in feet.
-        y_init = 0.0,   # Initial y position in feet.
-        psi_init = 0.0, # Angle in radians, relative to vertical, positive counterclockwise
-        v_init = 248.74685927665496, # Initial velocity, in feet/second.
-        period = 10 ms  # Rate of updates.
-    )
-    
-    intruder = new Aircraft(
-        x_init = -6000.0,
-        y_init = 0.0,
-        psi_init = -0.9851107833377457,
-        v_init = 450.0,
-        period = 10 ms
-    )
-    controller1 = new ACASController(period = 1 s)
-    diff1 = new Diff()
-    
-    controller2 = new ACASController(period = 1 s)
-    diff2 = new Diff()
-    
-    plot = new XYPlotter()
+  own = new Aircraft(
+    x_init = 0.0,   # Initial x position in feet.
+    y_init = 0.0,   # Initial y position in feet.
+    psi_init = 0.0, # Angle in radians, relative to vertical, positive counterclockwise
+    v_init = 248.74685927665496, # Initial velocity, in feet/second.
+    period = 10 ms  # Rate of updates.
+  )
+  
+  intruder = new Aircraft(
+    x_init = -6000.0,
+    y_init = 0.0,
+    psi_init = -0.9851107833377457,
+    v_init = 450.0,
+    period = 10 ms
+  )
+  controller1 = new ACASController(period = 1 s)
+  diff1 = new Diff()
+  
+  controller2 = new ACASController(period = 1 s)
+  diff2 = new Diff()
+  
+  plot = new XYPlotter()
 
-    intruder.x, intruder.y -> diff1.x1, diff1.y1
-    own.x, own.y -> diff1.x2, diff1.y2
-    
-    intruder.x, intruder.y -> diff2.x2, diff2.y2
-    own.x, own.y -> diff2.x1, diff2.y1
-    
-    diff1.x, diff1.y -> controller1.x, controller1.y
-    own.psi, intruder.psi -> controller1.psi_own, controller1.psi_int
-    own.v, intruder.v -> controller1.v_own, controller1.v_int
-    controller1.command -> own.turn
-    
-    # Reverse role of intruder and own for second aircraft.
-    diff2.x, diff2.y -> controller2.x, controller2.y
-    own.psi, intruder.psi -> controller2.psi_int, controller2.psi_own
-    own.v, intruder.v -> controller2.v_int, controller2.v_own
-    controller2.command -> intruder.turn
-    
-    
-    own.x, own.y -> plot.x1, plot.y1
-    intruder.x, intruder.y -> plot.x2, plot.y2
+  intruder.x, intruder.y -> diff1.x1, diff1.y1
+  own.x, own.y -> diff1.x2, diff1.y2
+  
+  intruder.x, intruder.y -> diff2.x2, diff2.y2
+  own.x, own.y -> diff2.x1, diff2.y1
+  
+  diff1.x, diff1.y -> controller1.x, controller1.y
+  own.psi, intruder.psi -> controller1.psi_own, controller1.psi_int
+  own.v, intruder.v -> controller1.v_own, controller1.v_int
+  controller1.command -> own.turn
+  
+  # Reverse role of intruder and own for second aircraft.
+  diff2.x, diff2.y -> controller2.x, controller2.y
+  own.psi, intruder.psi -> controller2.psi_int, controller2.psi_own
+  own.v, intruder.v -> controller2.v_int, controller2.v_own
+  controller2.command -> intruder.turn
+  
+  
+  own.x, own.y -> plot.x1, plot.y1
+  intruder.x, intruder.y -> plot.x2, plot.y2
 }

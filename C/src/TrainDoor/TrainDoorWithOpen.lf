@@ -7,14 +7,14 @@ reactor Controller {
   output unlock:bool; output open:bool;
   physical action external:bool;
   reaction(startup) {=
-    // ... Set up external sensing.
+  // ... Set up external sensing.
   =}
   reaction(external)->close, lock, open, unlock {=
-    if (external->value) {
-      lf_set(close, true); lf_set(lock, true);
-    } else {
-      lf_set(open, true); lf_set(unlock, true);
-    }
+  if (external->value) {
+    lf_set(close, true); lf_set(lock, true);
+  } else {
+    lf_set(open, true); lf_set(unlock, true);
+  }
   =}
 }
 reactor Door {
@@ -24,22 +24,22 @@ reactor Door {
   state locked:bool(false);
   state is_open:bool(false);
   reaction(close) {=
-    // ... Actuate to close door.
-    self->is_open = false;
+  // ... Actuate to close door.
+  self->is_open = false;
   =}
   reaction(lock) {=
-    // ... Actuate to lock door.
-    if(!self->is_open) 
-       self->locked = true;
+  // ... Actuate to lock door.
+  if(!self->is_open) 
+     self->locked = true;
   =}
   reaction(unlock) {=
-    // ... Actuate to unlock door.
-    self->locked = false;
+  // ... Actuate to unlock door.
+  self->locked = false;
   =}
   reaction(open, ext_open) {=
-    // ... Actuate to open door.
-    if(!self->locked) 
-       self->is_open = true;
+  // ... Actuate to open door.
+  if(!self->locked) 
+     self->is_open = true;
   =}
 }
 main reactor {

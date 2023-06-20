@@ -10,132 +10,132 @@
  * of the task sequence at the point where it was left when the battery ran out.
  */
 target C {
-//    logging: debug
+//  logging: debug
 }
 
 reactor GenericTask(name:string("")) {
-    output success:bool
-    output failure:bool
+  output success:bool
+  output failure:bool
   
-    initial mode Running {
-        // Just for testing
-        timer work(0, 250msec)
-        timer finish(1sec, 1sec)
-        
-        reaction(work) {=
-            printf("%s\n", self->name);
-        =}
-        
-        reaction(finish) -> success, Succeeded, failure, Failed {=
-            int r = rand() % 6;
-            if (r == 0) {
-                lf_set(failure, true);
-                lf_set_mode(Failed);
-            } else {
-                lf_set(success, true);
-                lf_set_mode(Succeeded);
-            }
-        =}
-    }
+  initial mode Running {
+    // Just for testing
+    timer work(0, 250msec)
+    timer finish(1sec, 1sec)
     
-    mode Succeeded {}
-    mode Failed {}
+    reaction(work) {=
+      printf("%s\n", self->name);
+    =}
+    
+    reaction(finish) -> success, Succeeded, failure, Failed {=
+      int r = rand() % 6;
+      if (r == 0) {
+        lf_set(failure, true);
+        lf_set_mode(Failed);
+      } else {
+        lf_set(success, true);
+        lf_set_mode(Succeeded);
+      }
+    =}
+  }
+  
+  mode Succeeded {}
+  mode Failed {}
 }
 
 reactor NominalBehavior {
-    input BatteryOK:bool
+  input BatteryOK:bool
+  
+  output success:bool
+  output failure:bool
+  
+  initial mode MoveToObj {
+    MoveToObjTask = new GenericTask(name="MoveToObj")
     
-    output success:bool
-    output failure:bool
+    MoveToObjTask.failure -> failure
     
-    initial mode MoveToObj {
-        MoveToObjTask = new GenericTask(name="MoveToObj")
-        
-        MoveToObjTask.failure -> failure
-        
-        reaction(MoveToObjTask.success) -> CloseGrip {=
-            lf_set_mode(CloseGrip);
-        =}
-    }
+    reaction(MoveToObjTask.success) -> CloseGrip {=
+      lf_set_mode(CloseGrip);
+    =}
+  }
+  
+  mode CloseGrip {
+    CloseGripTask = new GenericTask(name="CloseGrip")
     
-    mode CloseGrip {
-        CloseGripTask = new GenericTask(name="CloseGrip")
-        
-        CloseGripTask.failure -> failure
-        
-        reaction(CloseGripTask.success) -> MoveHome {=
-            lf_set_mode(MoveHome);
-        =}
-    }
+    CloseGripTask.failure -> failure
     
-    mode MoveHome {
-        MoveHomeTask = new GenericTask(name="MoveHome")
-        
-        MoveHomeTask.failure -> failure
-        
-        reaction(MoveHomeTask.success) -> success {=
-            lf_set(success, true);
-        =}
-    }
+    reaction(CloseGripTask.success) -> MoveHome {=
+      lf_set_mode(MoveHome);
+    =}
+  }
+  
+  mode MoveHome {
+    MoveHomeTask = new GenericTask(name="MoveHome")
+    
+    MoveHomeTask.failure -> failure
+    
+    reaction(MoveHomeTask.success) -> success {=
+      lf_set(success, true);
+    =}
+  }
 }
 
 reactor Robot {
-    input BatteryOK:bool
+  input BatteryOK:bool
+  
+  output success:bool
+  output failure:bool
+  
+  initial mode Nominal {
+    NominalBehavior = new NominalBehavior()
     
-    output success:bool
-    output failure:bool
+    NominalBehavior.success -> success
+    NominalBehavior.failure -> failure
     
-    initial mode Nominal {
-        NominalBehavior = new NominalBehavior()
-        
-        NominalBehavior.success -> success
-        NominalBehavior.failure -> failure
-        
-        reaction(BatteryOK) -> Charging {=
-            if (!BatteryOK->value) {
-                lf_set_mode(Charging);
-                printf("Battery empty\n");
-            }
-        =}
-    }
+    reaction(BatteryOK) -> Charging {=
+      if (!BatteryOK->value) {
+        lf_set_mode(Charging);
+        printf("Battery empty\n");
+      }
+    =}
+  }
+  
+  mode Charging {
+    GoCharge = new GenericTask(name="GoCharge")
     
-    mode Charging {
-        GoCharge = new GenericTask(name="GoCharge")
-        
-        GoCharge.failure -> failure
-        
-        reaction(BatteryOK, GoCharge.success) -> Nominal {=
-            // Assumes simultaneous presence
-            if (BatteryOK->value && GoCharge.success->value) {
-                lf_set_mode(Nominal);
-                printf("Battery charged\n");
-            }
-        =}
-    }
+    GoCharge.failure -> failure
+    
+    reaction(BatteryOK, GoCharge.success) -> Nominal {=
+      // Assumes simultaneous presence
+      if (BatteryOK->value && GoCharge.success->value) {
+        lf_set_mode(Nominal);
+        printf("Battery charged\n");
+      }
+    =}
+  }
 }
 
 main reactor {
-    timer Battery(1sec, 1sec)
-    state battery_state:int(1)
-    
-    robot = new Robot()
-    
-    reaction(Battery) -> robot.BatteryOK {=
-        self->battery_state--;
-        lf_set(robot.BatteryOK, self->battery_state > 0);
-        if (self->battery_state <= 0) {
-            self->battery_state = 5;
-        }
-    =}
-    
-    reaction(robot.success) {=
-        printf("Total success\n");
-        lf_request_stop();
-    =}
-    
-    reaction(robot.failure) {=
-        printf("Utter failure\n");
-        lf_request_stop();
-    =}
+  timer Battery(1sec, 1sec)
+  state battery_state:int(1)
+  
+  robot = new Robot()
+  
+  reaction(Battery) -> robot.BatteryOK {=
+    self->battery_state--;
+    lf_set(robot.BatteryOK, self->battery_state > 0);
+    if (self->battery_state <= 0) {
+      self->battery_state = 5;
+    }
+  =}
+  
+  reaction(robot.success) {=
+    printf("Total success\n");
+    lf_request_stop();
+  =}
+  
+  reaction(robot.failure) {=
+    printf("Utter failure\n");
+    lf_request_stop();
+  =}
 
 }

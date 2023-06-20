@@ -13,7 +13,7 @@
  * 
  * Then you can use lfc to compile this program:
  * 
- *     lfc ROSBuiltInSerialization.lf
+ *   lfc ROSBuiltInSerialization.lf
  * 
  * And launch the federated program in the `bin` folder:
  * 
@@ -22,47 +22,47 @@
  * @author Soroush Bateni <soroush@utdallas.edu>
  */
  target CCpp {
-    cmake: true,  // Only CMake is supported
-    cmake-include: "include/CMakeListsExtension.txt",
+  cmake: true,  // Only CMake is supported
+  cmake-include: "include/CMakeListsExtension.txt",
 };
 
 preamble {=
-    #include "std_msgs/msg/int32.hpp"
-    
+  #include "std_msgs/msg/int32.hpp"
+  
 =}
 
 reactor Sender {
-    output out:std_msgs::msg::Int32;
+  output out:std_msgs::msg::Int32;
+  
+  // state serialized_msg_pcl:rclcpp::SerializedMessage({=0u=});
+  state count:int(0);
+  
+  timer t (0, 1 sec);
+  
+  reaction (t) -> out {=
+      std_msgs::msg::Int32 ros_message;
+      ros_message.data = self->count++;
+      lf_set(out, ros_message);
     
-    // state serialized_msg_pcl:rclcpp::SerializedMessage({=0u=});
-    state count:int(0);
-    
-    timer t (0, 1 sec);
-    
-    reaction (t) -> out {=
-          std_msgs::msg::Int32 ros_message;
-          ros_message.data = self->count++;
-          lf_set(out, ros_message);
-        
-    =}
+  =}
 }
 
 
 reactor Receiver {
-    input in:std_msgs::msg::Int32;
-        
-    reaction (in) {=        
-        // Print the ROS2 message data
-        lf_print(
-            "Serialized integer after deserialization: %d", 
-            in->value.data
-        );
-    =}
+  input in:std_msgs::msg::Int32;
+    
+  reaction (in) {=    
+    // Print the ROS2 message data
+    lf_print(
+      "Serialized integer after deserialization: %d", 
+      in->value.data
+    );
+  =}
 }
 
 federated reactor {
-    sender = new Sender();
-    receiver = new Receiver();
-    
-    sender.out -> receiver.in serializer "ros2";
+  sender = new Sender();
+  receiver = new Receiver();
+  
+  sender.out -> receiver.in serializer "ros2";
 }

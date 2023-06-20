@@ -3,55 +3,55 @@
 target Python {};
 
 preamble{=
-    from random import randint
+  from random import randint
 =}
 
 ### Ticking Reactor
 reactor Ticker {
-    timer tick(0, 500msec)
+  timer tick(0, 500msec)
 
-    output click
+  output click
 
-    reaction(tick) -> click {=
-        click.set(randint(0, 9))
-    =}
+  reaction(tick) -> click {=
+    click.set(randint(0, 9))
+  =}
 }
 
 ### Modal Reactor
 reactor Mody {
-    input click
+  input click
 
-    method setter(click, mod) -> reset(One), reset(Two) {=
-        if click <= 4:
-            print("In mode " + str(mod) + ", val: ", str(click))
-        else:
-            print(click, " is val, switching mode")
-            if mod == 1:
-                Two.set()
-            else:
-                One.set()
+  method setter(click, mod) -> reset(One), reset(Two) {=
+    if click <= 4:
+      print("In mode " + str(mod) + ", val: ", str(click))
+    else:
+      print(click, " is val, switching mode")
+      if mod == 1:
+        Two.set()
+      else:
+        One.set()
+  =}
+
+  initial mode One {
+    reaction(startup) {=
+      print("was started")
     =}
-
-    initial mode One {
-        reaction(startup) {=
-            print("was started")
-        =}
-        reaction(click) -> reset(Two) {=
-            self.setter(click.value, 1)
-        =}
-    } mode Two {
-        reaction(startup) {=
-            print("was started")
-        =}
-        reaction(click) -> reset(One) {=
-            self.setter(click.value, 2)
-        =}
-    }
+    reaction(click) -> reset(Two) {=
+      self.setter(click.value, 1)
+    =}
+  } mode Two {
+    reaction(startup) {=
+      print("was started")
+    =}
+    reaction(click) -> reset(One) {=
+      self.setter(click.value, 2)
+    =}
+  }
 }
 
 main reactor {
-    ticky = new Ticker()
-    moody = new Mody()
+  ticky = new Ticker()
+  moody = new Mody()
 
-    ticky.click -> moody.click
+  ticky.click -> moody.click
 }

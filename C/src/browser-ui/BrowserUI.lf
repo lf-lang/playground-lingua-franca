@@ -18,29 +18,29 @@
  * @author Edward A. Lee
  */
 target C {
-    keepalive: true
+  keepalive: true
 }
 
 preamble {=
-    #ifndef BROWSERUI_H
-    #define BROWSERUI_H
-    #include "util.h"       // Defines lf_print()
-    #include "platform.h"   // Defines lf_thread_t, etc.
+  #ifndef BROWSERUI_H
+  #define BROWSERUI_H
+  #include "util.h"     // Defines lf_print()
+  #include "platform.h"   // Defines lf_thread_t, etc.
 
-    #include <sys/socket.h>
-    #include <arpa/inet.h>
-    #include <unistd.h>     // Defines read(), close()
-    #include <string.h>     // Defines strchr()
-    #include <libgen.h>     // Defines dirname()
+  #include <sys/socket.h>
+  #include <arpa/inet.h>
+  #include <unistd.h>   // Defines read(), close()
+  #include <string.h>   // Defines strchr()
+  #include <libgen.h>   // Defines dirname()
 
-    typedef struct browser_ui_t {
-        bool running;       // Indicator that listener thread is running.
-        int client_socket;  // If non-negative, client socket awaiting response.
-        void* req_action;   // The physical action triggered upon request.
-        uint16_t hostport;  // The port to use for HTTP access.
-        char* initial_page; // Initial web page contents.
-    } browser_ui_t;
-    #endif // BROWSERUI_H
+  typedef struct browser_ui_t {
+    bool running;     // Indicator that listener thread is running.
+    int client_socket;  // If non-negative, client socket awaiting response.
+    void* req_action;   // The physical action triggered upon request.
+    uint16_t hostport;  // The port to use for HTTP access.
+    char* initial_page; // Initial web page contents.
+  } browser_ui_t;
+  #endif // BROWSERUI_H
 =}
 
 /**
@@ -58,173 +58,173 @@ preamble {=
  * @param hostport The host port number, which defults to 8080.
  */
 reactor ServerUI(
-    initial_file:string = "page.html",
-    hostport:uint16_t = 8080
+  initial_file:string = "page.html",
+  hostport:uint16_t = 8080
 ) {
-    output initialized:bool
-    output request:char*
-    input response:char*
+  output initialized:bool
+  output request:char*
+  input response:char*
+  
+  physical action req_action:char*
+  
+  state browser_ui:browser_ui_t
     
-    physical action req_action:char*
+  reaction(startup) -> req_action {=
+    // Read the default file to serve.
+    self->browser_ui.initial_page = read_file(self->initial_file);
     
-    state browser_ui:browser_ui_t
-        
-    reaction(startup) -> req_action {=
-        // Read the default file to serve.
-        self->browser_ui.initial_page = read_file(self->initial_file);
-        
-        self->browser_ui.running = true;
-        self->browser_ui.client_socket = -1; // No client socket awaiting response.
-        self->browser_ui.req_action = req_action;
-        self->browser_ui.hostport = self->hostport;
-        
-        lf_thread_t listener;
-        lf_thread_create(&listener, &listener_thread, &self->browser_ui);
-    =}
+    self->browser_ui.running = true;
+    self->browser_ui.client_socket = -1; // No client socket awaiting response.
+    self->browser_ui.req_action = req_action;
+    self->browser_ui.hostport = self->hostport;
     
-    reaction(req_action) -> request, initialized {=
-        if (strlen(req_action->value) == 0) {
-            lf_set(initialized, true);
+    lf_thread_t listener;
+    lf_thread_create(&listener, &listener_thread, &self->browser_ui);
+  =}
+  
+  reaction(req_action) -> request, initialized {=
+    if (strlen(req_action->value) == 0) {
+      lf_set(initialized, true);
+    } else {
+      lf_set_token(request, req_action->token);
+    }
+  =}
+  
+  reaction(response) {=
+    if (self->browser_ui.client_socket < 0) {
+      lf_print_error("No pending request at the server!");
+    }
+    char *http_response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
+    write(self->browser_ui.client_socket, http_response, strlen(http_response));
+    write(self->browser_ui.client_socket, response->value, strlen(response->value));
+    close(self->browser_ui.client_socket);
+    self->browser_ui.client_socket = -1;
+  =}
+  
+  reaction(shutdown) {=
+    self->browser_ui.running = false;
+    free(self->browser_ui.initial_page);
+  =}
+
+  /**
+   * Read a file at path relative to the source .lf file
+   * and return dynamically-allocated memory with its contents.
+   * The caller is responsible for freeing the pointer returned.
+   * @param path File path relative to the source .lf file.
+   */
+  method read_file(path:{=const char*=}): char* {=
+    
+    // Construct the path to the file to be read
+    char* file_path = (char *) malloc(strlen(LF_SOURCE_DIRECTORY) + strlen(path) + 2);
+    if (file_path == NULL) lf_print_error_and_exit("Out of memory.");
+
+    sprintf(file_path, "%s%s%s", LF_SOURCE_DIRECTORY, LF_FILE_SEPARATOR, path);
+
+    // Open the file for reading
+    FILE* file = fopen(file_path, "rb");
+    if (file == NULL) lf_print_error_and_exit("Error opening file at path %s.", file_path);
+
+    // Determine the file size
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory for the buffer
+    char* buffer = (char *) malloc(file_size + 1);
+    if (buffer == NULL) lf_print_error_and_exit("Out of memory.");
+
+    // Read the file into the buffer
+    fread(buffer, file_size, 1, file);
+    buffer[file_size] = '\0';
+
+    free(file_path);
+    fclose(file);
+    return buffer;
+  =}
+
+  preamble {=          
+    const char html_header[] =  "HTTP/1.1 200 OK\r\n"
+      "Content-Type: text/html; charset=UTF-8\r\n\r\n";
+    
+    void* listener_thread(void* args) {
+      browser_ui_t* browser_ui = (browser_ui_t*)args;
+      
+      int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+      if (server_socket < 0) {
+        lf_print_error_and_exit("Error creating socket.");
+      }
+  
+      int one = 1;
+      // Allow reusing of local addresses.
+      setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
+  
+      struct sockaddr_in server_address;
+      server_address.sin_family = AF_INET;
+      server_address.sin_addr.s_addr = INADDR_ANY;
+      server_address.sin_port = htons(browser_ui->hostport);
+  
+      if (bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+        close(server_socket);
+        lf_print_error_and_exit("Error binding socket.");
+      }
+      // Pending queue length of 5.
+      listen(server_socket, 5);
+      
+      lf_print("****** Point your browser to http://localhost:%d", browser_ui->hostport);
+  
+      while(browser_ui->running) {
+        struct sockaddr_in client_address;
+        int client_address_length = sizeof(client_address);
+    
+        browser_ui->client_socket = accept(server_socket, (struct sockaddr *)&client_address, (socklen_t*)&client_address_length);
+    
+        if (browser_ui->client_socket < 0) {
+          lf_print_error_and_exit("Error accepting connection.");
+        }
+  
+        char buffer[1024] = {0};
+        read(browser_ui->client_socket, buffer, 1024);
+    
+        // The response depends on the path part of the request.
+        const char *start_of_path = strchr(buffer, ' ') + 1;
+        if (start_of_path != NULL && strncmp("/ ", start_of_path, 2) != 0) {
+          const char *end_of_path = strchr(start_of_path, ' ') + 1;
+          size_t length = end_of_path - start_of_path;
+          char* path = (char*)malloc(length + 1);
+          strncpy(path, start_of_path, length);
+          path[length] = '\0';
+          lf_schedule_value(browser_ui->req_action, 0, path, length + 1);
         } else {
-            lf_set_token(request, req_action->token);
+          // Default is to write initial page.
+          write(browser_ui->client_socket, html_header, strlen(html_header));
+          write(
+            browser_ui->client_socket,
+            browser_ui->initial_page,
+            strlen(browser_ui->initial_page)
+          );
+          close(browser_ui->client_socket);
+          browser_ui->client_socket = -1;
+          lf_schedule_copy(browser_ui->req_action, 0, "", 1);
         }
-    =}
-    
-    reaction(response) {=
-        if (self->browser_ui.client_socket < 0) {
-            lf_print_error("No pending request at the server!");
-        }
-        char *http_response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
-        write(self->browser_ui.client_socket, http_response, strlen(http_response));
-        write(self->browser_ui.client_socket, response->value, strlen(response->value));
-        close(self->browser_ui.client_socket);
-        self->browser_ui.client_socket = -1;
-    =}
-    
-    reaction(shutdown) {=
-        self->browser_ui.running = false;
-        free(self->browser_ui.initial_page);
-    =}
-
-    /**
-     * Read a file at path relative to the source .lf file
-     * and return dynamically-allocated memory with its contents.
-     * The caller is responsible for freeing the pointer returned.
-     * @param path File path relative to the source .lf file.
-     */
-    method read_file(path:{=const char*=}): char* {=
-        
-        // Construct the path to the file to be read
-        char* file_path = (char *) malloc(strlen(LF_SOURCE_DIRECTORY) + strlen(path) + 2);
-        if (file_path == NULL) lf_print_error_and_exit("Out of memory.");
-
-        sprintf(file_path, "%s%s%s", LF_SOURCE_DIRECTORY, LF_FILE_SEPARATOR, path);
-
-        // Open the file for reading
-        FILE* file = fopen(file_path, "rb");
-        if (file == NULL) lf_print_error_and_exit("Error opening file at path %s.", file_path);
-
-        // Determine the file size
-        fseek(file, 0, SEEK_END);
-        long file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
-
-        // Allocate memory for the buffer
-        char* buffer = (char *) malloc(file_size + 1);
-        if (buffer == NULL) lf_print_error_and_exit("Out of memory.");
-
-        // Read the file into the buffer
-        fread(buffer, file_size, 1, file);
-        buffer[file_size] = '\0';
-
-        free(file_path);
-        fclose(file);
-        return buffer;
-    =}
-
-    preamble {=                    
-        const char html_header[] =  "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html; charset=UTF-8\r\n\r\n";
-        
-        void* listener_thread(void* args) {
-            browser_ui_t* browser_ui = (browser_ui_t*)args;
-            
-            int server_socket = socket(AF_INET, SOCK_STREAM, 0);
-            if (server_socket < 0) {
-                lf_print_error_and_exit("Error creating socket.");
-            }
-    
-            int one = 1;
-            // Allow reusing of local addresses.
-            setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
-    
-            struct sockaddr_in server_address;
-            server_address.sin_family = AF_INET;
-            server_address.sin_addr.s_addr = INADDR_ANY;
-            server_address.sin_port = htons(browser_ui->hostport);
-    
-            if (bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
-                close(server_socket);
-                lf_print_error_and_exit("Error binding socket.");
-            }
-            // Pending queue length of 5.
-            listen(server_socket, 5);
-            
-            lf_print("****** Point your browser to http://localhost:%d", browser_ui->hostport);
-    
-            while(browser_ui->running) {
-                struct sockaddr_in client_address;
-                int client_address_length = sizeof(client_address);
-        
-                browser_ui->client_socket = accept(server_socket, (struct sockaddr *)&client_address, (socklen_t*)&client_address_length);
-        
-                if (browser_ui->client_socket < 0) {
-                    lf_print_error_and_exit("Error accepting connection.");
-                }
-    
-                char buffer[1024] = {0};
-                read(browser_ui->client_socket, buffer, 1024);
-        
-                // The response depends on the path part of the request.
-                const char *start_of_path = strchr(buffer, ' ') + 1;
-                if (start_of_path != NULL && strncmp("/ ", start_of_path, 2) != 0) {
-                    const char *end_of_path = strchr(start_of_path, ' ') + 1;
-                    size_t length = end_of_path - start_of_path;
-                    char* path = (char*)malloc(length + 1);
-                    strncpy(path, start_of_path, length);
-                    path[length] = '\0';
-                    lf_schedule_value(browser_ui->req_action, 0, path, length + 1);
-                } else {
-                    // Default is to write initial page.
-                    write(browser_ui->client_socket, html_header, strlen(html_header));
-                    write(
-                        browser_ui->client_socket,
-                        browser_ui->initial_page,
-                        strlen(browser_ui->initial_page)
-                    );
-                    close(browser_ui->client_socket);
-                    browser_ui->client_socket = -1;
-                    lf_schedule_copy(browser_ui->req_action, 0, "", 1);
-                }
-            }
-            return NULL;
-        }
-    =}
+      }
+      return NULL;
+    }
+  =}
 }
 
 main reactor {
-    state count:int = 0
-    s = new ServerUI()
-    
-    reaction(s.initialized) {=
-        self->count = 0;
-    =}
-    reaction(s.request) -> s.response {=
-        char* response;
-        asprintf(&response, "You have pushed %d times. Path of GET request: %s", 
-            ++self->count,
-            s.request->value
-        );
-        lf_set(s.response, response);
-    =}
+  state count:int = 0
+  s = new ServerUI()
+  
+  reaction(s.initialized) {=
+    self->count = 0;
+  =}
+  reaction(s.request) -> s.response {=
+    char* response;
+    asprintf(&response, "You have pushed %d times. Path of GET request: %s", 
+      ++self->count,
+      s.request->value
+    );
+    lf_set(s.response, response);
+  =}
 }

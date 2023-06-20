@@ -7,36 +7,36 @@ reactor Controller {
   output move:bool; output stop:bool;
   physical action external:bool;
   reaction(startup) {=
-    // ... Set up external sensing.
+  // ... Set up external sensing.
   =}
   reaction(external)->lock, unlock, move, stop {=
-    if (external->value) {
-      lf_set(lock, true); lf_set(move, true);
-    } else {
-      lf_set(unlock, true); lf_set(stop, true);
-    }
+  if (external->value) {
+    lf_set(lock, true); lf_set(move, true);
+  } else {
+    lf_set(unlock, true); lf_set(stop, true);
+  }
   =}
 }
 reactor Train {
   input move:bool; input stop:bool;
   state moving:bool(false);
   reaction(move) {=
-    self->moving = true;
+  self->moving = true;
   =}
   reaction(stop) {=
-    self->moving = false;
+  self->moving = false;
   =}
 }
 reactor Door {
   input lock:bool; input unlock:bool;
   state locked:bool(false);
   reaction(lock) {=
-    // ... Actuate to lock door.
-    self->locked = true;
+  // ... Actuate to lock door.
+  self->locked = true;
   =}
   reaction(unlock) {=
-    // ... Actuate to unlock door.
-    self->locked = false;
+  // ... Actuate to unlock door.
+  self->locked = false;
   =}
 }
 main reactor {

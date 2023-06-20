@@ -6,15 +6,15 @@
  * This version is far less likely to experience deadline violations.
  */
 target C {
-    keepalive: true,
-    timeout: 10s
+  keepalive: true,
+  timeout: 10s
 };
 
 import Braking, Vision from "CarBrake.lf"
 
 federated reactor {
-    braking = new Braking();
-    vision = new Vision();
+  braking = new Braking();
+  vision = new Vision();
 
-    vision.trigger_brake ~> braking.brake_assistant;
+  vision.trigger_brake ~> braking.brake_assistant;
 }

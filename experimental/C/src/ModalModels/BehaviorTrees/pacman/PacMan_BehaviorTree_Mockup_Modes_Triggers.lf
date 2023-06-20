@@ -14,44 +14,44 @@
 target C;
 
 reactor GhostCloseBehavior {
-    input GhostScared:bool
+  input GhostScared:bool
+  
+  initial mode ChaseGhost {
+    @label("Condition: !GhostScared")
+    reaction(reset, GhostScared) -> AvoidGhost {==}
     
-    initial mode ChaseGhost {
-        @label("Condition: !GhostScared")
-        reaction(reset, GhostScared) -> AvoidGhost {==}
-        
-        @label("Action: ChaseGhost")
-        reaction(reset) {==}
-    }
-    mode AvoidGhost {
-        @label("Condition: GhostScared")
-        reaction(GhostScared) -> ChaseGhost {==}
-        
-        @label("Action: AvoidGhost")
-        reaction(reset) {==}
-    }
+    @label("Action: ChaseGhost")
+    reaction(reset) {==}
+  }
+  mode AvoidGhost {
+    @label("Condition: GhostScared")
+    reaction(GhostScared) -> ChaseGhost {==}
+    
+    @label("Action: AvoidGhost")
+    reaction(reset) {==}
+  }
 }
 
 reactor PacManBehavior {
-    input GhostClose:bool
-    input GhostScared:bool
+  input GhostClose:bool
+  input GhostScared:bool
+  
+  initial mode HandleGhostClose {
+    @label("Condition: !GhostClose")
+    reaction(GhostClose) -> EatPills {==}
     
-    initial mode HandleGhostClose {
-        @label("Condition: !GhostClose")
-        reaction(GhostClose) -> EatPills {==}
-        
-        inner = new GhostCloseBehavior()
-        GhostScared -> inner.GhostScared
-    }
-    mode EatPills {
-        @label("Condition: GhostClose")
-        reaction(GhostClose) -> reset(HandleGhostClose) {==}
-        
-        @label("Action: EatPills")
-        reaction(reset) {==}
-    }
+    inner = new GhostCloseBehavior()
+    GhostScared -> inner.GhostScared
+  }
+  mode EatPills {
+    @label("Condition: GhostClose")
+    reaction(GhostClose) -> reset(HandleGhostClose) {==}
+    
+    @label("Action: EatPills")
+    reaction(reset) {==}
+  }
 }
 
 main reactor {
-    p = new PacManBehavior()
+  p = new PacManBehavior()
 }

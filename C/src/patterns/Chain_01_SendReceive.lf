@@ -9,7 +9,7 @@ target C;
 import SendOnce, Receive from "lib/SendersAndReceivers.lf";
 
 main reactor {
-    r1 = new SendOnce();
-    r2 = new Receive();
-    r1.out -> r2.in;
+  r1 = new SendOnce();
+  r2 = new Receive();
+  r1.out -> r2.in;
 }

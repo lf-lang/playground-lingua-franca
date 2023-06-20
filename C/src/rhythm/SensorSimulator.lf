@@ -3,37 +3,37 @@
  * This has no audio output, but just tests the ncurses interface.
  */
 target C {
-    keepalive: true,
-    files: [
-        "/lib/c/reactor-c/util/sensor_simulator.c", 
-        "/lib/c/reactor-c/util/sensor_simulator.h",
-    ],
-    cmake-include: [
-        "/lib/c/reactor-c/util/sensor_simulator.cmake",
-    ] 
+  keepalive: true,
+  files: [
+    "/lib/c/reactor-c/util/sensor_simulator.c", 
+    "/lib/c/reactor-c/util/sensor_simulator.h",
+  ],
+  cmake-include: [
+    "/lib/c/reactor-c/util/sensor_simulator.cmake",
+  ] 
 };
 main reactor {
-    preamble {=
-        #include "sensor_simulator.h"
-        const char* messages[] = {"Hello", "World"};
-        int num_messages = 2;
-    =}
-    timer t(0, 1 sec);
-    timer r(0, 2 sec);
-    physical action key:char*;
-    reaction(startup) -> key {=
-    	lf_print("Starting sensor simulator.");
-        start_sensor_simulator(messages, num_messages, 16, NULL, LOG_LEVEL_INFO);
-    	register_sensor_key('\0', key);
+  preamble {=
+    #include "sensor_simulator.h"
+    const char* messages[] = {"Hello", "World"};
+    int num_messages = 2;
+  =}
+  timer t(0, 1 sec);
+  timer r(0, 2 sec);
+  physical action key:char*;
+  reaction(startup) -> key {=
+    lf_print("Starting sensor simulator.");
+    start_sensor_simulator(messages, num_messages, 16, NULL, LOG_LEVEL_INFO);
+    register_sensor_key('\0', key);
    =}
-    reaction(t) {=
-        show_tick("*");
-    =}
-    reaction(r) {=
-        lf_print("Elapsed logical time: %lld.", lf_time_logical_elapsed());
-        show_tick(".");
-    =}
-    reaction(key) {=
-        lf_print("You typed '%s' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
-    =}
+  reaction(t) {=
+    show_tick("*");
+  =}
+  reaction(r) {=
+    lf_print("Elapsed logical time: %lld.", lf_time_logical_elapsed());
+    show_tick(".");
+  =}
+  reaction(key) {=
+    lf_print("You typed '%s' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
+  =}
 }

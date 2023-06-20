@@ -36,161 +36,161 @@ target Python;
  * @author Edward A. Lee, Yiwei Yu
  */
 preamble {=
-    import math
+  import math
 =}
 reactor PendulumSimulation(
-    initial_theta(-3.14159),   #  Initial pendulum angle.
-    sample_period(5 msec),     #  Sample period.
-    g(9.81),                   #  Acceleration of gravity.
-    alpha(0.00260569),
-    beta(0.05165675),
-    gamma(9.7055e-4),
-    epsilon(0.08103060)
+  initial_theta(-3.14159),   #  Initial pendulum angle.
+  sample_period(5 msec),   #  Sample period.
+  g(9.81),           #  Acceleration of gravity.
+  alpha(0.00260569),
+  beta(0.05165675),
+  gamma(9.7055e-4),
+  epsilon(0.08103060)
 ){
-    input u                #  Control input.
-    input d                #  Impulsive disturbance
-    
-    output theta           #  Pendulum angle.
-    output d_theta         #  Pendulum angular velocity.
-    output phi             #  Arm angle.
-    output d_phi           #  Arm angular velocity.
-    
-    state x(0.0, 0.0, 0.0, 0.0)
-    state first(True)
-    state latest_u(0.0)
-    state elapsed_time(0)
+  input u        #  Control input.
+  input d        #  Impulsive disturbance
+  
+  output theta       #  Pendulum angle.
+  output d_theta     #  Pendulum angular velocity.
+  output phi       #  Arm angle.
+  output d_phi       #  Arm angular velocity.
+  
+  state x(0.0, 0.0, 0.0, 0.0)
+  state first(True)
+  state latest_u(0.0)
+  state elapsed_time(0)
 
-    timer t(0, sample_period)
+  timer t(0, sample_period)
 
-    # Based on the dynamic model of furuta pendulum, 
-    # define the differential equations
-    method calculate_derivatives(x){=
-        x0_dot = self.x[1]
-        x1_dot = (1.0/(
-                self.alpha * self.beta
-                + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
-                - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
-            ) * (
-                (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
-                * math.pow(self.x[3], 2.0)
-                * math.sin(self.x[0])
-                * math.cos(self.x[0])
-            -
-                math.pow(self.gamma * self.x[1], 2.0)
-                * math.sin(self.x[0])
-                * math.cos(self.x[0])
-            +
-                2.0
-                * self.alpha
-                * self.gamma\
-                * self.x[1]
-                * self.x[3]
-                * math.sin(self.x[0])
-                * math.pow(math.cos(self.x[0]), 2.0)
-            -
-                self.gamma
-                * math.cos(self.x[0])
-                * self.g
-                * self.latest_u
-            + 
-                (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
-                * self.epsilon / self.alpha * math.sin(self.x[0])
-            )
-        )
-        x2_dot = self.x[3]
-        x3_dot = ((1.0 / (
-                self.alpha * self.beta 
-                + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
-                - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
-            )) * (
-                -self.gamma
-                * self.alpha
-                * math.pow(self.x[3], 2.0)
-                * math.sin(self.x[0])
-                * math.pow(math.cos(self.x[1]), 2.0)
-            -
-                self.gamma
-                * self.epsilon
-                * math.sin(self.x[0])
-                * math.cos(self.x[0])
-            +
-                self.gamma
-                * self.alpha
-                * math.pow(self.x[1], 2.0)
-                * math.sin(self.x[0])
-            -
-                2
-                * math.pow(self.alpha, 2.0)
-                * self.x[1]
-                * self.x[3]
-                * math.sin(self.x[0])
-                * math.cos(self.x[0])
-            +
-                self.alpha
-                * self.g
-                * self.latest_u
-            )
-        )
-        return [x0_dot, x1_dot, x2_dot, x3_dot]
-    =}
+  # Based on the dynamic model of furuta pendulum, 
+  # define the differential equations
+  method calculate_derivatives(x){=
+    x0_dot = self.x[1]
+    x1_dot = (1.0/(
+        self.alpha * self.beta
+        + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
+        - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
+      ) * (
+        (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
+        * math.pow(self.x[3], 2.0)
+        * math.sin(self.x[0])
+        * math.cos(self.x[0])
+      -
+        math.pow(self.gamma * self.x[1], 2.0)
+        * math.sin(self.x[0])
+        * math.cos(self.x[0])
+      +
+        2.0
+        * self.alpha
+        * self.gamma\
+        * self.x[1]
+        * self.x[3]
+        * math.sin(self.x[0])
+        * math.pow(math.cos(self.x[0]), 2.0)
+      -
+        self.gamma
+        * math.cos(self.x[0])
+        * self.g
+        * self.latest_u
+      + 
+        (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
+        * self.epsilon / self.alpha * math.sin(self.x[0])
+      )
+    )
+    x2_dot = self.x[3]
+    x3_dot = ((1.0 / (
+        self.alpha * self.beta 
+        + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
+        - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
+      )) * (
+        -self.gamma
+        * self.alpha
+        * math.pow(self.x[3], 2.0)
+        * math.sin(self.x[0])
+        * math.pow(math.cos(self.x[1]), 2.0)
+      -
+        self.gamma
+        * self.epsilon
+        * math.sin(self.x[0])
+        * math.cos(self.x[0])
+      +
+        self.gamma
+        * self.alpha
+        * math.pow(self.x[1], 2.0)
+        * math.sin(self.x[0])
+      -
+        2
+        * math.pow(self.alpha, 2.0)
+        * self.x[1]
+        * self.x[3]
+        * math.sin(self.x[0])
+        * math.cos(self.x[0])
+      +
+        self.alpha
+        * self.g
+        * self.latest_u
+      )
+    )
+    return [x0_dot, x1_dot, x2_dot, x3_dot]
+  =}
 
-    # Method used to update the state
-    method update_state() {=
-        # The time interval is defined as the time elapsed 
-        # since last time we output the state
-        time_interval = (lf.time.logical_elapsed() - self.elapsed_time) * 1e-9
-        self.elapsed_time = lf.time.logical_elapsed()
+  # Method used to update the state
+  method update_state() {=
+    # The time interval is defined as the time elapsed 
+    # since last time we output the state
+    time_interval = (lf.time.logical_elapsed() - self.elapsed_time) * 1e-9
+    self.elapsed_time = lf.time.logical_elapsed()
 
-        # RK4 Operation, return the updated x
-        def RK4_ODE(x):
-            h = time_interval
-            k1 = self.calculate_derivatives(x)
-            for i in range(len(x)):
-                x[i] += k1[i] * h/2.
-            k2 = self.calculate_derivatives(x)
-            for i in range(len(x)):
-                x[i] += k2[i] * h/2.
-            k3 = self.calculate_derivatives(x)
-            for i in range(len(x)):
-                x[i] += k3[i] * h
-            k4 = self.calculate_derivatives(x)
-            for i in range(len(x)):
-                x[i] += (h/6.)*(k1[i] + 2*k2[i] + 2*k3[i] + k4[i])
-            return x
+    # RK4 Operation, return the updated x
+    def RK4_ODE(x):
+      h = time_interval
+      k1 = self.calculate_derivatives(x)
+      for i in range(len(x)):
+        x[i] += k1[i] * h/2.
+      k2 = self.calculate_derivatives(x)
+      for i in range(len(x)):
+        x[i] += k2[i] * h/2.
+      k3 = self.calculate_derivatives(x)
+      for i in range(len(x)):
+        x[i] += k3[i] * h
+      k4 = self.calculate_derivatives(x)
+      for i in range(len(x)):
+        x[i] += (h/6.)*(k1[i] + 2*k2[i] + 2*k3[i] + k4[i])
+      return x
 
-        # Update x using RK4 
-        self.x = RK4_ODE(self.x)
-    =}
+    # Update x using RK4 
+    self.x = RK4_ODE(self.x)
+  =}
 
-    # Method used to output the state
-    method output_state(theta, d_theta, phi, d_phi) {=
-        theta.set(self.x[0])
-        d_theta.set(self.x[1])
-        phi.set(self.x[2])
-        d_phi.set(self.x[3])
-    =}
-    
-    # The update will be triggered when either a disturbance is introduced or a sample
-    # period of time has elapsed. 
-    # See SmallTest.lf for how disturbance updates works in a simpler forward euler 
-    # example
-    reaction(d) {=
-        self.update_state()
-        self.x[1] += d.value
-    =}
+  # Method used to output the state
+  method output_state(theta, d_theta, phi, d_phi) {=
+    theta.set(self.x[0])
+    d_theta.set(self.x[1])
+    phi.set(self.x[2])
+    d_phi.set(self.x[3])
+  =}
+  
+  # The update will be triggered when either a disturbance is introduced or a sample
+  # period of time has elapsed. 
+  # See SmallTest.lf for how disturbance updates works in a simpler forward euler 
+  # example
+  reaction(d) {=
+    self.update_state()
+    self.x[1] += d.value
+  =}
 
-    reaction(t) -> theta, d_theta, phi, d_phi {=
-        if not (self.first):
-            self.update_state()
-        else:
-            self.x[0] = self.initial_theta
-            self.first = False
-        # Output the state.
-        self.output_state(theta, d_theta, phi, d_phi)
-     =}
+  reaction(t) -> theta, d_theta, phi, d_phi {=
+    if not (self.first):
+      self.update_state()
+    else:
+      self.x[0] = self.initial_theta
+      self.first = False
+    # Output the state.
+    self.output_state(theta, d_theta, phi, d_phi)
+   =}
 
-    reaction(u) {=
-        self.latest_u = u.value
-    =}
-    
+  reaction(u) {=
+    self.latest_u = u.value
+  =}
+  
 }

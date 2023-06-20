@@ -47,224 +47,224 @@ target C
  * @author Edward A. Lee
  */
 reactor MQTTSubscriber (
-    address:string("tcp://localhost:1883"),
-    topic:string("DefaultTopic"),
-    use_physical_time:bool(true),
-    offset:time(0)
+  address:string("tcp://localhost:1883"),
+  topic:string("DefaultTopic"),
+  use_physical_time:bool(true),
+  offset:time(0)
 ) {
-    preamble {=
-        #include "MQTTClient.h"
-        #include "core/federated/net_util.h"
-        
-        // Fix the QoS to indicate that the message will be delivered reliably exactly once.
-        #define QOS         2
-
-        // Count of instances of this reactor so that unique client IDs are generated.
-        static size_t _lf_MQTTSubscriber_count = 0;
-        
-        typedef struct MQTTSubscriber_info_t {
-            void* logical_action;
-            interval_t offset;
-            bool use_physical_time;
-            interval_t latencies;     // Sum of all observed latencies.
-            interval_t max_latency;
-            size_t count;
-        } MQTTSubscriber_info_t;
-        
-        // Connection options for the client.
-        // Making this global means that all instances of this reactor have
-        // the same connection options.
-        MQTTClient_connectOptions sub_connect_options = MQTTClient_connectOptions_initializer;
-                
-        // Callback function invoked by MQTT when a message arrives.
-        int message_arrived(
-            void *info,
-            char *topic_name,
-            int topic_length, // If 0, strlen(topic_name) can be trusted.
-            MQTTClient_message *message
-        ) {
-            // FIXME: This is assuming that the message string
-            // and topic_name are null terminated. What if they aren't?
-            // Perhaps force them to be?
-            LF_PRINT_LOG(
-                "MQTTSubscriber: Message arrived on topic %s: %s", topic_name, (char*)message->payload
-            );
-            
-            MQTTSubscriber_info_t* my_info = (MQTTSubscriber_info_t*)info;
-                                 
-            // Enter a critical section so that logical time does not elapse while
-            // we calculate the delay to the logical time for the message.
-            lf_critical_section_enter();
-            
-            interval_t delay;
-            instant_t current_time = lf_time_logical();
-            interval_t offset = my_info->offset;
-            
-            // Extract the publisher's timestamp from the message, if it is present.
-            if (
-                // Is the string null terminated?
-                (int)((char*)message->payload)[message->payloadlen - sizeof(instant_t) - 5] == '\0'
-                // Is the magic string present?
-                && memcmp("LFts", &message->payload[message->payloadlen - sizeof(instant_t) - 4], 4) == 0
-            ) {
-                my_info->count++;
-                
-                instant_t timestamp = extract_int64(
-                    (unsigned char*)message->payload + message->payloadlen - sizeof(instant_t)
-                );
-                instant_t physical_time = lf_time_physical();
-                
-                interval_t latency = physical_time - timestamp;
-                my_info->latencies += latency;
-            
-                if (latency > my_info->max_latency) {
-                    my_info->max_latency = latency;
-                }
-                if (my_info->use_physical_time) {
-                    // Use physical time.
-                    delay = physical_time + offset - current_time;
-                } else {
-                    // Use logical time.
-                    delay = timestamp + offset - current_time;
-                }
-                // Schedule the event.
-                // We rely on lf_schedule_copy to issue a warning if the delay is negative.
-                lf_schedule_copy(
-                    ((MQTTSubscriber_info_t*)info)->logical_action,
-                    delay,
-                    (char*)message->payload,
-                    message->payloadlen - sizeof(instant_t)
-                );
-            } else {
-                if (!my_info->use_physical_time) {
-                    // No timestamp included, so we can't use logical time!
-                    lf_print_warning("MQTTSubscriber: Received message with no timestamp!");
-                }
-                // Use physical time.
-                instant_t physical_time = lf_time_physical();
-                delay = physical_time + offset - current_time;
-
-                // Schedule the event.
-                // We rely on lf_schedule_copy to issue a warning if the delay is negative.
-                lf_schedule_copy(
-                    ((MQTTSubscriber_info_t*)info)->logical_action,
-                    delay,
-                    (char*)message->payload,
-                    message->payloadlen
-                );
-            }
-            
-            LF_PRINT_LOG(
-                "MQTTSubscriber: Received message. Timestamp will be " PRINTF_TIME
-                " ahead of current (elapsed) time, " PRINTF_TIME, delay, current_time - lf_time_start()
-            );
-                                    
-            lf_critical_section_exit();
-
-            // MQTTClient_freeMessage() also frees the memory allocated to the payload,
-            // which is why we have to copy the message here.
-            MQTTClient_freeMessage(&message);
-            MQTTClient_free(topic_name);
-            
-            // Return true to indicate that the message has been successfully handled.
-            return 1;
-        }
-        
-        /** Callback invoked if the connection is lost. */
-        void sub_connection_lost(void *info, char *cause) {
-            lf_print_warning("MQTTSubscriber: Connection lost. Cause: %s", cause);
-        }
-    =}
+  preamble {=
+    #include "MQTTClient.h"
+    #include "core/federated/net_util.h"
     
-    /**
-     * Output for sending the incoming MQTT message.
-     * Use type char* rather than string because it is not
-     * a static string, but rather dynamically allocated memory.
-     */
-    output message:char*;
+    // Fix the QoS to indicate that the message will be delivered reliably exactly once.
+    #define QOS     2
 
-    /**
-     * Action that is triggered when there is an incoming MQTT message.
-     * Use a logical action here so that the callback function can
-     * precisely control timestamp of the received message.
-     */
-    logical action act:char*;
+    // Count of instances of this reactor so that unique client IDs are generated.
+    static size_t _lf_MQTTSubscriber_count = 0;
     
-    /** Client ID. This is automatically generated. */
-    state clientID:char*({= NULL =});
-
-    /** State variable storing the MQTT client created for each instance of this reactor. */
-    state client:MQTTClient({=NULL=});
+    typedef struct MQTTSubscriber_info_t {
+      void* logical_action;
+      interval_t offset;
+      bool use_physical_time;
+      interval_t latencies;   // Sum of all observed latencies.
+      interval_t max_latency;
+      size_t count;
+    } MQTTSubscriber_info_t;
+    
+    // Connection options for the client.
+    // Making this global means that all instances of this reactor have
+    // the same connection options.
+    MQTTClient_connectOptions sub_connect_options = MQTTClient_connectOptions_initializer;
         
-    /** Struct containing the action and offset. */
-    state info:MQTTSubscriber_info_t({= {NULL, 0LL, false, 0LL, 0LL, 0} =})
-    
-    reaction(startup) -> act {=
-        int rc; // response code.
-
-        if (asprintf(&self->clientID, "LF_MQTTSubscriber_%zu", _lf_MQTTSubscriber_count++) < 0) {
-            lf_print_error_and_exit("MQTTSubscriber: Failed to create client ID.");
-        }
-
-        // In case there are multiple instances of this or the subscriber, enter
-        // a critical section. The Paho MQTT functions are not thread safe.
-        lf_critical_section_enter();
-
-        rc = MQTTClient_create(
-            &self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL
+    // Callback function invoked by MQTT when a message arrives.
+    int message_arrived(
+      void *info,
+      char *topic_name,
+      int topic_length, // If 0, strlen(topic_name) can be trusted.
+      MQTTClient_message *message
+    ) {
+      // FIXME: This is assuming that the message string
+      // and topic_name are null terminated. What if they aren't?
+      // Perhaps force them to be?
+      LF_PRINT_LOG(
+        "MQTTSubscriber: Message arrived on topic %s: %s", topic_name, (char*)message->payload
+      );
+      
+      MQTTSubscriber_info_t* my_info = (MQTTSubscriber_info_t*)info;
+                 
+      // Enter a critical section so that logical time does not elapse while
+      // we calculate the delay to the logical time for the message.
+      lf_critical_section_enter();
+      
+      interval_t delay;
+      instant_t current_time = lf_time_logical();
+      interval_t offset = my_info->offset;
+      
+      // Extract the publisher's timestamp from the message, if it is present.
+      if (
+        // Is the string null terminated?
+        (int)((char*)message->payload)[message->payloadlen - sizeof(instant_t) - 5] == '\0'
+        // Is the magic string present?
+        && memcmp("LFts", &message->payload[message->payloadlen - sizeof(instant_t) - 4], 4) == 0
+      ) {
+        my_info->count++;
+        
+        instant_t timestamp = extract_int64(
+          (unsigned char*)message->payload + message->payloadlen - sizeof(instant_t)
         );
-        if (rc != MQTTCLIENT_SUCCESS) {
-            lf_print_error_and_exit("MQTTSubscriber: Failed to create MQTT client.\n"
-                    "Return code: %d\n", rc);
+        instant_t physical_time = lf_time_physical();
+        
+        interval_t latency = physical_time - timestamp;
+        my_info->latencies += latency;
+      
+        if (latency > my_info->max_latency) {
+          my_info->max_latency = latency;
         }
+        if (my_info->use_physical_time) {
+          // Use physical time.
+          delay = physical_time + offset - current_time;
+        } else {
+          // Use logical time.
+          delay = timestamp + offset - current_time;
+        }
+        // Schedule the event.
+        // We rely on lf_schedule_copy to issue a warning if the delay is negative.
+        lf_schedule_copy(
+          ((MQTTSubscriber_info_t*)info)->logical_action,
+          delay,
+          (char*)message->payload,
+          message->payloadlen - sizeof(instant_t)
+        );
+      } else {
+        if (!my_info->use_physical_time) {
+          // No timestamp included, so we can't use logical time!
+          lf_print_warning("MQTTSubscriber: Received message with no timestamp!");
+        }
+        // Use physical time.
+        instant_t physical_time = lf_time_physical();
+        delay = physical_time + offset - current_time;
 
-        sub_connect_options.keepAliveInterval = 20;
-        sub_connect_options.cleansession = 1;
-        
-        self->info.logical_action = act;
-        self->info.offset = self->offset;
-        self->info.use_physical_time = self->use_physical_time;
-        
-        // Set up callback functions.
-        // Last argument should be a pointer to a function to
-        // handle notification of delivery of a sent message.
-        // But this reactor isn't sending any messages.
-        MQTTClient_setCallbacks(self->client, &self->info, sub_connection_lost, message_arrived, NULL);
-        
-        // Connect to the broker.
-        rc = MQTTClient_connect(self->client, &sub_connect_options);
-        if (rc != MQTTCLIENT_SUCCESS) {
-            lf_print_error_and_exit(
-                    "MQTTSubscriber: Failed to connect to MQTT broker.\n"
-                    "Perhaps one is not running? Return code: %d\n", rc);
-        }
-        
-        MQTTClient_subscribe(self->client, self->topic, QOS);
-        
-        lf_critical_section_exit();
-    =}
+        // Schedule the event.
+        // We rely on lf_schedule_copy to issue a warning if the delay is negative.
+        lf_schedule_copy(
+          ((MQTTSubscriber_info_t*)info)->logical_action,
+          delay,
+          (char*)message->payload,
+          message->payloadlen
+        );
+      }
+      
+      LF_PRINT_LOG(
+        "MQTTSubscriber: Received message. Timestamp will be " PRINTF_TIME
+        " ahead of current (elapsed) time, " PRINTF_TIME, delay, current_time - lf_time_start()
+      );
+                  
+      lf_critical_section_exit();
+
+      // MQTTClient_freeMessage() also frees the memory allocated to the payload,
+      // which is why we have to copy the message here.
+      MQTTClient_freeMessage(&message);
+      MQTTClient_free(topic_name);
+      
+      // Return true to indicate that the message has been successfully handled.
+      return 1;
+    }
     
-    reaction(act) -> message {=
-        // The action contains a token that we can just forward.
-        // The allocated memory will be freed when the token's reference count hits 0.
-        // Note that this token will still contain the publisher's timestamp.
-        lf_set_token(message, act->token);
-    =}
+    /** Callback invoked if the connection is lost. */
+    void sub_connection_lost(void *info, char *cause) {
+      lf_print_warning("MQTTSubscriber: Connection lost. Cause: %s", cause);
+    }
+  =}
+  
+  /**
+   * Output for sending the incoming MQTT message.
+   * Use type char* rather than string because it is not
+   * a static string, but rather dynamically allocated memory.
+   */
+  output message:char*;
+
+  /**
+   * Action that is triggered when there is an incoming MQTT message.
+   * Use a logical action here so that the callback function can
+   * precisely control timestamp of the received message.
+   */
+  logical action act:char*;
+  
+  /** Client ID. This is automatically generated. */
+  state clientID:char*({= NULL =});
+
+  /** State variable storing the MQTT client created for each instance of this reactor. */
+  state client:MQTTClient({=NULL=});
     
-    reaction(shutdown) {=
-        if (self->info.count > 0) {
-            lf_print(
-                "MQTTSubscriber: Maximum apparent latency measured at receiver (in nsec): " PRINTF_TIME,
-                self->info.max_latency
-            );
-            lf_print(
-                "MQTTSubscriber: Average apparent latency measured at receiver (in nsec): " PRINTF_TIME,
-                self->info.latencies/self->info.count
-            );
-        }
-        LF_PRINT_LOG("MQTTSubscriber: Client ID %s disconnecting.", self->clientID);
-        if (self->clientID) free(self->clientID);
-        MQTTClient_disconnect(self->client, 10000);
-        MQTTClient_destroy(&self->client);
-    =}
+  /** Struct containing the action and offset. */
+  state info:MQTTSubscriber_info_t({= {NULL, 0LL, false, 0LL, 0LL, 0} =})
+  
+  reaction(startup) -> act {=
+    int rc; // response code.
+
+    if (asprintf(&self->clientID, "LF_MQTTSubscriber_%zu", _lf_MQTTSubscriber_count++) < 0) {
+      lf_print_error_and_exit("MQTTSubscriber: Failed to create client ID.");
+    }
+
+    // In case there are multiple instances of this or the subscriber, enter
+    // a critical section. The Paho MQTT functions are not thread safe.
+    lf_critical_section_enter();
+
+    rc = MQTTClient_create(
+      &self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL
+    );
+    if (rc != MQTTCLIENT_SUCCESS) {
+      lf_print_error_and_exit("MQTTSubscriber: Failed to create MQTT client.\n"
+          "Return code: %d\n", rc);
+    }
+
+    sub_connect_options.keepAliveInterval = 20;
+    sub_connect_options.cleansession = 1;
+    
+    self->info.logical_action = act;
+    self->info.offset = self->offset;
+    self->info.use_physical_time = self->use_physical_time;
+    
+    // Set up callback functions.
+    // Last argument should be a pointer to a function to
+    // handle notification of delivery of a sent message.
+    // But this reactor isn't sending any messages.
+    MQTTClient_setCallbacks(self->client, &self->info, sub_connection_lost, message_arrived, NULL);
+    
+    // Connect to the broker.
+    rc = MQTTClient_connect(self->client, &sub_connect_options);
+    if (rc != MQTTCLIENT_SUCCESS) {
+      lf_print_error_and_exit(
+          "MQTTSubscriber: Failed to connect to MQTT broker.\n"
+          "Perhaps one is not running? Return code: %d\n", rc);
+    }
+    
+    MQTTClient_subscribe(self->client, self->topic, QOS);
+    
+    lf_critical_section_exit();
+  =}
+  
+  reaction(act) -> message {=
+    // The action contains a token that we can just forward.
+    // The allocated memory will be freed when the token's reference count hits 0.
+    // Note that this token will still contain the publisher's timestamp.
+    lf_set_token(message, act->token);
+  =}
+  
+  reaction(shutdown) {=
+    if (self->info.count > 0) {
+      lf_print(
+        "MQTTSubscriber: Maximum apparent latency measured at receiver (in nsec): " PRINTF_TIME,
+        self->info.max_latency
+      );
+      lf_print(
+        "MQTTSubscriber: Average apparent latency measured at receiver (in nsec): " PRINTF_TIME,
+        self->info.latencies/self->info.count
+      );
+    }
+    LF_PRINT_LOG("MQTTSubscriber: Client ID %s disconnecting.", self->clientID);
+    if (self->clientID) free(self->clientID);
+    MQTTClient_disconnect(self->client, 10000);
+    MQTTClient_destroy(&self->client);
+  =}
 }

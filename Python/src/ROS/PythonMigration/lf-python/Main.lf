@@ -15,7 +15,7 @@ import Sender from "Sender.lf"
 import Receiver from "Receiver.lf"
 
 federated reactor {
-    sender = new Sender();
-    receiver = new Receiver();
-    sender.topic -> receiver.topic;
+  sender = new Sender();
+  receiver = new Receiver();
+  sender.topic -> receiver.topic;
 }

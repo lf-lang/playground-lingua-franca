@@ -8,35 +8,35 @@
  * topic in a reactive manner. 
  */
 target Cpp {
-    ros2: true,
-    keepalive: true,
-    ros2-dependencies: ["std_msgs"],
+  ros2: true,
+  keepalive: true,
+  ros2-dependencies: ["std_msgs"],
 }
 
 public preamble {=
-    #include "rclcpp/rclcpp.hpp"
-    #include "std_msgs/msg/string.hpp"
+  #include "rclcpp/rclcpp.hpp"
+  #include "std_msgs/msg/string.hpp"
 =}
 
 main reactor {
-    private preamble {=
-        // FIXME: forward declaration to make the node visible
-        extern rclcpp::Node* lf_node;
-    =}
+  private preamble {=
+    // FIXME: forward declaration to make the node visible
+    extern rclcpp::Node* lf_node;
+  =}
 
-    state subscription: {= rclcpp::Subscription<std_msgs::msg::String>::SharedPtr =}
-    state count: unsigned(0)
+  state subscription: {= rclcpp::Subscription<std_msgs::msg::String>::SharedPtr =}
+  state count: unsigned(0)
 
-    physical action message: std::string;
+  physical action message: std::string;
 
-    reaction(startup) -> message {=
-        subscription = lf_node->create_subscription<std_msgs::msg::String>(
-            "topic", 10, [&message](const std_msgs::msg::String::SharedPtr msg) { message.schedule(msg->data); } );
-        // FIXME: Why can't we use a reference type in the lambda argument?
-        // const std_msgs::msg::String::SharedPtr& msg
-    =}
+  reaction(startup) -> message {=
+    subscription = lf_node->create_subscription<std_msgs::msg::String>(
+      "topic", 10, [&message](const std_msgs::msg::String::SharedPtr msg) { message.schedule(msg->data); } );
+    // FIXME: Why can't we use a reference type in the lambda argument?
+    // const std_msgs::msg::String::SharedPtr& msg
+  =}
 
-    reaction(message) {=
-        reactor::log::Info() << "I heard: " << *message.get();
-    =}
+  reaction(message) {=
+    reactor::log::Info() << "I heard: " << *message.get();
+  =}
 }

@@ -16,29 +16,29 @@ target C;
  * @output out The computed Fibonacci number. 
  */
 reactor TakeTime(
-    approximate_time:time(100 msec)
+  approximate_time:time(100 msec)
 ) {
-    input in:int;
-    output out:int;
-    reaction(in) -> out {=
-        instant_t start_time = lf_time_physical();
-        int f0 = 0;
-        int f1 = 1;
-        int count = 0;
-        while (lf_time_physical() < start_time + self->approximate_time) {
-        	int next_term = f0 + f1;
-        	if (next_term < 0LL) {
-                // Overflow has occurred. Start over.
-                count = 0;
-                f0 = 0;
-                f1 = 1;
-            } else {
-            	f0 = f1;
-            	f1 = next_term;
-            	count++;
-            }
-        }
-        lf_set(out, f1);
-        lf_print("The %d-th Fibonacci number is %d.", count, f0);
-    =}
+  input in:int;
+  output out:int;
+  reaction(in) -> out {=
+    instant_t start_time = lf_time_physical();
+    int f0 = 0;
+    int f1 = 1;
+    int count = 0;
+    while (lf_time_physical() < start_time + self->approximate_time) {
+      int next_term = f0 + f1;
+      if (next_term < 0LL) {
+        // Overflow has occurred. Start over.
+        count = 0;
+        f0 = 0;
+        f1 = 1;
+      } else {
+        f0 = f1;
+        f1 = next_term;
+        count++;
+      }
+    }
+    lf_set(out, f1);
+    lf_print("The %d-th Fibonacci number is %d.", count, f0);
+  =}
 }

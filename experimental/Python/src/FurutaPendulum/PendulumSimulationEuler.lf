@@ -36,126 +36,126 @@ target Python;
  * @author Edward A. Lee
  */
 preamble {=
-    import math
+  import math
 =}
 reactor PendulumSimulation(
-    initial_theta(-3.14159),   #  Initial pendulum angle.
-    sample_period(5 msec),     #  Sample period.
-    g(9.81),                   #  Acceleration of gravity.
-    alpha(0.00260569),
-    beta(0.05165675),
-    gamma(9.7055e-4),
-    epsilon(0.08103060)
+  initial_theta(-3.14159),   #  Initial pendulum angle.
+  sample_period(5 msec),   #  Sample period.
+  g(9.81),           #  Acceleration of gravity.
+  alpha(0.00260569),
+  beta(0.05165675),
+  gamma(9.7055e-4),
+  epsilon(0.08103060)
 ){
-    input u                #  Control input.
-    input d                #  Impulsive disturbance
-    
-    output theta           #  Pendulum angle.
-    output d_theta         #  Pendulum angular velocity.
-    output phi             #  Arm angle.
-    output d_phi           #  Arm angular velocity.
-    
-    state x(0.0, 0.0, 0.0, 0.0)
-    state first(True)
-    state latest_u(0.0)
-    
-    timer t(0, sample_period)
-    
-    reaction(d) {=
-        # NOTE: Here, we effectively shift the disturbance to be
-        # simultaneous with the next sample. A more accurate model
-        # would apply the disturbance immediately.
-        # The update of the state vector in the reaction below
-        # should first be factored out to a method, when methods
-        # are implemented in C.
-        self.x[1] = self.x[1] + d.value
-    =}
+  input u        #  Control input.
+  input d        #  Impulsive disturbance
+  
+  output theta       #  Pendulum angle.
+  output d_theta     #  Pendulum angular velocity.
+  output phi       #  Arm angle.
+  output d_phi       #  Arm angular velocity.
+  
+  state x(0.0, 0.0, 0.0, 0.0)
+  state first(True)
+  state latest_u(0.0)
+  
+  timer t(0, sample_period)
+  
+  reaction(d) {=
+    # NOTE: Here, we effectively shift the disturbance to be
+    # simultaneous with the next sample. A more accurate model
+    # would apply the disturbance immediately.
+    # The update of the state vector in the reaction below
+    # should first be factored out to a method, when methods
+    # are implemented in C.
+    self.x[1] = self.x[1] + d.value
+  =}
 
-    reaction(t) -> theta, d_theta, phi, d_phi {=
-        if not(self.first):
-            # Update the state.
-            x0_dot = self.x[1]
-            x1_dot = (1.0/(
-                    self.alpha * self.beta
-                    + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
-                    - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
-                ) * (
-                    (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
-                    * math.pow(self.x[3], 2.0)
-                    * math.sin(self.x[0])
-                    * math.cos(self.x[0])
-                -
-                    math.pow(self.gamma * self.x[1], 2.0)
-                    * math.sin(self.x[0])
-                    * math.cos(self.x[0])
-                +
-                    2.0
-                    * self.alpha
-                    * self.gamma\
-                    * self.x[1]
-                    * self.x[3]
-                    * math.sin(self.x[0])
-                    * math.pow(math.cos(self.x[0]), 2.0)
-                -
-                    self.gamma
-                    * math.cos(self.x[0])
-                    * self.g
-                    * self.latest_u
-                + 
-                    (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
-                    * self.epsilon / self.alpha * math.sin(self.x[0])
-                )
-            )
-            x2_dot = self.x[3]
-            x3_dot = ((1.0 / (
-                    self.alpha * self.beta 
-                    + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
-                    - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
-                )) * (
-                    -self.gamma
-                    * self.alpha
-                    * math.pow(self.x[3], 2.0)
-                    * math.sin(self.x[0])
-                    * math.pow(math.cos(self.x[1]), 2.0)
-                -
-                    self.gamma
-                    * self.epsilon
-                    * math.sin(self.x[0])
-                    * math.cos(self.x[0])
-                +
-                    self.gamma
-                    * self.alpha
-                    * math.pow(self.x[1], 2.0)
-                    * math.sin(self.x[0])
-                -
-                    2
-                    * math.pow(self.alpha, 2.0)
-                    * self.x[1]
-                    * self.x[3]
-                    * math.sin(self.x[0])
-                    * math.cos(self.x[0])
-                +
-                    self.alpha
-                    * self.g
-                    * self.latest_u
-                )
-            )
-            sample_period = self.sample_period * 1e-9
-            self.x[0] += x0_dot * sample_period
-            self.x[1] += x1_dot * sample_period
-            self.x[2] += x2_dot * sample_period
-            self.x[3] += x3_dot * sample_period
-        else:
-            self.x[0] = self.initial_theta
-            self.first = False
-        
-        # Output the state.
-        theta.set(self.x[0])
-        d_theta.set(self.x[1])
-        phi.set(self.x[2])
-        d_phi.set(self.x[3])
-    =}
-    reaction(u) {=
-        self.latest_u = u.value
-    =}
+  reaction(t) -> theta, d_theta, phi, d_phi {=
+    if not(self.first):
+      # Update the state.
+      x0_dot = self.x[1]
+      x1_dot = (1.0/(
+          self.alpha * self.beta
+          + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
+          - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
+        ) * (
+          (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
+          * math.pow(self.x[3], 2.0)
+          * math.sin(self.x[0])
+          * math.cos(self.x[0])
+        -
+          math.pow(self.gamma * self.x[1], 2.0)
+          * math.sin(self.x[0])
+          * math.cos(self.x[0])
+        +
+          2.0
+          * self.alpha
+          * self.gamma\
+          * self.x[1]
+          * self.x[3]
+          * math.sin(self.x[0])
+          * math.pow(math.cos(self.x[0]), 2.0)
+        -
+          self.gamma
+          * math.cos(self.x[0])
+          * self.g
+          * self.latest_u
+        + 
+          (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
+          * self.epsilon / self.alpha * math.sin(self.x[0])
+        )
+      )
+      x2_dot = self.x[3]
+      x3_dot = ((1.0 / (
+          self.alpha * self.beta 
+          + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
+          - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
+        )) * (
+          -self.gamma
+          * self.alpha
+          * math.pow(self.x[3], 2.0)
+          * math.sin(self.x[0])
+          * math.pow(math.cos(self.x[1]), 2.0)
+        -
+          self.gamma
+          * self.epsilon
+          * math.sin(self.x[0])
+          * math.cos(self.x[0])
+        +
+          self.gamma
+          * self.alpha
+          * math.pow(self.x[1], 2.0)
+          * math.sin(self.x[0])
+        -
+          2
+          * math.pow(self.alpha, 2.0)
+          * self.x[1]
+          * self.x[3]
+          * math.sin(self.x[0])
+          * math.cos(self.x[0])
+        +
+          self.alpha
+          * self.g
+          * self.latest_u
+        )
+      )
+      sample_period = self.sample_period * 1e-9
+      self.x[0] += x0_dot * sample_period
+      self.x[1] += x1_dot * sample_period
+      self.x[2] += x2_dot * sample_period
+      self.x[3] += x3_dot * sample_period
+    else:
+      self.x[0] = self.initial_theta
+      self.first = False
+    
+    # Output the state.
+    theta.set(self.x[0])
+    d_theta.set(self.x[1])
+    phi.set(self.x[2])
+    d_phi.set(self.x[3])
+  =}
+  reaction(u) {=
+    self.latest_u = u.value
+  =}
 }

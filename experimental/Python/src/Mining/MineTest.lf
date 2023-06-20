@@ -13,205 +13,205 @@
  * 3- Add the ability to restart the game after win/lose.
  * 4- Make the game logic more efficient if possible.
  * 5- Add personalities for each ghost instead of following pre-determined
- *    directions.
+ *  directions.
  * 6- Add modes for ghosts (exploring, chasing, running away).
  * 7- Replace the player with an AI.
  * 8- Enable federated execution if possible.
  * 9- Explore:
- *    - What to do in the case of communication failure?
- *    - What are other possible fault scenarios?
- *    - What should the AI and the ghosts see? Should they be able to see all the
- *      walls or just walls close to them?
- *    - Add an external observer that is responsible for veryfing safety
- *      properties.
- *    - Explore consistency vs. availability tradeoffs in the game design.
- *      See https://arxiv.org/abs/2109.07771 .
+ *  - What to do in the case of communication failure?
+ *  - What are other possible fault scenarios?
+ *  - What should the AI and the ghosts see? Should they be able to see all the
+ *    walls or just walls close to them?
+ *  - Add an external observer that is responsible for veryfing safety
+ *    properties.
+ *  - Explore consistency vs. availability tradeoffs in the game design.
+ *    See https://arxiv.org/abs/2109.07771 .
  *
 **/
 target Python {
-    files: ["include/hbphosphate.py", "include/images", "include/AIPhosphate.py"]
+  files: ["include/hbphosphate.py", "include/images", "include/AIPhosphate.py"]
 };
 
 preamble {=
-    import os
-    #import pyautogui
-    from random import randint
-    curr_dirname = os.path.dirname(__file__)
-    sys.path.append(curr_dirname)
-    import hbphosphate as mine
-    import AIPhosphate as ai
+  import os
+  #import pyautogui
+  from random import randint
+  curr_dirname = os.path.dirname(__file__)
+  sys.path.append(curr_dirname)
+  import hbphosphate as mine
+  import AIPhosphate as ai
 
-    # Construct a table of ghost characteristics to access
-    # using the bank member as the index.
-    people_specs = [
-        {
-            "name": "Pinky",
-            "directions": mine.Pinky_directions,
-            "width": mine.w,
-            "height": mine.m_h,
-            "image": "images/wheelchair.png"
-        },
-        {
-            "name": "Blinky",
-            "directions": mine.Blinky_directions,
-            "width": mine.w,
-            "height": mine.b_h,
-            "image": "images/wheelchair.png"
-        },
-        {
-            "name": "Inky",
-            "directions": mine.Inky_directions,
-            "width": mine.i_w,
-            "height": mine.m_h,
-            "image": "images/wheelchair.png"
-        },
-        {
-            "name": "Clyde",
-            "directions": mine.Clyde_directions,
-            "width": mine.c_w,
-            "height": mine.m_h,
-            "image": "images/wheelchair.png"
-        }
-    ]
+  # Construct a table of ghost characteristics to access
+  # using the bank member as the index.
+  people_specs = [
+    {
+      "name": "Pinky",
+      "directions": mine.Pinky_directions,
+      "width": mine.w,
+      "height": mine.m_h,
+      "image": "images/wheelchair.png"
+    },
+    {
+      "name": "Blinky",
+      "directions": mine.Blinky_directions,
+      "width": mine.w,
+      "height": mine.b_h,
+      "image": "images/wheelchair.png"
+    },
+    {
+      "name": "Inky",
+      "directions": mine.Inky_directions,
+      "width": mine.i_w,
+      "height": mine.m_h,
+      "image": "images/wheelchair.png"
+    },
+    {
+      "name": "Clyde",
+      "directions": mine.Clyde_directions,
+      "width": mine.c_w,
+      "height": mine.m_h,
+      "image": "images/wheelchair.png"
+    }
+  ]
 =}
 
 #### View
 reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/pacman.png")) {
-    input[num_moving_sprites] moving_sprites
-    input[num_static_sprites] static_sprites
-    input game_over
-    input score
-    input[5] icon_name
-    input playerpause
-    input restart
-    #logical action announcement
-    #logical action announcementval
-    #input controllerpause
+  input[num_moving_sprites] moving_sprites
+  input[num_static_sprites] static_sprites
+  input game_over
+  input score
+  input[5] icon_name
+  input playerpause
+  input restart
+  #logical action announcement
+  #logical action announcementval
+  #input controllerpause
 
-    output tick
-    output[5] icon
+  output tick
+  output[5] icon
+  
+  state _game_over(False)
+  state _screen
+  state _font
+  state _clock
+  state _static_sprites({=mine.pygame.sprite.RenderPlain()=})
+  state _top_corner_text
+  state _active(True)
+  state _announcement(True)
+
+  reaction(startup) {=
+    dirname = os.path.dirname(__file__)
+    agv_icon = mine.pygame.image.load(os.path.join(dirname, self.nav_icon))
+    mine.pygame.display.set_icon(agv_icon)
+
+    self._clock = mine.pygame.time.Clock()    
+    # Create an 606x606 sized screen
+    self._screen = mine.pygame.display.set_mode([606, 606])
+    # Set the title of the window
+    mine.pygame.display.set_caption("Phosphate Mine")
+    # Create a surface we can draw on
+    background = mine.pygame.Surface(self._screen.get_size())
+    # Used for converting color maps and such
+    background = background.convert()      
+    # Fill the screen with a black background
+    background.fill(mine.white)
+    mine.pygame.font.init()
+    self._font = mine.pygame.font.Font("freesansbold.ttf", 18)
+    self._screen.fill(mine.white)
     
-    state _game_over(False)
-    state _screen
-    state _font
-    state _clock
-    state _static_sprites({=mine.pygame.sprite.RenderPlain()=})
-    state _top_corner_text
-    state _active(True)
-    state _announcement(True)
+  =}
 
-    reaction(startup) {=
-        dirname = os.path.dirname(__file__)
-        agv_icon = mine.pygame.image.load(os.path.join(dirname, self.nav_icon))
-        mine.pygame.display.set_icon(agv_icon)
+  reaction (icon_name) -> icon {=
+    for (idx, name) in enumerate(icon_name):
+      if name.is_present:
+        icon[idx].set(mine.pygame.image.load(name.value).convert())
+  =}
 
-        self._clock = mine.pygame.time.Clock()        
-        # Create an 606x606 sized screen
-        self._screen = mine.pygame.display.set_mode([606, 606])
-        # Set the title of the window
-        mine.pygame.display.set_caption("Phosphate Mine")
-        # Create a surface we can draw on
-        background = mine.pygame.Surface(self._screen.get_size())
-        # Used for converting color maps and such
-        background = background.convert()          
-        # Fill the screen with a black background
-        background.fill(mine.white)
-        mine.pygame.font.init()
-        self._font = mine.pygame.font.Font("freesansbold.ttf", 18)
-        self._screen.fill(mine.white)
+  timer pygame_tick(0, 100 msec)  # 10 FPS
+  reaction(pygame_tick) -> tick {=
+    mine.pygame.display.flip()
+    self._clock.tick()
+    tick.set(True)
+  =}
+
+  reaction(static_sprites) {=
+    for sprite in static_sprites:
+      if sprite.is_present and isinstance(sprite.value, mine.pygame.sprite.Group):
+        self._static_sprites.add(sprite.value.sprites())
+      elif isinstance(sprite.value, mine.pygame.sprite.Sprite):
+        self._static_sprites.add(sprite.value)
+    print(self._static_sprites)
+    self._static_sprites.draw(self._screen)
+  =}
+  
+  reaction(score) {=
+    self._top_corner_text=self._font.render("Score: "+str(score.value), True, mine.black)
+    self._screen.blit(self._top_corner_text, [10, 10])
+  =}
+
+  reaction(moving_sprites) {=
+    self._screen.fill(mine.white)
+    agv = mine.pygame.sprite.Sprite()
+    sprite_list = mine.pygame.sprite.RenderPlain()
+    for sprite in moving_sprites:
+      if sprite.is_present and isinstance(sprite.value, mine.pygame.sprite.Group):
+        sprite.value.draw(self._screen)
+      elif isinstance(sprite.value, mine.AGV) and not isinstance(sprite.value, mine.People):
+        agv = sprite.value
+        #print("agv battery is ", agv.battery)
+        sprite_list.add(sprite.value)
+      elif isinstance(sprite.value, mine.pygame.sprite.Sprite):
+        sprite_list.add(sprite.value)
         
-    =}
+    sprite_list.draw(self._screen)
+    self._static_sprites.draw(self._screen)
+    self._screen.blit(self._top_corner_text, [10, 10])
+    self._screen.blit(self._font.render("Battery: " + str(agv.battery), True, mine.black), [10, 28])
+  =}
 
-    reaction (icon_name) -> icon {=
-        for (idx, name) in enumerate(icon_name):
-            if name.is_present:
-                icon[idx].set(mine.pygame.image.load(name.value).convert())
-    =}
+  reaction(playerpause) {=
+    if playerpause.is_present and playerpause.value == True and self._game_over == False:
+      w = mine.pygame.Surface((400,200))  # the size of your rect
+      w.set_alpha(10)        # alpha level
+      w.fill((128,128,128))       # this fills the entire surface
+      self._screen.blit(w, (100,200))  # (0,0) are the top-left coordinates
+  
+      text2=self._font.render("Paused. Press SPACE to continue,", True, mine.black)
+      self._screen.blit(text2, [135, 303])
+      text3=self._font.render("Press M to toggle AI.", True, mine.black)
+      self._screen.blit(text3, [165, 333])
+      mine.pygame.display.flip()
+  =}
 
-    timer pygame_tick(0, 100 msec)  # 10 FPS
-    reaction(pygame_tick) -> tick {=
-        mine.pygame.display.flip()
-        self._clock.tick()
-        tick.set(True)
-    =}
+  reaction(pygame_tick, game_over) {= 
+    #Grey background
+    if game_over.is_present:
+      self._game_over = True
+      w = mine.pygame.Surface((400,200))  # the size of your rect
+      w.set_alpha(10)        # alpha level
+      w.fill((128,128,128))       # this fills the entire surface
+      self._screen.blit(w, (100,200))  # (0,0) are the top-left coordinates
+  
+      #Won or lost
+      if game_over.value:
+        text1=self._font.render("Area Cleared!", True, mine.black)
+      else:
+        text1=self._font.render("Collision detected.", True, mine.black)
+      self._screen.blit(text1, [235, 233])
+  
+      text2=self._font.render("To play again, press ENTER.", True, mine.black)
+      self._screen.blit(text2, [135, 303])
+      text3=self._font.render("To quit, press ESCAPE.", True, mine.black)
+      self._screen.blit(text3, [165, 333])
+      
+      mine.pygame.display.flip()
 
-    reaction(static_sprites) {=
-        for sprite in static_sprites:
-            if sprite.is_present and isinstance(sprite.value, mine.pygame.sprite.Group):
-                self._static_sprites.add(sprite.value.sprites())
-            elif isinstance(sprite.value, mine.pygame.sprite.Sprite):
-                self._static_sprites.add(sprite.value)
-        print(self._static_sprites)
-        self._static_sprites.draw(self._screen)
-    =}
-    
-    reaction(score) {=
-        self._top_corner_text=self._font.render("Score: "+str(score.value), True, mine.black)
-        self._screen.blit(self._top_corner_text, [10, 10])
-    =}
+  =}
 
-    reaction(moving_sprites) {=
-        self._screen.fill(mine.white)
-        agv = mine.pygame.sprite.Sprite()
-        sprite_list = mine.pygame.sprite.RenderPlain()
-        for sprite in moving_sprites:
-            if sprite.is_present and isinstance(sprite.value, mine.pygame.sprite.Group):
-                sprite.value.draw(self._screen)
-            elif isinstance(sprite.value, mine.AGV) and not isinstance(sprite.value, mine.People):
-                agv = sprite.value
-                #print("agv battery is ", agv.battery)
-                sprite_list.add(sprite.value)
-            elif isinstance(sprite.value, mine.pygame.sprite.Sprite):
-                sprite_list.add(sprite.value)
-                
-        sprite_list.draw(self._screen)
-        self._static_sprites.draw(self._screen)
-        self._screen.blit(self._top_corner_text, [10, 10])
-        self._screen.blit(self._font.render("Battery: " + str(agv.battery), True, mine.black), [10, 28])
-    =}
-
-    reaction(playerpause) {=
-        if playerpause.is_present and playerpause.value == True and self._game_over == False:
-            w = mine.pygame.Surface((400,200))  # the size of your rect
-            w.set_alpha(10)                # alpha level
-            w.fill((128,128,128))           # this fills the entire surface
-            self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
-    
-            text2=self._font.render("Paused. Press SPACE to continue,", True, mine.black)
-            self._screen.blit(text2, [135, 303])
-            text3=self._font.render("Press M to toggle AI.", True, mine.black)
-            self._screen.blit(text3, [165, 333])
-            mine.pygame.display.flip()
-    =}
-
-    reaction(pygame_tick, game_over) {= 
-        #Grey background
-        if game_over.is_present:
-            self._game_over = True
-            w = mine.pygame.Surface((400,200))  # the size of your rect
-            w.set_alpha(10)                # alpha level
-            w.fill((128,128,128))           # this fills the entire surface
-            self._screen.blit(w, (100,200))    # (0,0) are the top-left coordinates
-    
-            #Won or lost
-            if game_over.value:
-                text1=self._font.render("Area Cleared!", True, mine.black)
-            else:
-                text1=self._font.render("Collision detected.", True, mine.black)
-            self._screen.blit(text1, [235, 233])
-    
-            text2=self._font.render("To play again, press ENTER.", True, mine.black)
-            self._screen.blit(text2, [135, 303])
-            text3=self._font.render("To quit, press ESCAPE.", True, mine.black)
-            self._screen.blit(text3, [165, 333])
-            
-            mine.pygame.display.flip()
-
-    =}
-
-    reaction(restart) {=
-        self._game_over = False
-    =}
+  reaction(restart) {=
+    self._game_over = False
+  =}
 
 
 }
@@ -219,443 +219,443 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
 #### Model
 ## Base of every character
 reactor BaseCharacter(width(0), height(0), image("images/user.png"), character_class({=mine.AGV=})) {
-    input wall_list # Receive updated wall list
-    input gate_list # Receive updated gate list
-    input icon
+  input wall_list # Receive updated wall list
+  input gate_list # Receive updated gate list
+  input icon
 
-    output sprite
-    output icon_name
+  output sprite
+  output icon_name
 
-    state character_instance
-    state _wall_list
-    state _gate_list
-    state _pause({=False=})
+  state character_instance
+  state _wall_list
+  state _gate_list
+  state _pause({=False=})
 
-    reaction(startup) -> icon_name {=
-        dirname = os.path.dirname(__file__)
-        icon_name.set(os.path.join(dirname, self.image))
-    =}
+  reaction(startup) -> icon_name {=
+    dirname = os.path.dirname(__file__)
+    icon_name.set(os.path.join(dirname, self.image))
+  =}
 
-    reaction(icon) -> sprite {=
-        self.character_instance = self.character_class(self.width, self.height, icon.value)
-        sprite.set(self.character_instance)
-    =}
+  reaction(icon) -> sprite {=
+    self.character_instance = self.character_class(self.width, self.height, icon.value)
+    sprite.set(self.character_instance)
+  =}
 
-    reaction(wall_list, gate_list) {=
-        self._wall_list = wall_list.value
-        self._gate_list = gate_list.value
-    =}
+  reaction(wall_list, gate_list) {=
+    self._wall_list = wall_list.value
+    self._gate_list = gate_list.value
+  =}
 
 }
 
 ###Base Player
 reactor BasePlayer(width(0), height(0), image("images/Trollman.png"), character_class({=mine.Player=})) {
-    input game_over
-    input[4] people_sprites
-    input wall_list # Receive updated wall list
-    input gate_list # Receive updated gate list
-    input icon
+  input game_over
+  input[4] people_sprites
+  input wall_list # Receive updated wall list
+  input gate_list # Receive updated gate list
+  input icon
 
-    state character_instance
+  state character_instance
 
-    output sprite
-    output icon_name
-    output playerpause
-    output restart
+  output sprite
+  output icon_name
+  output playerpause
+  output restart
 
 }
 
 ## Player
 # Should be replacable with an AI
 reactor AGV(width(0), height(0), image("images/Trollman.png"), character_class({=mine.AGV=}), energy_cost(-0.5)) {
-    timer pygame_event(0, 100 msec)
-    state _active(True)
-    
-    input game_over
-    input[4] people_sprites
-    input wall_list # Receive updated wall list
-    input gate_list # Receive updated gate list
-    input icon
+  timer pygame_event(0, 100 msec)
+  state _active(True)
+  
+  input game_over
+  input[4] people_sprites
+  input wall_list # Receive updated wall list
+  input gate_list # Receive updated gate list
+  input icon
 
-    state _people({=[]=})
-    state _layout({=mine.walls=})
-    state _ai_control(True)
-    state character_instance
-    state _wall_list
-    state _gate_list
-    state _pause({=False=})
-    state _eat_moves(0)
-    state _action({="mining"=})
+  state _people({=[]=})
+  state _layout({=mine.walls=})
+  state _ai_control(True)
+  state character_instance
+  state _wall_list
+  state _gate_list
+  state _pause({=False=})
+  state _eat_moves(0)
+  state _action({="mining"=})
 
-    output sprite
-    output icon_name
-    output playerpause
-    output restart
-    
-    initial mode export {
-        reaction(startup) -> icon_name {=
-            dirname = os.path.dirname(__file__)
-            icon_name.set(os.path.join(dirname, self.image))
-        =}
-    
-        reaction(icon) -> sprite {=
-            self.character_instance = self.character_class(self.width, self.height, icon.value)
-            sprite.set(self.character_instance)
-        =}
-    
-        reaction(wall_list, gate_list) {=
-            self._wall_list = wall_list.value
-            self._gate_list = gate_list.value
-        =}
+  output sprite
+  output icon_name
+  output playerpause
+  output restart
+  
+  initial mode export {
+    reaction(startup) -> icon_name {=
+      dirname = os.path.dirname(__file__)
+      icon_name.set(os.path.join(dirname, self.image))
+    =}
+  
+    reaction(icon) -> sprite {=
+      self.character_instance = self.character_class(self.width, self.height, icon.value)
+      sprite.set(self.character_instance)
+    =}
+  
+    reaction(wall_list, gate_list) {=
+      self._wall_list = wall_list.value
+      self._gate_list = gate_list.value
+    =}
 
-        reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
-            #print("in export mode")
-            #print("pause is ", self._pause)
-            #print("ai control is ", self._ai_control)
-            keyboard_events = mine.pygame.event.get()
-            for event in keyboard_events:
-                if event.type == mine.pygame.QUIT:
-                    request_stop()
-                    
-                if event.type == mine.pygame.KEYDOWN:
-                    #print("detecting key down")
-                    if event.key == mine.pygame.K_ESCAPE:
-                        request_stop()
-                    if event.key == mine.pygame.K_RETURN:
-                        restart.set(True)
-                        self.character_instance.resetpos()
-                        self._pause = False
-                        self._active = True
-                        self.character_instance.charge("full")
-                        #print(self.character_instance.rect.left)
-                    if event.key == mine.pygame.K_SPACE:
-                        if self._pause is False:
-                            self._pause = True
-                        else:
-                            self._pause = False
-                    if event.key == mine.pygame.K_m:
-                        self._pause = False
-                        self._ai_control = not self._ai_control
-                    if not self._ai_control and not self._pause and self._active:
-                        if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
-                            self.character_instance.changespeed(-30, 0)
-                        if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
-                            self.character_instance.changespeed(30, 0)
-                        if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
-                            self.character_instance.changespeed(0, -30)
-                        if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
-                            self.character_instance.changespeed(0, 30)
-            
-                if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
-                    if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
-                        self.character_instance.changespeed(30, 0)
-                    if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
-                        self.character_instance.changespeed(-30, 0)
-                    if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
-                        self.character_instance.changespeed(0, 30)
-                    if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
-                        self.character_instance.changespeed(0, -30)
-
-            if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
-                self.character_instance.charge(self.energy_cost)
-                self.character_instance.update(
-                    self._wall_list,
-                    self._gate_list
-                )
-            #print("setting sprite")
-            #print("battery is ", self.character_instance.battery)
-            sprite.set(self.character_instance)
-            playerpause.set(self._pause)
-            if not self._pause and self.character_instance.battery > 0: #and self._active
-                if self._ai_control:
-                    Close.set()
-                
-        =}
-
-        reaction(people_sprites) {=
-            self._ghosts = []
-            for person in people_sprites:
-                if person.is_present:
-                    self._people.append(person.value)
-        =}
-
-        reaction(game_over) {=
-            self._active = False
-            self._pause = True
-            self.character_instance.speedzero()
-        =}
-
-    } mode Charge_check {
-        reaction(reset) -> reset(Close) {=
-            if self.character_instance.battery <= self.charge_at:
-                self._action = "charging"
-            Close.set()
-        =}
-    } mode Location_check {
-        reaction(reset) -> reset(findspot) {=
-            if self._action == "mining" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.minespot:
-                mining.set()
-            elif self._action == "washing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.washspot:
-                washing.set()
-            elif self._action == "filtering" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.filterspot:
-                filtering.set()
-            elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
-                storing.set() 
-            elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
-                charging.set()
+    reaction(pygame_event) -> sprite, playerpause, restart, reset(Close) {=
+      #print("in export mode")
+      #print("pause is ", self._pause)
+      #print("ai control is ", self._ai_control)
+      keyboard_events = mine.pygame.event.get()
+      for event in keyboard_events:
+        if event.type == mine.pygame.QUIT:
+          request_stop()
+          
+        if event.type == mine.pygame.KEYDOWN:
+          #print("detecting key down")
+          if event.key == mine.pygame.K_ESCAPE:
+            request_stop()
+          if event.key == mine.pygame.K_RETURN:
+            restart.set(True)
+            self.character_instance.resetpos()
+            self._pause = False
+            self._active = True
+            self.character_instance.charge("full")
+            #print(self.character_instance.rect.left)
+          if event.key == mine.pygame.K_SPACE:
+            if self._pause is False:
+              self._pause = True
             else:
-                findspot.set()
-        =}
-    } mode findspot {
-        reaction(startup) -> reset(Location_check) {=
-            # implement to go to intended location
-            cond = False
-            if cond:
-                Location_check.set()
-        =}
-    } mode Close {
+              self._pause = False
+          if event.key == mine.pygame.K_m:
+            self._pause = False
+            self._ai_control = not self._ai_control
+          if not self._ai_control and not self._pause and self._active:
+            if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+              self.character_instance.changespeed(-30, 0)
+            if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+              self.character_instance.changespeed(30, 0)
+            if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+              self.character_instance.changespeed(0, -30)
+            if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+              self.character_instance.changespeed(0, 30)
+      
+        if event.type == mine.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+          if event.key == mine.pygame.K_LEFT or event.key == mine.pygame.K_a:
+            self.character_instance.changespeed(30, 0)
+          if event.key == mine.pygame.K_RIGHT or event.key == mine.pygame.K_d:
+            self.character_instance.changespeed(-30, 0)
+          if event.key == mine.pygame.K_UP or event.key == mine.pygame.K_w:
+            self.character_instance.changespeed(0, 30)
+          if event.key == mine.pygame.K_DOWN or event.key == mine.pygame.K_s:
+            self.character_instance.changespeed(0, -30)
 
-        reaction(reset) -> reset(Avoid), history(export) {=
-            #print("in mode close")
-            if len(self._people) > 0:
-                #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
-                if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > 180:
-                    export.set()
-                else:
-                    #print("ghost close")
-                    Avoid.set()
-            else:
-                export.set()
-        =}
+      if not self._ai_control and not self._pause and self._active and self.character_instance.battery > 0:
+        self.character_instance.charge(self.energy_cost)
+        self.character_instance.update(
+          self._wall_list,
+          self._gate_list
+        )
+      #print("setting sprite")
+      #print("battery is ", self.character_instance.battery)
+      sprite.set(self.character_instance)
+      playerpause.set(self._pause)
+      if not self._pause and self.character_instance.battery > 0: #and self._active
+        if self._ai_control:
+          Close.set()
+        
+    =}
 
-    } mode Avoid {
+    reaction(people_sprites) {=
+      self._ghosts = []
+      for person in people_sprites:
+        if person.is_present:
+          self._people.append(person.value)
+    =}
 
-        reaction(reset) -> history(export) {=
-            #print("avoid time")
-            self.character_instance.ai_avoid(self._layout, self._people, 7)
-            if self.character_instance.last_move is not [0, 0]:
-                self.character_instance.charge(self.energy_cost)
-            #self._avoid_moves = self.character_instance.get_num_moves()
-            export.set()
-        =}
+    reaction(game_over) {=
+      self._active = False
+      self._pause = True
+      self.character_instance.speedzero()
+    =}
 
-    }
+  } mode Charge_check {
+    reaction(reset) -> reset(Close) {=
+      if self.character_instance.battery <= self.charge_at:
+        self._action = "charging"
+      Close.set()
+    =}
+  } mode Location_check {
+    reaction(reset) -> reset(findspot) {=
+      if self._action == "mining" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.minespot:
+        mining.set()
+      elif self._action == "washing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.washspot:
+        washing.set()
+      elif self._action == "filtering" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.filterspot:
+        filtering.set()
+      elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+        storing.set() 
+      elif self._action == "storing" and [self.character_instance.rect.left, self.character_instance.rect.top] == mine.storespot:
+        charging.set()
+      else:
+        findspot.set()
+    =}
+  } mode findspot {
+    reaction(startup) -> reset(Location_check) {=
+      # implement to go to intended location
+      cond = False
+      if cond:
+        Location_check.set()
+    =}
+  } mode Close {
+
+    reaction(reset) -> reset(Avoid), history(export) {=
+      #print("in mode close")
+      if len(self._people) > 0:
+        #if len(ai.closeghostdist(self._layout, self._ghosts, self.character_instance.rect.left, self.character_instance.rect.top, 7)) > 6:
+        if ai.euclid_close_people(self._people, self.character_instance.rect.left, self.character_instance.rect.top)[1] > 180:
+          export.set()
+        else:
+          #print("ghost close")
+          Avoid.set()
+      else:
+        export.set()
+    =}
+
+  } mode Avoid {
+
+    reaction(reset) -> history(export) {=
+      #print("avoid time")
+      self.character_instance.ai_avoid(self._layout, self._people, 7)
+      if self.character_instance.last_move is not [0, 0]:
+        self.character_instance.charge(self.energy_cost)
+      #self._avoid_moves = self.character_instance.get_num_moves()
+      export.set()
+    =}
+
+  }
 }
 
 ## Ghosts
 # FIXME: Different Ghosts should have different personalities
 reactor People (directions({=()=}), name("Stinky")) extends BaseCharacter {
-    input tick    
-    input playerpause # pause from player
-    input game_over
-    input restart
-    
-    state turn(0)
-    state steps(0)
-    state _active(True)
-    
-    reaction(playerpause) {=
-       if playerpause.is_present:
-           self._pause = playerpause.value
-    =}
+  input tick  
+  input playerpause # pause from player
+  input game_over
+  input restart
+  
+  state turn(0)
+  state steps(0)
+  state _active(True)
+  
+  reaction(playerpause) {=
+     if playerpause.is_present:
+       self._pause = playerpause.value
+  =}
 
-    reaction(tick) -> sprite {=
-        sprite.set(self.character_instance)
-        if self._pause is False and self._active:
-            returned = self.character_instance.changespeed(
-                self.directions,
-                False,
-                self.turn,
-                self.steps,
-                len(self.directions)-1
-            )
-            self.turn = returned[0]
-            self.steps = returned[1]
-            self.character_instance.changespeed(
-                self.directions,
-                False,
-                self.turn,
-                self.steps,
-                len(self.directions)-1
-            )
-            self.character_instance.update(
-                self._wall_list,
-                False
-            )
-        sprite.set(self.character_instance)
-    =}
-    
-    reaction(game_over) {=
-        self._active = False
-    =}
+  reaction(tick) -> sprite {=
+    sprite.set(self.character_instance)
+    if self._pause is False and self._active:
+      returned = self.character_instance.changespeed(
+        self.directions,
+        False,
+        self.turn,
+        self.steps,
+        len(self.directions)-1
+      )
+      self.turn = returned[0]
+      self.steps = returned[1]
+      self.character_instance.changespeed(
+        self.directions,
+        False,
+        self.turn,
+        self.steps,
+        len(self.directions)-1
+      )
+      self.character_instance.update(
+        self._wall_list,
+        False
+      )
+    sprite.set(self.character_instance)
+  =}
+  
+  reaction(game_over) {=
+    self._active = False
+  =}
 
-    reaction(restart) {=
-        self._active = True
-        self.turn = 0
-        self.steps = 0
-        self.character_instance.resetpos(self.name)
-    =}
+  reaction(restart) {=
+    self._active = True
+    self.turn = 0
+    self.steps = 0
+    self.character_instance.resetpos(self.name)
+  =}
 }
 
 #### Controller
 reactor GameController(number_of_people(4)) {
-    output wall_list  # List of walls on the map
-    output gate
-    output mines
-    output charger
-    output wash
-    output filt
-    output store
-    output score # The game score
-    output game_over
+  output wall_list  # List of walls on the map
+  output gate
+  output mines
+  output charger
+  output wash
+  output filt
+  output store
+  output score # The game score
+  output game_over
 
-    input[number_of_people] people_sprites
-    input agv_sprite
-    input tick # The game tick
-    input restart
-        
-    state _wall_list 
-    state _gate 
-    state _mine
-    state _charger
-    state _wash
-    state _filter
-    state _store
-    state _score_to_win(0)
-    state _score(0)
-    state _agv_sprite
-    state _agv_collide({=mine.pygame.sprite.RenderPlain()=})
-    state _energizer_list({=mine.pygame.sprite.RenderPlain()=})
-    state _energizer_indices({=[0, 0]=})
+  input[number_of_people] people_sprites
+  input agv_sprite
+  input tick # The game tick
+  input restart
+    
+  state _wall_list 
+  state _gate 
+  state _mine
+  state _charger
+  state _wash
+  state _filter
+  state _store
+  state _score_to_win(0)
+  state _score(0)
+  state _agv_sprite
+  state _agv_collide({=mine.pygame.sprite.RenderPlain()=})
+  state _energizer_list({=mine.pygame.sprite.RenderPlain()=})
+  state _energizer_indices({=[0, 0]=})
    
-    reaction(startup) -> wall_list, gate, mines, charger, wash, filt, store {=
-        _all_sprites_list = mine.pygame.sprite.RenderPlain()
-        self._wall_list = mine.setupMineWalls(_all_sprites_list)
-        self._gate = mine.setupGate(_all_sprites_list)
-        self._mine = mine.ActionPlace("mine", mine.burgundy, 51, 81, 30, 30)
-        self._charger = mine.ActionPlace("charger", mine.green, 51, 501, 30, 30)
-        self._wash = mine.ActionPlace("wash", mine.wash_blue, 261, 201, 30, 30)
-        self._filter = mine.ActionPlace("filter", mine.filter_orange, 411, 531, 30, 30)
-        self._store = mine.ActionPlace("store", mine.gray, 531, 111, 30, 30)
-        wall_list.set(self._wall_list)
-        gate.set(self._gate)
-        mines.set(self._mine)
-        charger.set(self._charger)
-        wash.set(self._wash)
-        filt.set(self._filter)
-        store.set(self._store)
-    =}
-    
-    reaction(agv_sprite) {=
-        self._agv_collide.empty()
-        self._agv_collide.add(agv_sprite.value)
-        self._agv_sprite = agv_sprite.value
-    =}
+  reaction(startup) -> wall_list, gate, mines, charger, wash, filt, store {=
+    _all_sprites_list = mine.pygame.sprite.RenderPlain()
+    self._wall_list = mine.setupMineWalls(_all_sprites_list)
+    self._gate = mine.setupGate(_all_sprites_list)
+    self._mine = mine.ActionPlace("mine", mine.burgundy, 51, 81, 30, 30)
+    self._charger = mine.ActionPlace("charger", mine.green, 51, 501, 30, 30)
+    self._wash = mine.ActionPlace("wash", mine.wash_blue, 261, 201, 30, 30)
+    self._filter = mine.ActionPlace("filter", mine.filter_orange, 411, 531, 30, 30)
+    self._store = mine.ActionPlace("store", mine.gray, 531, 111, 30, 30)
+    wall_list.set(self._wall_list)
+    gate.set(self._gate)
+    mines.set(self._mine)
+    charger.set(self._charger)
+    wash.set(self._wash)
+    filt.set(self._filter)
+    store.set(self._store)
+  =}
+  
+  reaction(agv_sprite) {=
+    self._agv_collide.empty()
+    self._agv_collide.add(agv_sprite.value)
+    self._agv_sprite = agv_sprite.value
+  =}
 
-    reaction(agv_sprite) -> score, game_over {=
-        # blocks_hit_list = mine.pygame.sprite.spritecollide(self._agv_sprite, self._block_list, True)
-                
-        # Check the list of collisions.
-        #if len(blocks_hit_list) > 0:
-        #    self._score +=len(blocks_hit_list)
-
-        #if self._score == self._score_to_win:
-        #    game_over.set(True)
-    
-        score.set(self._score)
-    =}
-
-    reaction(people_sprites) -> game_over {=
-        # FIXME: Make this more efficient.
-        monsta_list = mine.pygame.sprite.RenderPlain()
-        for person in people_sprites:
-            if person.is_present:
-                monsta_list.add(person.value)
+  reaction(agv_sprite) -> score, game_over {=
+    # blocks_hit_list = mine.pygame.sprite.spritecollide(self._agv_sprite, self._block_list, True)
         
-        monsta_hit_list = mine.pygame.sprite.spritecollide(self._agv_sprite, monsta_list, False)
+    # Check the list of collisions.
+    #if len(blocks_hit_list) > 0:
+    #  self._score +=len(blocks_hit_list)
 
-        if monsta_hit_list:
-            game_over.set(False)
+    #if self._score == self._score_to_win:
+    #  game_over.set(True)
+  
+    score.set(self._score)
+  =}
 
-    =}
-
-        
-    reaction(restart) {=
-        if restart.value:
-            
-            self._score_to_win = 5
-            #print(self._energizer_list)
-            self._score = 0
-    =}
+  reaction(people_sprites) -> game_over {=
+    # FIXME: Make this more efficient.
+    monsta_list = mine.pygame.sprite.RenderPlain()
+    for person in people_sprites:
+      if person.is_present:
+        monsta_list.add(person.value)
     
-    reaction(shutdown) {=
-        mine.pygame.quit()
-    =}
+    monsta_hit_list = mine.pygame.sprite.spritecollide(self._agv_sprite, monsta_list, False)
+
+    if monsta_hit_list:
+      game_over.set(False)
+
+  =}
+
+    
+  reaction(restart) {=
+    if restart.value:
+      
+      self._score_to_win = 5
+      #print(self._energizer_list)
+      self._score = 0
+  =}
+  
+  reaction(shutdown) {=
+    mine.pygame.quit()
+  =}
 
 }
 
 main reactor {
-    ### Controller
-    controller = new GameController()
+  ### Controller
+  controller = new GameController()
 
-    ### Model(s)
-    agv = new AGV(width = {=mine.w=}, height = {=mine.p_h=}, image = "images/roomb1.png")
-    #width = {=mine.w=}, height = {=mine.p_h=}, image = "images/mine.png"
-    
-    # Ghosts
-    peoples = new[4] People(
-        width  = {= people_specs[bank_index]["width"] =}, 
-        height = {= people_specs[bank_index]["height"] =}, 
-        directions = {= people_specs[bank_index]["directions"] =},   
-        name = {= people_specs[bank_index]["name"] =},
-        character_class = ({=mine.People=})
-    )
-    # image  = {= ghost_specs[bank_index]["image"] =}
+  ### Model(s)
+  agv = new AGV(width = {=mine.w=}, height = {=mine.p_h=}, image = "images/roomb1.png")
+  #width = {=mine.w=}, height = {=mine.p_h=}, image = "images/mine.png"
+  
+  # Ghosts
+  peoples = new[4] People(
+    width  = {= people_specs[bank_index]["width"] =}, 
+    height = {= people_specs[bank_index]["height"] =}, 
+    directions = {= people_specs[bank_index]["directions"] =},   
+    name = {= people_specs[bank_index]["name"] =},
+    character_class = ({=mine.People=})
+  )
+  # image  = {= ghost_specs[bank_index]["image"] =}
 
-    ### View
-    display = new Display( num_moving_sprites = 5, num_static_sprites = 7 )
+  ### View
+  display = new Display( num_moving_sprites = 5, num_static_sprites = 7 )
 
-    # Send the list of walls to the ghosts so that they can avoid running into walls
-    (controller.wall_list)+ -> peoples.wall_list
+  # Send the list of walls to the ghosts so that they can avoid running into walls
+  (controller.wall_list)+ -> peoples.wall_list
 
-    # Send the sprites to the display to be drawn 
-        #controller.block_list
-        agv.sprite, 
-        peoples.sprite -> 
-            display.moving_sprites
-    
-    (controller.wall_list, controller.gate)+ -> 
-        agv.wall_list, agv.gate_list
-    
-    controller.wall_list, controller.gate, controller.mines, 
-        controller.charger, controller.wash, controller.filt, controller.store -> 
-            display.static_sprites
+  # Send the sprites to the display to be drawn 
+    #controller.block_list
+    agv.sprite, 
+    peoples.sprite -> 
+      display.moving_sprites
+  
+  (controller.wall_list, controller.gate)+ -> 
+    agv.wall_list, agv.gate_list
+  
+  controller.wall_list, controller.gate, controller.mines, 
+    controller.charger, controller.wash, controller.filt, controller.store -> 
+      display.static_sprites
 
-    (display.tick)+ -> 
-        controller.tick, 
-        peoples.tick
+  (display.tick)+ -> 
+    controller.tick, 
+    peoples.tick
 
-    #Send pause player to game controller and ghosts
-    (agv.playerpause)+ -> peoples.playerpause, display.playerpause
-    
-    #Send pause controller to player and ghosts
-    #controller.controllerpause -> player.controllerpause
-    
-    agv.sprite -> controller.agv_sprite
+  #Send pause player to game controller and ghosts
+  (agv.playerpause)+ -> peoples.playerpause, display.playerpause
+  
+  #Send pause controller to player and ghosts
+  #controller.controllerpause -> player.controllerpause
+  
+  agv.sprite -> controller.agv_sprite
  
-    (peoples.sprite)+ -> controller.people_sprites, agv.people_sprites
-    
-    controller.score -> display.score
+  (peoples.sprite)+ -> controller.people_sprites, agv.people_sprites
+  
+  controller.score -> display.score
 
-    peoples.icon_name, agv.icon_name -> display.icon_name
+  peoples.icon_name, agv.icon_name -> display.icon_name
 
-    display.icon -> peoples.icon, agv.icon
+  display.icon -> peoples.icon, agv.icon
+  
+  #sending game_over to player causes problem
+  (controller.game_over)+ -> display.game_over, agv.game_over, peoples.game_over
+  
+  (agv.restart)+ -> controller.restart, display.restart, peoples.restart
     
-    #sending game_over to player causes problem
-    (controller.game_over)+ -> display.game_over, agv.game_over, peoples.game_over
-    
-    (agv.restart)+ -> controller.restart, display.restart, peoples.restart
-        
-    #controller.block_list -> agv.block_list
-    
+  #controller.block_list -> agv.block_list
+  
 }

@@ -33,20 +33,20 @@
  * @author Edward A. Lee
  */
 target C {
-    timeout: 1 sec
+  timeout: 1 sec
 }
 
 preamble {=
-    // Queue is a circular buffer. The tail variable points to the
-    // position to write to.
+  // Queue is a circular buffer. The tail variable points to the
+  // position to write to.
 
-    typedef struct request_q_t {
-        int* queue;
-        int head;
-        int tail;
-        int size;
-        int capacity;
-    } request_q_t;
+  typedef struct request_q_t {
+    int* queue;
+    int head;
+    int tail;
+    int size;
+    int capacity;
+  } request_q_t;
 =}
 
 /**
@@ -63,63 +63,63 @@ preamble {=
  * @output update Release the resource.
  */
 reactor Client(
-    idle_time: time = 150 msec,
-    use_time: time = 30 msec,
-    id: int = 0,
-    name: char* = "unnamed Client"  // Used for more visible logging
+  idle_time: time = 150 msec,
+  use_time: time = 30 msec,
+  id: int = 0,
+  name: char* = "unnamed Client"  // Used for more visible logging
 ) {
-    logical action request_trigger(idle_time)
-    logical action release_trigger(use_time)
+  logical action request_trigger(idle_time)
+  logical action release_trigger(use_time)
 
-    input grant: bool
+  input grant: bool
 
-    output request: bool
-    output release: bool
+  output request: bool
+  output release: bool
 
-    state requests_outstanding: int = 0
+  state requests_outstanding: int = 0
 
-    reaction(startup, release_trigger) -> release, request_trigger {=
-        if (release_trigger->is_present) {
-            tag_t tag = lf_tag();
-            lf_print("%s (ID %d): At tag (%lld, %u), released access.",
-                self->name,
-                self->id,
-                tag.time - lf_time_start(), tag.microstep
-            );
-            lf_set(release, true);
-        }
-        lf_schedule(request_trigger, 0);
-    =}
+  reaction(startup, release_trigger) -> release, request_trigger {=
+    if (release_trigger->is_present) {
+      tag_t tag = lf_tag();
+      lf_print("%s (ID %d): At tag (%lld, %u), released access.",
+        self->name,
+        self->id,
+        tag.time - lf_time_start(), tag.microstep
+      );
+      lf_set(release, true);
+    }
+    lf_schedule(request_trigger, 0);
+  =}
 
-    reaction(request_trigger) -> request {=
-        tag_t tag = lf_tag();
-        lf_print("%s (ID %d): At tag (%lld, %u), requesting access.",
-            self->name,
-            self->id,
-            tag.time - lf_time_start(), tag.microstep
-        );
-        self->requests_outstanding++;
-        lf_set(request, true);
-    =}
+  reaction(request_trigger) -> request {=
+    tag_t tag = lf_tag();
+    lf_print("%s (ID %d): At tag (%lld, %u), requesting access.",
+      self->name,
+      self->id,
+      tag.time - lf_time_start(), tag.microstep
+    );
+    self->requests_outstanding++;
+    lf_set(request, true);
+  =}
 
-    reaction(grant) -> release_trigger {=
-        tag_t tag = lf_tag();
-        lf_print("%s (ID %d): At tag (%lld, %u), granted access.",
-            self->name,
-            self->id,
-            tag.time - lf_time_start(), tag.microstep
-        );
-        self->requests_outstanding--;
-        lf_schedule(release_trigger, 0);
-    =}
+  reaction(grant) -> release_trigger {=
+    tag_t tag = lf_tag();
+    lf_print("%s (ID %d): At tag (%lld, %u), granted access.",
+      self->name,
+      self->id,
+      tag.time - lf_time_start(), tag.microstep
+    );
+    self->requests_outstanding--;
+    lf_schedule(release_trigger, 0);
+  =}
 
-    reaction(shutdown) {=
-        lf_print("%s (ID %d): Number of requests that were never granted: %d",
-            self->name,
-            self->id,
-            self->requests_outstanding
-        );
-    =}
+  reaction(shutdown) {=
+    lf_print("%s (ID %d): Number of requests that were never granted: %d",
+      self->name,
+      self->id,
+      self->requests_outstanding
+    );
+  =}
 }
 
 /**
@@ -151,222 +151,222 @@ reactor Client(
  * @output release Broadcast release to other resource managers.
  */
 reactor ResourceManager(
-    name: char* = "unnamed ResourceManager",
-    id: int = 0,
-    num_other_resource_managers: int = 1
+  name: char* = "unnamed ResourceManager",
+  id: int = 0,
+  num_other_resource_managers: int = 1
 ) {
-    input local_request: bool
-    input local_release: bool
-    input[num_other_resource_managers] remote_request: int
-    input[num_other_resource_managers] remote_release: int
+  input local_request: bool
+  input local_release: bool
+  input[num_other_resource_managers] remote_request: int
+  input[num_other_resource_managers] remote_release: int
 
-    output request: int
-    output release: int
-    output local_grant: bool
+  output request: int
+  output release: int
+  output local_grant: bool
 
-    state queue: request_q_t
+  state queue: request_q_t
 
-    preamble {=
-        // Return the index of the next entry on the queue if there is one,
-        // and otherwise return -1.  If the argument is negative, then this
-        // returns the first entry on the queue or -1 if the queue is empty.
-        // Otherwise, if the argument specifies the index of entry on the queue,
-        // return the index of the next entry or -1 if there is none.
-        // Otherwise, return -1.
-        // If the entry is non-negative by not on the queue at all, return -2.
-        int next_index(request_q_t* queue, int index) {
-            if (queue->size == 0) return -1; // Queue is empty.
-            if (index < 0) return queue->head;
-            index++;
-            if (index >= queue->capacity) {
-                index = 0;
-            }
-            if (index == queue->tail) return -1; // Reached the tail.
-            return index;
+  preamble {=
+    // Return the index of the next entry on the queue if there is one,
+    // and otherwise return -1.  If the argument is negative, then this
+    // returns the first entry on the queue or -1 if the queue is empty.
+    // Otherwise, if the argument specifies the index of entry on the queue,
+    // return the index of the next entry or -1 if there is none.
+    // Otherwise, return -1.
+    // If the entry is non-negative by not on the queue at all, return -2.
+    int next_index(request_q_t* queue, int index) {
+      if (queue->size == 0) return -1; // Queue is empty.
+      if (index < 0) return queue->head;
+      index++;
+      if (index >= queue->capacity) {
+        index = 0;
+      }
+      if (index == queue->tail) return -1; // Reached the tail.
+      return index;
+    }
+
+    // Push a value to the end of the queue unless the queue is full.
+    // Return -1 if the queue is full and 0 otherwise.
+    int push(request_q_t* queue, int entry) {
+      int next_tail = queue->tail + 1;
+      if (next_tail >= queue->capacity) {
+        next_tail = 0;
+      }
+      if (queue->size >= queue->capacity) {
+        // Queue is full.
+        lf_print_warning("Queue is full. "
+          "Resource request from ID %d will be dropped.",
+          entry
+        );
+        return -1;
+      }
+      queue->queue[queue->tail] = entry;
+      queue->tail = next_tail;
+      queue->size++;
+      return 0;
+    }
+
+    // Pop a value from the head of the queue unless the queue is empty.
+    // Return the value in the argument, or if the argument is NULL,
+    // discard the value.  Return 0 for success and -1
+    // for failure (the queue is empty).
+    int pop(request_q_t* queue, int* result) {
+      if (queue->size == 0) return -1; // Queue is empty.
+      if (result != NULL) {
+        *result = queue->queue[queue->head];
+      }
+      queue->head++;
+      if (queue->head >= queue->capacity) {
+        queue->head = 0;
+      }
+      queue->size--;
+      return 0;
+    }
+
+    // Return 1 if the specified entry is on the specified queue
+    // and 0 otherwise.
+    int on_queue(request_q_t* queue, int entry) {
+      // Iterate over the queue to check.
+      int j = next_index(queue, -1); // Head of the queue or -1 if empty.
+      while (j >= 0) {
+        if (queue->queue[j] == entry) {
+          // The entry is on the queue.
+          return 1;
         }
+        j = next_index(queue, j);
+      }
+      return 0;
+    }
+  =}
 
-        // Push a value to the end of the queue unless the queue is full.
-        // Return -1 if the queue is full and 0 otherwise.
-        int push(request_q_t* queue, int entry) {
-            int next_tail = queue->tail + 1;
-            if (next_tail >= queue->capacity) {
-                next_tail = 0;
-            }
-            if (queue->size >= queue->capacity) {
-                // Queue is full.
-                lf_print_warning("Queue is full. "
-                    "Resource request from ID %d will be dropped.",
-                    entry
-                );
-                return -1;
-            }
-            queue->queue[queue->tail] = entry;
-            queue->tail = next_tail;
-            queue->size++;
-            return 0;
+  reaction(startup) {=
+    self->queue.capacity = self->num_other_resource_managers + 1;
+    self->queue.queue = malloc(sizeof(int) * self->queue.capacity);
+    self->queue.head = 0;
+    self->queue.tail = 0;
+    self->queue.size = 0;
+  =}
+
+  reaction(local_request) -> request {=
+    // Just forward the request. The determination of whether
+    // the request can be granted cannot be made until we have received
+    // any remote requests with the same tag.
+    lf_set(request, self->id);
+  =}
+
+  reaction(local_release) -> release {=
+    if (self->queue.queue[self->queue.head] != self->id) {
+      lf_print_warning("%s (ID %d): attempting to release the resource but "
+        "does not hold it.",
+        self->name,
+        self->id
+      );
+    } else {
+      pop(&self->queue, NULL);
+      lf_set(release, self->id);
+    }
+  =}
+
+  reaction(remote_release) -> local_grant {=
+    for (int i = 0; i < remote_release_width; i++) {
+      if (remote_release[i]->is_present) {
+        // NOTE: There should not be more than one resource release
+        // at any logical tag.
+        if (remote_release[i]->value != self->queue.queue[self->queue.head]) {
+          lf_print_warning("%s: Received release from manager %d, but that "
+            "manager does not hold the resource. Ignoring the release.",
+            self->name,
+            remote_release[i]->value
+          );
+        } else {
+          pop(&self->queue, NULL);
+          if (self->queue.head != self->queue.tail
+            && self->queue.queue[self->queue.head] == self->id
+          ) {
+            // Next request on the queue is me!
+            lf_set(local_grant, true);
+          }
+          // Since there shouldn't be more than one request, return now.
+          return;
         }
+      }
+    }
+  =}
 
-        // Pop a value from the head of the queue unless the queue is empty.
-        // Return the value in the argument, or if the argument is NULL,
-        // discard the value.  Return 0 for success and -1
-        // for failure (the queue is empty).
-        int pop(request_q_t* queue, int* result) {
-            if (queue->size == 0) return -1; // Queue is empty.
-            if (result != NULL) {
-                *result = queue->queue[queue->head];
-            }
-            queue->head++;
-            if (queue->head >= queue->capacity) {
-                queue->head = 0;
-            }
-            queue->size--;
-            return 0;
-        }
-
-        // Return 1 if the specified entry is on the specified queue
-        // and 0 otherwise.
-        int on_queue(request_q_t* queue, int entry) {
-            // Iterate over the queue to check.
-            int j = next_index(queue, -1); // Head of the queue or -1 if empty.
-            while (j >= 0) {
-                if (queue->queue[j] == entry) {
-                    // The entry is on the queue.
-                    return 1;
-                }
-                j = next_index(queue, j);
-            }
-            return 0;
-        }
-    =}
-
-    reaction(startup) {=
-        self->queue.capacity = self->num_other_resource_managers + 1;
-        self->queue.queue = malloc(sizeof(int) * self->queue.capacity);
-        self->queue.head = 0;
-        self->queue.tail = 0;
-        self->queue.size = 0;
-    =}
-
-    reaction(local_request) -> request {=
-        // Just forward the request. The determination of whether
-        // the request can be granted cannot be made until we have received
-        // any remote requests with the same tag.
-        lf_set(request, self->id);
-    =}
-
-    reaction(local_release) -> release {=
-        if (self->queue.queue[self->queue.head] != self->id) {
-            lf_print_warning("%s (ID %d): attempting to release the resource but "
-                "does not hold it.",
+  reaction(local_request, remote_request) -> local_grant {=
+    int local = -1; // -1 indicates there is no local request.
+    if (local_request->is_present) {
+      // If the local node is already on the request queue, ignore the request.
+      if (on_queue(&self->queue, self->id)) {
+        // (this should not happen).
+        lf_print_warning("%s: Redundant resource request. "
+          "My manager ID %d is already on the queue.",
+          self->name,
+          self->id
+        );
+      } else {
+        local = self->id;
+      }
+    }
+    for (int i = 0; i < remote_request_width; i++) {
+      // NOTE: Resource managers must be connected to other
+      // resource managers all in the same order so that they
+      // agree on the order in which simultaneous requests will
+      // be handled.
+      if (remote_request[i]->is_present) {
+        int id = remote_request[i]->value;
+        // Check that the ID is not already on the queue.
+        if (on_queue(&self->queue, id)) {
+          // The ID is already on the queue
+          // (this should not happen).
+          lf_print_warning("%s (ID %d): received redundant resource request. "
+            "Manager %d is already on the queue. Ignoring request.",
+            self->name,
+            self->id,
+            id
+          );
+        } else {
+          // If there is a local request and the local ID has higher priority,
+          // push the local ID first.
+          if (local >= 0 && local < id) {
+            if (push(&self->queue, local) != 0) {
+              lf_print_warning("%s: (ID %d) queue is full. Ignoring local request.",
                 self->name,
                 self->id
+              );
+            }
+            // Indicate that the local request has been pushed.
+            local = -1;
+          }
+          // Now push the remote request.
+          if (push(&self->queue, id) != 0) {
+            lf_print_warning("%s (ID %d): Queue is full. Ignoring request.",
+              self->name,
+              self->id
             );
-        } else {
-            pop(&self->queue, NULL);
-            lf_set(release, self->id);
+          }
         }
-    =}
+      }
+    }
+    // If there is a local request and it has not yet gotten pushed to the queue,
+    // push it now.
+    if (local >= 0) {
+      if (push(&self->queue, local) != 0) {
+        lf_print_warning("%s: (ID %d) queue is full. Ignoring local request.",
+          self->name,
+          self->id
+        );
+      }
+    }
+    // Finally, if there was a local request and the head of the queue
+    // matches the local ID, grant the request.
+    if (local_request->is_present && self->queue.queue[self->queue.head] == self->id) {
+      // Grant request.
+      lf_set(local_grant, true);
+    }
+  =}
 
-    reaction(remote_release) -> local_grant {=
-        for (int i = 0; i < remote_release_width; i++) {
-            if (remote_release[i]->is_present) {
-                // NOTE: There should not be more than one resource release
-                // at any logical tag.
-                if (remote_release[i]->value != self->queue.queue[self->queue.head]) {
-                    lf_print_warning("%s: Received release from manager %d, but that "
-                        "manager does not hold the resource. Ignoring the release.",
-                        self->name,
-                        remote_release[i]->value
-                    );
-                } else {
-                    pop(&self->queue, NULL);
-                    if (self->queue.head != self->queue.tail
-                        && self->queue.queue[self->queue.head] == self->id
-                    ) {
-                        // Next request on the queue is me!
-                        lf_set(local_grant, true);
-                    }
-                    // Since there shouldn't be more than one request, return now.
-                    return;
-                }
-            }
-        }
-    =}
-
-    reaction(local_request, remote_request) -> local_grant {=
-        int local = -1; // -1 indicates there is no local request.
-        if (local_request->is_present) {
-            // If the local node is already on the request queue, ignore the request.
-            if (on_queue(&self->queue, self->id)) {
-                // (this should not happen).
-                lf_print_warning("%s: Redundant resource request. "
-                    "My manager ID %d is already on the queue.",
-                    self->name,
-                    self->id
-                );
-            } else {
-                local = self->id;
-            }
-        }
-        for (int i = 0; i < remote_request_width; i++) {
-            // NOTE: Resource managers must be connected to other
-            // resource managers all in the same order so that they
-            // agree on the order in which simultaneous requests will
-            // be handled.
-            if (remote_request[i]->is_present) {
-                int id = remote_request[i]->value;
-                // Check that the ID is not already on the queue.
-                if (on_queue(&self->queue, id)) {
-                    // The ID is already on the queue
-                    // (this should not happen).
-                    lf_print_warning("%s (ID %d): received redundant resource request. "
-                        "Manager %d is already on the queue. Ignoring request.",
-                        self->name,
-                        self->id,
-                        id
-                    );
-                } else {
-                    // If there is a local request and the local ID has higher priority,
-                    // push the local ID first.
-                    if (local >= 0 && local < id) {
-                        if (push(&self->queue, local) != 0) {
-                            lf_print_warning("%s: (ID %d) queue is full. Ignoring local request.",
-                                self->name,
-                                self->id
-                            );
-                        }
-                        // Indicate that the local request has been pushed.
-                        local = -1;
-                    }
-                    // Now push the remote request.
-                    if (push(&self->queue, id) != 0) {
-                        lf_print_warning("%s (ID %d): Queue is full. Ignoring request.",
-                            self->name,
-                            self->id
-                        );
-                    }
-                }
-            }
-        }
-        // If there is a local request and it has not yet gotten pushed to the queue,
-        // push it now.
-        if (local >= 0) {
-            if (push(&self->queue, local) != 0) {
-                lf_print_warning("%s: (ID %d) queue is full. Ignoring local request.",
-                    self->name,
-                    self->id
-                );
-            }
-        }
-        // Finally, if there was a local request and the head of the queue
-        // matches the local ID, grant the request.
-        if (local_request->is_present && self->queue.queue[self->queue.head] == self->id) {
-            // Grant request.
-            lf_set(local_grant, true);
-        }
-    =}
-
-    reaction(shutdown) {= free(self->queue.queue); =}
+  reaction(shutdown) {= free(self->queue.queue); =}
 }
 
 /**
@@ -391,58 +391,58 @@ reactor ResourceManager(
  * @output release An output to broadcast a local release of the resource.
  */
 reactor Platform(
-    idle_time: time = 150 msec,
-    use_time: time = 30 msec,
-    num_other_resource_managers: int = 1,
-    id: int = 0,
-    name: char* = "unnamed Platform"  // Used for more visible logging
+  idle_time: time = 150 msec,
+  use_time: time = 30 msec,
+  num_other_resource_managers: int = 1,
+  id: int = 0,
+  name: char* = "unnamed Platform"  // Used for more visible logging
 ) {
-    input[num_other_resource_managers] remote_request: int
-    input[num_other_resource_managers] remote_release: int
+  input[num_other_resource_managers] remote_request: int
+  input[num_other_resource_managers] remote_release: int
 
-    output request: int
-    output release: int
+  output request: int
+  output release: int
 
-    client = new Client(
-        name = name,
-        id = id,
-        idle_time = idle_time,
-        use_time = use_time
-    )
+  client = new Client(
+    name = name,
+    id = id,
+    idle_time = idle_time,
+    use_time = use_time
+  )
 
-    manager = new ResourceManager(
-        name = name,
-        id = id,
-        num_other_resource_managers = num_other_resource_managers
-    )
+  manager = new ResourceManager(
+    name = name,
+    id = id,
+    num_other_resource_managers = num_other_resource_managers
+  )
 
-    client.request -> manager.local_request
-    client.release -> manager.local_release
-    manager.request -> request
-    manager.release -> release
-    manager.local_grant -> client.grant
-    remote_request -> manager.remote_request
-    remote_release -> manager.remote_release
+  client.request -> manager.local_request
+  client.release -> manager.local_release
+  manager.request -> request
+  manager.release -> release
+  manager.local_grant -> client.grant
+  remote_request -> manager.remote_request
+  remote_release -> manager.remote_release
 }
 
 main reactor ResourceManagement(num_other_resource_managers: int = 1) {
-    // Each platform needs a unique id that is between 0 and QUEUE_SIZE-1.
-    a = new Platform(
-        idle_time = 50 msec,
-        use_time = 60 msec,
-        name = "San Francisco",
-        id = 0,
-        num_other_resource_managers = num_other_resource_managers
-    )
-    b = new Platform(
-        idle_time = 200 msec,
-        use_time = 40 msec,
-        name = "Berkeley",
-        id = 1,
-        num_other_resource_managers = num_other_resource_managers
-    )
-    b.request -> a.remote_request
-    b.release -> a.remote_release
-    a.request -> b.remote_request
-    a.release -> b.remote_release
+  // Each platform needs a unique id that is between 0 and QUEUE_SIZE-1.
+  a = new Platform(
+    idle_time = 50 msec,
+    use_time = 60 msec,
+    name = "San Francisco",
+    id = 0,
+    num_other_resource_managers = num_other_resource_managers
+  )
+  b = new Platform(
+    idle_time = 200 msec,
+    use_time = 40 msec,
+    name = "Berkeley",
+    id = 1,
+    num_other_resource_managers = num_other_resource_managers
+  )
+  b.request -> a.remote_request
+  b.release -> a.remote_release
+  a.request -> b.remote_request
+  a.release -> b.remote_release
 }

@@ -13,30 +13,30 @@
 target C;
 
 reactor Node(
-    num_nodes: size_t(4),
-    bank_index: int(0)
+  num_nodes: size_t(4),
+  bank_index: int(0)
 ) {
-    input[num_nodes] in: int;
-    output[num_nodes] out: int;
-    
-    reaction (startup) -> out{=
-     	lf_print("Hello from node %d!", self->bank_index);
-     	// broadcast my ID to everyone
-     	lf_set(out[(self->bank_index + 1) % self->num_nodes], self->bank_index);    
-    =}
-    
-    reaction (in) {=
-     	for (int i = 0; i < in_width; i++) {
-            if (in[i]->is_present) {
-                lf_print("Node %d received %d on channel %d.",
-                    self->bank_index, in[i]->value, i
-                );
-            }
-        }   
-    =}
+  input[num_nodes] in: int;
+  output[num_nodes] out: int;
+  
+  reaction (startup) -> out{=
+     lf_print("Hello from node %d!", self->bank_index);
+     // broadcast my ID to everyone
+     lf_set(out[(self->bank_index + 1) % self->num_nodes], self->bank_index);  
+  =}
+  
+  reaction (in) {=
+     for (int i = 0; i < in_width; i++) {
+      if (in[i]->is_present) {
+        lf_print("Node %d received %d on channel %d.",
+          self->bank_index, in[i]->value, i
+        );
+      }
+    }   
+  =}
 }
 
 main reactor(num_nodes: size_t(4)) {
-    nodes = new[num_nodes] Node(num_nodes=num_nodes);
-    nodes.out -> interleaved(nodes.in);
+  nodes = new[num_nodes] Node(num_nodes=num_nodes);
+  nodes.out -> interleaved(nodes.in);
 }

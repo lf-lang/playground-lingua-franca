@@ -19,74 +19,74 @@
  * @author Edward A. Lee
  */
 target C {
-    keepalive: true,
-    cmake-include: ["WebSocketCmake.txt"]
+  keepalive: true,
+  cmake-include: ["WebSocketCmake.txt"]
 }
 
 import WebSocketServer from "WebSocketServer.lf"
 
 preamble {=
-    #include "hashset/hashset.h"  // For storing web socket instances that are connected.
+  #include "hashset/hashset.h"  // For storing web socket instances that are connected.
 =}
 
 main reactor {
-    state count: int = 0
-    logical action send_action: web_socket_instance_t*
+  state count: int = 0
+  logical action send_action: web_socket_instance_t*
 
-    state connected_instances: hashset_t = {= NULL =}
+  state connected_instances: hashset_t = {= NULL =}
 
-    s = new WebSocketServer(max_clients = 2)  // Limit number of clients to 2.
+  s = new WebSocketServer(max_clients = 2)  // Limit number of clients to 2.
 
-    reaction(startup) -> s.send {=
-        lf_set_destructor(s.send, web_socket_message_destructor);
-        lf_set_copy_constructor(s.send, web_socket_message_copy_constructor);
+  reaction(startup) -> s.send {=
+    lf_set_destructor(s.send, web_socket_message_destructor);
+    lf_set_copy_constructor(s.send, web_socket_message_copy_constructor);
 
-        lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
-        self->connected_instances = hashset_create(2); // Default capacity for four instances.
-    =}
+    lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
+    self->connected_instances = hashset_create(2); // Default capacity for four instances.
+  =}
 
-    reaction(send_action) -> s.send, send_action {=
-        // If the web socket is no longer connected, the instance will not be in the hashset.
-        if (hashset_is_member(self->connected_instances, send_action->value->wsi)) {
-            char* message;
-            asprintf(&message, "Count is: %d", self->count++);
+  reaction(send_action) -> s.send, send_action {=
+    // If the web socket is no longer connected, the instance will not be in the hashset.
+    if (hashset_is_member(self->connected_instances, send_action->value->wsi)) {
+      char* message;
+      asprintf(&message, "Count is: %d", self->count++);
 
-            web_socket_message_t* container = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
-            container->message = message;
-            container->length = strlen(message) + 1;
-            container->wsi = send_action->value->wsi;
+      web_socket_message_t* container = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+      container->message = message;
+      container->length = strlen(message) + 1;
+      container->wsi = send_action->value->wsi;
 
-            lf_set(s.send, container);
-            // Schedule the next send.
-            lf_schedule_token(send_action, SEC(1), send_action->token);
-        }
-    =}
+      lf_set(s.send, container);
+      // Schedule the next send.
+      lf_schedule_token(send_action, SEC(1), send_action->token);
+    }
+  =}
 
-    reaction(s.connected) -> send_action {=
-        if (s.connected->value.connected) {
-            lf_print("======== Connected a new client");
-        } else {
-            lf_print("======== Disconnected client");
-        }
-        if (s.connected->value.connected) {
-            // New connection.
-            hashset_add(self->connected_instances, s.connected->value.wsi);
+  reaction(s.connected) -> send_action {=
+    if (s.connected->value.connected) {
+      lf_print("======== Connected a new client");
+    } else {
+      lf_print("======== Disconnected client");
+    }
+    if (s.connected->value.connected) {
+      // New connection.
+      hashset_add(self->connected_instances, s.connected->value.wsi);
 
-            // Start sending.
-            lf_schedule_copy(send_action, 0, &s.connected->value, 1);
-        } else {
-            // Disconnecting. Remove from hashset to prevent further scheduling.
-            hashset_remove(self->connected_instances, s.connected->value.wsi);
-        }
-    =}
+      // Start sending.
+      lf_schedule_copy(send_action, 0, &s.connected->value, 1);
+    } else {
+      // Disconnecting. Remove from hashset to prevent further scheduling.
+      hashset_remove(self->connected_instances, s.connected->value.wsi);
+    }
+  =}
 
-    reaction(s.received) {=
-        lf_print("======== Application received: %s", s.received->value->message);
-    =}
+  reaction(s.received) {=
+    lf_print("======== Application received: %s", s.received->value->message);
+  =}
 
-    reaction(shutdown) {=
-        if (self->connected_instances != NULL) {
-            hashset_destroy(self->connected_instances);
-        }
-    =}
+  reaction(shutdown) {=
+    if (self->connected_instances != NULL) {
+      hashset_destroy(self->connected_instances);
+    }
+  =}
 }

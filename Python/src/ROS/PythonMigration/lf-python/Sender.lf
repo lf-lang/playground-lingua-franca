@@ -14,45 +14,45 @@
 target Python;
 
 preamble {=
-    # Locate the MinimalPublisher class written for ROS
-    # After source the ros package, 
-    # Python import would be:
-    # from [package name].[file name] import [class name]
-    from py_pubsub.publisher_member_function import MinimalPublisher
+  # Locate the MinimalPublisher class written for ROS
+  # After source the ros package, 
+  # Python import would be:
+  # from [package name].[file name] import [class name]
+  from py_pubsub.publisher_member_function import MinimalPublisher
 
-    # copy and paste all imports from python file to here
-    import rclpy
-    from rclpy.node import Node
-    from std_msgs.msg import String
+  # copy and paste all imports from python file to here
+  import rclpy
+  from rclpy.node import Node
+  from std_msgs.msg import String
 =}
 
 reactor Sender {
-    state minimal_publisher;
-    timer t(0, 500ms);
-    output topic;
+  state minimal_publisher;
+  timer t(0, 500ms);
+  output topic;
 
-    reaction(startup) {=
-        rclpy.init(args=None)
-        self.minimal_publisher = MinimalPublisher()
-        
-        # rclpy.spin is commented out.
-        #rclpy.spin(self.minimal_publisher)
-    =}
+  reaction(startup) {=
+    rclpy.init(args=None)
+    self.minimal_publisher = MinimalPublisher()
+    
+    # rclpy.spin is commented out.
+    #rclpy.spin(self.minimal_publisher)
+  =}
 
-    reaction(t) -> topic {=
-        # Copy and paste the timer callback implementation
-        # from ROS to Lingua Franca,
-        # and replace the ROS publish method with Lingua Franca
+  reaction(t) -> topic {=
+    # Copy and paste the timer callback implementation
+    # from ROS to Lingua Franca,
+    # and replace the ROS publish method with Lingua Franca
 
-        msg = String()
-        msg.data = "Hello World: " + str(self.minimal_publisher.i)
-        topic.set(msg)
-        print("[LF] Publishing: " + str(msg.data))
-        self.minimal_publisher.i += 1
-    =}
+    msg = String()
+    msg.data = "Hello World: " + str(self.minimal_publisher.i)
+    topic.set(msg)
+    print("[LF] Publishing: " + str(msg.data))
+    self.minimal_publisher.i += 1
+  =}
 
-    reaction(shutdown) {=
-        self.minimal_publisher.destroy_node()
-        rclpy.shutdown()
-    =}
+  reaction(shutdown) {=
+    self.minimal_publisher.destroy_node()
+    rclpy.shutdown()
+  =}
 }

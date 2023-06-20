@@ -8,105 +8,105 @@
 target C {keepalive: true};
 
 preamble {=
-    #include <stdio.h>
-    struct {
-        void* move;
-        void* open;
-        void* close;
-    } buttons;
-    
-    void* read_input(void* arg) {
-        printf("***************************************************************\n");
-        printf("Press 'o' and hit return or enter to open the door\n");
-        printf("Press 'c' and hit return or enter to close the door\n");
-        printf("Press 'm' and hit return or enter perturb the motion sensor\n");
-        printf("Press 'Control-d' to exit\n");
-        while(1) {
-            int c = getchar();
-            if (c == 'm') {
-                lf_schedule(buttons.move, 0);
-            }
-            if (c == 'o') {
-                lf_schedule(buttons.open, 0);
-            }
-            if (c == 'c') {
-                lf_schedule(buttons.close, 0);
-            }
-            if (c == EOF) {
-                break;
-            }
-        }
-        request_stop();
-        return NULL;
-    }   
+  #include <stdio.h>
+  struct {
+    void* move;
+    void* open;
+    void* close;
+  } buttons;
+  
+  void* read_input(void* arg) {
+    printf("***************************************************************\n");
+    printf("Press 'o' and hit return or enter to open the door\n");
+    printf("Press 'c' and hit return or enter to close the door\n");
+    printf("Press 'm' and hit return or enter perturb the motion sensor\n");
+    printf("Press 'Control-d' to exit\n");
+    while(1) {
+      int c = getchar();
+      if (c == 'm') {
+        lf_schedule(buttons.move, 0);
+      }
+      if (c == 'o') {
+        lf_schedule(buttons.open, 0);
+      }
+      if (c == 'c') {
+        lf_schedule(buttons.close, 0);
+      }
+      if (c == EOF) {
+        break;
+      }
+    }
+    request_stop();
+    return NULL;
+  }   
 =}
 
 reactor MotionDetector {
-    physical action movement;
-    state timestamp:time(0);
-    input check:bool;
-    output ok:bool;
-    reaction(startup) -> movement {=
-        buttons.move = movement;
-        lf_thread_t thread_id;
-        lf_thread_create(&thread_id, &read_input, NULL);
-	=}
-	reaction(movement) {=
-        printf("Motion detected!\n");
-        self->timestamp = lf_time_logical();
-    =}
-    reaction(check) -> ok {=
-        if (self->timestamp == 0L || (lf_time_logical() - self->timestamp) > SECS(2)) {
-            lf_set(ok, true);
-        } else {
-            lf_set(ok, false);
-        }
-    =}
+  physical action movement;
+  state timestamp:time(0);
+  input check:bool;
+  output ok:bool;
+  reaction(startup) -> movement {=
+    buttons.move = movement;
+    lf_thread_t thread_id;
+    lf_thread_create(&thread_id, &read_input, NULL);
+  =}
+  reaction(movement) {=
+    printf("Motion detected!\n");
+    self->timestamp = lf_time_logical();
+  =}
+  reaction(check) -> ok {=
+    if (self->timestamp == 0L || (lf_time_logical() - self->timestamp) > SECS(2)) {
+      lf_set(ok, true);
+    } else {
+      lf_set(ok, false);
+    }
+  =}
 }
 
 reactor DoorController {
-    
-    physical action open;
-    physical action close;
-    
-    output check:bool;
-    input ok:bool;
-    state opened:bool(false);
-    state requested:bool(false);
-    reaction(startup) -> open, close {=
-        buttons.open = open;
-        buttons.close = close;
-	=}
-    
-    reaction(open) -> check {=
-		if (self->opened) {
-        	printf("The door is already open\n");
-        } else {
-            printf("Checking the motion sensor\n");
-			lf_set(check, false);
-			self->requested = true;
-        }
-    =}
-    
-    reaction(close) {=
-        printf("Closing the door\n");
-        self->opened = false;
-    =}
-    
-    reaction(ok) {=
-        if (self->requested && ok->value) {
-            self->opened = true;
-        	printf("Opening the door.\n");   
-        } else {
-        	printf("Cannot open the door; recent motion detected.\n");
-        }
-        self->requested = false;
-    =}
+  
+  physical action open;
+  physical action close;
+  
+  output check:bool;
+  input ok:bool;
+  state opened:bool(false);
+  state requested:bool(false);
+  reaction(startup) -> open, close {=
+    buttons.open = open;
+    buttons.close = close;
+  =}
+  
+  reaction(open) -> check {=
+    if (self->opened) {
+      printf("The door is already open\n");
+    } else {
+      printf("Checking the motion sensor\n");
+      lf_set(check, false);
+      self->requested = true;
+    }
+  =}
+  
+  reaction(close) {=
+    printf("Closing the door\n");
+    self->opened = false;
+  =}
+  
+  reaction(ok) {=
+    if (self->requested && ok->value) {
+      self->opened = true;
+      printf("Opening the door.\n");   
+    } else {
+      printf("Cannot open the door; recent motion detected.\n");
+    }
+    self->requested = false;
+  =}
 }
 
 main reactor TrainDoor {
-	motion = new MotionDetector();
-	door = new DoorController();
-    door.check -> motion.check;
-    motion.ok -> door.ok;
+  motion = new MotionDetector();
+  door = new DoorController();
+  door.check -> motion.check;
+  motion.ok -> door.ok;
 }

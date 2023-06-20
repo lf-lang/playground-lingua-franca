@@ -9,11 +9,11 @@ reactor Controller {
   output stop:bool;
   physical action external_move(100 msec):bool;
   reaction(startup) {=
-    // ... Set up sensing.
+  // ... Set up sensing.
   =}
   reaction(external_move)->lock, move, unlock, stop {=
-    lf_set(lock, external_move->value);
-    lf_set(move, external_move->value);
+  lf_set(lock, external_move->value);
+  lf_set(move, external_move->value);
   =}
 }
 realtime reactor Train {
@@ -21,10 +21,10 @@ realtime reactor Train {
   input stop:bool;
   state moving:bool(false);
   reaction(stop) {=
-    self->moving = false;
+  self->moving = false;
   =} deadline (50 msec) {= =}
   reaction(move) {=
-      self->moving = false;
+    self->moving = false;
   =} deadline(48 msec) {= =}
 }
 realtime reactor Door {
@@ -34,25 +34,25 @@ realtime reactor Door {
   state locked:bool(false);
   state open:bool(false);
   reaction(startup) {=
-    // ... Set up sensing.
+  // ... Set up sensing.
   =} deadline(48 msec) {= =}
   reaction(lock) {=
-    if (lock && self->open) {
-      // ... Actuate to close door.
-      self->open = false;
-    }
-    self->locked = lock->value;
+  if (lock && self->open) {
+    // ... Actuate to close door.
+    self->open = false;
+  }
+  self->locked = lock->value;
   =} deadline(50 msec) {=
-      // ... handle the deadline violation...
+    // ... handle the deadline violation...
   =}
   reaction(unlock) {=
-    self->locked = true;
+  self->locked = true;
   =}
   reaction(external_open) {=
-    if (!self->locked) {
-      // ... Actuate to open door.
-      self->open = true; 
-    }
+  if (!self->locked) {
+    // ... Actuate to open door.
+    self->open = true; 
+  }
   =}
 }
 main reactor {

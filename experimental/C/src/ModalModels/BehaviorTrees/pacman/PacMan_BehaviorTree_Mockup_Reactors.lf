@@ -17,116 +17,116 @@ target C;
 // Utilities
 
 reactor BehaviorNode {
-    input start:bool
-    output success:bool
-    output failure:bool
+  input start:bool
+  output success:bool
+  output failure:bool
 }
 
 reactor MergeOr {
-    input right:bool
-    input left:bool
-    output merged:bool
-    
-    reaction(left, right) -> merged {=
-        lf_set(merged, true);
-    =}
+  input right:bool
+  input left:bool
+  output merged:bool
+  
+  reaction(left, right) -> merged {=
+    lf_set(merged, true);
+  =}
 }
 
 // Actions and Conditions
 
 @btnode("action")
 reactor EatPills extends BehaviorNode {   
-    reaction(start) -> success, failure {==}
+  reaction(start) -> success, failure {==}
 }
 
 @btnode("action")
 reactor AvoidGhost extends BehaviorNode {   
-    reaction(start) -> success, failure {==}
+  reaction(start) -> success, failure {==}
 }
 
 @btnode("action")
 reactor ChaseGhost extends BehaviorNode {   
-    reaction(start) -> success, failure {==}
+  reaction(start) -> success, failure {==}
 }
 
 @btnode("condition")
 reactor GhostClose extends BehaviorNode {   
-    reaction(start) -> success, failure {==}
+  reaction(start) -> success, failure {==}
 }
 
 @btnode("condition")
 reactor GhostScared extends BehaviorNode {   
-    reaction(start) -> success, failure {==}
+  reaction(start) -> success, failure {==}
 }
 
 // Behavior tree structure
 
 @btnode("fallback")
 reactor PacMan0 extends BehaviorNode {
-    left = new PacMan1()
-    right = new EatPills()
-    merge = new MergeOr()
-    
-    start -> left.start
-    left.success -> merge.left
-    left.failure -> right.start
-    right.success -> merge.right
-    right.failure -> failure
-    merge.merged -> success
+  left = new PacMan1()
+  right = new EatPills()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> merge.left
+  left.failure -> right.start
+  right.success -> merge.right
+  right.failure -> failure
+  merge.merged -> success
 }
 
 @btnode("sequence")
 reactor PacMan1 extends BehaviorNode {
-    left = new GhostClose()
-    right = new PacMan2()
-    merge = new MergeOr()
-    
-    start -> left.start
-    left.success -> right.start
-    left.failure -> merge.left
-    right.success -> success
-    right.failure -> merge.right
-    merge.merged -> failure
+  left = new GhostClose()
+  right = new PacMan2()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> right.start
+  left.failure -> merge.left
+  right.success -> success
+  right.failure -> merge.right
+  merge.merged -> failure
 }
 
 @btnode("fallback")
 reactor PacMan2 extends BehaviorNode {
-    left = new PacMan3()
-    right = new AvoidGhost()
-    merge = new MergeOr()
-    
-    start -> left.start
-    left.success -> merge.left
-    left.failure -> right.start
-    right.success -> merge.right
-    right.failure -> failure
-    merge.merged -> success
+  left = new PacMan3()
+  right = new AvoidGhost()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> merge.left
+  left.failure -> right.start
+  right.success -> merge.right
+  right.failure -> failure
+  merge.merged -> success
 }
 
 @btnode("sequence")
 reactor PacMan3 extends BehaviorNode {
-    // Fallback
-    left = new GhostScared()
-    right = new ChaseGhost()
-    merge = new MergeOr()
-    
-    start -> left.start
-    left.success -> right.start
-    left.failure -> merge.left
-    right.success -> success
-    right.failure -> merge.right
-    merge.merged -> failure
+  // Fallback
+  left = new GhostScared()
+  right = new ChaseGhost()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> right.start
+  left.failure -> merge.left
+  right.success -> success
+  right.failure -> merge.right
+  merge.merged -> failure
 }
 
 
 // Root
 
 main reactor {
-    timer t (0, 5msec)
-    
-    bt = new PacMan0()
-    
-    reaction(t) -> bt.start {=
-        lf_set(bt.start, true);
-    =}
+  timer t (0, 5msec)
+  
+  bt = new PacMan0()
+  
+  reaction(t) -> bt.start {=
+    lf_set(bt.start, true);
+  =}
 }

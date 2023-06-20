@@ -22,20 +22,20 @@
  */
 target C
 preamble {=
-    #include <stdlib.h>
-    #include <math.h>
+  #include <stdlib.h>
+  #include <math.h>
 =}
 reactor Random(seed:{=unsigned int=}(0)) {
-    reaction(startup) {=
-        if (self->seed == 0) {
-            self->seed = (unsigned int)lf_time_logical();
-        }
-    =}
-    method random():int {=
-        return rand_r(&self->seed);
-    =}
-    method exponential(lambda:double):double {=
-        double u = random() / (RAND_MAX + 1.0);
-        return -log(1.0 - u) / lambda;
-    =}
+  reaction(startup) {=
+    if (self->seed == 0) {
+      self->seed = (unsigned int)lf_time_logical();
+    }
+  =}
+  method random():int {=
+    return rand_r(&self->seed);
+  =}
+  method exponential(lambda:double):double {=
+    double u = random() / (RAND_MAX + 1.0);
+    return -log(1.0 - u) / lambda;
+  =}
 }

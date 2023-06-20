@@ -13,8 +13,8 @@
 */
 
 target Cpp{
-    cmake-include: "AlarmClock.cmake",
-    keepalive: true
+  cmake-include: "AlarmClock.cmake",
+  keepalive: true
 };
 
 import Network from "./Network.lf";
@@ -24,17 +24,17 @@ import Clock from "./Clock.lf";
 #import Clock.lf;
 
 main reactor AlarmClock {
-    clock = new Clock();
-    network = new Network();
+  clock = new Clock();
+  network = new Network();
 
-    // additon of a new event
-    network.event -> clock.event;
-    network.delete_index -> clock.cancel_by_index;
-    clock.event_dump -> network.updated_events;
+  // additon of a new event
+  network.event -> clock.event;
+  network.delete_index -> clock.cancel_by_index;
+  clock.event_dump -> network.updated_events;
 
-    reaction (startup) {=
-        std::cout << "Starting Lingua Franca AlarmClock" << std::endl;
-    =}
+  reaction (startup) {=
+    std::cout << "Starting Lingua Franca AlarmClock" << std::endl;
+  =}
 }
 
 

@@ -11,14 +11,14 @@
  * @author Edward A. Lee
  */
 target C {
-    timeout: 5 sec
+  timeout: 5 sec
 };
 
 import ReceiveAndSendPeriodically from "lib/SendersAndReceivers.lf";
 
 main reactor (
-    a_1_1:time(0) 
+  a_1_1:time(0) 
 ) {
-    r1 = new ReceiveAndSendPeriodically();
-    r1.out -> r1.in after a_1_1;
+  r1 = new ReceiveAndSendPeriodically();
+  r1.out -> r1.in after a_1_1;
 }

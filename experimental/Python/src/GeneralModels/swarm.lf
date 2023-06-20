@@ -3,62 +3,62 @@
 target Python{};
 
 preamble {=
-    
+  
 =}
 
 ### Unit
 reactor Node(speed(100msec), index(0)) {
+  
+  state _head_index(0)
+  state _node_index
+  
+  input in0
+  input in1
+  input in2
+  input in3
+  input in4
+  
+  output out0
+  output out1
+  output out2
+  output out3
+  
+//  initial mode One {
+//    reaction(in4) {=
+//      Two.set()
+//    =}
+//  } mode Two {
+  timer tick(0, speed)
     
-    state _head_index(0)
-    state _node_index
+  reaction(tick) -> out0, out1, out2, out3 {=
+      
+  =}
     
-    input in0
-    input in1
-    input in2
-    input in3
-    input in4
-    
-    output out0
-    output out1
-    output out2
-    output out3
-    
-//    initial mode One {
-//        reaction(in4) {=
-//            Two.set()
-//        =}
-//    } mode Two {
-    timer tick(0, speed)
-        
-    reaction(tick) -> out0, out1, out2, out3 {=
-            
-    =}
-        
-    reaction(in0, in1, in2, in3){=
-            
-    =}
-//    }
+  reaction(in0, in1, in2, in3){=
+      
+  =}
+//  }
 }
 
 main reactor {
-    node0 = new Node()
-    node1 = new Node(index = 1)
-    node2 = new Node(index = 2)
-    node3 = new Node(index = 3)
-    node4 = new Node(index = 4)
+  node0 = new Node()
+  node1 = new Node(index = 1)
+  node2 = new Node(index = 2)
+  node3 = new Node(index = 3)
+  node4 = new Node(index = 4)
 
-    node0.out0, node0.out1, node0.out2, node0.out3 -> 
-        node1.in0, node2.in0, node3.in0, node4.in0
-        
-    node1.out0, node1.out1, node1.out2, node1.out3 -> 
-        node0.in0, node2.in1, node3.in1, node4.in1
+  node0.out0, node0.out1, node0.out2, node0.out3 -> 
+    node1.in0, node2.in0, node3.in0, node4.in0
     
-    node2.out0, node2.out1, node2.out2, node2.out3 -> 
-        node0.in1, node1.in1, node3.in2, node4.in2
-        
-    node3.out0, node3.out1, node3.out2, node3.out3 -> 
-        node0.in2, node1.in2, node2.in2, node4.in3
-        
-    node4.out0, node4.out1, node4.out2, node4.out3 -> 
-        node0.in3, node1.in3, node2.in3, node3.in3
+  node1.out0, node1.out1, node1.out2, node1.out3 -> 
+    node0.in0, node2.in1, node3.in1, node4.in1
+  
+  node2.out0, node2.out1, node2.out2, node2.out3 -> 
+    node0.in1, node1.in1, node3.in2, node4.in2
+    
+  node3.out0, node3.out1, node3.out2, node3.out3 -> 
+    node0.in2, node1.in2, node2.in2, node4.in3
+    
+  node4.out0, node4.out1, node4.out2, node4.out3 -> 
+    node0.in3, node1.in3, node2.in3, node3.in3
 }

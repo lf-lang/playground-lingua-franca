@@ -6,9 +6,9 @@
  * The code generator generates two TypeScript files:
  * 
  *  * src-gen/DistrubtedHelloWorld/HelloWorld/src/DistrubtedHelloWorld_source.ts:
- *    The program that produces the sequence of messages.
+ *  The program that produces the sequence of messages.
  *  * src-gen/DistrubtedHelloWorld/HelloWorld/src/DistrubtedHelloWorld_print.ts:
- *    The program that prints the sequence of messages received from source.
+ *  The program that prints the sequence of messages received from source.
  *
  * The code generator also creates compiled JavaScript files out of TypeScript
  * files above, respectively.
@@ -29,7 +29,7 @@
  * @author Hokeun Kim
  */
 target TypeScript {
-    timeout: 10 secs
+  timeout: 10 secs
 };
 
 /**
@@ -40,17 +40,17 @@ target TypeScript {
  * @output message The message.
  */
 reactor MessageGenerator(root:string("")) {
-    // Output type char* instead of string is used for dynamically
-    // allocated character arrays (as opposed to static constant strings).
-    output message:string;
-    state count:number(1);
-    // Send first message after 1 sec so that the startup reactions
-    // do not factor into the transport time measurement on the first message.
-    timer t(1 sec, 1 sec);
-    reaction(t) -> message {=
-        message = root + " " + count++;
-        console.log(`At time (elapsed) logical tag ${util.getElapsedLogicalTime()}, source sends message: ${message}`);
-    =}
+  // Output type char* instead of string is used for dynamically
+  // allocated character arrays (as opposed to static constant strings).
+  output message:string;
+  state count:number(1);
+  // Send first message after 1 sec so that the startup reactions
+  // do not factor into the transport time measurement on the first message.
+  timer t(1 sec, 1 sec);
+  reaction(t) -> message {=
+    message = root + " " + count++;
+    console.log(`At time (elapsed) logical tag ${util.getElapsedLogicalTime()}, source sends message: ${message}`);
+  =}
 }
 
 /**
@@ -59,14 +59,14 @@ reactor MessageGenerator(root:string("")) {
  * @input message The message.
  */
 reactor PrintMessage {
-    input message:string;
-    reaction(message) {=
-        console.log(`PrintMessage: At (elapsed) logical time ${util.getElapsedLogicalTime()}, receiver receives: ${message}`);
-    =}
+  input message:string;
+  reaction(message) {=
+    console.log(`PrintMessage: At (elapsed) logical time ${util.getElapsedLogicalTime()}, receiver receives: ${message}`);
+  =}
 }
 
 federated reactor HelloWorld {
-    source = new MessageGenerator(root = "Hello World");
-    print = new PrintMessage();
-    source.message -> print.message;
+  source = new MessageGenerator(root = "Hello World");
+  print = new PrintMessage();
+  source.message -> print.message;
 }

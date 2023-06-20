@@ -14,34 +14,34 @@
 target C;
 
 reactor GhostCloseBehavior {
-    initial mode ChaseGhost {
-        @label("Condition: !GhostScared")
-        reaction() -> AvoidGhost {==}
-        
-        @label("Action: ChaseGhost")
-        reaction() {==}
-    }
-    mode AvoidGhost {
-        @label("Condition: GhostScared")
-        reaction() -> ChaseGhost {==}
-        
-        @label("Action: AvoidGhost")
-        reaction() {==}
-    }
+  initial mode ChaseGhost {
+    @label("Condition: !GhostScared")
+    reaction() -> AvoidGhost {==}
+    
+    @label("Action: ChaseGhost")
+    reaction() {==}
+  }
+  mode AvoidGhost {
+    @label("Condition: GhostScared")
+    reaction() -> ChaseGhost {==}
+    
+    @label("Action: AvoidGhost")
+    reaction() {==}
+  }
 }
 
 main reactor {
-    initial mode HandleGhostClose {
-        @label("Condition: !GhostClose")
-        reaction() -> EatPills {==}
-        
-        inner = new GhostCloseBehavior()
-    }
-    mode EatPills {
-        @label("Condition: GhostClose")
-        reaction() -> reset(HandleGhostClose) {==}
-        
-        @label("Action: EatPills")
-        reaction() {==}
-    }
+  initial mode HandleGhostClose {
+    @label("Condition: !GhostClose")
+    reaction() -> EatPills {==}
+    
+    inner = new GhostCloseBehavior()
+  }
+  mode EatPills {
+    @label("Condition: GhostClose")
+    reaction() -> reset(HandleGhostClose) {==}
+    
+    @label("Action: EatPills")
+    reaction() {==}
+  }
 }

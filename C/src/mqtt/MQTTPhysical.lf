@@ -13,11 +13,11 @@
  * @author Edward A. Lee
  */
 target C {
-    cmake-include: [
-        "include/paho-extension.cmake", // For #include "MQTTClient.h"
-        "include/net_utils.cmake"       // For encode_int64()
-    ],
-    timeout: 10 secs,
+  cmake-include: [
+    "include/paho-extension.cmake", // For #include "MQTTClient.h"
+    "include/net_utils.cmake"     // For encode_int64()
+  ],
+  timeout: 10 secs,
 };
   
 import MQTTPublisher from "lib/MQTTPublisher.lf";
@@ -25,19 +25,19 @@ import MQTTSubscriber from "lib/MQTTSubscriber.lf";
 import MessageGenerator, PrintMessage from "lib/MQTTTestReactors.lf";
 
 main reactor {
-    pub = new MQTTPublisher(
-        topic = "my/test",
-        address = "tcp://localhost:1883"
-    );
-    msg = new MessageGenerator(root = "Hello World");
-    msg.message->pub.in;
-        
-    sub = new MQTTSubscriber(
-        address = "tcp://localhost:1883",
-        topic = "my/test",
-        use_physical_time = true,
-        offset = 0
-    );
-    dsp = new PrintMessage();
-    sub.message->dsp.message;
+  pub = new MQTTPublisher(
+    topic = "my/test",
+    address = "tcp://localhost:1883"
+  );
+  msg = new MessageGenerator(root = "Hello World");
+  msg.message->pub.in;
+    
+  sub = new MQTTSubscriber(
+    address = "tcp://localhost:1883",
+    topic = "my/test",
+    use_physical_time = true,
+    offset = 0
+  );
+  dsp = new PrintMessage();
+  sub.message->dsp.message;
 }

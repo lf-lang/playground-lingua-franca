@@ -10,16 +10,16 @@
 target C
 import Random from "Random.lf"
 reactor RandomDelay(average:time(1 sec)) extends Random {
-    input in:time
-    output out:time
-    logical action a:time
-    reaction(a) -> out {=
-        lf_set(out, a->value);
-    =}
-    reaction(in) -> a {=
-        double lambda = SEC(1) / ((double)self->average);
-        double exp = exponential(lambda);
-        interval_t delay = (interval_t)llround(exp * (double)SEC(1));
-        lf_schedule_copy(a, delay, &in->value, 1);
-    =}
+  input in:time
+  output out:time
+  logical action a:time
+  reaction(a) -> out {=
+    lf_set(out, a->value);
+  =}
+  reaction(in) -> a {=
+    double lambda = SEC(1) / ((double)self->average);
+    double exp = exponential(lambda);
+    interval_t delay = (interval_t)llround(exp * (double)SEC(1));
+    lf_schedule_copy(a, delay, &in->value, 1);
+  =}
 }

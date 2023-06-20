@@ -9,54 +9,54 @@
 target C {timeout: 1 sec};
 
 main reactor {
-	ramp = new Ramp();
-	delay = new Delay2();
-	print = new Print();
-	ramp.y -> delay.x;
-	delay.y -> print.x;
-	
-	ramp2 = new Ramp();
-	print2 = new Print();
-	ramp2.y -> print2.x after 50 msec;
+  ramp = new Ramp();
+  delay = new Delay2();
+  print = new Print();
+  ramp.y -> delay.x;
+  delay.y -> print.x;
+  
+  ramp2 = new Ramp();
+  print2 = new Print();
+  ramp2.y -> print2.x after 50 msec;
 }
 
 /**
  * Generate a counting sequence with outputs every 100 msec.
  */
 reactor Ramp {
-    timer t(0, 100 msec);
-    output y:int;
-    state count:int(0);
-    reaction(t) -> y {=
-   		lf_set(y, self->count);
-   		self->count++;
-    =}
+  timer t(0, 100 msec);
+  output y:int;
+  state count:int(0);
+  reaction(t) -> y {=
+    lf_set(y, self->count);
+    self->count++;
+  =}
 }
 
 /**
  * Realize a logical delay of 50 msec.
  */
 reactor Delay2 {
-    logical action a(50 msec):int;
-	input x:int;
-	output y:int;
-	reaction(a) -> y {=
-        lf_set(y, a->value);
-    =}
-    reaction(x) -> a {=
-        lf_schedule_int(a, 0, x->value);
-    =}
+  logical action a(50 msec):int;
+  input x:int;
+  output y:int;
+  reaction(a) -> y {=
+    lf_set(y, a->value);
+  =}
+  reaction(x) -> a {=
+    lf_schedule_int(a, 0, x->value);
+  =}
 }
 
 /**
  * Print the (elapsed) logical and physical times at which inputs are received.
  */
 reactor Print {
-    input x:int;
-    reaction(x) {=
-        printf("Logical time: %lld, Physical time %lld"
-        		", Value: %d\n",
-        		lf_time_logical_elapsed(),
-        		lf_time_physical_elapsed(), x->value);
-    =}
+  input x:int;
+  reaction(x) {=
+    printf("Logical time: %lld, Physical time %lld"
+        ", Value: %d\n",
+        lf_time_logical_elapsed(),
+        lf_time_physical_elapsed(), x->value);
+  =}
 }

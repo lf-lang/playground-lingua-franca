@@ -2,8 +2,8 @@
  * Demo program illustrating the architecture of a distributed resource management
  * problem like that described in:
  * 
- *     Lamport, L. (1984). "Using Time Instead of Timeout for Fault-Tolerant Distributed Systems."
- *     ACM Transactions on Programming Languages and Systems 6(2): 254-280.
+ *   Lamport, L. (1984). "Using Time Instead of Timeout for Fault-Tolerant Distributed Systems."
+ *   ACM Transactions on Programming Languages and Systems 6(2): 254-280.
  *
  * The goal is distributed first-come, first-served exclusive access to a shared
  * resource.  
@@ -32,29 +32,29 @@
  * @author Edward A. Lee
  */
 target C {
-    timeout: 1 sec
+  timeout: 1 sec
 }
 
 import Platform from "ResourceManagement.lf"
 
 federated reactor FederatedResourceManagement(
-    num_other_resource_managers:int(1)
+  num_other_resource_managers:int(1)
 ) {
-    // Each platform needs a unique id that is between 0 and QUEUE_SIZE-1.
-    a = new Platform(
-            idle_time = 50 msec,
-            use_time = 60 msec,
-            name = "San Francisco",
-            id = 0,
-            num_other_resource_managers = num_other_resource_managers);
-    b = new Platform(
-            idle_time = 200 msec,
-            use_time = 40 msec,
-            name = "Berkeley",
-            id = 1,
-            num_other_resource_managers = num_other_resource_managers);
-    b.request -> a.remote_request;
-    b.release -> a.remote_release;
-    a.request -> b.remote_request;
-    a.release -> b.remote_release;
+  // Each platform needs a unique id that is between 0 and QUEUE_SIZE-1.
+  a = new Platform(
+      idle_time = 50 msec,
+      use_time = 60 msec,
+      name = "San Francisco",
+      id = 0,
+      num_other_resource_managers = num_other_resource_managers);
+  b = new Platform(
+      idle_time = 200 msec,
+      use_time = 40 msec,
+      name = "Berkeley",
+      id = 1,
+      num_other_resource_managers = num_other_resource_managers);
+  b.request -> a.remote_request;
+  b.release -> a.remote_release;
+  a.request -> b.remote_request;
+  a.release -> b.remote_release;
 }

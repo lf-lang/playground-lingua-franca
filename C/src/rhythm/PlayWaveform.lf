@@ -28,89 +28,89 @@
  * @author Edward A. Lee
  */
 target C {
-    files: [
-        "/lib/c/reactor-c/util/wave_file_reader.c",
-        "/lib/c/reactor-c/util/wave_file_reader.h",
-        "/lib/c/reactor-c/util/audio_loop_mac.c",
-        "/lib/c/reactor-c/util/audio_loop.h",
-        "/lib/c/reactor-c/util/audio_loop_linux.c",
-    ],
-    cmake-include: [
-        "/lib/c/reactor-c/util/audio_loop.cmake",
-        "/lib/c/reactor-c/util/wave_file_reader.cmake"
-    ]
+  files: [
+    "/lib/c/reactor-c/util/wave_file_reader.c",
+    "/lib/c/reactor-c/util/wave_file_reader.h",
+    "/lib/c/reactor-c/util/audio_loop_mac.c",
+    "/lib/c/reactor-c/util/audio_loop.h",
+    "/lib/c/reactor-c/util/audio_loop_linux.c",
+  ],
+  cmake-include: [
+    "/lib/c/reactor-c/util/audio_loop.cmake",
+    "/lib/c/reactor-c/util/wave_file_reader.cmake"
+  ]
 }
  
 /**
  * Produce a note when a `note` input is received.
  */
 reactor PlayWaveform (
-    default_waveform_id:int(0)  // Silent waveform
+  default_waveform_id:int(0)  // Silent waveform
 ) {
-    preamble {= 
-        #include <string.h>       // Defines strlen()
-        #include "audio_loop.h"
-        #include "wave_file_reader.h"
-                    
-        // wav files giving the waveforms.
-        // These have to also be included in the files target directive.
-        #define NUM_WAVEFORMS 9  // Number of waveforms.
-        #define SOUNDS LF_PACKAGE_DIRECTORY LF_FILE_SEPARATOR "src" LF_FILE_SEPARATOR "rhythm" LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR
-        char* waveform_files[] = { 
-            SOUNDS "Bass-Drum-1.wav",
-            SOUNDS "Hi-Bongo.wav",
-            SOUNDS "Claves.wav",
-            SOUNDS "High-Conga-1.wav",
-            SOUNDS "Cowbell-1.wav",
-            SOUNDS "Cuica-1.wav",
-            SOUNDS "Guiro.wav",
-            SOUNDS "Ensoniq-ESQ-1-Snare.wav",
-            SOUNDS "Floor-Tom-1.wav"
-        };
-                
-        // The waveforms themselves.
-        lf_waveform_t* waveforms[NUM_WAVEFORMS + 1];
+  preamble {= 
+    #include <string.h>     // Defines strlen()
+    #include "audio_loop.h"
+    #include "wave_file_reader.h"
+          
+    // wav files giving the waveforms.
+    // These have to also be included in the files target directive.
+    #define NUM_WAVEFORMS 9  // Number of waveforms.
+    #define SOUNDS LF_PACKAGE_DIRECTORY LF_FILE_SEPARATOR "src" LF_FILE_SEPARATOR "rhythm" LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR
+    char* waveform_files[] = { 
+      SOUNDS "Bass-Drum-1.wav",
+      SOUNDS "Hi-Bongo.wav",
+      SOUNDS "Claves.wav",
+      SOUNDS "High-Conga-1.wav",
+      SOUNDS "Cowbell-1.wav",
+      SOUNDS "Cuica-1.wav",
+      SOUNDS "Guiro.wav",
+      SOUNDS "Ensoniq-ESQ-1-Snare.wav",
+      SOUNDS "Floor-Tom-1.wav"
+    };
         
-        lf_waveform_t empty_waveform = { 0 };
-    =}
+    // The waveforms themselves.
+    lf_waveform_t* waveforms[NUM_WAVEFORMS + 1];
+    
+    lf_waveform_t empty_waveform = { 0 };
+  =}
 
-    input note:float;
-    input waveform:int;
+  input note:float;
+  input waveform:int;
+  
+  /**
+   * Index of the current waveform.
+   * -1 means no waveform (just make ticks)).
+   */
+  state waveform_id:int(default_waveform_id);
     
-    /**
-     * Index of the current waveform.
-     * -1 means no waveform (just make ticks)).
-     */
-    state waveform_id:int(default_waveform_id);
-        
-    reaction(startup) {=
-        
-        // First waveform is empty.
-        waveforms[0] = &empty_waveform;
-        
-        // Open and read waveform files.
-        for (int i = 0; i < NUM_WAVEFORMS; i++) {
-            waveforms[i + 1] = read_wave_file(waveform_files[i]);
-        }
-        
-        // Start an audio loop that will become ready to receive
-        // amplitude samples of audio data.
-        lf_start_audio_loop(lf_time_logical());
-    =}
+  reaction(startup) {=
     
-    reaction(waveform) {=
-        self->waveform_id = waveform->value;
-    =}
+    // First waveform is empty.
+    waveforms[0] = &empty_waveform;
     
-    reaction(note) {=
-        if (self->waveform_id < 0 || self->waveform_id > NUM_WAVEFORMS) {
-            lf_play_audio_waveform(NULL, note->value, lf_time_logical());
-        } else {
-            lf_play_audio_waveform(waveforms[self->waveform_id], note->value, lf_time_logical());
-        }
-    =}
+    // Open and read waveform files.
+    for (int i = 0; i < NUM_WAVEFORMS; i++) {
+      waveforms[i + 1] = read_wave_file(waveform_files[i]);
+    }
     
-    reaction(shutdown) {=
-        lf_stop_audio_loop();
-    =}
+    // Start an audio loop that will become ready to receive
+    // amplitude samples of audio data.
+    lf_start_audio_loop(lf_time_logical());
+  =}
+  
+  reaction(waveform) {=
+    self->waveform_id = waveform->value;
+  =}
+  
+  reaction(note) {=
+    if (self->waveform_id < 0 || self->waveform_id > NUM_WAVEFORMS) {
+      lf_play_audio_waveform(NULL, note->value, lf_time_logical());
+    } else {
+      lf_play_audio_waveform(waveforms[self->waveform_id], note->value, lf_time_logical());
+    }
+  =}
+  
+  reaction(shutdown) {=
+    lf_stop_audio_loop();
+  =}
 }

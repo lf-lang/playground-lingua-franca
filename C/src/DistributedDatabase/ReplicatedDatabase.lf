@@ -15,27 +15,27 @@
  * @author Soroush Bateni
  */
 target C {
-    timeout: 5 sec
+  timeout: 5 sec
 }
 
 main reactor (
-    query_period:time(1 sec),
-    num_remote_inputs:int(1)
+  query_period:time(1 sec),
+  num_remote_inputs:int(1)
 ) {
-    a = new Platform(
-            query_period = query_period,
-            update_period = 5 sec,
-            update_amount = 100,
-            name = "San Francisco",
-            num_remote_inputs = num_remote_inputs);
-    b = new Platform(
-            query_period = query_period,
-            update_period = 1 sec,
-            update_amount = -20,
-            name = "Berkeley",
-            num_remote_inputs = num_remote_inputs);
-    b.publish -> a.update;
-    a.publish -> b.update;
+  a = new Platform(
+      query_period = query_period,
+      update_period = 5 sec,
+      update_amount = 100,
+      name = "San Francisco",
+      num_remote_inputs = num_remote_inputs);
+  b = new Platform(
+      query_period = query_period,
+      update_period = 1 sec,
+      update_amount = -20,
+      name = "Berkeley",
+      num_remote_inputs = num_remote_inputs);
+  b.publish -> a.update;
+  a.publish -> b.update;
 }
 
 /**
@@ -62,56 +62,56 @@ main reactor (
  * @output update Issue an update.
  */
 reactor Server(
-    name:char*("unnamed server"),
-    query_period:time(150 msec),
-    update_period:time(100 msec),
-    update_deadline:time(200 msec), 
-    update_amount:int(0),
-    server_name:char*("unnamed server")
+  name:char*("unnamed server"),
+  query_period:time(150 msec),
+  update_period:time(100 msec),
+  update_deadline:time(200 msec), 
+  update_amount:int(0),
+  server_name:char*("unnamed server")
 ) {
-    timer query_trigger(0, query_period);
-    timer update_trigger(0, update_period);
-    input reply:int;
-    output query:bool;
-    output update:int;
-    state queries_outstanding:int(0);
-    reaction(query_trigger) -> query {=
-        lf_set(query, true);
-        self->queries_outstanding++;
-    =}
-    
-    reaction(update_trigger) -> update {=
-        lf_set(update, self->update_amount);
-    =} deadline(update_deadline) {=
-        tag_t tag = lf_tag();
-        lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
-                "     Elapsed physical time is %lld.",
-                tag.time - lf_time_start(), 
-                tag.microstep,
-                self->name,
-                lf_time_physical_elapsed()
-        );
-    =}
-    
-    reaction(reply) {=
-        lf_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
-            lf_time_logical_elapsed(), lf_tag().microstep, self->server_name, reply->value
-        );
-        self->queries_outstanding--;
-    =}
-    
-    reaction(shutdown) {=
-        if (self->queries_outstanding != 0) {
-            lf_print_error("Server \"%s\": Number of queries with no reply: %d.", 
-                self->server_name,
-                self->queries_outstanding
-            );
-        } else {
-            lf_print("Server \"%s\" successfully replied to all queries.", 
-                self->server_name
-            );
-        }
-    =}
+  timer query_trigger(0, query_period);
+  timer update_trigger(0, update_period);
+  input reply:int;
+  output query:bool;
+  output update:int;
+  state queries_outstanding:int(0);
+  reaction(query_trigger) -> query {=
+    lf_set(query, true);
+    self->queries_outstanding++;
+  =}
+  
+  reaction(update_trigger) -> update {=
+    lf_set(update, self->update_amount);
+  =} deadline(update_deadline) {=
+    tag_t tag = lf_tag();
+    lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
+        "   Elapsed physical time is %lld.",
+        tag.time - lf_time_start(), 
+        tag.microstep,
+        self->name,
+        lf_time_physical_elapsed()
+    );
+  =}
+  
+  reaction(reply) {=
+    lf_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
+      lf_time_logical_elapsed(), lf_tag().microstep, self->server_name, reply->value
+    );
+    self->queries_outstanding--;
+  =}
+  
+  reaction(shutdown) {=
+    if (self->queries_outstanding != 0) {
+      lf_print_error("Server \"%s\": Number of queries with no reply: %d.", 
+        self->server_name,
+        self->queries_outstanding
+      );
+    } else {
+      lf_print("Server \"%s\" successfully replied to all queries.", 
+        self->server_name
+      );
+    }
+  =}
 }
 
 /**
@@ -154,59 +154,59 @@ reactor Server(
  * @output balance The time value of the record.
  */
 reactor Database(
-    name:char*("unnamed database"),
-    num_remote_inputs:int(1)
+  name:char*("unnamed database"),
+  num_remote_inputs:int(1)
 ) {
-    input local_update:int;
-    input[num_remote_inputs] remote_update:int;
-    input query:bool;
-    output balance:int;
-    state record:int(0);
-    
-    reaction(local_update, remote_update) {=
-        if (local_update->is_present) {
-            self->record += local_update->value;
-        }
-        for (int i = 0; i < remote_update_width; i++) {
-            if (remote_update[i]->is_present) {
-                self->record += remote_update[i]->value;
-            }
-        }
-        lf_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
-                "     Elapsed physical time is %lld.",
-                lf_time_logical() - lf_time_start(), lf_tag().microstep,
-                self->name,
-                self->record,
-                lf_time_physical_elapsed()
-        );
-    =} STP (4 msec) {=
+  input local_update:int;
+  input[num_remote_inputs] remote_update:int;
+  input query:bool;
+  output balance:int;
+  state record:int(0);
+  
+  reaction(local_update, remote_update) {=
+    if (local_update->is_present) {
+      self->record += local_update->value;
+    }
+    for (int i = 0; i < remote_update_width; i++) {
+      if (remote_update[i]->is_present) {
+        self->record += remote_update[i]->value;
+      }
+    }
+    lf_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
+        "   Elapsed physical time is %lld.",
+        lf_time_logical() - lf_time_start(), lf_tag().microstep,
+        self->name,
+        self->record,
+        lf_time_physical_elapsed()
+    );
+  =} STP (4 msec) {=
 #ifdef FEDERATED_DECENTRALIZED
-        for (int i = 0; i < remote_update_width; i++) {
-            if (remote_update[i]->is_present) {
-                lf_print_warning("At tag (%lld, %u), database \"%s\" "
-                        "received remote update (%d) with intended tag (%lld, %u).\n"
-                        "     Balance previously reported may have been incorrect.\n"
-                        "     Elapsed physical time is %lld.",
-                        current_tag.time - lf_time_start(),
-                        current_tag.microstep,
-                        self->name,
-                        remote_update[i]->value,
-                        remote_update[i]->intended_tag.time - lf_time_start(),
-                        remote_update[i]->intended_tag.microstep,
-                        lf_time_physical_elapsed()
-                );
-                self->record += remote_update[i]->value;
-            }
-        }
+    for (int i = 0; i < remote_update_width; i++) {
+      if (remote_update[i]->is_present) {
+        lf_print_warning("At tag (%lld, %u), database \"%s\" "
+            "received remote update (%d) with intended tag (%lld, %u).\n"
+            "   Balance previously reported may have been incorrect.\n"
+            "   Elapsed physical time is %lld.",
+            current_tag.time - lf_time_start(),
+            current_tag.microstep,
+            self->name,
+            remote_update[i]->value,
+            remote_update[i]->intended_tag.time - lf_time_start(),
+            remote_update[i]->intended_tag.microstep,
+            lf_time_physical_elapsed()
+        );
+        self->record += remote_update[i]->value;
+      }
+    }
 #else
-        // The tardy handler should not be invoked
-        lf_print_error_and_exit("FATAL: Update is tardy and coordination is not decentralized.");
+    // The tardy handler should not be invoked
+    lf_print_error_and_exit("FATAL: Update is tardy and coordination is not decentralized.");
 #endif
-    =}
-    
-    reaction(query) -> balance {=
-        lf_set(balance, self->record);
-    =}
+  =}
+  
+  reaction(query) -> balance {=
+    lf_set(balance, self->record);
+  =}
 }
 
 /**
@@ -229,29 +229,29 @@ reactor Database(
  * @output publish A copy of any local updates.
  */
 reactor Platform(
-    query_period:time(150 msec),
-    update_period:time(100 msec),
-    update_amount:int(0),
-    num_remote_inputs:int(1),
-    name:char*("unnamed platform")  // Used for more visible logging
+  query_period:time(150 msec),
+  update_period:time(100 msec),
+  update_amount:int(0),
+  num_remote_inputs:int(1),
+  name:char*("unnamed platform")  // Used for more visible logging
 ) {
-    input[num_remote_inputs] update:int;
-    output publish:int;
-    server = new Server(
-        name = name,
-        query_period = query_period,
-        update_period = update_period,
-        update_amount = update_amount,
-        server_name = name
-    );
-    database = new Database(
-        name = name,
-        num_remote_inputs = num_remote_inputs
-    );
-    server.query -> database.query;
-    server.update -> database.local_update;
-    database.balance -> server.reply;
-    server.update -> publish;
-    update -> database.remote_update;
+  input[num_remote_inputs] update:int;
+  output publish:int;
+  server = new Server(
+    name = name,
+    query_period = query_period,
+    update_period = update_period,
+    update_amount = update_amount,
+    server_name = name
+  );
+  database = new Database(
+    name = name,
+    num_remote_inputs = num_remote_inputs
+  );
+  server.query -> database.query;
+  server.update -> database.local_update;
+  database.balance -> server.reply;
+  server.update -> publish;
+  update -> database.remote_update;
 }
 

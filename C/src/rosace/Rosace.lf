@@ -7,7 +7,7 @@
  * 
  * This implementation is based on code from:
  * 
- *    https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ *  https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
  *
  * Since that original code bears an LGPL license, so does this program:
  * 
@@ -50,9 +50,9 @@
  */
 
 target C {
-    fast: true,
-    build: "./build_run_plot.sh Rosace",
-    timeout: 10 min
+  fast: true,
+  build: "./build_run_plot.sh Rosace",
+  timeout: 10 min
 }
 
 import Aircraft from "AircraftSimulator.lf"
@@ -60,13 +60,13 @@ import RosaceController from "RosaceController.lf"
 import PrintToFile from "../lib/PrintToFile.lf"
 
 preamble {=
-    // Shared constants.
-    // Trimming parameters
-    #define Va_eq (230.0)   // Nominal airspeed?
-    #define h_eq (10000.0)
+  // Shared constants.
+  // Trimming parameters
+  #define Va_eq (230.0)   // Nominal airspeed?
+  #define h_eq (10000.0)
 
-    #define delta_th_eq (1.5868660794926)
-    #define delta_e_eq (0.012009615652468)    
+  #define delta_th_eq (1.5868660794926)
+  #define delta_e_eq (0.012009615652468)  
 =}
 
 // Documentation
@@ -74,34 +74,34 @@ preamble {=
 reactor Variables {}
 
 reactor Command(
-    period: time(100 ms),
-    value: double(0.0)
+  period: time(100 ms),
+  value: double(0.0)
 ) {
-    timer t(0, period)
-    output c:double
-    reaction(t) -> c {=
-        lf_set(c, self->value);
-    =}
+  timer t(0, period)
+  output c:double
+  reaction(t) -> c {=
+    lf_set(c, self->value);
+  =}
 }
 
 main reactor(filter_period: time(10 ms)) {
-    variables = new Variables()
-    a = new Aircraft()
-    c = new RosaceController(filter_period = filter_period)
-    altitude = new Command(value = 11000) // Altitude command
-    speed = new Command(value = 0.0)      // Delta airspeed from nominal Va_eq (230)
+  variables = new Variables()
+  a = new Aircraft()
+  c = new RosaceController(filter_period = filter_period)
+  altitude = new Command(value = 11000) // Altitude command
+  speed = new Command(value = 0.0)    // Delta airspeed from nominal Va_eq (230)
+  
+  p_h = new PrintToFile(filename = "altitude.data")
+  p_Va = new PrintToFile(filename = "airspeed.data")
     
-    p_h = new PrintToFile(filename = "altitude.data")
-    p_Va = new PrintToFile(filename = "airspeed.data")
-        
-    a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
-    altitude.c -> c.c    
-    speed.c -> c.s
-    
-    c.delta_ec -> a.delta_ec
-    c.delta_thc -> a.delta_thc
-    
-    // Print connections.
-    a.h -> p_h.y
-    a.Va -> p_Va.y
+  a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
+  altitude.c -> c.c  
+  speed.c -> c.s
+  
+  c.delta_ec -> a.delta_ec
+  c.delta_thc -> a.delta_thc
+  
+  // Print connections.
+  a.h -> p_h.y
+  a.Va -> p_Va.y
 }

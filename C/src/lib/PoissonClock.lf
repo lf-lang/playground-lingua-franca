@@ -15,22 +15,22 @@
 target C
 import Random from "Random.lf"
 preamble {=
-    #include <math.h>
+  #include <math.h>
 =}
 reactor PoissonClock(lambda:double(1.0)) extends Random {
-    output event:bool
-    logical action a
-    reaction(startup) -> a {=
-        double delta = exponential(self->lambda);
-        // Convert seconds to nanoseconds.
-        interval_t interval = (interval_t)(delta * SEC(1));
-        lf_schedule(a, interval);
-    =}
-    reaction(a) -> event, a {=
-        lf_set(event, true);
-        double delta = exponential(self->lambda);
-        // Convert seconds to nanoseconds.
-        interval_t interval = (interval_t)(delta * SEC(1));
-        lf_schedule(a, interval);
-    =}
+  output event:bool
+  logical action a
+  reaction(startup) -> a {=
+    double delta = exponential(self->lambda);
+    // Convert seconds to nanoseconds.
+    interval_t interval = (interval_t)(delta * SEC(1));
+    lf_schedule(a, interval);
+  =}
+  reaction(a) -> event, a {=
+    lf_set(event, true);
+    double delta = exponential(self->lambda);
+    // Convert seconds to nanoseconds.
+    interval_t interval = (interval_t)(delta * SEC(1));
+    lf_schedule(a, interval);
+  =}
 }

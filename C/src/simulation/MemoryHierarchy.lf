@@ -16,20 +16,20 @@
  * @author Edward A. Lee
  */
 target C {
-    timeout: 10 us
+  timeout: 10 us
 }
 import Random from "../lib/Random.lf"
 import PoissonClock from "../lib/PoissonClock.lf"
 import RandomDelay from "../lib/RandomDelay.lf"
 
 main reactor {
-    client = new Client(seed = 0)
-    cache = new Cache(seed = 0, miss_probability = 0.3)
-    memory = new Memory(seed = 0, average_delay = 100 ns)
-    client.request -> cache.request
-    cache.response ->client.response
-    cache.miss -> memory.request
-    memory.response -> cache.fill
+  client = new Client(seed = 0)
+  cache = new Cache(seed = 0, miss_probability = 0.3)
+  memory = new Memory(seed = 0, average_delay = 100 ns)
+  client.request -> cache.request
+  cache.response ->client.response
+  cache.miss -> memory.request
+  memory.response -> cache.fill
 }
 
 /**
@@ -44,21 +44,21 @@ main reactor {
  * interpret this to be an error and print an error message.
  */
 reactor Client(seed:int(0), lambda:double(10000000.0)) {
-    input response:time
-    output request:time
-    p = new PoissonClock(seed = seed, lambda = lambda)
-    reaction(p.event) -> request {=
-        lf_set(request, lf_time_logical_elapsed());
-    =}
-    reaction(response) {=
-        if (response->value > 0) {
-            interval_t delay = lf_time_logical_elapsed() - response->value;
-            lf_print("Response in " PRINTF_TIME "ns", delay);
-        } else {
-            interval_t delay = lf_time_logical_elapsed() + response->value;
-            lf_print("ERROR in " PRINTF_TIME "ns", delay);
-        }
-    =}
+  input response:time
+  output request:time
+  p = new PoissonClock(seed = seed, lambda = lambda)
+  reaction(p.event) -> request {=
+    lf_set(request, lf_time_logical_elapsed());
+  =}
+  reaction(response) {=
+    if (response->value > 0) {
+      interval_t delay = lf_time_logical_elapsed() - response->value;
+      lf_print("Response in " PRINTF_TIME "ns", delay);
+    } else {
+      interval_t delay = lf_time_logical_elapsed() + response->value;
+      lf_print("ERROR in " PRINTF_TIME "ns", delay);
+    }
+  =}
 }
 
 /**
@@ -77,47 +77,47 @@ reactor Client(seed:int(0), lambda:double(10000000.0)) {
  * and will have the negative of the request value.
  */
 reactor Cache(
-    miss_probability:double(0.1),
-    hit_delay:time(10 ns)
+  miss_probability:double(0.1),
+  hit_delay:time(10 ns)
 ) extends Random {
-    input request:time
-    output response:time
-    output miss:time
-    input fill:time
-    state pending:bool(false)
-    logical action a:time
-    reaction(a) -> response {=
-        lf_set(response, a->value);
-    =}
-    reaction(request) -> a, response, miss {=
-        bool hit = random() >= (int)(self->miss_probability * RAND_MAX);
-        if (self->pending && !hit) {
-            lf_set(response, -request->value);
-        } else if (hit) {
-            lf_schedule_copy(a, self->hit_delay, &request->value, 1);
-        } else {
-            lf_print("** Cache miss");
-            self->pending = true;
-            lf_set(miss, request->value);
-        }
-    =}
-    reaction(fill) -> response {=
-        lf_set(response, fill->value);
-        self->pending = false;
-    =}
+  input request:time
+  output response:time
+  output miss:time
+  input fill:time
+  state pending:bool(false)
+  logical action a:time
+  reaction(a) -> response {=
+    lf_set(response, a->value);
+  =}
+  reaction(request) -> a, response, miss {=
+    bool hit = random() >= (int)(self->miss_probability * RAND_MAX);
+    if (self->pending && !hit) {
+      lf_set(response, -request->value);
+    } else if (hit) {
+      lf_schedule_copy(a, self->hit_delay, &request->value, 1);
+    } else {
+      lf_print("** Cache miss");
+      self->pending = true;
+      lf_set(miss, request->value);
+    }
+  =}
+  reaction(fill) -> response {=
+    lf_set(response, fill->value);
+    self->pending = false;
+  =}
 }
 
 /**
  * Simulate a memory that responds after a random time.
  */
 reactor Memory(seed:int(0), average_delay:time(100 ns)) {
-    input request:time
-    output response:time
-    delay = new RandomDelay(average = average_delay)
-    reaction(request) -> delay.in {=
-        lf_set(delay.in, request->value);
-    =}
-    reaction(delay.out) -> response {=
-        lf_set(response, delay.out->value);
-    =}
+  input request:time
+  output response:time
+  delay = new RandomDelay(average = average_delay)
+  reaction(request) -> delay.in {=
+    lf_set(delay.in, request->value);
+  =}
+  reaction(delay.out) -> response {=
+    lf_set(response, delay.out->value);
+  =}
 }

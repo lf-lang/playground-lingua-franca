@@ -10,18 +10,18 @@
 target CCpp
 
 preamble {=
-    #include <stdlib.h>     /* srand, rand */
+  #include <stdlib.h>   /* srand, rand */
 =}
 reactor PropagationDelaySim(min_delay:time(100 msec)) {
-    input in:LockCommand
-    output out:LockCommand
+  input in:LockCommand
+  output out:LockCommand
 
-    reaction(startup) {=
-        // Seed the random number generator.
-        srand(lf_time_logical());
-    =}
-    reaction(in) -> out {=
-        lf_nanosleep((rand()%10+1) * self->min_delay);
-        lf_set(out, in->value);
-    =}
+  reaction(startup) {=
+    // Seed the random number generator.
+    srand(lf_time_logical());
+  =}
+  reaction(in) -> out {=
+    lf_nanosleep((rand()%10+1) * self->min_delay);
+    lf_set(out, in->value);
+  =}
 }

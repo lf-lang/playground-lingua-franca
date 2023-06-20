@@ -14,14 +14,14 @@
  * @author Edward A. Lee
  */
 target C {
-    timeout: 10 secs
+  timeout: 10 secs
 };
 
 import MessageGenerator from "HelloWorld.lf"
 import PrintMessage from "HelloWorld.lf"
 
 federated reactor HelloWorldPhysical {
-    source = new MessageGenerator(prefix = "Hello World");
-    print = new PrintMessage();
-    source.message ~> print.message;
+  source = new MessageGenerator(prefix = "Hello World");
+  print = new PrintMessage();
+  source.message ~> print.message;
 }
