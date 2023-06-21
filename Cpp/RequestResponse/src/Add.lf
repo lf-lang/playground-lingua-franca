@@ -1,43 +1,38 @@
 /**
- * The given Lingua Franca (LF) program represents a client-service model where the
- * client sends addition requests to a service and receives responses. The client
- * reactor generates a request every 100 milliseconds, each time asking the
- * addition service to add its current counter value (which increments with each
- * request) to 42. The request is sent to an instance of the 'AddService' (not
- * shown in the code), which presumably performs the addition and returns the
- * result. The client then logs the received response, displaying the result of the
- * addition. This cycle continues indefinitely, with the client sending
- * incrementally changing requests and logging the responses. 
+ * The given Lingua Franca (LF) program represents a client-service model where the client sends
+ * addition requests to a service and receives responses. The client reactor generates a request
+ * every 100 milliseconds, each time asking the addition service to add its current counter value
+ * (which increments with each request) to 42. The request is sent to an instance of the
+ * 'AddService' (not shown in the code), which presumably performs the addition and returns the
+ * result. The client then logs the received response, displaying the result of the addition. This
+ * cycle continues indefinitely, with the client sending incrementally changing requests and logging
+ * the responses.
  */
 target Cpp
 
 import AddService from "AddService.lf"
 
-
 reactor Client {
-    timer t(0, 100ms)
-    output add_request: Request<std::pair<int, int>>
-    input add_response: Response<int>
+  timer t(0, 100 ms)
+  output add_request: Request<std::pair<int, int>>
+  input add_response: Response<int>
 
-    state counter: int(0)
+  state counter: int(0)
 
+  reaction(t) -> add_request {=
+    auto req = Request(std::make_pair(counter, 42));
+    add_request.set(req);
+    reactor::log::Info() << "Client asks what " << counter << " + 42 is";
+    counter++;
+  =}
 
-    reaction(t) -> add_request {=
-        auto req = Request(std::make_pair(counter, 42));
-        add_request.set(req);
-        reactor::log::Info() << "Client asks what " << counter << " + 42 is";
-        counter++;
-    =}
-
-    reaction(add_response) {=
-        reactor::log::Info() << "It is " << add_response.get()->data();
-    =}
+  reaction(add_response) {= reactor::log::Info() << "It is " << add_response.get()->data(); =}
 }
 
 main reactor {
-    adder = new AddService()
-    client = new Client()
+  adder = new AddService()
+  client = new Client()
 
-    client.add_request -> adder.request
-    adder.response -> client.add_response
+  client.add_request -> adder.request
+  adder.response -> client.add_response
 }

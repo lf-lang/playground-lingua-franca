@@ -1,40 +1,35 @@
 /**
- * A web socket server enabling a user interface realized in the browser. This
- * creates a web server that listens on a port (default 8000) for web socket
- * connections.
+ * A web socket server enabling a user interface realized in the browser. This creates a web server
+ * that listens on a port (default 8000) for web socket connections.
  *
- * When a connection is established with a client, an output is produced on the
- * connected port that is a struct with a unique wsi (web socket interface) for
- * the client and a boolean indicating whether the connection is being opened or
- * closed. The wsi can be used to provide input at the send port that will
- * target this specific client.
+ * When a connection is established with a client, an output is produced on the connected port that
+ * is a struct with a unique wsi (web socket interface) for the client and a boolean indicating
+ * whether the connection is being opened or closed. The wsi can be used to provide input at the
+ * send port that will target this specific client.
  *
- * To send messages to a client, construct a dynamically allocated struct of
- * type web_socket_message_t, set its wsi field to the value provided by the
- * connected output, and set its message and length. Only strings can be sent.
+ * To send messages to a client, construct a dynamically allocated struct of type
+ * web_socket_message_t, set its wsi field to the value provided by the connected output, and set
+ * its message and length. Only strings can be sent.
  *
- * When a message is received from a client, a struct of type
- * web_socket_message_t will be produced on the received output port. You can
- * use the wsi field to determine which client sent the message.
+ * When a message is received from a client, a struct of type web_socket_message_t will be produced
+ * on the received output port. You can use the wsi field to determine which client sent the
+ * message.
  *
- * You can limit the number of clients by setting the max_clients parameter. It
- * defaults to 0, which means there is no limit. A common case for an embedded
- * application might be 1 to ensure that only one client connects to your
- * application.
+ * You can limit the number of clients by setting the max_clients parameter. It defaults to 0, which
+ * means there is no limit. A common case for an embedded application might be 1 to ensure that only
+ * one client connects to your application.
  *
  * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
- * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API
- * documentation</a> and <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
  * instructions</a>). To install on MacOS, we recommending using brew:
  * <pre> brew install libwebsockets
- * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these
- * libraries can be linked to providing the {@code -lwebsockets} compile option.
+ * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
+ * linked to providing the {@code -lwebsockets} compile option.
  *
  * There are a number of limitations:
  * <ol>
- * <li> **FIXME:** This should use the secure sockets API in libwebsockets to
- * get SSL.
+ * <li> **FIXME:** This should use the secure sockets API in libwebsockets to get SSL.
  * <li> **FIXME:** This currently only supports sending and receiving text.
  * </ol>
  *
@@ -44,262 +39,258 @@
  * @author Edward A. Lee
  */
 target C {
-    keepalive: true,
-    cmake-include: ["WebSocketCmake.txt"]
+  keepalive: true,
+  cmake-include: ["WebSocketCmake.txt"]
 }
 
 preamble {=
-    #ifndef WEBSOCKET_H
-    #define WEBSOCKET_H
-    #include "util.h"       // Defines lf_print()
-    #include "platform.h"   // Defines lf_thread_t, etc.
+  #ifndef WEBSOCKET_H
+  #define WEBSOCKET_H
+  #include "util.h"     // Defines lf_print()
+  #include "platform.h"   // Defines lf_thread_t, etc.
 
-    #include <libwebsockets.h>
+  #include <libwebsockets.h>
 
-    typedef struct server_status_t {
-        void* connected_action;       // Action to notify of changes in connected status.
-        void* received_action;        // Action to notify of messages received.
-        struct lws_context* context;  // The context.
-        int max_clients;              // Maximum number of clients.
-        int* client_count;            // Pointer to the client_count state variable.
-        bool running;                 // Indicator that the listening thread is running.
-    } server_status_t;
+  typedef struct server_status_t {
+    void* connected_action;     // Action to notify of changes in connected status.
+    void* received_action;    // Action to notify of messages received.
+    struct lws_context* context;  // The context.
+    int max_clients;        // Maximum number of clients.
+    int* client_count;      // Pointer to the client_count state variable.
+    bool running;         // Indicator that the listening thread is running.
+  } server_status_t;
 
-    /**
-     * Identifier for a web socket instance together with its connected state.
-     * No need for a destructor or copy constructor here because the libwebsockets
-     * code handles deallocating the wsi when the WS is closed.
-     */
-    typedef struct web_socket_instance_t {
-        struct lws* wsi;       // Web socket instance.
-        bool connected;
-    } web_socket_instance_t;
+  /**
+   * Identifier for a web socket instance together with its connected state.
+   * No need for a destructor or copy constructor here because the libwebsockets
+   * code handles deallocating the wsi when the WS is closed.
+   */
+  typedef struct web_socket_instance_t {
+    struct lws* wsi;     // Web socket instance.
+    bool connected;
+  } web_socket_instance_t;
 
-    /**
-     * A web socket string message together with its web socket instance.
-     * This needs a destructor and copy constructor because the message
-     * is assumed to be in allocated memory.
-     */
-    typedef struct web_socket_message_t {
-        struct lws* wsi;       // Web socket instance.
-        size_t length;
-        char* message;
-    } web_socket_message_t;
+  /**
+   * A web socket string message together with its web socket instance.
+   * This needs a destructor and copy constructor because the message
+   * is assumed to be in allocated memory.
+   */
+  typedef struct web_socket_message_t {
+    struct lws* wsi;     // Web socket instance.
+    size_t length;
+    char* message;
+  } web_socket_message_t;
 
-    /** Destructor for an instance of web_socket_message_t. */
-    void web_socket_message_destructor(void* message);
+  /** Destructor for an instance of web_socket_message_t. */
+  void web_socket_message_destructor(void* message);
 
-    /** Copy constructor for an instance of web_socket_message_t. */
-    void* web_socket_message_copy_constructor(void* message);
+  /** Copy constructor for an instance of web_socket_message_t. */
+  void* web_socket_message_copy_constructor(void* message);
 
-    #endif // WEBSOCKET_H
+  #endif // WEBSOCKET_H
 =}
 
 reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
-    output connected: web_socket_instance_t
-    output received: web_socket_message_t*
-    input send: web_socket_message_t*
+  output connected: web_socket_instance_t
+  output received: web_socket_message_t*
+  input send: web_socket_message_t*
 
-    physical action connected_action: web_socket_instance_t
-    physical action received_action: web_socket_message_t*
+  physical action connected_action: web_socket_instance_t
+  physical action received_action: web_socket_message_t*
 
-    state status: server_status_t
-    state client_count: int = 0
+  state status: server_status_t
+  state client_count: int = 0
 
-    preamble {=
-        // Thread handling incoming messages.
-        void* websocket_thread(void* args) {
-            server_status_t* status = (server_status_t*)args;
-            while(status->running) {
-                // According to the docs, the timeout argument is ignored.
-                lws_service(status->context, 50);
-            }
-            lws_context_destroy(status->context);
-            return NULL;
-        };
+  preamble {=
+    // Thread handling incoming messages.
+    void* websocket_thread(void* args) {
+      server_status_t* status = (server_status_t*)args;
+      while(status->running) {
+        // According to the docs, the timeout argument is ignored.
+        lws_service(status->context, 50);
+      }
+      lws_context_destroy(status->context);
+      return NULL;
+    };
 
-        // Callback handling HTTP requests.
-        static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
-            bool result;
-            server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
-            if (status == NULL) {
-                lf_print_error_and_exit("User struct NULL in callback!");
-            }
-            LF_PRINT_LOG("HTTP callback invoked with reason: %d", reason);
-            web_socket_instance_t ws_instance;
-            switch(reason) {
-                case LWS_CALLBACK_WSI_CREATE:
-                    LF_PRINT_LOG("**** Web socket connection requested.");
-                    break;
-                case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
-                    LF_PRINT_LOG("**** Web socket new client.");
-                    break;
-                case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
+    // Callback handling HTTP requests.
+    static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
+      bool result;
+      server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
+      if (status == NULL) {
+        lf_print_error_and_exit("User struct NULL in callback!");
+      }
+      LF_PRINT_LOG("HTTP callback invoked with reason: %d", reason);
+      web_socket_instance_t ws_instance;
+      switch(reason) {
+        case LWS_CALLBACK_WSI_CREATE:
+          LF_PRINT_LOG("**** Web socket connection requested.");
+          break;
+        case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
+          LF_PRINT_LOG("**** Web socket new client.");
+          break;
+        case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
 
-                    // Check against maximum number of connections.
-                    if (status->max_clients > 0 && *status->client_count >= status->max_clients) {
-                        // Deny the connection.
-                        lf_print_warning("**** Maximum number of clients reached. Denying connection.");
-                        // Increment the client count past the maximum because it will be
-                        // decremented when this closes and the browser will retry.
-                        *status->client_count = *status->client_count + 1;
-                        return 1;
-                    }
+          // Check against maximum number of connections.
+          if (status->max_clients > 0 && *status->client_count >= status->max_clients) {
+            // Deny the connection.
+            lf_print_warning("**** Maximum number of clients reached. Denying connection.");
+            // Increment the client count past the maximum because it will be
+            // decremented when this closes and the browser will retry.
+            *status->client_count = *status->client_count + 1;
+            return 1;
+          }
 
-                    *status->client_count = *status->client_count + 1;
+          *status->client_count = *status->client_count + 1;
 
-                    LF_PRINT_LOG("**** Web socket connection established for client %d.", *status->client_count);
+          LF_PRINT_LOG("**** Web socket connection established for client %d.", *status->client_count);
 
-                    ws_instance.wsi = wsi;
-                    ws_instance.connected = true;
+          ws_instance.wsi = wsi;
+          ws_instance.connected = true;
 
-                    // NOTE: Seem to need a delay in this action because otherwise
-                    // the application may try to send a message to the socket before
-                    // opening has completed.
-                    lf_schedule_copy(status->connected_action, MSEC(500), &ws_instance, 1);
-                    break;
-                case LWS_CALLBACK_WSI_DESTROY:
-                    LF_PRINT_LOG("**** Connection closed.");
+          // NOTE: Seem to need a delay in this action because otherwise
+          // the application may try to send a message to the socket before
+          // opening has completed.
+          lf_schedule_copy(status->connected_action, MSEC(500), &ws_instance, 1);
+          break;
+        case LWS_CALLBACK_WSI_DESTROY:
+          LF_PRINT_LOG("**** Connection closed.");
 
-                    *status->client_count = *status->client_count - 1;
+          *status->client_count = *status->client_count - 1;
 
-                    ws_instance.wsi = wsi;
-                    ws_instance.connected = false;
+          ws_instance.wsi = wsi;
+          ws_instance.connected = false;
 
-                    lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
-                    break;
-                case LWS_CALLBACK_CLOSED:
-                case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-                    lf_print_error("*** connection error.");
+          lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
+          break;
+        case LWS_CALLBACK_CLOSED:
+        case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+          lf_print_error("*** connection error.");
 
-                    *status->client_count = *status->client_count - 1;
+          *status->client_count = *status->client_count - 1;
 
-                    ws_instance.wsi = wsi;
-                    ws_instance.connected = false;
+          ws_instance.wsi = wsi;
+          ws_instance.connected = false;
 
-                    lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
-                    break;
-                default:
-                    break;
-            }
-            return 0;
-        }
+          lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
+          break;
+        default:
+          break;
+      }
+      return 0;
+    }
 
-        // Callback handling web socket requests.
-        static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
-            LF_PRINT_LOG("WS callback invoked with reason: %d", reason);
-            server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
-            switch(reason) {
-                case LWS_CALLBACK_RECEIVE:
-                    if (len > 0) {
-                        LF_PRINT_LOG("**** Server received WS message.");
+    // Callback handling web socket requests.
+    static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
+      LF_PRINT_LOG("WS callback invoked with reason: %d", reason);
+      server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
+      switch(reason) {
+        case LWS_CALLBACK_RECEIVE:
+          if (len > 0) {
+            LF_PRINT_LOG("**** Server received WS message.");
 
-                        web_socket_message_t* received = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
-                        received->wsi = wsi;
+            web_socket_message_t* received = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+            received->wsi = wsi;
 
-                        // Message is not NULL terminated, so created a NULL-terminated version.
-                        char* string = (char*)malloc((len + 1) * sizeof(char));
-                        strncpy(string, (char*)in, len);
-                        string[len] = 0;
-                        received->length = len + 1;
-                        received->message = string;
-                        lf_schedule_value(status->received_action, 0, received, len + 1);
-                    }
-                    break;
+            // Message is not NULL terminated, so created a NULL-terminated version.
+            char* string = (char*)malloc((len + 1) * sizeof(char));
+            strncpy(string, (char*)in, len);
+            string[len] = 0;
+            received->length = len + 1;
+            received->message = string;
+            lf_schedule_value(status->received_action, 0, received, len + 1);
+          }
+          break;
 
-                // Do we need to handle LWS_CALLBACK_CLOSED?
-                // Seems to be handled in the HTTP callback.
+        // Do we need to handle LWS_CALLBACK_CLOSED?
+        // Seems to be handled in the HTTP callback.
 
-                default:
-                    break;
-            }
-            return 0;
-        }
+        default:
+          break;
+      }
+      return 0;
+    }
 
-        void web_socket_message_destructor(void* message) {
-            free(((web_socket_message_t*)message)->message);
-            free(message);
-        }
+    void web_socket_message_destructor(void* message) {
+      free(((web_socket_message_t*)message)->message);
+      free(message);
+    }
 
-        void* web_socket_message_copy_constructor(void* message) {
-            web_socket_message_t* cast = (web_socket_message_t*)message;
-            web_socket_message_t* result = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
-            size_t length = cast->length;
-            char* copy = (char*)malloc(length * sizeof(char) + 1);
-            result->message = strncpy(copy, cast->message, length);
-            result->message[length] = 0;
-            result->wsi = cast->wsi;
-            return result;
-        }
-    =}
+    void* web_socket_message_copy_constructor(void* message) {
+      web_socket_message_t* cast = (web_socket_message_t*)message;
+      web_socket_message_t* result = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+      size_t length = cast->length;
+      char* copy = (char*)malloc(length * sizeof(char) + 1);
+      result->message = strncpy(copy, cast->message, length);
+      result->message[length] = 0;
+      result->wsi = cast->wsi;
+      return result;
+    }
+  =}
 
-    reaction(startup) -> connected_action, received_action {=
-        // The receiving thread dynamically allocates memory for messages.
-        // Set the destructor and copy constructor.
-        lf_set_destructor(received_action, web_socket_message_destructor);
-        lf_set_copy_constructor(received_action, web_socket_message_copy_constructor);
+  reaction(startup) -> connected_action, received_action {=
+    // The receiving thread dynamically allocates memory for messages.
+    // Set the destructor and copy constructor.
+    lf_set_destructor(received_action, web_socket_message_destructor);
+    lf_set_copy_constructor(received_action, web_socket_message_copy_constructor);
 
-        struct lws_context_creation_info info;
-        memset(&info, 0, sizeof(info));
-        info.port = self->hostport;
-        info.iface = NULL; // Can put a string here?
-        info.protocols = (struct lws_protocols[]) {
-          {
-              "http",
-              callback_http,
-              0 // No per-session data.
-          },
-          {
-              "ws",
-              callback_ws,
-              0 // No per-session data.
-          },
-          { NULL, NULL, 0 }
-        };
-        // To get callbacks to be passed a pointer to the status struct:
-        info.user = &self->status;
+    struct lws_context_creation_info info;
+    memset(&info, 0, sizeof(info));
+    info.port = self->hostport;
+    info.iface = NULL; // Can put a string here?
+    info.protocols = (struct lws_protocols[]) {
+      {
+        "http",
+        callback_http,
+        0 // No per-session data.
+      },
+      {
+        "ws",
+        callback_ws,
+        0 // No per-session data.
+      },
+      { NULL, NULL, 0 }
+    };
+    // To get callbacks to be passed a pointer to the status struct:
+    info.user = &self->status;
 
-        self->status.context = lws_create_context(&info);
-        if (!self->status.context) {
-          lf_print_error_and_exit("Failed to create server for web sockets.");
-        }
+    self->status.context = lws_create_context(&info);
+    if (!self->status.context) {
+      lf_print_error_and_exit("Failed to create server for web sockets.");
+    }
 
-        self->status.connected_action = connected_action;
-        self->status.received_action = received_action;
+    self->status.connected_action = connected_action;
+    self->status.received_action = received_action;
 
-        self->status.max_clients = self->max_clients;
-        self->status.client_count = &self->client_count;
+    self->status.max_clients = self->max_clients;
+    self->status.client_count = &self->client_count;
 
-        lf_thread_t listener;
-        lf_thread_create(&listener, &websocket_thread, &self->status);
-        self->status.running = true;
-    =}
+    lf_thread_t listener;
+    lf_thread_create(&listener, &websocket_thread, &self->status);
+    self->status.running = true;
+  =}
 
-    reaction(received_action) -> received {=
-        lf_set_token(received, received_action->token);
-    =}
+  reaction(received_action) -> received {= lf_set_token(received, received_action->token); =}
 
-    reaction(send) {=
-        // NOTE: This send must be before the reaction to connected_action
-        // because the latter could cause a disconnection.
-        if(send->value->message == NULL) {
-            lf_print_error("NULL message received.");
-        } else {
-            int length = strlen(send->value->message);
-            // The buffer needs LWS_PRE bytes _before_ the message.
-            // Do not include the null terminator, because this make JSON unable to parse it.
-            char buffer[LWS_PRE + length];
-            strcpy(buffer + LWS_PRE, send->value->message);
-            int result = lws_write(send->value->wsi, (unsigned char*)(buffer + LWS_PRE), length, LWS_WRITE_TEXT);
-            if (result < length) {
-                lf_print_warning("Send on web socket failed. Dropping message.");
-            }
-        }
-    =}
+  reaction(send) {=
+    // NOTE: This send must be before the reaction to connected_action
+    // because the latter could cause a disconnection.
+    if(send->value->message == NULL) {
+      lf_print_error("NULL message received.");
+    } else {
+      int length = strlen(send->value->message);
+      // The buffer needs LWS_PRE bytes _before_ the message.
+      // Do not include the null terminator, because this make JSON unable to parse it.
+      char buffer[LWS_PRE + length];
+      strcpy(buffer + LWS_PRE, send->value->message);
+      int result = lws_write(send->value->wsi, (unsigned char*)(buffer + LWS_PRE), length, LWS_WRITE_TEXT);
+      if (result < length) {
+        lf_print_warning("Send on web socket failed. Dropping message.");
+      }
+    }
+  =}
 
-    reaction(connected_action) -> connected {=
-        lf_set(connected, connected_action->value);
-    =}
+  reaction(connected_action) -> connected {= lf_set(connected, connected_action->value); =}
 
-    reaction(shutdown) {= self->status.running = false; =}
+  reaction(shutdown) {= self->status.running = false; =}
 }

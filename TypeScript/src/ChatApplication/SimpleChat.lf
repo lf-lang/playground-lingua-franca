@@ -4,61 +4,55 @@
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  */
-
 target TypeScript {
-    coordination-options: {advance-message-interval: 100 msec}
+  coordination-options: {
+    advance-message-interval: 100 msec
+  }
 }
 
 reactor InputHandler {
-    output out:string;
-    physical action response;
-  
-    preamble {=
-        import * as readline from "readline";
-    =}
-  
-    reaction(startup, response) -> out, response {=
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
+  output out: string
+  physical action response
 
-        if (response !== undefined) {
-            out = response as string;
-        }
-  
-        rl.question("Enter message to send: ", (buf) => {
-            actions.response.schedule(0, buf as string);
-            rl.close();
-        });
-    =}
- }
+  preamble {= import * as readline from "readline"; =}
+
+  reaction(startup, response) -> out, response {=
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    if (response !== undefined) {
+      out = response as string;
+    }
+
+    rl.question("Enter message to send: ", (buf) => {
+      actions.response.schedule(0, buf as string);
+      rl.close();
+    });
+  =}
+}
 
 reactor Printer {
-    input inp:string;
+  input inp: string
 
-    reaction(inp) {=
-        console.log("Received: " + inp);
-    =}
+  reaction(inp) {= console.log("Received: " + inp); =}
 }
 
 reactor ChatHandler {
-    input receive:string;
-    output send:string;
-    u = new InputHandler();
-    p = new Printer();
-    
-    reaction(u.out) -> send {=
-        send = u.out;
-    =}
-    reaction(receive) -> p.inp {=
-        p.inp = receive;
-    =}
+  input receive: string
+  output send: string
+  u = new InputHandler()
+  p = new Printer()
+
+  reaction(u.out) -> send {= send = u.out; =}
+
+  reaction(receive) -> p.inp {= p.inp = receive; =}
 }
 
 federated reactor SimpleChat {
-    a = new ChatHandler();
-    b = new ChatHandler();
-    b.send -> a.receive;
-    a.send -> b.receive;
+  a = new ChatHandler()
+  b = new ChatHandler()
+  b.send -> a.receive
+  a.send -> b.receive
 }

@@ -19,8 +19,8 @@ target C {
 
 preamble {=
   typedef struct keyboard_input_t {
-      void* keypress; // Pointer to physical action.
-      int exit_key;   // Keycode for exiting.
+    void* keypress; // Pointer to physical action.
+    int exit_key;   // Keycode for exiting.
   } keyboard_input_t;
 =}
 
@@ -35,27 +35,27 @@ reactor KeyboardInput(exit_key: int = 0) {
     // Thread to read input characters until an EOF is received.
     // Each time a character is received, schedule a keypress action.
     void* read_input(void* keyboard_input) {
-        int c;
-        while((c = getch()) != EOF) {
-            if (c == ((keyboard_input_t*)keyboard_input)->exit_key) {
-                lf_request_stop();
-                break;
-            }
-            lf_schedule_copy(((keyboard_input_t*)keyboard_input)->keypress, 0, &c, 1);
+      int c;
+      while((c = getch()) != EOF) {
+        if (c == ((keyboard_input_t*)keyboard_input)->exit_key) {
+          lf_request_stop();
+          break;
         }
-        return NULL;
+        lf_schedule_copy(((keyboard_input_t*)keyboard_input)->keypress, 0, &c, 1);
+      }
+      return NULL;
     }
     // Function to direct printed messages to the curses-managed terminal.
     void print_to_terminal(const char* format, va_list args) {
-        static int line_count = 1;
-        move(line_count++, 0);
-        vwprintw(stdscr, format, args);
-        refresh();
-        if(line_count >= getmaxy(stdscr)) line_count = 1;
+      static int line_count = 1;
+      move(line_count++, 0);
+      vwprintw(stdscr, format, args);
+      refresh();
+      if(line_count >= getmaxy(stdscr)) line_count = 1;
     }
     // Function for orderly shutdown upon control-c.
     void sig_handler(int sig) {
-        lf_request_stop();
+      lf_request_stop();
     }
   =}
 
@@ -67,7 +67,7 @@ reactor KeyboardInput(exit_key: int = 0) {
 
     move(0, 0);
     if(self->exit_key != 0) {
-        printw("Type %c to exit.\n", self->exit_key);
+      printw("Type %c to exit.\n", self->exit_key);
     }
     refresh();
 
@@ -75,7 +75,7 @@ reactor KeyboardInput(exit_key: int = 0) {
     lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
 
     if (signal(SIGINT, sig_handler) == SIG_ERR) {
-        lf_print_warning("Failed to register signal handler. After exit, may have to reset terminal using 'reset'.");
+      lf_print_warning("Failed to register signal handler. After exit, may have to reset terminal using 'reset'.");
     }
 
     static keyboard_input_t keyboard_input;
@@ -96,7 +96,7 @@ reactor KeyboardInput(exit_key: int = 0) {
 }
 
 main reactor {
-  k = new KeyboardInput(exit_key = 120)
+  k = new KeyboardInput(exit_key=120)
 
   reaction(k.key) {= lf_print("You typed %c (keycode %d).", k.key->value, k.key->value); =}
 }

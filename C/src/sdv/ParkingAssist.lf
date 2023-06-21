@@ -1,11 +1,11 @@
 /**
  * This is an illustration of one way to build a software-defined vehicle. The program has three
  * components, one that emulates the sensors in a vehicle, one that provides a dashboard display,
- * and one that provides sound alerts. The ParkingAssist.html page provides a user interface
- * with a dashboard display at the top and controls at the bottom.
- * 
- * The program assumes that the vehicle starts in a position with an obstacle in front of it.
- * FIXME: more detail.
+ * and one that provides sound alerts. The ParkingAssist.html page provides a user interface with a
+ * dashboard display at the top and controls at the bottom.
+ *
+ * The program assumes that the vehicle starts in a position with an obstacle in front of it. FIXME:
+ * more detail.
  *
  * The dashboard display is emulated by an HTML page that connects to this application via a web
  * socket. After starting the program, open ParkingAssist.html in your favorite browser and a simple
@@ -48,12 +48,12 @@ import PlayWaveform from "../rhythm/PlayWaveform.lf"
  * it at the specified initial front distance.
  */
 reactor Sensors(
-  sample_interval: time = 100 ms,
-  initial_front_distance: int = 100  // In pixels
-) {
+    sample_interval: time = 100 ms,
+    // In pixels
+    initial_front_distance: int = 100) {
   preamble {=
-    #include <stdlib.h>    // Defines abs()
-    #include <math.h>      // Defines lround()
+    #include <stdlib.h>  // Defines abs()
+    #include <math.h>    // Defines lround()
   =}
   output speed: int           // In pixels/second
   output front_distance: int  // In pixels
@@ -64,19 +64,14 @@ reactor Sensors(
 
   timer t(0, sample_interval)
 
-  s = new WebSocketServer(hostport=240, max_clients = 1)  // Allow only one client
-  
+  s = new WebSocketServer(hostport=240, max_clients=1)  // Allow only one client
+
   /**
-   * Given JSON of the form {..., "key":"value", ... }, if the value is an int,
-   * put that int value into the result and return 0. Otherwise, return -1 if the
-   * key is not present, -2 if the value is not an int, and -3 if the JSON string
-   * does not have the expected form.
+   * Given JSON of the form {..., "key":"value", ... }, if the value is an int, put that int value
+   * into the result and return 0. Otherwise, return -1 if the key is not present, -2 if the value
+   * is not an int, and -3 if the JSON string does not have the expected form.
    */
-  method json_to_int(
-    json: {= const char* =},
-    key: {= const char* =},
-    result: int*
-  ): int {=
+  method json_to_int(json: {= const char* =}, key: {= const char* =}, result: int*): int {=
     char* key_position = strstr(json, key);
     if (key_position == NULL) return -1;
     // Check that the next character is closing quotation mark.
@@ -87,26 +82,26 @@ reactor Sensors(
     *result = atoi(start + 1);
     return 0;
   =}
-  
+
   reaction(s.received) {=
     char* json = s.received->value->message;
     lf_print("Received control: %s", json);
     int accelerator;
     if (json_to_int(json, "accelerator", &accelerator) == 0) {
-        // FIXME: Setting the velocity to be a simple linear
-        // function of the accelerator position. Pretty naive
-        // vehicle model.
-        self->velocity = accelerator * 0.1;
+      // FIXME: Setting the velocity to be a simple linear
+      // function of the accelerator position. Pretty naive
+      // vehicle model.
+      self->velocity = accelerator * 0.1;
     }
     int reset_value;
     if (json_to_int(json, "reset", &reset_value) == 0) {
-        self->velocity = 0.0;
-        self->position = 0.0;
-        self->gear = 1;
+      self->velocity = 0.0;
+      self->position = 0.0;
+      self->gear = 1;
     }
     int gear;
     if (json_to_int(json, "gear", &gear) == 0) {
-        self->gear = gear;
+      self->gear = gear;
     }
   =}
 
@@ -129,22 +124,22 @@ reactor Dashboard {
 
   state connection: web_socket_instance_t = {= {0} =}
 
-  s = new WebSocketServer(hostport = 241, max_clients = 1)  // Allow only one client
+  s = new WebSocketServer(hostport=241, max_clients=1)  // Allow only one client
 
   reaction(speed, front_distance) -> s.send {=
     // Ignore the inputs if we are not connected.
     if (self->connection.connected) {
-        // Construct payload.
-        char* message;
-        asprintf(&message, "{\"front_distance\": %d, \"speed\": %d}", front_distance->value, speed->value);
+      // Construct payload.
+      char* message;
+      asprintf(&message, "{\"front_distance\": %d, \"speed\": %d}", front_distance->value, speed->value);
 
-        // Construct struct to send.
-        web_socket_message_t* response = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
-        response->length = strlen(message);  // Do not include the null terminator.
-        response->wsi = self->connection.wsi;
-        response->message = message;
+      // Construct struct to send.
+      web_socket_message_t* response = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+      response->length = strlen(message);  // Do not include the null terminator.
+      response->wsi = self->connection.wsi;
+      response->message = message;
 
-        lf_set(s.send, response);
+      lf_set(s.send, response);
     }
   =}
 
@@ -156,41 +151,41 @@ reactor SoundAlert {
   input front_distance: int
   logical action ding
   state ding_interval: time = 0  // 0 means no sound
-  p = new PlayWaveform(default_waveform_id = 3)
+  p = new PlayWaveform(default_waveform_id=3)
 
   reaction(front_distance) -> ding, p.waveform {=
     instant_t previous_interval = self->ding_interval;
     // Change the period of the sound.
     if (front_distance->value > 75) {
-        // Go silent.
-        self->ding_interval = MSEC(0);
-        lf_set(p.waveform, 0);
+      // Go silent.
+      self->ding_interval = MSEC(0);
+      lf_set(p.waveform, 0);
     } else if (front_distance->value > 50) {
-        self->ding_interval = MSEC(2000);
-        lf_set(p.waveform, 3);
+      self->ding_interval = MSEC(2000);
+      lf_set(p.waveform, 3);
     } else if (front_distance->value > 25) {
-        self->ding_interval = MSEC(1000);
-        lf_set(p.waveform, 3);
+      self->ding_interval = MSEC(1000);
+      lf_set(p.waveform, 3);
     } else if (front_distance->value > 15) {
-        self->ding_interval = MSEC(500);
-        lf_set(p.waveform, 9);
+      self->ding_interval = MSEC(500);
+      lf_set(p.waveform, 9);
     } else if (front_distance->value > 5) {
-        self->ding_interval = MSEC(200);
-        lf_set(p.waveform, 9);
+      self->ding_interval = MSEC(200);
+      lf_set(p.waveform, 9);
     } else {
-        self->ding_interval = MSEC(100);
-        lf_set(p.waveform, 8);
+      self->ding_interval = MSEC(100);
+      lf_set(p.waveform, 8);
     }
     // If no sound is playing, start it playing.
     if (self->ding_interval > MSEC(0) && previous_interval == MSEC(0)) {
-        lf_schedule(ding, 0);
+      lf_schedule(ding, 0);
     }
   =}
 
   reaction(ding) -> p.note, ding {=
     if (self->ding_interval > MSEC(0)) {
-        lf_set(p.note, 1);
-        lf_schedule(ding, self->ding_interval);
+      lf_set(p.note, 1);
+      lf_schedule(ding, self->ding_interval);
     }
   =}
 }

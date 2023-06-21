@@ -1,0 +1,132 @@
+/**
+ * The Lingua Franca (LF) program presented defines a Behavior Tree (BT) structure
+ * for controlling the actions of a Pac-Man agent in a game environment. The BT
+ * alternates between different actions, such as "EatPills", "AvoidGhost", and
+ * "ChaseGhost", based on conditions "GhostClose" and "GhostScared". The tree's
+ * structure is hierarchical and prioritizes actions based on sequences and
+ * fallbacks (decision points that go down different branches depending on the
+ * success or failure of a condition). This tree structure allows for more complex
+ * and layered decision making. The program then has a main reactor that triggers
+ * the root of the BT (PacMan0) periodically every 5 milliseconds, essentially
+ * making decisions at a high frequency. In summary, the LF program uses the BT
+ * model to dictate Pac-Man's behavior in response to different game states, with a
+ * high-frequency decision-making loop. 
+ */
+target C;
+
+// Utilities
+
+reactor BehaviorNode {
+  input start:bool
+  output success:bool
+  output failure:bool
+}
+
+reactor MergeOr {
+  input right:bool
+  input left:bool
+  output merged:bool
+  
+  reaction(left, right) -> merged {=
+    lf_set(merged, true);
+  =}
+}
+
+// Actions and Conditions
+
+@btnode("action")
+reactor EatPills extends BehaviorNode {   
+  reaction(start) -> success, failure {==}
+}
+
+@btnode("action")
+reactor AvoidGhost extends BehaviorNode {   
+  reaction(start) -> success, failure {==}
+}
+
+@btnode("action")
+reactor ChaseGhost extends BehaviorNode {   
+  reaction(start) -> success, failure {==}
+}
+
+@btnode("condition")
+reactor GhostClose extends BehaviorNode {   
+  reaction(start) -> success, failure {==}
+}
+
+@btnode("condition")
+reactor GhostScared extends BehaviorNode {   
+  reaction(start) -> success, failure {==}
+}
+
+// Behavior tree structure
+
+@btnode("fallback")
+reactor PacMan0 extends BehaviorNode {
+  left = new PacMan1()
+  right = new EatPills()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> merge.left
+  left.failure -> right.start
+  right.success -> merge.right
+  right.failure -> failure
+  merge.merged -> success
+}
+
+@btnode("sequence")
+reactor PacMan1 extends BehaviorNode {
+  left = new GhostClose()
+  right = new PacMan2()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> right.start
+  left.failure -> merge.left
+  right.success -> success
+  right.failure -> merge.right
+  merge.merged -> failure
+}
+
+@btnode("fallback")
+reactor PacMan2 extends BehaviorNode {
+  left = new PacMan3()
+  right = new AvoidGhost()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> merge.left
+  left.failure -> right.start
+  right.success -> merge.right
+  right.failure -> failure
+  merge.merged -> success
+}
+
+@btnode("sequence")
+reactor PacMan3 extends BehaviorNode {
+  // Fallback
+  left = new GhostScared()
+  right = new ChaseGhost()
+  merge = new MergeOr()
+  
+  start -> left.start
+  left.success -> right.start
+  left.failure -> merge.left
+  right.success -> success
+  right.failure -> merge.right
+  merge.merged -> failure
+}
+
+
+// Root
+
+main reactor {
+  timer t (0, 5msec)
+  
+  bt = new PacMan0()
+  
+  reaction(t) -> bt.start {=
+    lf_set(bt.start, true);
+  =}
+}

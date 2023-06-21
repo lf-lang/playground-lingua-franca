@@ -1,0 +1,321 @@
+/* Reactors used for contained version of 
+ * player AI in PacManWFSM.lf
+ */
+
+target Python {
+  files: ["include/AIPacSupport.py", "include/hbpacman.py"]
+};
+
+preamble {=
+  # must import some file for setup functions
+  import AIPacSupport as ai
+  import hbpacman as pacman
+=}
+
+### Ticker Reactor
+reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+  timer ticker(0, 100msec)
+  
+  input wall_list # Receive updated wall list
+  input gate_list # Receive updated gate list
+  input[4] ghost_sprites
+  input icon
+  input eat_result
+  input avoid_result
+  input chase_result
+  input game_over
+  input character
+  
+  state character_instance
+  state _wall_list
+  state _gate_list
+  state _ghosts({=[]=})
+  state _pause(False)
+  state _active(True)
+  state _ai_control(True)
+  state _layout({=pacman.walls=})
+
+  output[7] result
+  output sprite
+  output icon_name
+  output playerpause
+  output restart
+  
+  reaction(startup) -> icon_name {=
+    dirname = os.path.dirname(__file__)
+    icon_name.set(os.path.join(dirname, self.image))
+  =}
+
+  reaction(icon) -> sprite {=
+    self.character_instance = self.character_class(self.width, self.height, icon.value)
+    sprite.set(self.character_instance)
+  =}
+
+  reaction(wall_list, gate_list) {=
+    self._wall_list = wall_list.value
+    self._gate_list = gate_list.value
+  =}
+  
+  reaction(ticker) -> playerpause, restart, sprite, result {=
+    keyboard_events = pacman.pygame.event.get()
+    for event in keyboard_events:
+      if event.type == pacman.pygame.QUIT:
+        request_stop()
+        
+      if event.type == pacman.pygame.KEYDOWN:
+        if event.key == pacman.pygame.K_ESCAPE:
+          request_stop()
+        if event.key == pacman.pygame.K_r or event.key == pacman.pygame.K_RETURN:
+          restart.set(True)
+          self.character_instance.resetpos()
+          self._pause = False
+          self._active = True
+          print(self.character_instance.rect.left)
+          
+        if event.key == pacman.pygame.K_SPACE:
+          if self._pause is False:
+            self._pause = True
+          else:
+            self._pause = False
+        if event.key == pacman.pygame.K_m:
+          self._pause = False
+          self._ai_control = not self._ai_control
+
+        if not self._ai_control and not self._pause and self._active:
+          if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
+            self.character_instance.changespeed(-30, 0)
+          if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
+            self.character_instance.changespeed(30, 0)
+          if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
+            self.character_instance.changespeed(0, -30)
+          if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
+            self.character_instance.changespeed(0, 30)
+      
+      if event.type == pacman.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+        if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
+          self.character_instance.changespeed(30, 0)
+        if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
+          self.character_instance.changespeed(-30, 0)
+        if event.key == pacman.pygame.K_UP or event.key == pacman.pygame.K_w:
+          self.character_instance.changespeed(0, 30)
+        if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
+          self.character_instance.changespeed(0, -30)
+    if not self._ai_control and not self._pause and self._active:
+      self.character_instance.update(
+        self._wall_list,
+        self._gate_list
+      )
+    playerpause.set(self._pause)
+    sprite.set(self.character_instance)
+    if not self._pause and self._active and self._ai_control:
+
+      for i, port in enumerate(result):
+        if i == 0:
+          port.set(True)
+        elif i == 1:
+          port.set(self.character_instance)
+        elif i == 2:
+          port.set(self._layout)
+        elif (i - 3) < len(self._ghosts):
+          port.set(self._ghosts[i - 3])
+
+  =}
+  
+  reaction(ghost_sprites) {=
+    self._ghosts = []
+    for ghost in ghost_sprites:
+      if ghost.is_present:
+        self._ghosts.append(ghost.value)
+  =}
+
+  reaction(eat_result, chase_result, avoid_result) {=
+    if self._pause is False:
+      if avoid_result.is_present:
+        self.character_instance = avoid_result.value
+      elif chase_result.is_present:
+        self.character_instance = chase_result.value
+      elif eat_result.is_present:
+        self.character_instance = eat_result.value
+  =}
+  
+  reaction(game_over) {=
+    self._active = False
+    self._pause = True
+    self.character_instance.speedzero()
+  =}
+}
+
+### Ghost Close? Condition Reactor
+reactor Close {
+  input[7] tick
+  output[7] result
+  
+  reaction(tick) -> result {=
+    all_present = True
+    #result_bool = True
+    ghost_list = []
+    for i, port in enumerate(tick):
+      if port.is_present:
+        if i >= 3:
+          ghost_list.append(tick[i].value)
+          #print(tick[i].value.rect.left)
+      else:
+        all_present = False
+        break
+    if all_present:
+      #print(len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 7)), " is dist")
+      if len(ai.closeghostdist(tick[2].value, ghost_list, tick[1].value.rect.left, tick[1].value.rect.top, 6)) > 5:
+        for i, port in enumerate(result):
+          if i == 0:
+            port.set(False)
+          else:
+            port.set(tick[i].value)
+      else:
+        print("ghosts are close")
+        for i, port in enumerate(result):
+          port.set(tick[i].value)
+        #result.set(tick)
+  =}
+
+}
+
+### Ghost Scared? Condition Reactor
+reactor Scared {
+  input[7] tick
+  input frenzy
+  state _frenzy(False)
+  output[7] result
+  
+  reaction(tick) -> result {=
+    all_present = True
+    for i, port in enumerate(tick):
+      if port.is_present:
+        continue
+      else:
+        all_present = False
+        break
+    if all_present and tick[0].value:
+      if self._frenzy:
+        print("ghosts are scared")
+        for i, port in enumerate(result):
+          port.set(tick[i].value)
+        #result.set(tick)
+      else:
+        print("ghosts not scared")
+        for i, port in enumerate(result):
+          if i == 0:
+            port.set(False)
+          else:
+            port.set(tick[i].value)
+  =}
+
+  reaction(frenzy) {=
+    self._frenzy = frenzy.value
+  =}
+
+}
+
+### Chase Ghost Action Reactor
+reactor Chase {
+  input[7] tick
+  state character_instance
+  output result
+  
+  reaction(tick) -> result {=
+    if tick[0].is_present and tick[0].value:
+      all_present = True
+      ghost_list = []
+      for i, port in enumerate(tick):
+        if port.is_present:
+          if i >= 3:
+            ghost_list.append(tick[i].value)
+        else:
+          all_present = False
+          break
+      if all_present:
+        self.character_instance = tick[1].value
+        self.character_instance.ai_chase(tick[2].value, ghost_list, 7)
+        result.set(self.character_instance)
+  =}
+}
+
+### Avoid Ghost Action Reactor
+
+reactor Avoid {
+  input[7] tick
+  state character_instance
+  output result
+  
+  reaction(tick) -> result {=
+    print("avoid got tick")
+    if tick[0].is_present and not tick[0].value:
+      all_present = True
+      ghost_list = []
+      for i, port in enumerate(tick):
+        if port.is_present:
+          if i >= 3:
+            ghost_list.append(tick[i].value)
+        else:
+          all_present = False
+          break
+      if all_present:
+        print("avoiding")
+        self.character_instance = tick[1].value
+        self.character_instance.ai_avoid(tick[2].value, ghost_list, 7)
+        result.set(self.character_instance)
+  =}
+}
+
+### Eat Pills Action Reactor
+
+reactor Eat {
+  input[7] tick
+  input block_list
+  input wall_list
+  input sprite
+  state _wall_list
+  state _block_list
+  state _eat_moves(0)
+  state character_instance  
+  output result
+
+  reaction(wall_list) {=
+    self._wall_list = wall_list.value
+  =}
+  
+  reaction(tick) block_list -> result {=
+    if tick[0].is_present and not tick[0].value:
+      all_present = True
+      ghost_list = []
+      for i, port in enumerate(tick):
+        if port.is_present:
+          if i >= 3:
+            ghost_list.append(tick[i].value)
+        else:
+          all_present = False
+          break
+      if all_present and block_list.is_present:
+        path = ai.closestpillpath(pacman.walls, ghost_list, self.character_instance.rect.left, self.character_instance.rect.top, block_list.value)
+        self.character_instance.ai_eat(pacman.walls, ghost_list, self._block_list, self._eat_moves)
+        #self.character_instance.speedzero()
+        #print(self.character_instance.change_x, " change")
+        #print("move is ", path[0])
+        #self.character_instance.changespeed(path[0][0], path[0][1])
+        #self.character_instance.update(self._wall_list)
+        self._eat_moves = self.character_instance.get_num_moves()
+        result.set(self.character_instance)
+  =}
+
+
+  reaction(sprite) {=
+    #print("received sprite")
+    self.character_instance = sprite.value
+  =}
+
+  reaction(block_list) {=
+    self._block_list = block_list.value
+  =}
+  
+}
+
+

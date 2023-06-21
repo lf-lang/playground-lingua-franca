@@ -1,0 +1,273 @@
+/**
+ * This example illustrates the high level design of a Solar powered Unmanned 
+ * Aerial Vehicle (Solar UAV). 
+ * The LF program is meant for timing analysis and identfying the critical paths.  
+
+ * The Solar UAV main mission is to take pictures of an area, stitch them to
+ * reconstruct a map, perform image processing (when possible), and then send 
+ * the result to the base station.
+ *  
+ * There are 3 main paths in the LF program:
+ *  * Flight control path: Its goal is to maintain the UAV stable and moving,
+    so it does not crash. It is hard real-time and it includes the following 
+    reactors: IMUSensor, GPSSensor, KalmanFilter, Controller and Actuator.
+ *  * Mission critical path: This path identifies the reactors that are realtive
+    to the mission success, which is covering the entire target zone. To this
+    end, the Planner will compute where to go, based on target zone and the
+    coverage. This is hard real-time as well, and the reactors involved are:
+    IMUSensor, GPSSensor, Gimbal, Camera, BatterySensor, ComIn, ImageStitching,
+    Planner, Controller, and Actuator. 
+ *  * Non mission critical path: Processing the stitched images should only happen 
+    whenever there are empty time slots and enough power. Reactors in this 
+    path are: ImageProcessing and ComOut and this is soft real-time.
+    FIXME: Reactions in this path can/need to be preambtable. LF semantics, 
+    however, say that reactions are atomic...
+ * 
+ * @author Mirco Theile
+ * @author Chadlia Jerad
+ * @author Shaokai Lin
+ * @author Erling R. Jellum
+ */
+
+target C {
+  keepalive: true
+  // FIXME: add the structures. Currently everything is either int or void.
+};
+
+/**
+ * Control related reactors
+ */
+
+// Sensing reactors
+reactor IMUSensor (period:time(20ms)){
+  timer t(0, period)
+  output imuOutput: int // struct 9 values double (64bits)
+
+  reaction(t) -> imuOutput {=
+    lf_set(imuOutput, 5);
+  =}
+}
+
+reactor GPSSensor (period:time(50ms)){
+  timer t(0, period)
+  output gpsOutput : int 
+  
+  reaction(t) -> gpsOutput {=
+    //
+  =}
+}
+
+// Kalman filter
+reactor KalmanFilter {
+  input imuInput: int
+  input gpsInput: int
+  output inertialData: int // Filtred sensor data everything
+
+  reaction(imuInput, gpsInput) -> inertialData {=
+    // lf_set(inertialData, 5);
+  =}
+}
+
+// The Planner will periodically call an AI agent to process the controlTarget.  
+reactor Planner {
+  input targetZoneIn: int
+  input inertialData: int
+  input coverageIn : void
+  input weatherForecast : int
+  input batteryState : int
+  output controlTraget: int
+  timer t(0, 100ms)
+  state targetZone: int
+  state coverage: void
+  state stateValues: void // All remaining stuff
+
+  reaction(inertialData) {=
+    // Update state stateValues
+  =}
+
+  reaction(batteryState) {=
+    // Update state stateValues
+  =}
+
+  reaction(weatherForecast) {=
+    // Update state stateValues
+  =}
+
+  reaction(targetZoneIn) {=
+    // Update state targetZone
+  =}
+
+  reaction(coverageIn) {=
+    // Update state coverage
+  =} deadline (20ms) {=
+    lf_print("help coverage");
+  =}
+
+  reaction(t) -> controlTraget {=
+    // This is the main task: compute where to go based on target zone 
+    // and coverage 
+  =}
+
+}
+
+// Controller
+reactor Controller {
+  input inertialData: int
+  input controlTraget: int
+  output actuation: int
+  state previousTarget : int
+
+  reaction(inertialData) -> actuation {=
+  =}
+
+  reaction(controlTraget)  {=
+    // Just updates the 
+    previousTarget = controlTraget;
+  =} deadline (100ms) {=
+    lf_print("help");
+  =}
+}
+
+reactor Actuator {
+  input actuation : int
+  reaction(actuation) {=
+  =}
+}
+
+/**
+ * Camera actuation control 
+ */
+reactor Gimbal{
+  input imuData: int
+  logical action gimbalDone
+  
+  reaction(imuData) -> gimbalDone {=
+    lf_schedule(gimbalDone, 0);
+  =}
+  
+  reaction (gimbalDone) {==} deadline (10ms) {=
+    // 
+  =}
+}
+
+/**
+ * Communication modules with the base station
+ */
+reactor ComIn {
+  output targetZone: int
+  output weatherForecast: int
+  timer t(0, 50ms);
+  reaction(t) -> targetZone {=
+    // polling commands form base station
+    // and then updating the wayPoints 
+  =}
+}
+
+reactor ComOut {
+  input inertialData: int
+  input result: int
+  
+  reaction(inertialData, result) {=
+    // sendiong packets
+  =}
+}
+
+/**
+ * Mission 
+ */
+reactor Camera {
+  timer t(20msecs, 20msecs)
+  output frame: void
+
+  reaction (t) -> frame {=
+    frame.set(); // send a "frame"
+  =}
+}
+
+reactor ImageStitching {
+  input inertialData: int
+  input frame : void
+  output coverage: void
+  output stitchedImageChunk : void
+  state stitchedImage: void
+
+  state latestInertialData : int
+  timer t(0, 1s)
+
+  reaction(frame) -> coverage {=
+    // Do batch processing and only set the output
+    // set stitched image state
+  =}
+
+  reaction(t) -> stitchedImageChunk {=
+    // 
+  =}
+  reaction(inertialData) {=
+    latestInertialData = inertialData;
+  =}
+
+}
+
+reactor ImageProcessing {
+  input stitchedImageChunk: void
+  input batteryState: int
+  input weatherForecast: int
+  output result : int 
+  state processedImage: void
+
+  reaction(stitchedImageChunk) -> result {=
+    // This is the result from the processing
+    // update processedImage
+  =}
+}
+
+/**
+ * Battery management
+ */
+reactor BatterySensor {
+  output batteryState : int
+  timer t(0, 100ms)
+  reaction(t) -> batteryState {=
+
+  =}
+}
+
+/**
+ * Main reactor
+ */
+main reactor {
+  // Instantiations
+  imuSensor = new IMUSensor()
+  gpsSensor = new GPSSensor()
+  kalmanFilter = new KalmanFilter()
+  planner = new Planner()
+  controller =  new Controller()
+  actuator = new Actuator()
+  gimbal = new Gimbal()
+  comIn = new ComIn()
+  comOut = new ComOut()
+  camera = new Camera()
+  imageStitching = new ImageStitching()
+  imageProcessing = new ImageProcessing()
+  batterySensor = new BatterySensor()
+
+  // Connections 
+  imuSensor.imuOutput -> kalmanFilter.imuInput
+  gpsSensor.gpsOutput -> kalmanFilter.gpsInput
+  kalmanFilter.inertialData -> planner.inertialData
+  kalmanFilter.inertialData -> controller.inertialData
+  planner.controlTraget -> controller.controlTraget
+  controller.actuation -> actuator.actuation
+  imuSensor.imuOutput -> gimbal.imuData
+  kalmanFilter.inertialData -> comOut.inertialData
+  comIn.targetZone -> planner.targetZoneIn
+  comIn.weatherForecast -> planner.weatherForecast
+  camera.frame -> imageStitching.frame
+  kalmanFilter.inertialData -> imageStitching.inertialData
+  imageStitching.coverage -> planner.coverageIn
+  imageStitching.stitchedImageChunk -> imageProcessing.stitchedImageChunk
+  imageProcessing.result -> comOut.result
+  batterySensor.batteryState -> planner.batteryState
+  batterySensor.batteryState -> imageProcessing.batteryState
+  comIn.weatherForecast -> imageProcessing.weatherForecast
+}

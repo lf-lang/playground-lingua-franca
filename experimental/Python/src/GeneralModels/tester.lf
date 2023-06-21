@@ -1,0 +1,372 @@
+/* Neural Net */ 
+
+target Python {}; 
+
+preamble {==} 
+
+### Input Setup Reactor 
+reactor Setup { 
+
+  state _function 
+
+  input results 
+
+  output out0
+  output out1
+  output out2
+  output out3
+  output out4
+  output out5
+  output out6
+  output out7
+  output out8
+  output out9
+  output out10
+  output out11
+  output out12
+  output out13
+  output out14
+  output out15
+  output intended
+  reaction(startup) {==} 
+
+} 
+
+### Input Layer 
+reactor Input { 
+
+  state _reading 
+  state _weight 
+  state _bias 
+
+  input data
+  input back_in0
+  input back_in1
+  input back_in2
+  input back_in3
+  input back_in4
+  input back_in5
+  input back_in6
+  output out0
+  output out1
+  output out2
+  output out3
+  output out4
+  output out5
+  output out6
+
+  initial mode forward_prop { 
+
+    reaction(startup) {==} 
+
+    reaction(data) -> out0, out1, out2, out3, out4, out5, out6 {==} 
+
+  } mode back_prop { 
+
+    reaction(back_in0, back_in1, back_in2, back_in3, back_in4, back_in5, back_in6) {==} 
+
+  }
+} 
+
+### Hidden Layer 0
+reactor HL0 { 
+
+  state _reading 
+  state _weight 
+  state _bias 
+
+  input in0
+  output back_out0
+  input in1
+  output back_out1
+  input in2
+  output back_out2
+  input in3
+  output back_out3
+  input in4
+  output back_out4
+  input in5
+  output back_out5
+  input in6
+  output back_out6
+  input in7
+  output back_out7
+  input in8
+  output back_out8
+  input in9
+  output back_out9
+  input in10
+  output back_out10
+  input in11
+  output back_out11
+  input in12
+  output back_out12
+  input in13
+  output back_out13
+  input in14
+  output back_out14
+  input in15
+  output back_out15
+  output out0
+  input back_in0
+  output out1
+  input back_in1
+  output out2
+  input back_in2
+  output out3
+  input back_in3
+  output out4
+  input back_in4
+  output out5
+  input back_in5
+  output out6
+  input back_in6
+
+  initial mode forward_prop { 
+
+    reaction(startup) {==} 
+
+    reaction(in0, in1, in2, in3, in4, in5, in6, in7, in8, in9, in10, in11, in12, in13, in14, in15) -> out0, out1, out2, out3, out4, out5, out6 {==} 
+
+  } mode back_prop { 
+
+    reaction(back_in0, back_in1, back_in2, back_in3, back_in4, back_in5, back_in6) -> back_out0, back_out1, back_out2, back_out3, back_out4, back_out5, back_out6, back_out7, back_out8, back_out9, back_out10, back_out11, back_out12, back_out13, back_out14, back_out15 {==} 
+
+  } 
+}
+
+### Hidden Layer 1
+reactor HL1 { 
+
+  state _reading 
+  state _weight 
+  state _bias 
+
+  input in0
+  output back_out0
+  input in1
+  output back_out1
+  input in2
+  output back_out2
+  input in3
+  output back_out3
+  input in4
+  output back_out4
+  input in5
+  output back_out5
+  input in6
+  output back_out6
+  output out0
+  input back_in0
+  output out1
+  input back_in1
+  output out2
+  input back_in2
+  output out3
+  input back_in3
+
+  initial mode forward_prop { 
+
+    reaction(startup) {==} 
+
+    reaction(in0, in1, in2, in3, in4, in5, in6) -> out0, out1, out2, out3 {==} 
+
+  } mode back_prop { 
+
+    reaction(back_in0, back_in1, back_in2, back_in3) -> back_out0, back_out1, back_out2, back_out3, back_out4, back_out5, back_out6 {==} 
+
+  } 
+}
+
+### Output Layer
+reactor Output {
+
+  state _reading 
+  state _weight 
+  state _bias 
+
+  input in0
+  input in1
+  input in2
+  input in3
+  input in4
+  input in5
+  input in6
+  input back_in
+
+  output result
+  output back_out0
+  output back_out1
+  output back_out2
+  output back_out3
+  output back_out4
+  output back_out5
+  output back_out6
+
+  initial mode forward_prop {
+
+    reaction(in0, in1, in2, in3, in4, in5, in6) -> result {==}
+
+  } mode back_prop {
+
+    reaction(back_in) -> back_out0, back_out1, back_out2, back_out3, back_out4, back_out5, back_out6 {==}
+
+  } 
+}
+
+### Reactor Processor
+reactor Processor {
+
+state _processing
+
+input in0
+input in1
+input in2
+input in3
+input intended
+
+output back_out0
+output back_out1
+output back_out2
+output back_out3
+output resultToSystem
+
+  initial mode forward_prop {
+
+    reaction(in0, in1, in2, in3) -> resultToSystem {==}
+
+  } mode back_prop {
+
+    reaction(startup) {==}
+
+  }
+}
+
+### Main Reactor
+main reactor {
+
+  setup = new Setup()
+
+  input0= new Input()
+  input1= new Input()
+  input2= new Input()
+  input3= new Input()
+  input4= new Input()
+  input5= new Input()
+  input6= new Input()
+  input7= new Input()
+  input8= new Input()
+  input9= new Input()
+  input10= new Input()
+  input11= new Input()
+  input12= new Input()
+  input13= new Input()
+  input14= new Input()
+  input15= new Input()
+  hl0_0 = new HL0()
+  hl0_1 = new HL0()
+  hl0_2 = new HL0()
+  hl0_3 = new HL0()
+  hl0_4 = new HL0()
+  hl0_5 = new HL0()
+  hl0_6 = new HL0()
+  hl1_0 = new HL1()
+  hl1_1 = new HL1()
+  hl1_2 = new HL1()
+  hl1_3 = new HL1()
+  hl1_4 = new HL1()
+  hl1_5 = new HL1()
+  hl1_6 = new HL1()
+  output0 = new Output()
+
+  output1 = new Output()
+
+  output2 = new Output()
+
+  output3 = new Output()
+
+  processor = new Processor()
+
+  setup.out0 -> input0.data
+  setup.out1 -> input1.data
+  setup.out2 -> input2.data
+  setup.out3 -> input3.data
+  setup.out4 -> input4.data
+  setup.out5 -> input5.data
+  setup.out6 -> input6.data
+  setup.out7 -> input7.data
+  setup.out8 -> input8.data
+  setup.out9 -> input9.data
+  setup.out10 -> input10.data
+  setup.out11 -> input11.data
+  setup.out12 -> input12.data
+  setup.out13 -> input13.data
+  setup.out14 -> input14.data
+  setup.out15 -> input15.data
+  input0.out0, input1.out0, input2.out0, input3.out0, input4.out0, input5.out0, input6.out0, input7.out0, input8.out0, input9.out0, input10.out0, input11.out0, input12.out0, input13.out0, input14.out0, input15.out0 -> hl0_0.in0, hl0_0.in1, hl0_0.in2, hl0_0.in3, hl0_0.in4, hl0_0.in5, hl0_0.in6, hl0_0.in7, hl0_0.in8, hl0_0.in9, hl0_0.in10, hl0_0.in11, hl0_0.in12, hl0_0.in13, hl0_0.in14, hl0_0.in15
+  input0.out1, input1.out1, input2.out1, input3.out1, input4.out1, input5.out1, input6.out1, input7.out1, input8.out1, input9.out1, input10.out1, input11.out1, input12.out1, input13.out1, input14.out1, input15.out1 -> hl0_1.in0, hl0_1.in1, hl0_1.in2, hl0_1.in3, hl0_1.in4, hl0_1.in5, hl0_1.in6, hl0_1.in7, hl0_1.in8, hl0_1.in9, hl0_1.in10, hl0_1.in11, hl0_1.in12, hl0_1.in13, hl0_1.in14, hl0_1.in15
+  input0.out2, input1.out2, input2.out2, input3.out2, input4.out2, input5.out2, input6.out2, input7.out2, input8.out2, input9.out2, input10.out2, input11.out2, input12.out2, input13.out2, input14.out2, input15.out2 -> hl0_2.in0, hl0_2.in1, hl0_2.in2, hl0_2.in3, hl0_2.in4, hl0_2.in5, hl0_2.in6, hl0_2.in7, hl0_2.in8, hl0_2.in9, hl0_2.in10, hl0_2.in11, hl0_2.in12, hl0_2.in13, hl0_2.in14, hl0_2.in15
+  input0.out3, input1.out3, input2.out3, input3.out3, input4.out3, input5.out3, input6.out3, input7.out3, input8.out3, input9.out3, input10.out3, input11.out3, input12.out3, input13.out3, input14.out3, input15.out3 -> hl0_3.in0, hl0_3.in1, hl0_3.in2, hl0_3.in3, hl0_3.in4, hl0_3.in5, hl0_3.in6, hl0_3.in7, hl0_3.in8, hl0_3.in9, hl0_3.in10, hl0_3.in11, hl0_3.in12, hl0_3.in13, hl0_3.in14, hl0_3.in15
+  input0.out4, input1.out4, input2.out4, input3.out4, input4.out4, input5.out4, input6.out4, input7.out4, input8.out4, input9.out4, input10.out4, input11.out4, input12.out4, input13.out4, input14.out4, input15.out4 -> hl0_4.in0, hl0_4.in1, hl0_4.in2, hl0_4.in3, hl0_4.in4, hl0_4.in5, hl0_4.in6, hl0_4.in7, hl0_4.in8, hl0_4.in9, hl0_4.in10, hl0_4.in11, hl0_4.in12, hl0_4.in13, hl0_4.in14, hl0_4.in15
+  input0.out5, input1.out5, input2.out5, input3.out5, input4.out5, input5.out5, input6.out5, input7.out5, input8.out5, input9.out5, input10.out5, input11.out5, input12.out5, input13.out5, input14.out5, input15.out5 -> hl0_5.in0, hl0_5.in1, hl0_5.in2, hl0_5.in3, hl0_5.in4, hl0_5.in5, hl0_5.in6, hl0_5.in7, hl0_5.in8, hl0_5.in9, hl0_5.in10, hl0_5.in11, hl0_5.in12, hl0_5.in13, hl0_5.in14, hl0_5.in15
+  input0.out6, input1.out6, input2.out6, input3.out6, input4.out6, input5.out6, input6.out6, input7.out6, input8.out6, input9.out6, input10.out6, input11.out6, input12.out6, input13.out6, input14.out6, input15.out6 -> hl0_6.in0, hl0_6.in1, hl0_6.in2, hl0_6.in3, hl0_6.in4, hl0_6.in5, hl0_6.in6, hl0_6.in7, hl0_6.in8, hl0_6.in9, hl0_6.in10, hl0_6.in11, hl0_6.in12, hl0_6.in13, hl0_6.in14, hl0_6.in15
+  hl0_0.out0, hl0_1.out0, hl0_2.out0, hl0_3.out0, hl0_4.out0, hl0_5.out0, hl0_6.out0 -> hl1_0.in0, hl1_0.in1, hl1_0.in2, hl1_0.in3, hl1_0.in4, hl1_0.in5, hl1_0.in6
+  hl0_0.out1, hl0_1.out1, hl0_2.out1, hl0_3.out1, hl0_4.out1, hl0_5.out1, hl0_6.out1 -> hl1_1.in0, hl1_1.in1, hl1_1.in2, hl1_1.in3, hl1_1.in4, hl1_1.in5, hl1_1.in6
+  hl0_0.out2, hl0_1.out2, hl0_2.out2, hl0_3.out2, hl0_4.out2, hl0_5.out2, hl0_6.out2 -> hl1_2.in0, hl1_2.in1, hl1_2.in2, hl1_2.in3, hl1_2.in4, hl1_2.in5, hl1_2.in6
+  hl0_0.out3, hl0_1.out3, hl0_2.out3, hl0_3.out3, hl0_4.out3, hl0_5.out3, hl0_6.out3 -> hl1_3.in0, hl1_3.in1, hl1_3.in2, hl1_3.in3, hl1_3.in4, hl1_3.in5, hl1_3.in6
+  hl0_0.out4, hl0_1.out4, hl0_2.out4, hl0_3.out4, hl0_4.out4, hl0_5.out4, hl0_6.out4 -> hl1_4.in0, hl1_4.in1, hl1_4.in2, hl1_4.in3, hl1_4.in4, hl1_4.in5, hl1_4.in6
+  hl0_0.out5, hl0_1.out5, hl0_2.out5, hl0_3.out5, hl0_4.out5, hl0_5.out5, hl0_6.out5 -> hl1_5.in0, hl1_5.in1, hl1_5.in2, hl1_5.in3, hl1_5.in4, hl1_5.in5, hl1_5.in6
+  hl0_0.out6, hl0_1.out6, hl0_2.out6, hl0_3.out6, hl0_4.out6, hl0_5.out6, hl0_6.out6 -> hl1_6.in0, hl1_6.in1, hl1_6.in2, hl1_6.in3, hl1_6.in4, hl1_6.in5, hl1_6.in6
+  hl1_0.out0, hl1_1.out0, hl1_2.out0, hl1_3.out0, hl1_4.out0, hl1_5.out0, hl1_6.out0 -> output0.in0, output0.in1, output0.in2, output0.in3, output0.in4, output0.in5, output0.in6
+  hl1_0.out1, hl1_1.out1, hl1_2.out1, hl1_3.out1, hl1_4.out1, hl1_5.out1, hl1_6.out1 -> output1.in0, output1.in1, output1.in2, output1.in3, output1.in4, output1.in5, output1.in6
+  hl1_0.out2, hl1_1.out2, hl1_2.out2, hl1_3.out2, hl1_4.out2, hl1_5.out2, hl1_6.out2 -> output2.in0, output2.in1, output2.in2, output2.in3, output2.in4, output2.in5, output2.in6
+  hl1_0.out3, hl1_1.out3, hl1_2.out3, hl1_3.out3, hl1_4.out3, hl1_5.out3, hl1_6.out3 -> output3.in0, output3.in1, output3.in2, output3.in3, output3.in4, output3.in5, output3.in6
+  output0.result -> processor.in0
+  output1.result -> processor.in1
+  output2.result -> processor.in2
+  output3.result -> processor.in3
+  
+  setup.intended -> processor.intended
+
+  processor.back_out0 -> output0.back_in
+  processor.back_out1 -> output1.back_in
+  processor.back_out2 -> output2.back_in
+  processor.back_out3 -> output3.back_in
+  hl0_0.back_out0, hl0_0.back_out1, hl0_0.back_out2, hl0_0.back_out3, hl0_0.back_out4, hl0_0.back_out5, hl0_0.back_out6, hl0_0.back_out7, hl0_0.back_out8, hl0_0.back_out9, hl0_0.back_out10, hl0_0.back_out11, hl0_0.back_out12, hl0_0.back_out13, hl0_0.back_out14, hl0_0.back_out15 -> input0.back_in0, input1.back_in0, input2.back_in0, input3.back_in0, input4.back_in0, input5.back_in0, input6.back_in0, input7.back_in0, input8.back_in0, input9.back_in0, input10.back_in0, input11.back_in0, input12.back_in0, input13.back_in0, input14.back_in0, input15.back_in0
+
+  hl0_1.back_out0, hl0_1.back_out1, hl0_1.back_out2, hl0_1.back_out3, hl0_1.back_out4, hl0_1.back_out5, hl0_1.back_out6, hl0_1.back_out7, hl0_1.back_out8, hl0_1.back_out9, hl0_1.back_out10, hl0_1.back_out11, hl0_1.back_out12, hl0_1.back_out13, hl0_1.back_out14, hl0_1.back_out15 -> input0.back_in1, input1.back_in1, input2.back_in1, input3.back_in1, input4.back_in1, input5.back_in1, input6.back_in1, input7.back_in1, input8.back_in1, input9.back_in1, input10.back_in1, input11.back_in1, input12.back_in1, input13.back_in1, input14.back_in1, input15.back_in1
+
+  hl0_2.back_out0, hl0_2.back_out1, hl0_2.back_out2, hl0_2.back_out3, hl0_2.back_out4, hl0_2.back_out5, hl0_2.back_out6, hl0_2.back_out7, hl0_2.back_out8, hl0_2.back_out9, hl0_2.back_out10, hl0_2.back_out11, hl0_2.back_out12, hl0_2.back_out13, hl0_2.back_out14, hl0_2.back_out15 -> input0.back_in2, input1.back_in2, input2.back_in2, input3.back_in2, input4.back_in2, input5.back_in2, input6.back_in2, input7.back_in2, input8.back_in2, input9.back_in2, input10.back_in2, input11.back_in2, input12.back_in2, input13.back_in2, input14.back_in2, input15.back_in2
+
+  hl0_3.back_out0, hl0_3.back_out1, hl0_3.back_out2, hl0_3.back_out3, hl0_3.back_out4, hl0_3.back_out5, hl0_3.back_out6, hl0_3.back_out7, hl0_3.back_out8, hl0_3.back_out9, hl0_3.back_out10, hl0_3.back_out11, hl0_3.back_out12, hl0_3.back_out13, hl0_3.back_out14, hl0_3.back_out15 -> input0.back_in3, input1.back_in3, input2.back_in3, input3.back_in3, input4.back_in3, input5.back_in3, input6.back_in3, input7.back_in3, input8.back_in3, input9.back_in3, input10.back_in3, input11.back_in3, input12.back_in3, input13.back_in3, input14.back_in3, input15.back_in3
+
+  hl0_4.back_out0, hl0_4.back_out1, hl0_4.back_out2, hl0_4.back_out3, hl0_4.back_out4, hl0_4.back_out5, hl0_4.back_out6, hl0_4.back_out7, hl0_4.back_out8, hl0_4.back_out9, hl0_4.back_out10, hl0_4.back_out11, hl0_4.back_out12, hl0_4.back_out13, hl0_4.back_out14, hl0_4.back_out15 -> input0.back_in4, input1.back_in4, input2.back_in4, input3.back_in4, input4.back_in4, input5.back_in4, input6.back_in4, input7.back_in4, input8.back_in4, input9.back_in4, input10.back_in4, input11.back_in4, input12.back_in4, input13.back_in4, input14.back_in4, input15.back_in4
+
+  hl0_5.back_out0, hl0_5.back_out1, hl0_5.back_out2, hl0_5.back_out3, hl0_5.back_out4, hl0_5.back_out5, hl0_5.back_out6, hl0_5.back_out7, hl0_5.back_out8, hl0_5.back_out9, hl0_5.back_out10, hl0_5.back_out11, hl0_5.back_out12, hl0_5.back_out13, hl0_5.back_out14, hl0_5.back_out15 -> input0.back_in5, input1.back_in5, input2.back_in5, input3.back_in5, input4.back_in5, input5.back_in5, input6.back_in5, input7.back_in5, input8.back_in5, input9.back_in5, input10.back_in5, input11.back_in5, input12.back_in5, input13.back_in5, input14.back_in5, input15.back_in5
+
+  hl0_6.back_out0, hl0_6.back_out1, hl0_6.back_out2, hl0_6.back_out3, hl0_6.back_out4, hl0_6.back_out5, hl0_6.back_out6, hl0_6.back_out7, hl0_6.back_out8, hl0_6.back_out9, hl0_6.back_out10, hl0_6.back_out11, hl0_6.back_out12, hl0_6.back_out13, hl0_6.back_out14, hl0_6.back_out15 -> input0.back_in6, input1.back_in6, input2.back_in6, input3.back_in6, input4.back_in6, input5.back_in6, input6.back_in6, input7.back_in6, input8.back_in6, input9.back_in6, input10.back_in6, input11.back_in6, input12.back_in6, input13.back_in6, input14.back_in6, input15.back_in6
+
+  hl1_0.back_out0, hl1_0.back_out1, hl1_0.back_out2, hl1_0.back_out3, hl1_0.back_out4, hl1_0.back_out5, hl1_0.back_out6 -> hl0_0.back_in0, hl0_1.back_in0, hl0_2.back_in0, hl0_3.back_in0, hl0_4.back_in0, hl0_5.back_in0, hl0_6.back_in0
+
+  hl1_1.back_out0, hl1_1.back_out1, hl1_1.back_out2, hl1_1.back_out3, hl1_1.back_out4, hl1_1.back_out5, hl1_1.back_out6 -> hl0_0.back_in1, hl0_1.back_in1, hl0_2.back_in1, hl0_3.back_in1, hl0_4.back_in1, hl0_5.back_in1, hl0_6.back_in1
+
+  hl1_2.back_out0, hl1_2.back_out1, hl1_2.back_out2, hl1_2.back_out3, hl1_2.back_out4, hl1_2.back_out5, hl1_2.back_out6 -> hl0_0.back_in2, hl0_1.back_in2, hl0_2.back_in2, hl0_3.back_in2, hl0_4.back_in2, hl0_5.back_in2, hl0_6.back_in2
+
+  hl1_3.back_out0, hl1_3.back_out1, hl1_3.back_out2, hl1_3.back_out3, hl1_3.back_out4, hl1_3.back_out5, hl1_3.back_out6 -> hl0_0.back_in3, hl0_1.back_in3, hl0_2.back_in3, hl0_3.back_in3, hl0_4.back_in3, hl0_5.back_in3, hl0_6.back_in3
+
+  hl1_4.back_out0, hl1_4.back_out1, hl1_4.back_out2, hl1_4.back_out3, hl1_4.back_out4, hl1_4.back_out5, hl1_4.back_out6 -> hl0_0.back_in4, hl0_1.back_in4, hl0_2.back_in4, hl0_3.back_in4, hl0_4.back_in4, hl0_5.back_in4, hl0_6.back_in4
+
+  hl1_5.back_out0, hl1_5.back_out1, hl1_5.back_out2, hl1_5.back_out3, hl1_5.back_out4, hl1_5.back_out5, hl1_5.back_out6 -> hl0_0.back_in5, hl0_1.back_in5, hl0_2.back_in5, hl0_3.back_in5, hl0_4.back_in5, hl0_5.back_in5, hl0_6.back_in5
+
+  hl1_6.back_out0, hl1_6.back_out1, hl1_6.back_out2, hl1_6.back_out3, hl1_6.back_out4, hl1_6.back_out5, hl1_6.back_out6 -> hl0_0.back_in6, hl0_1.back_in6, hl0_2.back_in6, hl0_3.back_in6, hl0_4.back_in6, hl0_5.back_in6, hl0_6.back_in6
+
+  output0.back_out0, output0.back_out1, output0.back_out2, output0.back_out3, output0.back_out4, output0.back_out5, output0.back_out6 -> hl1_0.back_in0, hl1_1.back_in0, hl1_2.back_in0, hl1_3.back_in0, hl1_4.back_in0, hl1_5.back_in0, hl1_6.back_in0
+
+  output1.back_out0, output1.back_out1, output1.back_out2, output1.back_out3, output1.back_out4, output1.back_out5, output1.back_out6 -> hl1_0.back_in1, hl1_1.back_in1, hl1_2.back_in1, hl1_3.back_in1, hl1_4.back_in1, hl1_5.back_in1, hl1_6.back_in1
+
+  output2.back_out0, output2.back_out1, output2.back_out2, output2.back_out3, output2.back_out4, output2.back_out5, output2.back_out6 -> hl1_0.back_in2, hl1_1.back_in2, hl1_2.back_in2, hl1_3.back_in2, hl1_4.back_in2, hl1_5.back_in2, hl1_6.back_in2
+
+  output3.back_out0, output3.back_out1, output3.back_out2, output3.back_out3, output3.back_out4, output3.back_out5, output3.back_out6 -> hl1_0.back_in3, hl1_1.back_in3, hl1_2.back_in3, hl1_3.back_in3, hl1_4.back_in3, hl1_5.back_in3, hl1_6.back_in3
+
+  
+}

@@ -1,0 +1,166 @@
+/**
+ * Request-response pattern like ContextManager except that a single service
+ * is shared among multiple clients.
+ */
+target C {
+  timeout: 1s
+}
+import Random from "../../lib/Random.lf"
+preamble {=   
+  #include <math.h>  // FIXME: should not be needed. Should get from Random.lf.
+   
+  // Pair of numbers to be added.
+  typedef struct pair_t {
+    int first;
+    int second;
+  } pair_t;
+    
+  // Request structure, input data and the context.
+  typedef struct request_t {
+    pair_t data;
+    int context;
+  } request_t;
+
+  // Tagged request. Service should include the tag in its response.
+  typedef struct tagged_request_t {
+    request_t request;
+    tag_t tag;
+    int channel;
+  } tagged_request_t;
+  
+  // Response data type, the sum plus the context.
+  typedef struct response_t {
+    int data;
+    int context;
+  } response_t;
+
+  // Tagged response.
+  typedef struct tagged_response_t {
+    response_t response;
+    tag_t tag;
+    int channel;
+  } tagged_response_t;
+=}
+
+// Interface definition for client
+reactor ClientInterface {
+  output request:request_t
+  input response:response_t
+}
+
+// Mirror image of client interface for manager.
+reactor ManagerInterface {
+  input request:request_t
+  output response:response_t
+  output trequest:tagged_request_t
+  input tresponse:tagged_response_t
+}
+
+// Interface definition for the service.
+reactor ServiceInterface(width:int = 2) {
+  input[width] in:tagged_request_t
+  output[width] out:tagged_response_t
+}
+
+reactor AddService extends ServiceInterface, Random {  
+  logical action pending:tagged_request_t
+  
+  reaction(pending) -> out {=
+    tagged_response_t response;
+    response.response.data = pending->value.request.data.first + pending->value.request.data.second;
+    response.response.context = pending->value.request.context;
+    response.tag = pending->value.tag;
+    lf_set(out[pending->value.channel], response);
+  =}
+  reaction(in) -> pending {=
+    for (int i = 0; i < in_width; i++) {
+      if (in[i]->is_present) {
+        // Record the input channel.
+        in[i]->value.channel = i;
+        // Random delay between 100 and 500 msec.
+        interval_t delay = MSEC(1) * (random() % 400 + 100);
+        lf_schedule_copy(pending, delay, &in[i]->value, 1);
+      }
+    }
+  =}
+}
+
+reactor Manager extends ManagerInterface {
+
+  state pending:tagged_request_t[10] = {= { 0 } =}
+    
+  reaction(startup) {=
+    // Initialize brute force hashtable.
+    for(int i = 0; i < 10; i++) {
+      self->pending[i].tag = NEVER_TAG;
+    }
+  =}
+
+  reaction(request) -> trequest {=
+    // Find an empty slot in the pending requests. BRUTE FORCE.
+    for(int i = 0; i < 10; i++) {
+      if (lf_tag_compare(self->pending[i].tag, NEVER_TAG) == 0) {
+        // Found one.
+        self->pending[i].request = request->value;
+        self->pending[i].tag = lf_tag();
+        lf_set(trequest, self->pending[i]);
+        return;
+      }
+    }
+    lf_print_error("Maximum number of pending requests exceeded.");
+  =}
+  
+  reaction(tresponse) -> response {=
+    // Find the pending requests. BRUTE FORCE.
+    for(int i = 0; i < 10; i++) {
+      if (lf_tag_compare(self->pending[i].tag, tresponse->value.tag) == 0) {
+        // Found it. Reset so slot can be reused.
+        self->pending[i].tag = NEVER_TAG;
+        lf_set(response, tresponse->value.response);
+        return;
+      }
+    }
+    lf_print_error("Pending requests not found.");
+  =}
+}
+reactor Client(start:int = 0) extends ClientInterface {
+  
+  timer t(0, 100ms)
+  state counter:int = start
+  
+  reaction(t) -> request {=
+    lf_print("Client asks what %d + 42 is.", self->counter);
+    
+    pair_t to_sum = {
+      .first = self->counter, 
+      .second = 42
+    };
+    request_t req = {
+      .data = to_sum, 
+      .context = self->counter
+    };
+    lf_set(request, req);
+    self->counter++;
+  =}
+  
+  reaction(response) {=
+    lf_print("Result: %d + 42 = %d.", response->value.context, response->value.data);
+  =}
+}
+main reactor {
+  c1 = new Client();
+  c2 = new Client(start = 10);
+  m1 = new Manager();
+  m2 = new Manager();
+  service = new AddService()
+  
+  c1.request -> m1.request
+  m1.response -> c1.response
+  c2.request -> m2.request
+  m2.response -> c2.response
+  // FIXME: The following more compact notation fails.
+  // c1.request, m1.response -> m1.request, c1.response
+  // c2.request, m2.response -> m2.request, c2.response
+  m1.trequest, m2.trequest -> service.in
+  service.out -> m1.tresponse, m2.tresponse
+}

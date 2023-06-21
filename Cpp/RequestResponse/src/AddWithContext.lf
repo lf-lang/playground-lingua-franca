@@ -3,42 +3,44 @@ target Cpp
 import AddService from "AddService.lf"
 import ContextManager from "ContextManager.lf"
 
-
 reactor Client {
-    timer t(0, 100ms)
-    output add_request: Request<std::pair<int, int>>
-    input add_response: Response<int>
+  timer t(0, 100 ms)
+  output add_request: Request<std::pair<int, int>>
+  input add_response: Response<int>
 
-    state counter: int(0)
+  state counter: int(0)
 
-    add_cm = new ContextManager<{=Request<std::pair<int, int>>=}, {=Response<int>=}, {=std::function<void(int)>=}>()
+  add_cm = new ContextManager<
+      {= Request<std::pair<int, int>> =},
+      {= Response<int> =},
+      {= std::function<void(int)> =}>()
 
-    reaction(t) -> add_cm.request_in {=
-        auto req = Request(std::make_pair(counter, 42));
-        int c = counter; // This is a weird corner case in C++ where the clojure below 
-        // cannot capture counter by value. Copying it to a local variable helps... 
-        auto callback = [c](int sum) {
-            reactor::log::Info() << "Result: " << c << " + 42 = " << sum;
-        };
-        add_cm.request_in.set(std::make_pair(req, callback));
-        reactor::log::Info() << "Client asks what " << counter << " + 42 is";
-        counter++;
-    =}
+  add_cm.request_out -> add_request
+  add_response -> add_cm.response_in
 
-    reaction(add_cm.response_out) {=
-        auto const& resp = add_cm.response_out.get()->first;
-        auto const& callback = add_cm.response_out.get()->second;
-        callback(resp.data());
-    =}
+  reaction(t) -> add_cm.request_in {=
+    auto req = Request(std::make_pair(counter, 42));
+    int c = counter; // This is a weird corner case in C++ where the clojure below
+    // cannot capture counter by value. Copying it to a local variable helps...
+    auto callback = [c](int sum) {
+      reactor::log::Info() << "Result: " << c << " + 42 = " << sum;
+    };
+    add_cm.request_in.set(std::make_pair(req, callback));
+    reactor::log::Info() << "Client asks what " << counter << " + 42 is";
+    counter++;
+  =}
 
-    add_cm.request_out -> add_request
-    add_response -> add_cm.response_in
+  reaction(add_cm.response_out) {=
+    auto const& resp = add_cm.response_out.get()->first;
+    auto const& callback = add_cm.response_out.get()->second;
+    callback(resp.data());
+  =}
 }
 
 main reactor {
-    adder = new AddService()
-    client = new Client()
+  adder = new AddService()
+  client = new Client()
 
-    client.add_request -> adder.request
-    adder.response -> client.add_response
+  client.add_request -> adder.request
+  adder.response -> client.add_response
 }

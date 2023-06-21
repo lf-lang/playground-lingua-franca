@@ -1,0 +1,117 @@
+/**
+ * This Lingua Franca program models a simple simulation and visualization of a
+ * physical system subjected to an impulsive disturbance. The Simulation reactor
+ * generates the state of the system at regular intervals specified by the sample
+ * period, which it updates based on the time elapsed since the last state update.
+ * It also incorporates any disturbances, which are modeled as instantaneous
+ * changes in the rate of change of the system state. These states are then sent to
+ * the Plotter reactor, which collects these data points over time. Upon the
+ * termination of the simulation, the Plotter reactor generates a plot displaying
+ * the state of the system over time, marking each data point with its respective
+ * time and value, and indicating the disturbances with stem lines. The main
+ * reactor triggers a one-shot disturbance three and a half seconds into the
+ * simulation. 
+ */
+target Python {
+  timeout: 8 secs,
+  fast: true
+}
+
+preamble {=
+  import math
+  import matplotlib.pyplot as plt
+=}
+
+reactor Simulation(
+  sample_period(1 secs),   #  Sample period.
+  g(9.81)          #  Acceleration of gravity.
+){
+  input u        #  Control input.
+  input d        #  Impulsive disturbance
+  output result      #  Output value for y axis
+  output d_result    #  Rate of change of y
+  
+  state x(0.0, 1.0)
+  state first(False)
+  state latest_u(0.0)
+  state elapsed_time(0)
+
+  timer t(0, sample_period)
+
+  # Method used to update the state
+  method update_state() {=
+    # The time interval is defined as the time elapsed 
+    # since last time we output the state
+    time_interval = (lf.time.logical_elapsed() - self.elapsed_time)/1e9
+    self.elapsed_time = lf.time.logical_elapsed()
+
+    # Perform Simple Euler, return the updated x
+    def Simple_Euler(x):
+      h = time_interval
+      x[0] = x[0] + h*x[1] 
+      return x
+
+    # Update x using RK4 
+    self.x = Simple_Euler(self.x)
+  =}
+
+  # Method used to output the state
+  method output_state(result, d_result) {=
+    result.set(self.x[0])
+    d_result.set(self.x[1])
+  =}
+  
+  # The update will be triggered when either a disturbance is introduced or a sample
+  # period of time has elapsed. 
+  reaction(d) {=
+    self.update_state()
+    self.x[1] += d.value
+  =}
+
+  reaction(t) -> result, d_result {=
+    self.update_state()
+    # Output the state.
+    self.output_state(result, d_result)
+   =}
+  
+}
+
+reactor Plotter {
+  input data
+  state times({=[]=})
+  state values({=[]=})
+  reaction(data) {=
+    self.times.append(lf.time.logical_elapsed()/1e9)
+    self.values.append(data.value)
+  =}
+  reaction(shutdown) {=
+    fig, axs = plt.subplots()
+    axs.set_title("Small Test Graph")
+    axs.plot(self.times, self.values, color="C0")
+    # Show a stem graph pointing to the x-axis
+    axs.stem(self.times, self.values)
+    # Label x,y coordinates of each point
+    for x,y in zip(self.times,self.values):
+      label = f"({x},{y})"
+      plt.annotate(label, # this is the text
+            (x,y), # these are the coordinates to position the label
+            textcoords="offset points", # how to position the text
+            xytext=(0,10), # distance from text to points (x,y)
+            ha="center") # horizontal alignment can be left, right or center
+    axs.set_xlabel("Time (secs)")
+    axs.set_ylabel("Result")
+    plt.show()
+  =}
+}
+
+main reactor {
+  timer d(3500 msec);  // One-shot disturbance at 3 seconds.
+
+  p = new Simulation()
+  plt = new Plotter()
+  p.result -> plt.data
+
+  reaction(d) -> p.d {=
+    p.d.set(1)
+  =}
+}

@@ -1,86 +1,85 @@
 /**
  * A bank of neural networks for an ACAS (Airborne Collision Avoidance System).
- * 
+ *
  * This is based on the following paper:
- * 
- * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
- * Christophe Garion, ans Claire Pagetti, "Verification of machine
- * learning based cyber-physical systems: a comparative study,"
- * International Conference on Hybrid Systems: Computation and Control
- * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
+ *
+ * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin, Christophe Garion, ans Claire Pagetti,
+ * "Verification of machine learning based cyber-physical systems: a comparative study,"
+ * International Conference on Hybrid Systems: Computation and Control (HSCC), May 2022, Pages 1–16,
+ * https://doi.org/10.1145/3501710.3519540
  *
  * The original Python code on which this is based was provided by Arthur Clavière.
- * 
- * The ML models (in code/src/systems/acasxu/nnets)
- * come from https://github.com/guykatzz/ReluplexCav2017
- * 
+ *
+ * The ML models (in code/src/systems/acasxu/nnets) come from
+ * https://github.com/guykatzz/ReluplexCav2017
+ *
  * # Prerequisites
- * 
  * ```
- *    pip install wheel
- *    pip install pandas
- *    pip install matplotlib
+ *  pip install wheel
+ *  pip install pandas
+ *  pip install matplotlib
  * ```
- * 
+
+ *
  * @author Arthur Clavière
  * @author Edward A. Lee
  * @author Claire Pagetti
  */
 target Python {
-    files: ["../code/src/utils.py", "../code/src/mlmodels/ffnn.py", "../code/src/systems/acasxu/nnets/"]
+  files: [
+      "../code/src/utils.py",
+      "../code/src/mlmodels/ffnn.py",
+      "../code/src/systems/acasxu/nnets/"]
 }
 
 preamble {=
-    import numpy as np
-    from utils import parse_nnet_format
+  import numpy as np
+  from utils import parse_nnet_format
 =}
 
-reactor NN(
-    prefix_nnet_names("nnet_acas_")
-) {
-    input vector
-    input index           # Index of neural network to use.
-    
-    output score          # A vector with six scores.
-    
-    state nnets({=[]=})             # Empty list initially.
-    state norm_parameters({={}=})   # Empty map initially.
-    state nnets_dict({={}=})        # Empty map initially.
-    
-    # Read and parse neural network definitions.
-    reaction(startup) {=
-        for i in range(1,6):
-            # retrieve the path to the i^th network
-            nnet_filename = "ACASXU_experimental_v2a_{}_1.nnet".format(i)
-            path_nnet = os.path.join(os.path.dirname(__file__), "nnets", nnet_filename)
-            # parse the network
-            (nnet, norm_params) = parse_nnet_format(path_nnet, "relu")
-            # name the network
-            nnet_name = self.prefix_nnet_names + str(i-1)
-            # append the network to the nnets list
-            self.nnets.append((nnet_name, nnet, path_nnet)) 
-            # update the norm_parameters dictionary
-            self.norm_parameters[nnet_name] = norm_params
+reactor NN(prefix_nnet_names="nnet_acas_") {
+  input vector
+  input index                  # Index of neural network to use.
 
-        # Create a dictionary with the neural networks
-        for (nnet_name, nnet, path_nnet) in self.nnets:
-            self.nnets_dict[nnet_name] = nnet
-        =}
-    
-    reaction(vector) index -> score {=
-        
-        # (ii) select the neural network to be executed, depending on the index
-        nnet_name = self.prefix_nnet_names + str(index.value)
-        
-        # Normalize the vector
-        norm_params = self.norm_parameters[nnet_name]
-        x_mean = norm_params[2]
-        x_range = norm_params[3]
-        x_norm = (vector.value - x_mean) / x_range
-                
-        # (iv) evaluate the neural network
-        score.set(self.nnets_dict[nnet_name].compute_output(x_norm))
-                
-        # score.set([1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
-    =}
+  output score                 # A vector with six scores.
+
+  state nnets = {= [] =}       # Empty list initially.
+  state norm_parameters = {= {} =}  # Empty map initially.
+  state nnets_dict = {= {} =}  # Empty map initially.
+
+  # Read and parse neural network definitions.
+  reaction(startup) {=
+    for i in range(1,6):
+      # retrieve the path to the i^th network
+      nnet_filename = "ACASXU_experimental_v2a_{}_1.nnet".format(i)
+      path_nnet = os.path.join(os.path.dirname(__file__), "nnets", nnet_filename)
+      # parse the network
+      (nnet, norm_params) = parse_nnet_format(path_nnet, "relu")
+      # name the network
+      nnet_name = self.prefix_nnet_names + str(i-1)
+      # append the network to the nnets list
+      self.nnets.append((nnet_name, nnet, path_nnet))
+      # update the norm_parameters dictionary
+      self.norm_parameters[nnet_name] = norm_params
+
+    # Create a dictionary with the neural networks
+    for (nnet_name, nnet, path_nnet) in self.nnets:
+      self.nnets_dict[nnet_name] = nnet
+  =}
+
+  reaction(vector) index -> score {=
+    # (ii) select the neural network to be executed, depending on the index
+    nnet_name = self.prefix_nnet_names + str(index.value)
+
+    # Normalize the vector
+    norm_params = self.norm_parameters[nnet_name]
+    x_mean = norm_params[2]
+    x_range = norm_params[3]
+    x_norm = (vector.value - x_mean) / x_range
+
+    # (iv) evaluate the neural network
+    score.set(self.nnets_dict[nnet_name].compute_output(x_norm))
+
+    # score.set([1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
+  =}
 }

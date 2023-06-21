@@ -1,0 +1,57 @@
+/**
+ * The given Lingua Franca (LF) program models the behavior of Pac-Man in a game
+ * environment. The program takes into account two input conditions: the proximity
+ * of ghosts (GhostClose) and whether the ghosts are scared (GhostScared). The
+ * behavior of Pac-Man is represented by two modes, HandleGhostClose and EatPills.
+ * When a ghost is close, Pac-Man enters the HandleGhostClose mode, which further
+ * branches into two sub-modes, ChaseGhost and AvoidGhost, based on whether the
+ * ghosts are scared or not. In this mode, Pac-Man either chases the scared ghosts
+ * or avoids them. On the other hand, when no ghosts are in close proximity,
+ * Pac-Man operates in the EatPills mode, focusing on consuming the pills in the
+ * game environment. The program provides a high-level simulation of Pac-Man's
+ * decision-making process based on the game's dynamic conditions. 
+ */
+target C;
+
+reactor GhostCloseBehavior {
+  input GhostScared:bool
+  
+  initial mode ChaseGhost {
+    @label("Condition: !GhostScared")
+    reaction(reset, GhostScared) -> AvoidGhost {==}
+    
+    @label("Action: ChaseGhost")
+    reaction(reset) {==}
+  }
+  mode AvoidGhost {
+    @label("Condition: GhostScared")
+    reaction(GhostScared) -> ChaseGhost {==}
+    
+    @label("Action: AvoidGhost")
+    reaction(reset) {==}
+  }
+}
+
+reactor PacManBehavior {
+  input GhostClose:bool
+  input GhostScared:bool
+  
+  initial mode HandleGhostClose {
+    @label("Condition: !GhostClose")
+    reaction(GhostClose) -> EatPills {==}
+    
+    inner = new GhostCloseBehavior()
+    GhostScared -> inner.GhostScared
+  }
+  mode EatPills {
+    @label("Condition: GhostClose")
+    reaction(GhostClose) -> reset(HandleGhostClose) {==}
+    
+    @label("Action: EatPills")
+    reaction(reset) {==}
+  }
+}
+
+main reactor {
+  p = new PacManBehavior()
+}

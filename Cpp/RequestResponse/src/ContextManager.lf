@@ -1,28 +1,28 @@
 target Cpp
 
 public preamble {=
-    #include "request_response.hh"
+  #include "request_response.hh"
 =}
 
 reactor ContextManager<Req, Resp, Ctx> {
-    input request_in: std::pair<Req, Ctx>
-    output request_out: Req
+  input request_in: std::pair<Req, Ctx>
+  output request_out: Req
 
-    input response_in: Resp
-    output response_out: std::pair<Resp, Ctx>
+  input response_in: Resp
+  output response_out: std::pair<Resp, Ctx>
 
-    state context_buffer: {= std::map<unsigned long, Ctx> =}
+  state context_buffer: {= std::map<unsigned long, Ctx> =}
 
-    reaction (request_in) -> request_out {=
-        const auto& req = request_in.get()->first;
-        const auto& ctx = request_in.get()->second;
-        context_buffer[req.uid()] = ctx;
-        request_out.set(req);
-    =}
+  reaction(request_in) -> request_out {=
+    const auto& req = request_in.get()->first;
+    const auto& ctx = request_in.get()->second;
+    context_buffer[req.uid()] = ctx;
+    request_out.set(req);
+  =}
 
-    reaction (response_in) -> response_out {=
-        const auto& resp = *response_in.get();
-        const auto& ctx = context_buffer[resp.uid()];
-        response_out.set(std::make_pair(resp, ctx));
-    =}
+  reaction(response_in) -> response_out {=
+    const auto& resp = *response_in.get();
+    const auto& ctx = context_buffer[resp.uid()];
+    response_out.set(std::make_pair(resp, ctx));
+  =}
 }

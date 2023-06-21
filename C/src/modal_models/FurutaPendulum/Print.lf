@@ -1,45 +1,41 @@
-/**
- * A utility reactor to print the pendulum state into a csv file.
- */
-target C;
+/** A utility reactor to print the pendulum state into a csv file. */
+target C
 
 preamble {=
-    #include <math.h>
-    #define PI 3.14159265
+  #include <math.h>
+  #define PI 3.14159265
 =}
 
-reactor Print(filename:string("pendulum.csv")) {
-    input control:double;
-    input modeID:double;
-    input energy:double;
-    input theta:double;
-    input phi:double;
+reactor Print(filename: string = "pendulum.csv") {
+  input control: double
+  input modeID: double
+  input energy: double
+  input theta: double
+  input phi: double
 
-    state file:FILE*({=NULL=});
+  state file: FILE* = {= NULL =}
 
-    reaction(startup) {=
-        self->file = fopen(self->filename, "w");
-        if(self->file == NULL) {
-            lf_print_error_and_exit("Failed to open file: %s", self->filename);
-        } else {
-            fprintf(self->file, "Time,Control,Mode,Energy,Theta,Phi\n");
-        }
-    =}
+  reaction(startup) {=
+    self->file = fopen(self->filename, "w");
+    if(self->file == NULL) {
+      lf_print_error_and_exit("Failed to open file: %s", self->filename);
+    } else {
+      fprintf(self->file, "Time,Control,Mode,Energy,Theta,Phi\n");
+    }
+  =}
 
-    reaction(control, modeID, energy, theta, phi) {=
-        double t = lf_time_logical_elapsed() / 1.0e9;
-        fprintf(self->file,
-            "%f,%f,%f,%f,%f,%f\n",
-            t,
-            control->value,
-            modeID->value,
-            energy->value,
-            fmod(theta->value, PI),
-            fmod(phi->value, PI)
-        );
-    =}
+  reaction(control, modeID, energy, theta, phi) {=
+    double t = lf_time_logical_elapsed() / 1.0e9;
+    fprintf(self->file,
+      "%f,%f,%f,%f,%f,%f\n",
+      t,
+      control->value,
+      modeID->value,
+      energy->value,
+      fmod(theta->value, PI),
+      fmod(phi->value, PI)
+    );
+  =}
 
-    reaction(shutdown) {=
-        fclose(self->file);
-    =}
+  reaction(shutdown) {= fclose(self->file); =}
 }
