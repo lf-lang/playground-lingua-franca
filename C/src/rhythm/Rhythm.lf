@@ -1,25 +1,23 @@
 /**
- * Rhythm generator using samples of percussion instruments. This program runs
- * on MacOS and Linux, at least.
+ * Rhythm generator using samples of percussion instruments. This program runs on MacOS and Linux,
+ * at least.
  *
- * This program opens a simple, terminal-based user interface for specifying a
- * rhythmic audio output. The rhythm is displayed in the terminal as it is
- * generated and produced as audio using sample audio files.
+ * This program opens a simple, terminal-based user interface for specifying a rhythmic audio
+ * output. The rhythm is displayed in the terminal as it is generated and produced as audio using
+ * sample audio files.
  *
- * This program also uses ncurses, which needs to be installed on your machine
- * for this to work. It also uses the library utility sensor_simulator, provided
- * with Lingua Franca, which uses keyboard input to simulate asynchronous
- * sensors and beeps to simulate timed output. See sensor_simulator.h for
- * documentation.
+ * This program also uses ncurses, which needs to be installed on your machine for this to work. It
+ * also uses the library utility sensor_simulator, provided with Lingua Franca, which uses keyboard
+ * input to simulate asynchronous sensors and beeps to simulate timed output. See sensor_simulator.h
+ * for documentation.
  *
  * The merengue rhythm comes from here:
  * https://www.8notes.com/school/lessons/percussion/merengue.asp
  *
  * The sound files come from here: https://freewavesamples.com
  *
- * Sound files are assumed to be wav files with sample rate 44,100, 16-bit
- * samples, linear PCM encoded. Use afconvert on Mac to convert to the assumed
- * input format.
+ * Sound files are assumed to be wav files with sample rate 44,100, 16-bit samples, linear PCM
+ * encoded. Use afconvert on Mac to convert to the assumed input format.
  *
  * @author Edward A. Lee
  *
@@ -28,13 +26,8 @@
  */
 target C {
   keepalive: true,
-  files: [
-    "/lib/c/reactor-c/util/sensor_simulator.c", 
-    "/lib/c/reactor-c/util/sensor_simulator.h",
-  ],
-  cmake-include: [
-    "/lib/c/reactor-c/util/sensor_simulator.cmake",
-  ] 
+  files: ["/lib/c/reactor-c/util/sensor_simulator.c", "/lib/c/reactor-c/util/sensor_simulator.h"],
+  cmake-include: ["/lib/c/reactor-c/util/sensor_simulator.cmake"]
 }
 
 import PlayWaveform from "PlayWaveform.lf"
@@ -70,31 +63,28 @@ preamble {=
   #define SAMBA 0xddda
   #define SAMBA_EMPHASIS 0x99ca
   #endif
-  
+
   extern const char* instructions[];
   extern int instructions_length;
 =}
 
 /**
- * Reactor that outputs notes (which carry an emphasis)) according to a
- * specified rhythm. The minimum time between notes is given by the
- * 'tick_duration' state variable. This can be adjusted up or down. This is
- * designed to coordinate between multiple instances of this RhythmSource so
+ * Reactor that outputs notes (which carry an emphasis)) according to a specified rhythm. The
+ * minimum time between notes is given by the 'tick_duration' state variable. This can be adjusted
+ * up or down. This is designed to coordinate between multiple instances of this RhythmSource so
  * each can change the rhythm and tempo while keeping the others in sync.
  *
  * @param sixteenth Initial duration of one sixteenth note.
- * @param delta The amount by which to change sixteenth when tempo is increased
- * or decreased.
+ * @param delta The amount by which to change sixteenth when tempo is increased or decreased.
  * @param message An array of strings to display.
  * @param message_length The length of the message array.
  */
 reactor RhythmSource(
-  sixteenth: time = 200 msec,
-  delta: time = 10 msec,
-  message: {= const char** =} = {= instructions =},
-  message_length: int = {= instructions_length =},
-  log_to_file: bool = false
-) {
+    sixteenth: time = 200 msec,
+    delta: time = 10 msec,
+    message: {= const char** =} = {= instructions =},
+    message_length: int = {= instructions_length =},
+    log_to_file: bool = false) {
   preamble {=
     const char* instructions[] = {
       "Basic control:",
@@ -118,46 +108,34 @@ reactor RhythmSource(
       "  b: bossa nova",
       "  s: samba"
     };
-    int instructions_length = 20;    
+    int instructions_length = 20;
   =}
-  // To change the rhythm.
-  input rhythm_change_in: char
-  // To change the tempo.
-  input tempo_change_in: interval_t
+  input rhythm_change_in: char  // To change the rhythm.
+  input tempo_change_in: interval_t  // To change the tempo.
 
-  // To play a note with the given emphasis.
-  output note: float
-  // Instrument selection.
-  output instrument: int
-  // To change the rhythm.
-  output rhythm_change: char
-  // To change the tempo.
-  output tempo_change: interval_t
+  output note: float  // To play a note with the given emphasis.
+  output instrument: int  // Instrument selection.
+  output rhythm_change: char  // To change the rhythm.
+  output tempo_change: interval_t  // To change the tempo.
 
   state tick_duration: time = 200 msec
   logical action tick
 
-  // Count of sixteenth notes.
-  state count: int = 0
+  state count: int = 0  // Count of sixteenth notes.
 
-  // Action to be invoked when a key is pressed.
-  physical action key: char
+  physical action key: char  // Action to be invoked when a key is pressed.
 
-  // Indicator of when to make a sound.
-  state rhythm: int = {= DOWNBEAT =}
+  state rhythm: int = {= DOWNBEAT =}  // Indicator of when to make a sound.
 
-  // Indicator of whether to emphasize the sound.
-  state emphasis: int = {= DOWNBEAT =}
+  state emphasis: int = {= DOWNBEAT =}  // Indicator of whether to emphasize the sound.
 
-  // Currently active rhythm. This becomes active from rhythm on the downbeat.
-  state active_rhythm: int = {= DOWNBEAT =}
+  state active_rhythm: int = {= DOWNBEAT =}  // Currently active rhythm. This becomes active from rhythm on the downbeat.
 
   // Currently active emphasis. This becomes active from rhythm on the
   // downbeat.
   state active_emphasis: int = {= DOWNBEAT =}
 
-  // Position of the cursor in the terminal window.
-  state cursor: int = 0
+  state cursor: int = 0  // Position of the cursor in the terminal window.
 
   reaction(startup) -> key, note, tick {=
     // Start the sensor simulator, which starts ncurses.

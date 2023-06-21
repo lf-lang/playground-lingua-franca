@@ -29,74 +29,74 @@ reactor KeyboardInput(exit_key: int = 0) {
   physical action keypress: int
 
   preamble {=
-  #include "platform.h"
-  #include <curses.h>
-  #include <signal.h>
-  // Thread to read input characters until an EOF is received.
-  // Each time a character is received, schedule a keypress action.
-  void* read_input(void* keyboard_input) {
-    int c;
-    while((c = getch()) != EOF) {
-      if (c == ((keyboard_input_t*)keyboard_input)->exit_key) {
-        lf_request_stop();
-        break;
+    #include "platform.h"
+    #include <curses.h>
+    #include <signal.h>
+    // Thread to read input characters until an EOF is received.
+    // Each time a character is received, schedule a keypress action.
+    void* read_input(void* keyboard_input) {
+      int c;
+      while((c = getch()) != EOF) {
+        if (c == ((keyboard_input_t*)keyboard_input)->exit_key) {
+          lf_request_stop();
+          break;
+        }
+        lf_schedule_copy(((keyboard_input_t*)keyboard_input)->keypress, 0, &c, 1);
       }
-      lf_schedule_copy(((keyboard_input_t*)keyboard_input)->keypress, 0, &c, 1);
+      return NULL;
     }
-    return NULL;
-  }
-  // Function to direct printed messages to the curses-managed terminal.
-  void print_to_terminal(const char* format, va_list args) {
-    static int line_count = 1;
-    move(line_count++, 0);
-    vwprintw(stdscr, format, args);
-    refresh();
-    if(line_count >= getmaxy(stdscr)) line_count = 1;
-  }
-  // Function for orderly shutdown upon control-c.
-  void sig_handler(int sig) {
-    lf_request_stop();
-  }
+    // Function to direct printed messages to the curses-managed terminal.
+    void print_to_terminal(const char* format, va_list args) {
+      static int line_count = 1;
+      move(line_count++, 0);
+      vwprintw(stdscr, format, args);
+      refresh();
+      if(line_count >= getmaxy(stdscr)) line_count = 1;
+    }
+    // Function for orderly shutdown upon control-c.
+    void sig_handler(int sig) {
+      lf_request_stop();
+    }
   =}
 
   reaction(startup) -> keypress {=
-  initscr();  // Initialize the curses library
-  cbreak();   // Disable line buffering
-  noecho();   // Disable automatic echoing of typed characters
-  keypad(stdscr, TRUE);  // Enable special keys
+    initscr();  // Initialize the curses library
+    cbreak();   // Disable line buffering
+    noecho();   // Disable automatic echoing of typed characters
+    keypad(stdscr, TRUE);  // Enable special keys
 
-  move(0, 0);
-  if(self->exit_key != 0) {
-    printw("Type %c to exit.\n", self->exit_key);
-  }
-  refresh();
+    move(0, 0);
+    if(self->exit_key != 0) {
+      printw("Type %c to exit.\n", self->exit_key);
+    }
+    refresh();
 
-  // Register a print function handler so lf_print works.
-  lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
+    // Register a print function handler so lf_print works.
+    lf_register_print_function(print_to_terminal, LOG_LEVEL_ALL);
 
-  if (signal(SIGINT, sig_handler) == SIG_ERR) {
-    lf_print_warning("Failed to register signal handler. After exit, may have to reset terminal using 'reset'.");
-  }
+    if (signal(SIGINT, sig_handler) == SIG_ERR) {
+      lf_print_warning("Failed to register signal handler. After exit, may have to reset terminal using 'reset'.");
+    }
 
-  static keyboard_input_t keyboard_input;
-  keyboard_input.keypress = keypress;
-  keyboard_input.exit_key = self->exit_key;
+    static keyboard_input_t keyboard_input;
+    keyboard_input.keypress = keypress;
+    keyboard_input.exit_key = self->exit_key;
 
-  // Start the thread that listens for key presses.
-  lf_thread_t thread_id;
-  lf_thread_create(&thread_id, &read_input, &keyboard_input);
+    // Start the thread that listens for key presses.
+    lf_thread_t thread_id;
+    lf_thread_create(&thread_id, &read_input, &keyboard_input);
   =}
 
   reaction(keypress) -> key {= lf_set(key, keypress->value); =}
 
   reaction(shutdown) {=
-  endwin();
-  lf_register_print_function(NULL, -1);
+    endwin();
+    lf_register_print_function(NULL, -1);
   =}
 }
 
 main reactor {
-  k = new KeyboardInput(exit_key = 120)
+  k = new KeyboardInput(exit_key=120)
 
   reaction(k.key) {= lf_print("You typed %c (keycode %d).", k.key->value, k.key->value); =}
 }

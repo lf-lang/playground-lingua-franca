@@ -1,40 +1,38 @@
 /**
- * The given Lingua Franca (LF) program models a simplified automatic braking
- * system in a car, which consists of a camera, a braking assistant, a brake pedal,
- * and a brake. The camera continuously generates frames at a regular interval of
- * 20 milliseconds. The braking assistant processes these frames and sends a brake
- * signal every 10 frames, simulating an automatic braking decision based on the
- * image processing. Simultaneously, a simulated brake pedal is "pressed" roughly
- * every second, triggering a manual brake signal. Both automatic and manual brake
- * signals are directed to the brake reactor, which reacts by outputting a message
- * indicating that the brake has been triggered and the source of the signal. It
- * also checks whether the reactions to these signals meet certain deadlines (3
- * milliseconds for manual and 15 milliseconds for automatic braking), printing an
- * error message if a deadline is violated. 
+ * The given Lingua Franca (LF) program models a simplified automatic braking system in a car, which
+ * consists of a camera, a braking assistant, a brake pedal, and a brake. The camera continuously
+ * generates frames at a regular interval of 20 milliseconds. The braking assistant processes these
+ * frames and sends a brake signal every 10 frames, simulating an automatic braking decision based
+ * on the image processing. Simultaneously, a simulated brake pedal is "pressed" roughly every
+ * second, triggering a manual brake signal. Both automatic and manual brake signals are directed to
+ * the brake reactor, which reacts by outputting a message indicating that the brake has been
+ * triggered and the source of the signal. It also checks whether the reactions to these signals
+ * meet certain deadlines (3 milliseconds for manual and 15 milliseconds for automatic braking),
+ * printing an error message if a deadline is violated.
  */
 target Cpp {
   cmake-include: "threads.cmake"
-};
+}
 
 reactor Camera {
-  timer t(20msecs, 20msecs)
+  timer t(20 msecs, 20 msecs)
   output frame: void
 
-  reaction (t) -> frame {=
+  reaction(t) -> frame {=
     frame.set(); // send a "frame"
   =}
 }
 
 reactor BrakingAssistant {
-  input frame: void;
-  output trigger_brake: void;
-  
-  state counter: int(0);
+  input frame: void
+  output trigger_brake: void
+
+  state counter: int(0)
 
   reaction(frame) -> trigger_brake {=
     // processing takes some time
      std::this_thread::sleep_for(10ms);
-   
+
     if (counter % 10 == 0) {
       std::cout << "[automatic] Send the brake signal - " << get_physical_time() << std::endl;
       trigger_brake.set();
@@ -44,10 +42,10 @@ reactor BrakingAssistant {
 }
 
 reactor BrakePedal {
-  physical action pedal;
-  output trigger_brake: void;
+  physical action pedal
+  output trigger_brake: void
 
-  state thread: std::thread;
+  state thread: std::thread
 
   reaction(startup) -> pedal {=
     this->thread = std::thread([&] () {
@@ -65,9 +63,7 @@ reactor BrakePedal {
     trigger_brake.set();
   =}
 
-  reaction(shutdown) {=
-    thread.join();
-  =}
+  reaction(shutdown) {= thread.join(); =}
 }
 
 reactor Brake {
@@ -75,31 +71,31 @@ reactor Brake {
     #include <thread>
   =}
 
-  input brake_assistant: void;
-  input brake_pedal: void;
-  
+  input brake_assistant: void
+  input brake_pedal: void
+
   reaction(brake_pedal) {=
     std::cout << "[system] Brake triggered - " << get_physical_time() << std::endl;
     std::cout << "[system] source: manual" << std::endl;
-  =} deadline (3msecs) {=
+  =} deadline(3 msecs) {=
     std::cout << "\033[1;31m[error]\033[0m Deadline on manual braking violated - " << get_physical_time() << std::endl;
   =}
-  
+
   reaction(brake_assistant) {=
     std::cout << "[system] Brake triggered - " << get_physical_time() << std::endl;
     std::cout << "[system] source: assistant" << std::endl;
-  =} deadline (15msecs) {=
+  =} deadline(15 msecs) {=
     std::cout << "\033[1;31m[error]\033[0m Deadline on automatic braking violated - " << get_physical_time() << std::endl;
   =}
 }
 
 main reactor {
-  camera = new Camera();
-  assistant = new BrakingAssistant();
-  pedal = new BrakePedal();
-  brake = new Brake();
-  
-  camera.frame -> assistant.frame;
-  assistant.trigger_brake -> brake.brake_assistant;
-  pedal.trigger_brake -> brake.brake_pedal;
+  camera = new Camera()
+  assistant = new BrakingAssistant()
+  pedal = new BrakePedal()
+  brake = new Brake()
+
+  camera.frame -> assistant.frame
+  assistant.trigger_brake -> brake.brake_assistant
+  pedal.trigger_brake -> brake.brake_pedal
 }

@@ -1,14 +1,12 @@
 /**
- * This program is a simple federated chat application written in Lingua Franca
- * (LF) for two users, represented by two instances of the `ChatHandler`
- * reactor, `a` and `b`. Each `ChatHandler` consists of an `InputHandler` and a
- * `Printer`. The `InputHandler` is responsible for receiving user input from
- * the console and sending it as a message. When the user enters a message, the
- * `InputHandler` reads it, prints it, and then sends it via its `out` port. The
- * message then gets relayed by the `ChatHandler` via its `send` port. On the
- * receiving side, the `ChatHandler` directs the incoming message through its
- * `receive` port to the `Printer` reactor, which prints the received message.
- * This process creates a two-way communication where `a` and `b` can send and
+ * This program is a simple federated chat application written in Lingua Franca (LF) for two users,
+ * represented by two instances of the `ChatHandler` reactor, `a` and `b`. Each `ChatHandler`
+ * consists of an `InputHandler` and a `Printer`. The `InputHandler` is responsible for receiving
+ * user input from the console and sending it as a message. When the user enters a message, the
+ * `InputHandler` reads it, prints it, and then sends it via its `out` port. The message then gets
+ * relayed by the `ChatHandler` via its `send` port. On the receiving side, the `ChatHandler`
+ * directs the incoming message through its `receive` port to the `Printer` reactor, which prints
+ * the received message. This process creates a two-way communication where `a` and `b` can send and
  * receive messages from each other.
  *
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)

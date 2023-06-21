@@ -1,21 +1,19 @@
 /**
- * This Lingua Franca program demonstrates a federated reactor system that
- * integrates a sender and a receiver, both interfacing with the Robot Operating
- * System (ROS). The sender periodically publishes "Hello World" messages to a ROS
- * topic, while the receiver listens to the same topic and processes incoming
- * messages. The federated design ensures that the sender's output is directed to
- * the receiver's input, creating a communication link between the two. It
- * showcases the ability of Lingua Franca to support modular, distributed,
- * real-time systems where different components interact and communicate
- * seamlessly. 
+ * This Lingua Franca program demonstrates a federated reactor system that integrates a sender and a
+ * receiver, both interfacing with the Robot Operating System (ROS). The sender periodically
+ * publishes "Hello World" messages to a ROS topic, while the receiver listens to the same topic and
+ * processes incoming messages. The federated design ensures that the sender's output is directed to
+ * the receiver's input, creating a communication link between the two. It showcases the ability of
+ * Lingua Franca to support modular, distributed, real-time systems where different components
+ * interact and communicate seamlessly.
  */
-target Python;
+target Python
 
 import Sender from "Sender.lf"
 import Receiver from "Receiver.lf"
 
 federated reactor {
-  sender = new Sender();
-  receiver = new Receiver();
-  sender.topic -> receiver.topic;
+  sender = new Sender()
+  receiver = new Receiver()
+  sender.topic -> receiver.topic
 }

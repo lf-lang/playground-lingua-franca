@@ -1,16 +1,15 @@
 /**
- * Example of a basic digital twin setup, with two federates 
- * maintaining a shared state "lock state". 
+ * Example of a basic digital twin setup, with two federates maintaining a shared state "lock
+ * state".
  *
  * For run instructions, see README.md in the same directory.
- * 
+ *
  * @author Hou Seng Wong (housengw@berkeley.edu)
  */
-
- target Python {
+target Python {
   docker: true,
   files: ["../utils.py"]
-};
+}
 
 preamble {=
   import curses
@@ -30,32 +29,32 @@ preamble {=
 =}
 
 /**
- * A key fob that detects "lock" and "unlock" key presses, 
- * and sends and receives lock state to and from other key fobs.
+ * A key fob that detects "lock" and "unlock" key presses, and sends and receives lock state to and
+ * from other key fobs.
  */
-reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
-  /* logger / window related state variables */
-  state logger({=None=});
-  state window({=None=});
-  state main_message_begins(0);
+reactor DoubleUnlockKeyFob(auto_lock_duration=5) {
+  /** logger / window related state variables */
+  state logger = {= None =}
+  state window = {= None =}
+  state main_message_begins = 0
 
-  /* KeyFob related state variables */
-  state lock_state(0);
-  state listener({=None=});
-  state auto_lock_counter;
+  /** KeyFob related state variables */
+  state lock_state = 0
+  state listener = {= None =}
+  state auto_lock_counter
 
-  /* I/O ports and actions */
-  input get_lock_action;
-  input get_lock_press_from_tester;
-  output send_lock_action;
-  physical action press_lock;
-  physical action press_unlock;
-  logical action handle_press_lock;
-  logical action handle_press_unlock;
-  logical action do_lock;
+  /** I/O ports and actions */
+  input get_lock_action
+  input get_lock_press_from_tester
+  output send_lock_action
+  physical action press_lock
+  physical action press_unlock
+  logical action handle_press_lock
+  logical action handle_press_unlock
+  logical action do_lock
 
-  /* Autolock timer */
-  timer autolock_timer(0, 100 msec);
+  /** Autolock timer */
+  timer autolock_timer(0, 100 msec)
 
   preamble {=
     def lock_state_str(self, lock_state):
@@ -75,7 +74,7 @@ reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
       if self.logger.log_size() > 0:
         for i, line in enumerate(self.logger.get_log()):
           self.window.change_line(self.main_message_begins + 1 + i, line)
-    
+
     def format_log_message(self, line):
       elapsed_ptime, tag, remote, do_lock, auto = line
       return (f"At (tag: ({'{:,}'.format(tag.time)} ns, {tag.microstep}), "
@@ -92,12 +91,12 @@ reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
       key = ""
       while key != ord("q"):
         key = self.window.getch()
-        if key == ord("l"): 
+        if key == ord("l"):
           press_lock.schedule(0)
         elif key == ord("u"):
           press_unlock.schedule(0)
       request_stop()
-    
+
     def reset_autolock_counter(self):
       self.auto_lock_counter = self.auto_lock_duration
   =}
@@ -132,16 +131,12 @@ reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
     t.start()
   =}
 
-  reaction(press_lock) -> handle_press_lock {=
-    handle_press_lock.schedule(0)
-  =}
+  reaction(press_lock) -> handle_press_lock {= handle_press_lock.schedule(0) =}
 
-  reaction(press_unlock) -> handle_press_unlock {=
-    handle_press_unlock.schedule(0)
-  =}
+  reaction(press_unlock) -> handle_press_unlock {= handle_press_unlock.schedule(0) =}
 
   reaction(handle_press_lock) -> do_lock, send_lock_action {=
-    self.append_log(auto=False, remote=False, do_lock=True) 
+    self.append_log(auto=False, remote=False, do_lock=True)
     do_lock.schedule(0, True)
     send_lock_action.set(True)
   =}
@@ -193,8 +188,8 @@ reactor DoubleUnlockKeyFob(auto_lock_duration(5)) {
 }
 
 federated reactor {
-  fob = new DoubleUnlockKeyFob();
-  twin = new DoubleUnlockKeyFob();
-  fob.send_lock_action -> twin.get_lock_action;
-  twin.send_lock_action -> fob.get_lock_action;
+  fob = new DoubleUnlockKeyFob()
+  twin = new DoubleUnlockKeyFob()
+  fob.send_lock_action -> twin.get_lock_action
+  twin.send_lock_action -> fob.get_lock_action
 }

@@ -1,40 +1,35 @@
 /**
- * This reactor is a base class for reactors that generate
- * or use random numbers. The method random() returns an
- * integer between 0 and RAND_MAX. The method
- * exponential(lambda) returns an exponential random
- * variable with rate lambda (expected value 1/lambda).
- * 
- * This reactor ensures that if a seed is set, then
- * the reactor returns a repeatable random number sequence
- * regardless of how many other reactors are generating
- * random numbers.
- * 
- * The seed defaults to 0, which indicates to use the
- * starting logical time (or more precisely, the low-order
- * 32 bits of the starting logical time) as a seed.
- * If any seed other than 0 is given, then the sequence
- * of random numbers will be repeatable in the sense that
- * every execution of the program will produce the same
- * sequence.
- * 
+ * This reactor is a base class for reactors that generate or use random numbers. The method
+ * random() returns an integer between 0 and RAND_MAX. The method exponential(lambda) returns an
+ * exponential random variable with rate lambda (expected value 1/lambda).
+ *
+ * This reactor ensures that if a seed is set, then the reactor returns a repeatable random number
+ * sequence regardless of how many other reactors are generating random numbers.
+ *
+ * The seed defaults to 0, which indicates to use the starting logical time (or more precisely, the
+ * low-order 32 bits of the starting logical time) as a seed. If any seed other than 0 is given,
+ * then the sequence of random numbers will be repeatable in the sense that every execution of the
+ * program will produce the same sequence.
+ *
  * @author Edward A. Lee
  */
 target C
+
 preamble {=
   #include <stdlib.h>
   #include <math.h>
 =}
-reactor Random(seed:{=unsigned int=}(0)) {
+
+reactor Random(seed: {= unsigned int =} = 0) {
   reaction(startup) {=
     if (self->seed == 0) {
       self->seed = (unsigned int)lf_time_logical();
     }
   =}
-  method random():int {=
-    return rand_r(&self->seed);
-  =}
-  method exponential(lambda:double):double {=
+
+  method random(): int {= return rand_r(&self->seed); =}
+
+  method exponential(lambda: double): double {=
     double u = random() / (RAND_MAX + 1.0);
     return -log(1.0 - u) / lambda;
   =}

@@ -1,6 +1,5 @@
 /**
- * Sound test. This program runs on MacOS and Linux, at least.
- * This program plays a simple rhythm.
+ * Sound test. This program runs on MacOS and Linux, at least. This program plays a simple rhythm.
  *
  * The merengue rhythm comes from here:
  * https://www.8notes.com/school/lessons/percussion/merengue.asp
@@ -12,7 +11,7 @@
  * @see Rhythm.lf
  */
 target C {
-  keepalive: true,
+  keepalive: true
 }
 
 import PlayWaveform from "PlayWaveform.lf"
@@ -29,29 +28,24 @@ preamble {=
 =}
 
 /**
- * Reactor that outputs notes (which carry an emphasis)) according to a
- * specified rhythm. The minimum time between notes is given by the
- * 'sixteenth' parameter.
- * 
+ * Reactor that outputs notes (which carry an emphasis)) according to a specified rhythm. The
+ * minimum time between notes is given by the 'sixteenth' parameter.
+ *
  * @param sixteenth Duration of one sixteenth note.
  * @param rhythm Binary specification of a rhythm in reverse order.
  * @param emphasis Binary specification of emphasis in reverse order.
  */
 reactor RhythmSource(
-  sixteenth: time = 200 msec,
-  rhythm: int = {= MERENGUE =},
-  emphasis: int = {= MERENGUE_EMPHASIS =}
-) {
+    sixteenth: time = 200 msec,
+    rhythm: int = {= MERENGUE =},
+    emphasis: int = {= MERENGUE_EMPHASIS =}) {
   output note: float
-  
+
   logical action tick
 
-  // Count of sixteenth notes.
-  state count: int = 0
+  state count: int = 0  // Count of sixteenth notes.
 
-  reaction(startup) -> note, tick {=
-    lf_schedule(tick, self->sixteenth);
-  =}
+  reaction(startup) -> note, tick {= lf_schedule(tick, self->sixteenth); =}
 
   reaction(tick) -> note, tick {=
     int position = 1 << self->count;
@@ -73,6 +67,6 @@ reactor RhythmSource(
 
 main reactor {
   source = new RhythmSource()
-  play = new PlayWaveform(default_waveform_id = 1)
+  play = new PlayWaveform(default_waveform_id=1)
   source.note -> play.note
 }

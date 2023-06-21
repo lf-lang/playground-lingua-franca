@@ -1,12 +1,10 @@
 /**
- * This example illustrates the use of logical and physical actions,
- * asynchronous external inputs, the use of startup and shutdown reactions, and
- * the use of actions with values.
+ * This example illustrates the use of logical and physical actions, asynchronous external inputs,
+ * the use of startup and shutdown reactions, and the use of actions with values.
  *
- * The example is fashioned after an Esterel implementation given by Berry and
- * Gonthier in "The ESTEREL synchronous programming language: design, semantics,
- * implementation," Science of Computer Programming, 19(2) pp. 87-152, Nov.
- * 1992, DOI: 10.1016/0167-6423(92)90005-V.
+ * The example is fashioned after an Esterel implementation given by Berry and Gonthier in "The
+ * ESTEREL synchronous programming language: design, semantics, implementation," Science of Computer
+ * Programming, 19(2) pp. 87-152, Nov. 1992, DOI: 10.1016/0167-6423(92)90005-V.
  *
  * @author Edward A. Lee
  * @author Marten Lohstroh
@@ -20,8 +18,8 @@ preamble {=
 =}
 
 /**
- * Produce a counting sequence at random times with a minimum and maximum time
- * between outputs specified as parameters.
+ * Produce a counting sequence at random times with a minimum and maximum time between outputs
+ * specified as parameters.
  *
  * @param min_time The minimum time between outputs.
  * @param max_time The maximum time between outputs.
@@ -67,9 +65,9 @@ reactor RandomSource(min_time: time = 2 sec, max_time: time = 8 sec) {
 }
 
 /**
- * Upon receiving a prompt, record the time of the prompt, then listen for user
- * input. When the user hits return, then schedule a physical action that
- * records the time of this event and then report the response time.
+ * Upon receiving a prompt, record the time of the prompt, then listen for user input. When the user
+ * hits return, then schedule a physical action that records the time of this event and then report
+ * the response time.
  */
 reactor GetUserInput {
   preamble {=

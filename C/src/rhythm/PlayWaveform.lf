@@ -1,107 +1,93 @@
 /**
- * @brief Reactor to play a waveform defined in a .wav file.
- * This serves as a demonstration for how to write Lingua Franca
- * programs that use Apple's AudioToolbox.
- * 
- * To use this, you must include the target parameters that are
- * given below.
- * 
- * This reactor provides a small collection of built-in audio
- * waveforms which are read at startup time from .wav files.
- * The waveform input specifies which of the waveforms to play
- * upon the next `note` input received.
- * It is a number between 0 and NUM_WAVEFORMS. If a number outside
- * this range is received, then simple tick sounds will be produced.
- * Number 0 is specially interpreted for silence.
+ * @brief Reactor to play a waveform defined in a .wav file. This serves as a demonstration for how
+ * to write Lingua Franca programs that use Apple's AudioToolbox.
  *
- * The `note` input is a number, normally between 0.0 and 1.0,
- * that specifies the loudness of the note. If the loudness exceeds
- * 1.0, or if too many notes are played at once, clipping may occur.
- * 
- * The sound files come from here:
- * https://freewavesamples.com
- * 
- * Sound files are assumed to be wav files with sample rate 44,100,
- * 16-bit samples, linear PCM encoded.
- * Use afconvert on Mac to convert to the assumed input format.
- * 
+ * To use this, you must include the target parameters that are given below.
+ *
+ * This reactor provides a small collection of built-in audio waveforms which are read at startup
+ * time from .wav files. The waveform input specifies which of the waveforms to play upon the next
+ * `note` input received. It is a number between 0 and NUM_WAVEFORMS. If a number outside this range
+ * is received, then simple tick sounds will be produced. Number 0 is specially interpreted for
+ * silence.
+ *
+ * The `note` input is a number, normally between 0.0 and 1.0, that specifies the loudness of the
+ * note. If the loudness exceeds 1.0, or if too many notes are played at once, clipping may occur.
+ *
+ * The sound files come from here: https://freewavesamples.com
+ *
+ * Sound files are assumed to be wav files with sample rate 44,100, 16-bit samples, linear PCM
+ * encoded. Use afconvert on Mac to convert to the assumed input format.
+ *
  * @author Edward A. Lee
  */
 target C {
   files: [
-    "/lib/c/reactor-c/util/wave_file_reader.c",
-    "/lib/c/reactor-c/util/wave_file_reader.h",
-    "/lib/c/reactor-c/util/audio_loop_mac.c",
-    "/lib/c/reactor-c/util/audio_loop.h",
-    "/lib/c/reactor-c/util/audio_loop_linux.c",
-  ],
+      "/lib/c/reactor-c/util/wave_file_reader.c",
+      "/lib/c/reactor-c/util/wave_file_reader.h",
+      "/lib/c/reactor-c/util/audio_loop_mac.c",
+      "/lib/c/reactor-c/util/audio_loop.h",
+      "/lib/c/reactor-c/util/audio_loop_linux.c"],
   cmake-include: [
-    "/lib/c/reactor-c/util/audio_loop.cmake",
-    "/lib/c/reactor-c/util/wave_file_reader.cmake"
-  ]
+      "/lib/c/reactor-c/util/audio_loop.cmake",
+      "/lib/c/reactor-c/util/wave_file_reader.cmake"]
 }
- 
-/**
- * Produce a note when a `note` input is received.
- */
-reactor PlayWaveform (
-  default_waveform_id:int(0)  // Silent waveform
-) {
-  preamble {= 
+
+/** Produce a note when a `note` input is received. */
+reactor PlayWaveform(
+    // Silent waveform
+    default_waveform_id: int = 0) {
+  preamble {=
     #include <string.h>     // Defines strlen()
-    #include "audio_loop.h"
-    #include "wave_file_reader.h"
-          
-    // wav files giving the waveforms.
-    // These have to also be included in the files target directive.
-    #define NUM_WAVEFORMS 9  // Number of waveforms.
-    #define SOUNDS LF_PACKAGE_DIRECTORY LF_FILE_SEPARATOR "src" LF_FILE_SEPARATOR "rhythm" LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR
-    char* waveform_files[] = { 
-      SOUNDS "Bass-Drum-1.wav",
-      SOUNDS "Hi-Bongo.wav",
-      SOUNDS "Claves.wav",
-      SOUNDS "High-Conga-1.wav",
-      SOUNDS "Cowbell-1.wav",
-      SOUNDS "Cuica-1.wav",
-      SOUNDS "Guiro.wav",
-      SOUNDS "Ensoniq-ESQ-1-Snare.wav",
-      SOUNDS "Floor-Tom-1.wav"
-    };
-        
-    // The waveforms themselves.
-    lf_waveform_t* waveforms[NUM_WAVEFORMS + 1];
-    
-    lf_waveform_t empty_waveform = { 0 };
+        #include "audio_loop.h"
+        #include "wave_file_reader.h"
+
+        // wav files giving the waveforms.
+        // These have to also be included in the files target directive.
+        #define NUM_WAVEFORMS 9  // Number of waveforms.
+        #define SOUNDS LF_PACKAGE_DIRECTORY LF_FILE_SEPARATOR "src" LF_FILE_SEPARATOR "rhythm" LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR
+        char* waveform_files[] = {
+          SOUNDS "Bass-Drum-1.wav",
+          SOUNDS "Hi-Bongo.wav",
+          SOUNDS "Claves.wav",
+          SOUNDS "High-Conga-1.wav",
+          SOUNDS "Cowbell-1.wav",
+          SOUNDS "Cuica-1.wav",
+          SOUNDS "Guiro.wav",
+          SOUNDS "Ensoniq-ESQ-1-Snare.wav",
+          SOUNDS "Floor-Tom-1.wav"
+        };
+
+        // The waveforms themselves.
+        lf_waveform_t* waveforms[NUM_WAVEFORMS + 1];
+
+        lf_waveform_t empty_waveform = { 0 };
   =}
 
-  input note:float;
-  input waveform:int;
-  
+  input note: float
+  input waveform: int
+
   /**
    * Index of the current waveform.
    * -1 means no waveform (just make ticks)).
    */
-  state waveform_id:int(default_waveform_id);
-    
+  state waveform_id: int = default_waveform_id
+
   reaction(startup) {=
-    
     // First waveform is empty.
     waveforms[0] = &empty_waveform;
-    
+
     // Open and read waveform files.
     for (int i = 0; i < NUM_WAVEFORMS; i++) {
       waveforms[i + 1] = read_wave_file(waveform_files[i]);
     }
-    
+
     // Start an audio loop that will become ready to receive
     // amplitude samples of audio data.
     lf_start_audio_loop(lf_time_logical());
   =}
-  
-  reaction(waveform) {=
-    self->waveform_id = waveform->value;
-  =}
-  
+
+  reaction(waveform) {= self->waveform_id = waveform->value; =}
+
   reaction(note) {=
     if (self->waveform_id < 0 || self->waveform_id > NUM_WAVEFORMS) {
       lf_play_audio_waveform(NULL, note->value, lf_time_logical());
@@ -109,8 +95,6 @@ reactor PlayWaveform (
       lf_play_audio_waveform(waveforms[self->waveform_id], note->value, lf_time_logical());
     }
   =}
-  
-  reaction(shutdown) {=
-    lf_stop_audio_loop();
-  =}
+
+  reaction(shutdown) {= lf_stop_audio_loop(); =}
 }

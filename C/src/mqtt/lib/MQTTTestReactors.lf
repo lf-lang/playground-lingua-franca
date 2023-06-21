@@ -1,26 +1,26 @@
 /**
  * Reactors used to test MQTT publishing and subscribing.
- * 
+ *
  * @author Ravi Akella
  * @author Edward A. Lee
  */
 target C
-  
+
 /**
- * Reactor that generates a sequence of messages, one per second.
- * The message will be a string consisting of a root string followed
- * by a count.
+ * Reactor that generates a sequence of messages, one per second. The message will be a string
+ * consisting of a root string followed by a count.
  * @param root The root string.
  * @output message The message.
  */
-reactor MessageGenerator(root:string(""), period:time(1 sec)) {
+reactor MessageGenerator(root: string = "", period: time = 1 sec) {
   // Output type char* instead of string is used for dynamically
   // allocated character arrays (as opposed to static constant strings).
-  output message:char*;
-  state count:int(1);
+  output message: char*
+  state count: int = 1
   // Send first message after 1 sec so that the startup reactions
   // do not factor into the transport time measurement on the first message.
-  timer t(1 sec, period);
+  timer t(1 sec, period)
+
   reaction(t) -> message {=
     // With NULL, 0 arguments, snprintf tells us how many bytes are needed.
     // Add one for the null terminator.
@@ -36,14 +36,15 @@ reactor MessageGenerator(root:string(""), period:time(1 sec)) {
     );
   =}
 }
- 
+
 /**
  * Reactor that prints an incoming string.
  * @param prefix A prefix for the message.
  * @input message The message.
  */
 reactor PrintMessage {
-  input message:char*;
+  input message: char*
+
   reaction(message) {=
     tag_t tag = lf_tag();
     lf_print("PrintMessage: At (elapsed) time " PRINTF_TAG ", subscriber receives: %s",

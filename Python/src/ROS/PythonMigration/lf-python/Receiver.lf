@@ -1,20 +1,18 @@
 /**
- * This Lingua Franca program interfaces with the Robot Operating System (ROS) to
- * receive and handle data from a specific topic using the MinimalSubscriber class
- * from the ROS py_pubsub package. Upon startup, the program initializes the ROS
- * communication and creates a MinimalSubscriber instance. When data arrives on the
- * subscribed topic, it is passed to a callback function on the ROS side for
- * further processing. Upon shutdown, the program destroys the node and shuts down
- * the ROS communication, ensuring a clean exit. The program serves as an example
- * of real-time, event-driven programming using Lingua Franca in combination with
- * ROS. 
+ * This Lingua Franca program interfaces with the Robot Operating System (ROS) to receive and handle
+ * data from a specific topic using the MinimalSubscriber class from the ROS py_pubsub package. Upon
+ * startup, the program initializes the ROS communication and creates a MinimalSubscriber instance.
+ * When data arrives on the subscribed topic, it is passed to a callback function on the ROS side
+ * for further processing. Upon shutdown, the program destroys the node and shuts down the ROS
+ * communication, ensuring a clean exit. The program serves as an example of real-time, event-driven
+ * programming using Lingua Franca in combination with ROS.
  */
-// Receiver.lf
-target Python;
+# Receiver.lf
+target Python
 
 preamble {=
   # Locate the MinimalPublisher class written for ROS
-  # After source the ros package, 
+  # After source the ros package,
   # Python import would be:
   # from [package name].[file name] import [class name]
   from py_pubsub.subscriber_member_function import MinimalSubscriber
@@ -26,8 +24,8 @@ preamble {=
 =}
 
 reactor Receiver {
-  state minimal_subscriber;
-  input topic;
+  state minimal_subscriber
+  input topic
 
   reaction(startup) {=
     rclpy.init(args=None)

@@ -1,25 +1,25 @@
 /**
- * This Lingua Franca program is designed to retrieve content from a webpage using
- * HTTPS GET request. Upon startup, it sends a GET request to the specified URL
- * ("https://ptolemy.berkeley.edu/projects/icyphy/"). As it receives data from the
- * server, it schedules a physical action to process that data, which is then
- * printed to the console. When the server indicates that there is no more data to
- * be sent, another physical action is scheduled which ends the program. This
- * reactor demonstrates the capability of Lingua Franca to handle and react to
- * asynchronous network events in a timely manner. 
+ * This Lingua Franca program is designed to retrieve content from a webpage using HTTPS GET
+ * request. Upon startup, it sends a GET request to the specified URL
+ * ("https://ptolemy.berkeley.edu/projects/icyphy/"). As it receives data from the server, it
+ * schedules a physical action to process that data, which is then printed to the console. When the
+ * server indicates that there is no more data to be sent, another physical action is scheduled
+ * which ends the program. This reactor demonstrates the capability of Lingua Franca to handle and
+ * react to asynchronous network events in a timely manner.
  */
-target TypeScript{
-  keepalive : true
-  //logging : "debug"
-};
+target TypeScript {
+  keepalive: true  // logging : "debug"
+}
+
 main reactor {
   preamble {=
     import * as https from "https"
     import * as http from "http"
   =}
-  physical action data:{= Buffer =};
-  physical action done;
-  reaction (startup) -> data, done {=
+  physical action data: {= Buffer =}
+  physical action done
+
+  reaction(startup) -> data, done {=
     https.get("https://ptolemy.berkeley.edu/projects/icyphy/", (res : http.IncomingMessage) => {
       console.log("statusCode:", res.statusCode);
       console.log("headers:", res.headers);
@@ -31,13 +31,15 @@ main reactor {
       });
     });
   =}
-  reaction (data) {=
+
+  reaction(data) {=
     let serverData = data;
     if (serverData) {
       console.log(serverData.toString());
     }
   =}
-  reaction (done) {=
+
+  reaction(done) {=
     console.log("No more data in response.");
     util.requestStop();
   =}

@@ -1,21 +1,18 @@
-/*
-* This is a minimal example of an alarmclock implemeted using the 
-* features lingua franca supplies.
-* 
-* This is just an extract and simplification from the main project
-* which you can find here: https://github.com/revol-xut/lf-alarm-clock
- 
-* This file contains the networking implementation it is really just an
-* simple socket application which parses simple http headers and respondes
-* in text/plain
-*
-* @author Tassilo Tanneberer <tassilo.tanneberger@tu-dresden.de>
-*/
-
-target Cpp{
+/**
+ * This is a minimal example of an alarmclock implemeted using the features lingua franca supplies.
+ *
+ * This is just an extract and simplification from the main project which you can find here:
+ * https://github.com/revol-xut/lf-alarm-clock
+ *
+ * This file contains the networking implementation it is really just an simple socket application
+ * which parses simple http headers and respondes in text/plain
+ *
+ * @author Tassilo Tanneberer <tassilo.tanneberger@tu-dresden.de>
+ */
+target Cpp {
   cmake-include: "AlarmClock.cmake",
   keepalive: true
-};
+}
 
 public preamble {=
   #include "shared_header.hpp"
@@ -30,33 +27,33 @@ reactor Network {
     #include <crow/json.h>
   =}
 
-  // physical event which is triggered by receiving a request
-  physical action new_event: Event;
-  physical action delete_request: std::size_t;
+  physical action new_event: Event  // physical event which is triggered by receiving a request
+  physical action delete_request: std::size_t
 
   // variables for the receive thread
-  state thread: std::thread; // receive thread
-  state events: std::vector<Event>; // copy
+  // receive thread
+  state thread: std::thread
+  state events: std::vector<Event>  // copy
 
-  input updated_events: std::vector<Event>;
-  output event: Event; // event which will be added to the clock
-  output delete_index: std::size_t;
+  input updated_events: std::vector<Event>
+  output event: Event               // event which will be added to the clock
+  output delete_index: std::size_t
 
   // this reaction transforms a physical action into a logical reaction
-  reaction (new_event) -> event {=
+  reaction(new_event) -> event {=
     if(new_event.is_present()){
       event.set(new_event.get());
     }
   =}
 
-  reaction (delete_request) -> delete_index {=
+  reaction(delete_request) -> delete_index {=
     if(delete_request.is_present()){
       delete_index.set(delete_request.get());
     }
-  =} 
+  =}
 
   // main starts receive thread
-  reaction (startup) -> delete_request, new_event{=
+  reaction(startup) -> delete_request, new_event {=
     thread = std::thread([&] {
       crow::SimpleApp app;
 
@@ -105,7 +102,7 @@ reactor Network {
         return crow::response(response);
       });
 
-      // adds new event by relativ times 
+      // adds new event by relativ times
       CROW_ROUTE(app, "/add_event_relative").methods("POST"_method)
       ([&new_event](const crow::request& req){
         auto relativ_time = 0l;
@@ -130,7 +127,7 @@ reactor Network {
 
         const auto now = std::chrono::system_clock::now();
         auto current_time = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-        
+
         std::cout << "current_time: " << current_time << " offset:" << relativ_time << std::endl;
         Event serialized_event {
           json_body["message"].s(),
@@ -147,7 +144,7 @@ reactor Network {
       // will set the timer in the text 24 hours
       CROW_ROUTE(app, "/add_event_time").methods("POST"_method)
       ([&new_event](const crow::request& req){
-        // just % doesn't work because it is the remainder operator 
+        // just % doesn't work because it is the remainder operator
         // and does not behave like modulo for negative numbers
         auto mod = [](int a, int b) {
           int r = a % b;
@@ -215,11 +212,8 @@ reactor Network {
       app.port(kPort).multithreaded().run();
     });
   =}
-  reaction (updated_events) {=
-    events  = std::move(*updated_events.get());
-  =}
 
-  reaction ( shutdown ) {=
-    thread.join();
-  =}
+  reaction(updated_events) {= events  = std::move(*updated_events.get()); =}
+
+  reaction(shutdown) {= thread.join(); =}
 }

@@ -1,12 +1,11 @@
 /**
- * The Lingua Franca (LF) program above is designed to read characters from user
- * input and display them along with the elapsed time since the last input. The
- * program starts a separate thread to read characters from the keyboard, and it
- * sends the input characters as valued physical actions to the main reactor.
- * Upon receiving a character, the program calculates the time elapsed since the
- * last input and prints the character along with the elapsed time in
- * nanoseconds. If the received character is an end-of-file (EOF) signal (e.g.,
- * Control-D or Control-Z), the program stops execution.
+ * The Lingua Franca (LF) program above is designed to read characters from user input and display
+ * them along with the elapsed time since the last input. The program starts a separate thread to
+ * read characters from the keyboard, and it sends the input characters as valued physical actions
+ * to the main reactor. Upon receiving a character, the program calculates the time elapsed since
+ * the last input and prints the character along with the elapsed time in nanoseconds. If the
+ * received character is an end-of-file (EOF) signal (e.g., Control-D or Control-Z), the program
+ * stops execution.
  */
 target C {
   keepalive: true,

@@ -15,29 +15,25 @@
 //!
 //! Note: Git history of this file may be found in https://github.com/lf-lang/reactor-rust
 //! under the path examples/src/Snake.lf
-
 target Rust {
   // LF-Rust programs integrate well with Cargo
   cargo-dependencies: {
     termcolor: "1",
-    termion: "1", // (this doesn't support windows)
-    rand: "0.8",
+    termion: "1",  // (this doesn't support windows)
+    rand: "0.8"
   },
   // This will be linked into the root of the crate as a Rust module: `pub mod snakes;`
   rust-include: "snakes.rs",
   // This is a conditional compilation flag that enables the CLI.
   // Without it, command-line arguments are ignored and produce a warning.
-  cargo-features: ["cli"],
-};
+  cargo-features: ["cli"]
+}
 
-// Import a shared reactor
-import KeyboardEvents from "KeyboardEvents.lf";
+import KeyboardEvents from "KeyboardEvents.lf"  // Import a shared reactor
 
 // main reactor parameters can be set on the CLI, eg:
 //  ./snake --main-grid-side 48
-main reactor Snake(grid_side: usize(32),
-           tempo_step: time(40 msec),
-           food_limit: u32(2)) {
+main reactor Snake(grid_side: usize = 32, tempo_step: time = 40 msec, food_limit: u32 = 2) {
   preamble {=
     use crate::snakes::*;
     use crate::snakes;
@@ -45,33 +41,26 @@ main reactor Snake(grid_side: usize(32),
     use rand::prelude::*;
   =}
 
-  /// this thing helps capturing key presses
-  keyboard = new KeyboardEvents();
+  keyboard = new KeyboardEvents()  /// this thing helps capturing key presses
 
-  // model classes for the game.
-  state snake: CircularSnake ({= CircularSnake::new(grid_side) =});
-  state grid: SnakeGrid ({= SnakeGrid::new(grid_side, &snake) =}); // note that this one borrows snake temporarily
+  state snake: CircularSnake = {= CircularSnake::new(grid_side) =}  // model classes for the game.
+  state grid: SnakeGrid = {= SnakeGrid::new(grid_side, &snake) =}  // note that this one borrows snake temporarily
 
   /// Triggers a screen refresh, not a timer because we can
   /// shrink the period over time to speed up the game.
-  logical action screen_refresh;
-  /// The game speed level
-  state tempo: u32(1);
-  state tempo_step(tempo_step);
+  logical action screen_refresh
+  state tempo: u32 = 1  /// The game speed level
+  state tempo_step = tempo_step
 
   /// Changes with arrow key presses, might be invalid.
   /// Only committed to snake_direction on grid update.
-  state pending_direction: Direction ({= Direction::RIGHT =});
-  /// Whither the snake has slithered last
-  state snake_direction: Direction ({= Direction::RIGHT =});
+  state pending_direction: Direction = {= Direction::RIGHT =}
+  state snake_direction: Direction = {= Direction::RIGHT =}  /// Whither the snake has slithered last
 
-  /// manually triggered
-  logical action manually_add_more_food;
-  /// periodic
-  timer add_more_food(0, 5 sec);
-  // state vars for food
-  state food_on_grid: u32(0);
-  state max_food_on_grid(food_limit);
+  logical action manually_add_more_food  /// manually triggered
+  timer add_more_food(0, 5 sec)  /// periodic
+  state food_on_grid: u32 = 0  // state vars for food
+  state max_food_on_grid = food_limit
 
   // @label startup
   reaction(startup) -> screen_refresh {=
@@ -136,8 +125,5 @@ main reactor Snake(grid_side: usize(32),
     }
   =}
 
-  // @label shutdown
-  reaction(shutdown) {=
-    println!("New high score: {}", self.snake.len());
-  =}
+  reaction(shutdown) {= println!("New high score: {}", self.snake.len()); =}  // @label shutdown
 }

@@ -1,30 +1,27 @@
 /**
- * Example of a reactor that sends simulated key presses at arbitrary  
- * logical time to the key fobs.
+ * Example of a reactor that sends simulated key presses at arbitrary logical time to the key fobs.
  *
  * For run instructions, see README.md in the same directory.
- * 
+ *
  * @author Hou Seng Wong (housengw@berkeley.edu)
  */
-
 target Python {
   docker: true,
   files: ["../utils.py"]
-};
+}
 
-import DoubleUnlockKeyFob from "DoubleUnlockDemo.lf";
+import DoubleUnlockKeyFob from "DoubleUnlockDemo.lf"
 
+reactor DoubleUnlockKeyFobTester(initial_delay=5) {
+  state logger = {= None =}
+  state window = {= None =}
 
-reactor DoubleUnlockKeyFobTester(initial_delay(5)) {
-  state logger({=None=});
-  state window({=None=});
+  logical action do_test
+  logical action simulate_press_fob
+  logical action simulate_press_twin
+  output send_lock_press_to_fob
+  output send_lock_press_to_twin
 
-  logical action do_test;
-  logical action simulate_press_fob;
-  logical action simulate_press_twin;
-  output send_lock_press_to_fob;
-  output send_lock_press_to_twin;
-  
   reaction(startup) -> do_test {=
     print(f"Test starts in {self.initial_delay} seconds...")
     do_test.schedule(SEC(self.initial_delay))
@@ -53,11 +50,11 @@ reactor DoubleUnlockKeyFobTester(initial_delay(5)) {
 }
 
 federated reactor {
-  fob = new DoubleUnlockKeyFob();
-  twin = new DoubleUnlockKeyFob();
-  tester = new DoubleUnlockKeyFobTester();
-  tester.send_lock_press_to_fob -> fob.get_lock_press_from_tester;
-  tester.send_lock_press_to_twin -> twin.get_lock_press_from_tester;
-  fob.send_lock_action -> twin.get_lock_action;
-  twin.send_lock_action -> fob.get_lock_action;
+  fob = new DoubleUnlockKeyFob()
+  twin = new DoubleUnlockKeyFob()
+  tester = new DoubleUnlockKeyFobTester()
+  tester.send_lock_press_to_fob -> fob.get_lock_press_from_tester
+  tester.send_lock_press_to_twin -> twin.get_lock_press_from_tester
+  fob.send_lock_action -> twin.get_lock_action
+  twin.send_lock_action -> fob.get_lock_action
 }

@@ -1,24 +1,19 @@
 /**
- * A simulator that generates command for a simple car door
- * lock system with a single door that can be
- * controlled in any of three ways:
- * 1. buttons on the physical door,
- * 2. an external system (like an RFID key fob), or
- * 3. a mobile device (like a phone) via a cloud service.
- * 
+ * A simulator that generates command for a simple car door lock system with a single door that can
+ * be controlled in any of three ways: 1. buttons on the physical door, 2. an external system (like
+ * an RFID key fob), or 3. a mobile device (like a phone) via a cloud service.
+ *
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-
 target C {
   keepalive: true,
-  files: [
-    "../include/types.h",
-  ],
+  files: ["../include/types.h"]
 }
+
 preamble {=
   #include "types.h"
-  
+
   void* read_input(void* user_response) {
     lf_print("****************************************************\n"
       "Press the following keys for the following actions:\n"
@@ -43,15 +38,15 @@ preamble {=
     return NULL;
   }
 =}
-  
+
 reactor UserInteraction {
-  output door:OpenEvent;
-  output button:LockCommand;
-  output fob:LockCommand;
-  output mobile:LockCommand;
-  
-  physical action key:int;
-  
+  output door: OpenEvent
+  output button: LockCommand
+  output fob: LockCommand
+  output mobile: LockCommand
+
+  physical action key: int
+
   reaction(startup) -> key {=
     // start new thread
     lf_thread_t thread_id;
@@ -60,7 +55,7 @@ reactor UserInteraction {
 
   reaction(key) -> door, button, fob, mobile {=
     // lf_print("You typed '%c' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
-    
+
     switch(key->value) {
     case 'o':
       lf_set(door, OPEN);

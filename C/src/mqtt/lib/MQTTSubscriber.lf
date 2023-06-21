@@ -1,42 +1,34 @@
 target C
+
 /**
- * Reactor that subscribes to a specified MQTT topic on which
- * string messages are published. The timestamp of the output
- * will depend on the use_physical_time parameter and (if present)
- * the timestamp carried by the incoming message.
- * 
- * If `use_physical_time` is `tru`e (the default), then this reactor
- * uses the current physical time when the subscription notification
- * arrives, plus the `offset`, as the desired output timestamp.
- * If the incoming message is carrying a timestamp (the publisher
- * is an instance of `MQTTPublisher` with `include_timestamp` set
- * to `true), then this reactor measures the *apparent latency*
- * (the physical time of arrival minus the timestamp in the message).
- * At shutdown, this reactor will report that maximum and average
- * apparent latencies.
- * 
- * If `use_physical_time` is `false`, then this reactor
- * extracts the publisher's timestamp from the message and adds the
- * specified offset to get the desired output timestamp. If there
- * is no timestamp on the incoming message, then this prints a
- * warning and uses physical time. If the received timestamp equals
- * current logical time, then a microstep is added. If the desired
- * output timestamp is in the past, then a warning will be printed and
- * the tag of the message will be one microstep later than
- * the current tag when it arrives.
- * 
- * Note that if the publisher and subscriber are both Lingua Franca
- * programs, then the communication behaves a physical connection
- * if `use_physical_time` is true (the default). The offset is
+ * Reactor that subscribes to a specified MQTT topic on which string messages are published. The
+ * timestamp of the output will depend on the use_physical_time parameter and (if present) the
+ * timestamp carried by the incoming message.
+ *
+ * If `use_physical_time` is `tru`e (the default), then this reactor uses the current physical time
+ * when the subscription notification arrives, plus the `offset`, as the desired output timestamp.
+ * If the incoming message is carrying a timestamp (the publisher is an instance of `MQTTPublisher`
+ * with `include_timestamp` set to `true), then this reactor measures the *apparent latency* (the
+ * physical time of arrival minus the timestamp in the message). At shutdown, this reactor will
+ * report that maximum and average apparent latencies.
+ *
+ * If `use_physical_time` is `false`, then this reactor extracts the publisher's timestamp from the
+ * message and adds the specified offset to get the desired output timestamp. If there is no
+ * timestamp on the incoming message, then this prints a warning and uses physical time. If the
+ * received timestamp equals current logical time, then a microstep is added. If the desired output
+ * timestamp is in the past, then a warning will be printed and the tag of the message will be one
+ * microstep later than the current tag when it arrives.
+ *
+ * Note that if the publisher and subscriber are both Lingua Franca programs, then the communication
+ * behaves a physical connection if `use_physical_time` is true (the default). The offset is
  * equivalent to an `after` delay.
- * 
- * If `use_physical_time` is false, then the communication attempts
- * to behave like a logical connection, but this is not always possible.
- * Logical time can advance between when the publisher launches a message,
- * sending it to the MQTT broker, and when the subscriber receives it.
- * This may make it impossible to match the desired timestamp and will
- * result in warning messages being printed.
- * 
+ *
+ * If `use_physical_time` is false, then the communication attempts to behave like a logical
+ * connection, but this is not always possible. Logical time can advance between when the publisher
+ * launches a message, sending it to the MQTT broker, and when the subscriber receives it. This may
+ * make it impossible to match the desired timestamp and will result in warning messages being
+ * printed.
+ *
  * @param address The IP address of the MQTT broker.
  * @param topic The topic name to which to subscribe.
  * @param use_physical_time If true, then use physical time (the default).
@@ -46,22 +38,21 @@ target C
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-reactor MQTTSubscriber (
-  address:string("tcp://localhost:1883"),
-  topic:string("DefaultTopic"),
-  use_physical_time:bool(true),
-  offset:time(0)
-) {
+reactor MQTTSubscriber(
+    address: string = "tcp://localhost:1883",
+    topic: string = "DefaultTopic",
+    use_physical_time: bool = true,
+    offset: time = 0) {
   preamble {=
     #include "MQTTClient.h"
     #include "core/federated/net_util.h"
-    
+
     // Fix the QoS to indicate that the message will be delivered reliably exactly once.
     #define QOS     2
 
     // Count of instances of this reactor so that unique client IDs are generated.
     static size_t _lf_MQTTSubscriber_count = 0;
-    
+
     typedef struct MQTTSubscriber_info_t {
       void* logical_action;
       interval_t offset;
@@ -70,12 +61,12 @@ reactor MQTTSubscriber (
       interval_t max_latency;
       size_t count;
     } MQTTSubscriber_info_t;
-    
+
     // Connection options for the client.
     // Making this global means that all instances of this reactor have
     // the same connection options.
     MQTTClient_connectOptions sub_connect_options = MQTTClient_connectOptions_initializer;
-        
+
     // Callback function invoked by MQTT when a message arrives.
     int message_arrived(
       void *info,
@@ -89,17 +80,17 @@ reactor MQTTSubscriber (
       LF_PRINT_LOG(
         "MQTTSubscriber: Message arrived on topic %s: %s", topic_name, (char*)message->payload
       );
-      
+
       MQTTSubscriber_info_t* my_info = (MQTTSubscriber_info_t*)info;
-                 
+
       // Enter a critical section so that logical time does not elapse while
       // we calculate the delay to the logical time for the message.
       lf_critical_section_enter();
-      
+
       interval_t delay;
       instant_t current_time = lf_time_logical();
       interval_t offset = my_info->offset;
-      
+
       // Extract the publisher's timestamp from the message, if it is present.
       if (
         // Is the string null terminated?
@@ -108,15 +99,15 @@ reactor MQTTSubscriber (
         && memcmp("LFts", &message->payload[message->payloadlen - sizeof(instant_t) - 4], 4) == 0
       ) {
         my_info->count++;
-        
+
         instant_t timestamp = extract_int64(
           (unsigned char*)message->payload + message->payloadlen - sizeof(instant_t)
         );
         instant_t physical_time = lf_time_physical();
-        
+
         interval_t latency = physical_time - timestamp;
         my_info->latencies += latency;
-      
+
         if (latency > my_info->max_latency) {
           my_info->max_latency = latency;
         }
@@ -153,52 +144,50 @@ reactor MQTTSubscriber (
           message->payloadlen
         );
       }
-      
+
       LF_PRINT_LOG(
         "MQTTSubscriber: Received message. Timestamp will be " PRINTF_TIME
         " ahead of current (elapsed) time, " PRINTF_TIME, delay, current_time - lf_time_start()
       );
-                  
+
       lf_critical_section_exit();
 
       // MQTTClient_freeMessage() also frees the memory allocated to the payload,
       // which is why we have to copy the message here.
       MQTTClient_freeMessage(&message);
       MQTTClient_free(topic_name);
-      
+
       // Return true to indicate that the message has been successfully handled.
       return 1;
     }
-    
+
     /** Callback invoked if the connection is lost. */
     void sub_connection_lost(void *info, char *cause) {
       lf_print_warning("MQTTSubscriber: Connection lost. Cause: %s", cause);
     }
   =}
-  
-  /**
-   * Output for sending the incoming MQTT message.
-   * Use type char* rather than string because it is not
-   * a static string, but rather dynamically allocated memory.
-   */
-  output message:char*;
 
   /**
-   * Action that is triggered when there is an incoming MQTT message.
-   * Use a logical action here so that the callback function can
-   * precisely control timestamp of the received message.
+   * Output for sending the incoming MQTT message. Use type char* rather than string because it is
+   * not a static string, but rather dynamically allocated memory.
    */
-  logical action act:char*;
-  
+  output message: char*
+
+  /**
+   * Action that is triggered when there is an incoming MQTT message. Use a logical action here so
+   * that the callback function can precisely control timestamp of the received message.
+   */
+  logical action act: char*
+
   /** Client ID. This is automatically generated. */
-  state clientID:char*({= NULL =});
+  state clientID: char* = {= NULL =}
 
   /** State variable storing the MQTT client created for each instance of this reactor. */
-  state client:MQTTClient({=NULL=});
-    
+  state client: MQTTClient = {= NULL =}
+
   /** Struct containing the action and offset. */
-  state info:MQTTSubscriber_info_t({= {NULL, 0LL, false, 0LL, 0LL, 0} =})
-  
+  state info: MQTTSubscriber_info_t = {= {NULL, 0LL, false, 0LL, 0LL, 0} =}
+
   reaction(startup) -> act {=
     int rc; // response code.
 
@@ -220,17 +209,17 @@ reactor MQTTSubscriber (
 
     sub_connect_options.keepAliveInterval = 20;
     sub_connect_options.cleansession = 1;
-    
+
     self->info.logical_action = act;
     self->info.offset = self->offset;
     self->info.use_physical_time = self->use_physical_time;
-    
+
     // Set up callback functions.
     // Last argument should be a pointer to a function to
     // handle notification of delivery of a sent message.
     // But this reactor isn't sending any messages.
     MQTTClient_setCallbacks(self->client, &self->info, sub_connection_lost, message_arrived, NULL);
-    
+
     // Connect to the broker.
     rc = MQTTClient_connect(self->client, &sub_connect_options);
     if (rc != MQTTCLIENT_SUCCESS) {
@@ -238,19 +227,19 @@ reactor MQTTSubscriber (
           "MQTTSubscriber: Failed to connect to MQTT broker.\n"
           "Perhaps one is not running? Return code: %d\n", rc);
     }
-    
+
     MQTTClient_subscribe(self->client, self->topic, QOS);
-    
+
     lf_critical_section_exit();
   =}
-  
+
   reaction(act) -> message {=
     // The action contains a token that we can just forward.
     // The allocated memory will be freed when the token's reference count hits 0.
     // Note that this token will still contain the publisher's timestamp.
     lf_set_token(message, act->token);
   =}
-  
+
   reaction(shutdown) {=
     if (self->info.count > 0) {
       lf_print(

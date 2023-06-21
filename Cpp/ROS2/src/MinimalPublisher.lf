@@ -1,15 +1,14 @@
 /**
- * The provided Lingua Franca (LF) program is designed to publish messages onto a
- * ROS2 topic at a regular interval. Specifically, it publishes a
- * 'std_msgs/msg/String' message on the topic named "topic" every 500 milliseconds.
- * The message contains a string "Hello, world!" followed by a counter value that
- * increments with each published message. This LF program illustrates a simple
- * example of a ROS2 publisher, making use of LF's precise timing semantics to
- * ensure regular message publication. 
+ * The provided Lingua Franca (LF) program is designed to publish messages onto a ROS2 topic at a
+ * regular interval. Specifically, it publishes a 'std_msgs/msg/String' message on the topic named
+ * "topic" every 500 milliseconds. The message contains a string "Hello, world!" followed by a
+ * counter value that increments with each published message. This LF program illustrates a simple
+ * example of a ROS2 publisher, making use of LF's precise timing semantics to ensure regular
+ * message publication.
  */
 target Cpp {
   ros2: true,
-  ros2-dependencies: ["std_msgs"],
+  ros2-dependencies: ["std_msgs"]
 }
 
 public preamble {=
@@ -28,9 +27,7 @@ main reactor {
 
   timer t(0, 500 ms)
 
-  reaction(startup) {=
-    publisher = lf_node->create_publisher<std_msgs::msg::String>("topic", 10);
-  =}
+  reaction(startup) {= publisher = lf_node->create_publisher<std_msgs::msg::String>("topic", 10); =}
 
   reaction(t) {=
     auto message = std_msgs::msg::String();

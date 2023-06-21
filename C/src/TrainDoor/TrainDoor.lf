@@ -1,11 +1,12 @@
 /**
- * Program that emulates a train door controller. It has two components: 
- * one that controls the door and one that senses motion. When the door 
- * controller receives a request to open the door (a button press), it has
- * to first check whether the vehicle was recently in motion. The request
- * will be denied if motion has been detected less than two seconds ago.
+ * Program that emulates a train door controller. It has two components: one that controls the door
+ * and one that senses motion. When the door controller receives a request to open the door (a
+ * button press), it has to first check whether the vehicle was recently in motion. The request will
+ * be denied if motion has been detected less than two seconds ago.
  */
-target C {keepalive: true};
+target C {
+  keepalive: true
+}
 
 preamble {=
   #include <stdio.h>
@@ -14,7 +15,7 @@ preamble {=
     void* open;
     void* close;
   } buttons;
-  
+
   void* read_input(void* arg) {
     printf("***************************************************************\n");
     printf("Press 'o' and hit return or enter to open the door\n");
@@ -38,23 +39,26 @@ preamble {=
     }
     request_stop();
     return NULL;
-  }   
+  }
 =}
 
 reactor MotionDetector {
-  physical action movement;
-  state timestamp:time(0);
-  input check:bool;
-  output ok:bool;
+  physical action movement
+  state timestamp: time = 0
+  input check: bool
+  output ok: bool
+
   reaction(startup) -> movement {=
     buttons.move = movement;
     lf_thread_t thread_id;
     lf_thread_create(&thread_id, &read_input, NULL);
   =}
+
   reaction(movement) {=
     printf("Motion detected!\n");
     self->timestamp = lf_time_logical();
   =}
+
   reaction(check) -> ok {=
     if (self->timestamp == 0L || (lf_time_logical() - self->timestamp) > SECS(2)) {
       lf_set(ok, true);
@@ -65,19 +69,19 @@ reactor MotionDetector {
 }
 
 reactor DoorController {
-  
-  physical action open;
-  physical action close;
-  
-  output check:bool;
-  input ok:bool;
-  state opened:bool(false);
-  state requested:bool(false);
+  physical action open
+  physical action close
+
+  output check: bool
+  input ok: bool
+  state opened: bool = false
+  state requested: bool = false
+
   reaction(startup) -> open, close {=
     buttons.open = open;
     buttons.close = close;
   =}
-  
+
   reaction(open) -> check {=
     if (self->opened) {
       printf("The door is already open\n");
@@ -87,16 +91,16 @@ reactor DoorController {
       self->requested = true;
     }
   =}
-  
+
   reaction(close) {=
     printf("Closing the door\n");
     self->opened = false;
   =}
-  
+
   reaction(ok) {=
     if (self->requested && ok->value) {
       self->opened = true;
-      printf("Opening the door.\n");   
+      printf("Opening the door.\n");
     } else {
       printf("Cannot open the door; recent motion detected.\n");
     }
@@ -105,8 +109,8 @@ reactor DoorController {
 }
 
 main reactor TrainDoor {
-  motion = new MotionDetector();
-  door = new DoorController();
-  door.check -> motion.check;
-  motion.ok -> door.ok;
+  motion = new MotionDetector()
+  door = new DoorController()
+  door.check -> motion.check
+  motion.ok -> door.ok
 }

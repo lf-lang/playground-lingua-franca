@@ -1,19 +1,15 @@
 /**
- * A simulation of a Furuta pendulum with a modal controller
- * based on the Ptolemy II model constructed by Johan Eker
- * and described in this paper:
- * 
- * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
- * “Realistic simulations of embedded control systems,”
- * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
- * 
- * This program specifies a build script that only code generates
- * and compiles the program, as usual, but also executes the
- * program and processes its output to generate and open a
- * plot. 
- * You have to have installed gnuplot and have it in your
- * PATH for this script to work as expected (and also cmake).
- * 
+ * A simulation of a Furuta pendulum with a modal controller based on the Ptolemy II model
+ * constructed by Johan Eker and described in this paper:
+ *
+ * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee, “Realistic simulations of embedded control
+ * systems,” IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
+ *
+ * This program specifies a build script that only code generates and compiles the program, as
+ * usual, but also executes the program and processes its output to generate and open a plot. You
+ * have to have installed gnuplot and have it in your PATH for this script to work as expected (and
+ * also cmake).
+ *
  * @author Edward A. Lee
  * @author Alexander Schulz-Rosengarten
  */
@@ -23,22 +19,23 @@ target C {
   flags: "-lm",
   build: "./build_run_plot.sh FurutaPendulum"
 }
-import PendulumController from "PendulumController.lf";
-import PendulumSimulation from "PendulumSimulation.lf";
-import Print from "Print.lf";
+
+import PendulumController from "PendulumController.lf"
+import PendulumSimulation from "PendulumSimulation.lf"
+import Print from "Print.lf"
 
 main reactor {
-  s = new PendulumSimulation();
-  c = new PendulumController();
-  p = new Print();
+  s = new PendulumSimulation()
+  c = new PendulumController()
+  p = new Print()
 
-  s.phi, s.d_phi -> c.phi, c.d_phi;
-  s.theta, s.d_theta -> c.theta, c.d_theta;
-  c.control -> s.u;
+  s.phi, s.d_phi -> c.phi, c.d_phi
+  s.theta, s.d_theta -> c.theta, c.d_theta
+  c.control -> s.u
 
-  c.control -> p.control;
-  c.modeID -> p.modeID;
-  c.energy -> p.energy;
-  s.theta -> p.theta;
-  s.phi -> p.phi;
+  c.control -> p.control
+  c.modeID -> p.modeID
+  c.energy -> p.energy
+  s.theta -> p.theta
+  s.phi -> p.phi
 }

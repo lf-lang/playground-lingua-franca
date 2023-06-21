@@ -1,32 +1,30 @@
 /**
- * This Lingua Franca program implements a simple reaction game, where the user
- * interacts with a graphical user interface (GUI) and responds to prompts that
- * appear at random intervals. The user is asked to press any key in response to
- * these prompts, with the time taken to respond being calculated and displayed.
- * The game ends when a user presses a key before a prompt shows up, indicating
- * they have cheated, with the average response time displayed at the end. This
- * program integrates threading for listening to user input, randomization of
- * prompt intervals, and inter-process communication to update the GUI, providing
- * an interactive, real-time game experience. 
+ * This Lingua Franca program implements a simple reaction game, where the user interacts with a
+ * graphical user interface (GUI) and responds to prompts that appear at random intervals. The user
+ * is asked to press any key in response to these prompts, with the time taken to respond being
+ * calculated and displayed. The game ends when a user presses a key before a prompt shows up,
+ * indicating they have cheated, with the average response time displayed at the end. This program
+ * integrates threading for listening to user input, randomization of prompt intervals, and
+ * inter-process communication to update the GUI, providing an interactive, real-time game
+ * experience.
  */
 target Python {
   keepalive: true,
   files: [gui.py]
 }
 
-reactor RandomSource(min_time(2 sec), max_time(8 sec)) {
+reactor RandomSource(min_time = 2 sec, max_time = 8 sec) {
   preamble {=
     import random
     def additional_time(self, min_time, max_time):
       return self.random.randint(min_time, max_time)
   =}
-  input another;
-  output out;
-  logical action prompt(min_time);
-  state count(0);
-  reaction(startup) {=
-    self.random.seed()
-  =}
+  input another
+  output out
+  logical action prompt(min_time)
+  state count = 0
+
+  reaction(startup) {= self.random.seed() =}
 
   reaction(prompt) -> out {=
     self.count += 1
@@ -34,14 +32,12 @@ reactor RandomSource(min_time(2 sec), max_time(8 sec)) {
   =}
 
   reaction(another) -> prompt {=
-    # schedule a prompt event 
+    # schedule a prompt event
     prompt.schedule(self.additional_time(0, self.max_time - self.min_time))
   =}
 }
 
-/*
- * Receives key presses from the pygame process. 
- */
+/** Receives key presses from the pygame process. */
 reactor GetUserInput {
   preamble {=
     import threading
@@ -52,104 +48,99 @@ reactor GetUserInput {
         except EOFError:
           request_stop()
           return
-        # Each time a key press is received, schedule a user_response event 
+        # Each time a key press is received, schedule a user_response event
         user_response.schedule(0, c)
   =}
-  
-  physical action user_response;
-  state user_input({=None=}); # multiprocessing.connection.PipeConnection
-  input user_input_pipe_init;
-  output user_input;
-  
+
+  physical action user_response
+  state user_input = {= None =}  # multiprocessing.connection.PipeConnection
+  input user_input_pipe_init
+  output user_input
+
   reaction(user_input_pipe_init) -> user_response {=
     # Stores the Pipe object that will be used to receive key presses from
     #   the pygame process
     self.user_input = user_input_pipe_init.value
-    
+
     # Starts the thread that receives key presses from the pygame process
     t = self.threading.Thread(target=self.listen_for_input, args=(user_response, ))
     t.start()
   =}
-  
-  reaction(user_response) -> user_input {=
-    user_input.set(user_response.value)
-  =}
+
+  reaction(user_response) -> user_input {= user_input.set(user_response.value) =}
 }
 
-
-/*
- * Sends graphics updates to the pygame process. 
- */
+/** Sends graphics updates to the pygame process. */
 reactor UpdateGraphics {
-  input prompt;
-  input update_graphics_pipe_init;
-  input user_input;
-  output another;
-  state update_graphics({=None=}); # multiprocessing.connection.PipeConnection
-  state first({=True=})
-  state count(0);
-  state total_time_in_ms(0);
-  state prompt_time(0);
-  
+  input prompt
+  input update_graphics_pipe_init
+  input user_input
+  output another
+  state update_graphics = {= None =}  # multiprocessing.connection.PipeConnection
+  state first = {= True =}
+  state count = 0
+  state total_time_in_ms = 0
+  state prompt_time = 0
+
   reaction(update_graphics_pipe_init) {=
     # Stores the Pipe object that will be used to send graphics update to
-    #   the pygame process 
+    #   the pygame process
     self.update_graphics = update_graphics_pipe_init.value
-    
-    # Displays an introductory prompt to the user. 
+
+    # Displays an introductory prompt to the user.
     self.update_graphics.send(((0,0,0),       # Color of background
                    (255, 255, 255),   # Color of text
-                   "Press any key to begin", 
-                   "To end the game, you can either: ", 
-                   "1. Close this window", 
-                   "2. Press CTRL+C in the Terminal", 
+                   "Press any key to begin",
+                   "To end the game, you can either: ",
+                   "1. Close this window",
+                   "2. Press CTRL+C in the Terminal",
                    "3. Press any key before the prompt shows up."))
   =}
-  
+
   reaction(prompt) {=
     # Ask the user for input upon receiving a prompt input from RandomSource
-    self.update_graphics.send(((152,251,152), 
-                   (0, 0, 0), 
+    self.update_graphics.send(((152,251,152),
+                   (0, 0, 0),
                    "{}. Press any key!".format(prompt.value)))
     self.prompt_time = lf.time.physical()
   =}
-  
+
   reaction(user_input) -> another {=
     if self.first:
       # if the first ever key press is detected, set "another" to trigger a prompt from RandomSource
       self.first = False
-      self.update_graphics.send(((205,92,92), 
-                     (0, 0, 0), 
+      self.update_graphics.send(((205,92,92),
+                     (0, 0, 0),
                      "Wait for the prompt..."))
-      
-      # ask for the first ever prompt      
+
+      # ask for the first ever prompt
       another.set(42)
     elif self.prompt_time == 0:
       if self.count > 0:
-        self.update_graphics.send(((205,92,92), 
-                       (0, 0, 0), 
-                       "YOU CHEATED!", 
+        self.update_graphics.send(((205,92,92),
+                       (0, 0, 0),
+                       "YOU CHEATED!",
                        "Average response time: {:.2f} ms".format(self.total_time_in_ms / self.count)))
       else:
-        self.update_graphics.send(((205,92,92), 
-                       (0, 0, 0), 
-                       "YOU CHEATED!", 
+        self.update_graphics.send(((205,92,92),
+                       (0, 0, 0),
+                       "YOU CHEATED!",
                        "Average response time: undefined"))
       request_stop()
     else:
       time_in_ms = (lf.time.logical() - self.prompt_time) // MSEC(1)
-      self.update_graphics.send(((205,92,92), 
-                     (0, 0, 0), 
-                     "Response time in milliseconds: {}".format(time_in_ms), 
+      self.update_graphics.send(((205,92,92),
+                     (0, 0, 0),
+                     "Response time in milliseconds: {}".format(time_in_ms),
                      "Wait for the prompt..."))
       self.count += 1
       self.total_time_in_ms += time_in_ms
       self.prompt_time = 0
-      
+
       # ask for another prompt
       another.set(42)
   =}
-   
+
   reaction(shutdown) {=
     if self.count > 0:
       print("Average response time: {:.2f} ms".format(self.total_time_in_ms / self.count))
@@ -158,29 +149,25 @@ reactor UpdateGraphics {
   =}
 }
 
-/*
- * Starts the GUI and pass the user_input_pout and 
- *   update_graphics_pin Pipe objects
- *   to GetUserInput and UpdateGraphics
+/**
+ * Starts the GUI and pass the user_input_pout and update_graphics_pin Pipe objects to GetUserInput
+ * and UpdateGraphics
  */
 reactor StartGui {
-  preamble {=
-    import gui
-  =}
+  preamble {= import gui =}
 
-  output user_input_pipe;
-  output update_graphics_pipe;
-  
+  output user_input_pipe
+  output update_graphics_pipe
+
   reaction(startup) -> user_input_pipe, update_graphics_pipe {=
     # Starts the gui pygame process
     user_input_pout, update_graphics_pin = self.gui.start_gui()
-    
-    # Sets the outputs to trigger the initialization of GetUserInput and UpdateGrpahics 
+
+    # Sets the outputs to trigger the initialization of GetUserInput and UpdateGrpahics
     user_input_pipe.set(user_input_pout)
     update_graphics_pipe.set(update_graphics_pin)
   =}
 }
-
 
 main reactor {
   random_source = new RandomSource()
@@ -190,6 +177,6 @@ main reactor {
   get_user_input.user_input -> update_graphics.user_input
   update_graphics.another -> random_source.another
   gui = new StartGui()
-  gui.user_input_pipe -> get_user_input.user_input_pipe_init; 
-  gui.update_graphics_pipe -> update_graphics.update_graphics_pipe_init;  
+  gui.user_input_pipe -> get_user_input.user_input_pipe_init
+  gui.update_graphics_pipe -> update_graphics.update_graphics_pipe_init
 }

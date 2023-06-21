@@ -1,9 +1,8 @@
 /**
  * Demonstration of the classic rock-paper-scissors game. See
- * [https://en.wikipedia.org/wiki/Rock_paper_scissors]. This illustrates
- * interactive feedback in Lingua Franca and the importance of reaction order.
- * If you reorder the second and third reactions in the Player reactor, a
- * causality loop emerges.
+ * [https://en.wikipedia.org/wiki/Rock_paper_scissors]. This illustrates interactive feedback in
+ * Lingua Franca and the importance of reaction order. If you reorder the second and third reactions
+ * in the Player reactor, a causality loop emerges.
  *
  * @author Marten Lohstroh
  */
@@ -12,8 +11,8 @@ target C
 preamble {= typedef enum {paper=0, rock=1, scissors=2} symbol_t; =}
 
 main reactor RockPaperScissors {
-  player1 = new Player(id = 1)
-  player2 = new Player(id = 2)
+  player1 = new Player(id=1)
+  player2 = new Player(id=2)
 
   player1.reveal -> player2.observe
   player2.reveal -> player1.observe

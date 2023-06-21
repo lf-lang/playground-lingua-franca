@@ -1,22 +1,20 @@
 /**
- * A simple car door lock system with a single door that can be
- * controlled in any of three ways:
- * 1. buttons on the physical door,
- * 2. an external system (like an RFID key fob), or
- * 3. a mobile device (like a phone) via a cloud service.
- * 
+ * A simple car door lock system with a single door that can be controlled in any of three ways: 1.
+ * buttons on the physical door, 2. an external system (like an RFID key fob), or 3. a mobile device
+ * (like a phone) via a cloud service.
+ *
  * Potentially interesting behaviors:
- * 
- * If the door is locked and closed and receives simultaneous open
- * and unlock commands, it unlocks the door, but the door remains closed.
- * 
+ *
+ * If the door is locked and closed and receives simultaneous open and unlock commands, it unlocks
+ * the door, but the door remains closed.
+ *
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-
 target CCpp {
-  keepalive: true,
+  keepalive: true
 }
+
 import UserInteraction from "lib/UserInteraction.lf"
 import PropagationDelaySim from "lib/PropagationDelaySim.lf"
 import AuthSim from "lib/AuthSim.lf"
@@ -28,18 +26,17 @@ preamble {=
 =}
 
 reactor DoorLockController {
-  input door:OpenEvent
-  input button:LockCommand
-  input fob:LockCommand
-  input mobile:LockCommand
+  input door: OpenEvent
+  input button: LockCommand
+  input fob: LockCommand
+  input mobile: LockCommand
 
-  output actuate:LockCommand
-    
+  output actuate: LockCommand
+
   initial mode ClosedLocked {
-    reaction(reset) {=
-      lf_print("*** Door is closed and has been locked.");
-    =}
-    reaction(button, fob, mobile) -> ClosedUnlocked, actuate {=
+    reaction(reset) {= lf_print("*** Door is closed and has been locked."); =}
+
+    reaction(button, fob, mobile) -> reset(ClosedUnlocked), actuate {=
       if (
         (button->is_present && button->value == UNLOCK)
         || (fob->is_present && fob->value == UNLOCK)
@@ -51,15 +48,14 @@ reactor DoorLockController {
         lf_print("Door is already locked.");
       }
     =}
-    reaction(door) {=
-      lf_print("Door is closed and locked.");
-    =}
+
+    reaction(door) {= lf_print("Door is closed and locked."); =}
   }
+
   mode ClosedUnlocked {
-    reaction(reset) {=
-      lf_print("*** Door has been closed and is unlocked.");
-    =}
-    reaction(button, fob, mobile) -> ClosedLocked, actuate {=
+    reaction(reset) {= lf_print("*** Door has been closed and is unlocked."); =}
+
+    reaction(button, fob, mobile) -> reset(ClosedLocked), actuate {=
       if (
         (button->is_present && button->value == LOCK)
         || (fob->is_present && fob->value == LOCK)
@@ -71,27 +67,27 @@ reactor DoorLockController {
         lf_print("Door is already unlocked.");
       }
     =}
-    reaction(door) -> Open {=
+
+    reaction(door) -> reset(Open) {=
       if (door->value == OPEN) lf_set_mode(Open);
       else lf_print("Door is already closed.");
     =}
   }
+
   mode Open {
-    reaction(reset) {=
-      lf_print("*** Door has been opened.");
-    =}
-    reaction(door) -> ClosedUnlocked {=
+    reaction(reset) {= lf_print("*** Door has been opened."); =}
+
+    reaction(door) -> reset(ClosedUnlocked) {=
       if (door->value == CLOSE) lf_set_mode(ClosedUnlocked);
       else lf_print("Door is already open.");
     =}
-    reaction(button, fob, mobile) {=
-      lf_print("Door is open.");
-    =}
+
+    reaction(button, fob, mobile) {= lf_print("Door is open."); =}
   }
 }
 
-reactor DoorLockActuator(tolerance:time(1000 msec)) {
-  input in:LockCommand
+reactor DoorLockActuator(tolerance: time = 1000 msec) {
+  input in: LockCommand
 
   reaction(in) {=
     interval_t lag = (lf_time_physical() - lf_time_logical());
@@ -100,7 +96,7 @@ reactor DoorLockActuator(tolerance:time(1000 msec)) {
     std::cout << lf_time_physical_elapsed() << ": Command " << command_string
         << " executed successfully. Time lag: " <<  lag << " ns."
         << std::endl;
-  =} deadline(tolerance){=
+  =} deadline(tolerance) {=
     interval_t lag = (lf_time_physical() - lf_time_logical());
     std::string command_string = (in->value == LOCK) ? "LOCK" : "UNLOCK";
 
@@ -108,11 +104,12 @@ reactor DoorLockActuator(tolerance:time(1000 msec)) {
         << " executed " <<  lag - self->tolerance << " nsecs later then expected." << std::endl;
   =}
 }
+
 reactor DoorLockSystem {
-  input door:OpenEvent
-  input button:LockCommand
-  input fob:LockCommand
-  input mobile:LockCommand
+  input door: OpenEvent
+  input button: LockCommand
+  input fob: LockCommand
+  input mobile: LockCommand
 
   dlc = new DoorLockController()
   a = new DoorLockActuator()

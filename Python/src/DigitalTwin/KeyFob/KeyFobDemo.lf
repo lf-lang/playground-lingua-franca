@@ -1,16 +1,14 @@
 /**
- * Example of a basic digital twin setup, with two federates 
- * maintaining a shared state "locked". 
+ * Example of a basic digital twin setup, with two federates maintaining a shared state "locked".
  *
  * For run instructions, see README.md in the same directory.
- * 
+ *
  * @author Hou Seng Wong (housengw@berkeley.edu)
  */
-
 target Python {
   docker: true,
   files: ["../utils.py"]
-};
+}
 
 preamble {=
   import curses
@@ -19,28 +17,28 @@ preamble {=
 =}
 
 /**
- * A key fob that detects "lock" and "unlock" key presses, 
- * and sends and receives lock state to and from other key fobs.
+ * A key fob that detects "lock" and "unlock" key presses, and sends and receives lock state to and
+ * from other key fobs.
  */
 reactor KeyFob {
-  /* logger / window related state variables */
-  state logger({=None=});
-  state window({=None=});
+  /** logger / window related state variables */
+  state logger = {= None =}
+  state window = {= None =}
 
-  /* KeyFob related state variables */
-  state locked({=False=});
-  state listener({=None=});
+  /** KeyFob related state variables */
+  state locked = {= False =}
+  state listener = {= None =}
 
-  /* I/O ports and actions */
-  input get_lock_state;
-  output send_lock_state;
-  physical action press_lock;
-  physical action press_unlock;
+  /** I/O ports and actions */
+  input get_lock_state
+  output send_lock_state
+  physical action press_lock
+  physical action press_unlock
 
   preamble {=
     def lock_state_str(self, locked):
       return "Locked" if locked else "Unlocked"
-    
+
     def print_lock_state(self):
       self.window.change_line(1, f"Lock Status: {self.lock_state_str(self.locked)}")
 
@@ -48,7 +46,7 @@ reactor KeyFob {
       if self.logger.log_size() > 0:
         for i, line in enumerate(self.logger.get_log()):
           self.window.change_line(2 + i, line)
-    
+
     def format_log_message(self, line):
       elapsed_ptime, tag, remote, locked = line
       return (f"At (tag: ({'{:,}'.format(tag.time)} ns, {tag.microstep}), "
@@ -65,7 +63,7 @@ reactor KeyFob {
       key = ""
       while key != ord("q"):
         key = self.window.getch()
-        if key == ord("l"): 
+        if key == ord("l"):
           press_lock.schedule(0)
         elif key == ord("u"):
           press_unlock.schedule(0)
@@ -120,8 +118,8 @@ reactor KeyFob {
 }
 
 federated reactor {
-  fob = new KeyFob();
-  twin = new KeyFob();
-  fob.send_lock_state -> twin.get_lock_state;
-  twin.send_lock_state -> fob.get_lock_state;
+  fob = new KeyFob()
+  twin = new KeyFob()
+  fob.send_lock_state -> twin.get_lock_state
+  twin.send_lock_state -> fob.get_lock_state
 }

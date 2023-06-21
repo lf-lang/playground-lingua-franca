@@ -1,21 +1,21 @@
 /**
- * Delay an input value by a random amount given
- * by an exponential random variable with average value
- * given by average. To make measuring the
- * delay convenient, the type of the input is a time
+ * Delay an input value by a random amount given by an exponential random variable with average
+ * value given by average. To make measuring the delay convenient, the type of the input is a time
  * and the same time will be sent to the output.
- * 
+ *
  * @author Edward A. Lee
  */
 target C
+
 import Random from "Random.lf"
-reactor RandomDelay(average:time(1 sec)) extends Random {
-  input in:time
-  output out:time
-  logical action a:time
-  reaction(a) -> out {=
-    lf_set(out, a->value);
-  =}
+
+reactor RandomDelay(average: time = 1 sec) extends Random {
+  input in: time
+  output out: time
+  logical action a: time
+
+  reaction(a) -> out {= lf_set(out, a->value); =}
+
   reaction(in) -> a {=
     double lambda = SEC(1) / ((double)self->average);
     double exp = exponential(lambda);

@@ -1,16 +1,15 @@
 /**
- * The provided Lingua Franca (LF) program represents a simple ROS2 subscriber that
- * listens for messages on a particular topic. Specifically, it subscribes to a
- * topic named "topic" and waits for 'std_msgs/msg/String' type messages. When a
- * message arrives, it is scheduled as a physical action, triggering a reaction
- * that logs the received message. Therefore, this program demonstrates how an LF
- * program can interface with ROS2 to receive and process messages from a ROS2
- * topic in a reactive manner. 
+ * The provided Lingua Franca (LF) program represents a simple ROS2 subscriber that listens for
+ * messages on a particular topic. Specifically, it subscribes to a topic named "topic" and waits
+ * for 'std_msgs/msg/String' type messages. When a message arrives, it is scheduled as a physical
+ * action, triggering a reaction that logs the received message. Therefore, this program
+ * demonstrates how an LF program can interface with ROS2 to receive and process messages from a
+ * ROS2 topic in a reactive manner.
  */
 target Cpp {
   ros2: true,
   keepalive: true,
-  ros2-dependencies: ["std_msgs"],
+  ros2-dependencies: ["std_msgs"]
 }
 
 public preamble {=
@@ -27,7 +26,7 @@ main reactor {
   state subscription: {= rclcpp::Subscription<std_msgs::msg::String>::SharedPtr =}
   state count: unsigned(0)
 
-  physical action message: std::string;
+  physical action message: std::string
 
   reaction(startup) -> message {=
     subscription = lf_node->create_subscription<std_msgs::msg::String>(
@@ -36,7 +35,5 @@ main reactor {
     // const std_msgs::msg::String::SharedPtr& msg
   =}
 
-  reaction(message) {=
-    reactor::log::Info() << "I heard: " << *message.get();
-  =}
+  reaction(message) {= reactor::log::Info() << "I heard: " << *message.get(); =}
 }

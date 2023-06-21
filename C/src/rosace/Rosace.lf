@@ -1,34 +1,30 @@
 /**
  * ROSACE case study, from:
- * 
- * Claire Pagetti , David Saussié, Romain Gratia , Eric Noulard , Pierre Siron,
- * "The ROSACE Case Study: From Simulink Specification to Multi/Many-Core Execution,"
- * RTAS (2014).
- * 
+ *
+ * Claire Pagetti , David Saussié, Romain Gratia , Eric Noulard , Pierre Siron, "The ROSACE Case
+ * Study: From Simulink Specification to Multi/Many-Core Execution," RTAS (2014).
+ *
  * This implementation is based on code from:
- * 
- *  https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ *
+ * https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
  *
  * Since that original code bears an LGPL license, so does this program:
- * 
+ *
  * (c) 2023 Regents of the University of California, LGPL-v3
  * (https://www.gnu.org/licenses/lgpl-3.0.html)
- * 
- * This program uses a forward Euler simulation of aircraft dynamics and implements
- * throttle and elevator control. The parameters specified execute an elevation
- * climb from an initial 10,000 feet to a target 11,000 feet.
- * 
- * The style of execution is that each component has a `period` parameter that
- * determines the frequency at which it runs. The program relies on persistence
- * of inputs in the C target and on the dependency analysis of the *uses* field
- * of reactor signature.
- * 
- * To run this, it should be sufficient to just run `lfc` to compile it.
- * The "build" parameter of the target provides a script that compiles the
- * generated code, runs it, runs gnuplot to generate the plots, and then
- * opens the resulting PDF files. If this script fails for any reason,
- * comment the `build` attribute of the target declaration and do this by hand:
- * 
+ *
+ * This program uses a forward Euler simulation of aircraft dynamics and implements throttle and
+ * elevator control. The parameters specified execute an elevation climb from an initial 10,000 feet
+ * to a target 11,000 feet.
+ *
+ * The style of execution is that each component has a `period` parameter that determines the
+ * frequency at which it runs. The program relies on persistence of inputs in the C target and on
+ * the dependency analysis of the *uses* field of reactor signature.
+ *
+ * To run this, it should be sufficient to just run `lfc` to compile it. The "build" parameter of
+ * the target provides a script that compiles the generated code, runs it, runs gnuplot to generate
+ * the plots, and then opens the resulting PDF files. If this script fails for any reason, comment
+ * the `build` attribute of the target declaration and do this by hand:
  * ```
  * cd examples-lingua-franca/C
  * lfc src/rosace/Rosace.lf
@@ -36,19 +32,17 @@
  * gnuplot src/rosace/rosace.gnuplot
  * open rosace.pdf
  * ```
- * 
- * You should see a smooth climb from 10,000 feet to 11,000 feet.
- * You can experiment, for example, with the period with which the filters
- * sample the sensor outputs from the aircraft model. If you change the
- * `filter_period` parameter of the `RosaceController` from its default
- * 10 ms to 100 ms, for example, you will far worse behavior from the
- * aircraft.
- * 
+
+ *
+ * You should see a smooth climb from 10,000 feet to 11,000 feet. You can experiment, for example,
+ * with the period with which the filters sample the sensor outputs from the aircraft model. If you
+ * change the `filter_period` parameter of the `RosaceController` from its default 10 ms to 100 ms,
+ * for example, you will far worse behavior from the aircraft.
+ *
  * @author Edward A. Lee
  * @author David Saussie
  * @author Claire Pagetti
  */
-
 target C {
   fast: true,
   build: "./build_run_plot.sh Rosace",
@@ -66,42 +60,38 @@ preamble {=
   #define h_eq (10000.0)
 
   #define delta_th_eq (1.5868660794926)
-  #define delta_e_eq (0.012009615652468)  
+  #define delta_e_eq (0.012009615652468)
 =}
 
 // Documentation
 @icon("Variables.png")
-reactor Variables {}
-
-reactor Command(
-  period: time(100 ms),
-  value: double(0.0)
-) {
-  timer t(0, period)
-  output c:double
-  reaction(t) -> c {=
-    lf_set(c, self->value);
-  =}
+reactor Variables {
 }
 
-main reactor(filter_period: time(10 ms)) {
+reactor Command(period: time = 100 ms, value: double = 0.0) {
+  timer t(0, period)
+  output c: double
+
+  reaction(t) -> c {= lf_set(c, self->value); =}
+}
+
+main reactor(filter_period: time = 10 ms) {
   variables = new Variables()
   a = new Aircraft()
-  c = new RosaceController(filter_period = filter_period)
-  altitude = new Command(value = 11000) // Altitude command
-  speed = new Command(value = 0.0)    // Delta airspeed from nominal Va_eq (230)
-  
-  p_h = new PrintToFile(filename = "altitude.data")
-  p_Va = new PrintToFile(filename = "airspeed.data")
-    
+  c = new RosaceController(filter_period=filter_period)
+  altitude = new Command(value=11000)  // Altitude command
+  speed = new Command(value=0.0)  // Delta airspeed from nominal Va_eq (230)
+
+  p_h = new PrintToFile(filename="altitude.data")
+  p_Va = new PrintToFile(filename="airspeed.data")
+
   a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
-  altitude.c -> c.c  
+  altitude.c -> c.c
   speed.c -> c.s
-  
+
   c.delta_ec -> a.delta_ec
   c.delta_thc -> a.delta_thc
-  
-  // Print connections.
-  a.h -> p_h.y
+
+  a.h -> p_h.y                    // Print connections.
   a.Va -> p_Va.y
 }

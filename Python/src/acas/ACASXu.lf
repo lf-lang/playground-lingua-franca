@@ -1,38 +1,35 @@
 /**
- * This program models two aircraft moving in a two-dimensional space
- * for testing an Airborne Collision Avoidance System (ACAS) that is
- * realized using neural networks.
- * 
- * It includes a main reactor that applies a simple test where the
- * intruder aircraft follows a straight trajectory and the "own" aircraft
- * maneuvers to avoid a collision.
- * 
- * It is based on the following paper:
- * 
- * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin,
- * Christophe Garion, ans Claire Pagetti, "Verification of machine
- * learning based cyber-physical systems: a comparative study,"
- * International Conference on Hybrid Systems: Computation and Control
- * (HSCC), May 2022, Pages 1–16, https://doi.org/10.1145/3501710.3519540
+ * This program models two aircraft moving in a two-dimensional space for testing an Airborne
+ * Collision Avoidance System (ACAS) that is realized using neural networks.
  *
- * The original Python code on which this is based was provided by
- * Arthur Clavière and can be found at:
- * 
- *  https://svn.onera.fr/schedmcore/branches/ACAS_CaseStudy/
+ * It includes a main reactor that applies a simple test where the intruder aircraft follows a
+ * straight trajectory and the "own" aircraft maneuvers to avoid a collision.
+ *
+ * It is based on the following paper:
+ *
+ * Arthur Clavière, Laura Altieri Sambartolomé, Eric Asselin, Christophe Garion, ans Claire Pagetti,
+ * "Verification of machine learning based cyber-physical systems: a comparative study,"
+ * International Conference on Hybrid Systems: Computation and Control (HSCC), May 2022, Pages 1–16,
+ * https://doi.org/10.1145/3501710.3519540
+ *
+ * The original Python code on which this is based was provided by Arthur Clavière and can be found
+ * at:
+ *
+ * https://svn.onera.fr/schedmcore/branches/ACAS_CaseStudy/
  *
  * Since that original code bears an LGPL license, so does this program:
- * 
- * The ML models (in code/src/systems/acasxu/nnets)
- * come from https://github.com/guykatzz/ReluplexCav2017
- * 
+ *
+ * The ML models (in code/src/systems/acasxu/nnets) come from
+ * https://github.com/guykatzz/ReluplexCav2017
+ *
  * # Prerequisites
- * 
  * ```
  *  pip install wheel
  *  pip install pandas
  *  pip install matplotlib
  * ```
- * 
+
+ *
  * @author Arthur Clavière
  * @author Edward A. Lee
  * @author Claire Pagetti
@@ -41,6 +38,7 @@ target Python {
   fast: true,
   timeout: 16 s
 }
+
 import XYPlotter from "lib/XYPlotter.lf"
 import Aircraft from "lib/Aircraft.lf"
 import ACASController from "lib/ACASController.lf"
@@ -54,6 +52,7 @@ reactor Diff {
   input y2
   output x
   output y
+
   reaction(x1, y1, x2, y2) -> x, y {=
     x.set(x1.value - x2.value)
     y.set(y1.value - y2.value)
@@ -62,34 +61,33 @@ reactor Diff {
 
 main reactor {
   own = new Aircraft(
-    x_init = 0.0,   # Initial x position in feet.
-    y_init = 0.0,   # Initial y position in feet.
-    psi_init = 0.0, # Angle in radians, relative to vertical, positive counterclockwise
-    v_init = 248.74685927665496, # Initial velocity, in feet/second.
-    period = 10 ms  # Rate of updates.
-  )
-  
+      x_init=0.0,  # Initial x position in feet.
+      y_init=0.0,  # Initial y position in feet.
+      psi_init=0.0,  # Angle in radians, relative to vertical, positive counterclockwise
+      v_init=248.74685927665496,  # Initial velocity, in feet/second.
+      # Rate of updates.
+      period = 10 ms)
+
   intruder = new Aircraft(
-    x_init = -6000.0,
-    y_init = 0.0,
-    psi_init = -0.9851107833377457,
-    v_init = 450.0,
-    period = 10 ms
-  )
+      x_init=-6000.0,
+      y_init=0.0,
+      psi_init=-0.9851107833377457,
+      v_init=450.0,
+      period = 10 ms)
   controller = new ACASController(period = 1 s)
   diff = new Diff()
-  
+
   plot = new XYPlotter()
 
   intruder.x, intruder.y -> diff.x1, diff.y1
   own.x, own.y -> diff.x2, diff.y2
-  
+
   diff.x, diff.y -> controller.x, controller.y
   own.psi, intruder.psi -> controller.psi_own, controller.psi_int
   own.v, intruder.v -> controller.v_own, controller.v_int
-  
+
   controller.command -> own.turn
-  
+
   own.x, own.y -> plot.x1, plot.y1
   intruder.x, intruder.y -> plot.x2, plot.y2
 }

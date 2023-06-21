@@ -1,21 +1,19 @@
-/**
- * A utility reactor to print the pendulum state into a csv file.
- */
-target C;
+/** A utility reactor to print the pendulum state into a csv file. */
+target C
 
 preamble {=
   #include <math.h>
   #define PI 3.14159265
 =}
 
-reactor Print(filename:string("pendulum.csv")) {
-  input control:double;
-  input modeID:double;
-  input energy:double;
-  input theta:double;
-  input phi:double;
+reactor Print(filename: string = "pendulum.csv") {
+  input control: double
+  input modeID: double
+  input energy: double
+  input theta: double
+  input phi: double
 
-  state file:FILE*({=NULL=});
+  state file: FILE* = {= NULL =}
 
   reaction(startup) {=
     self->file = fopen(self->filename, "w");
@@ -39,7 +37,5 @@ reactor Print(filename:string("pendulum.csv")) {
     );
   =}
 
-  reaction(shutdown) {=
-    fclose(self->file);
-  =}
+  reaction(shutdown) {= fclose(self->file); =}
 }

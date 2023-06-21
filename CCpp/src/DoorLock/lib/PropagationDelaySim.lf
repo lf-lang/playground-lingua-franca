@@ -1,9 +1,7 @@
 /**
- * Simulate propagation delay (in physical time) by
- * taking time to copy the input to the output.
- * The time taken is uniformly between min_delay
- * and ten times min_delay.
- * 
+ * Simulate propagation delay (in physical time) by taking time to copy the input to the output. The
+ * time taken is uniformly between min_delay and ten times min_delay.
+ *
  * @author Ravi Akella
  * @author Edward A. Lee
  */
@@ -12,14 +10,16 @@ target CCpp
 preamble {=
   #include <stdlib.h>   /* srand, rand */
 =}
-reactor PropagationDelaySim(min_delay:time(100 msec)) {
-  input in:LockCommand
-  output out:LockCommand
+
+reactor PropagationDelaySim(min_delay: time = 100 msec) {
+  input in: LockCommand
+  output out: LockCommand
 
   reaction(startup) {=
     // Seed the random number generator.
     srand(lf_time_logical());
   =}
+
   reaction(in) -> out {=
     lf_nanosleep((rand()%10+1) * self->min_delay);
     lf_set(out, in->value);

@@ -1,7 +1,7 @@
 // src/Receiver.lf
 target CCpp {
   cmake-include: "include/composition.cmake"
-};
+}
 
 preamble {=
   #include "subscriber_member_function.h"
@@ -9,8 +9,8 @@ preamble {=
 
 reactor Receiver {
   // Instantiate the subscriber node as a sate variable
-  state subscriber_node : std::shared_ptr<MinimalSubscriber>;
-  input in:std::shared_ptr<std_msgs::msg::String>;
+  state subscriber_node: std::shared_ptr<MinimalSubscriber>
+  input in: std::shared_ptr<std_msgs::msg::String>
 
   reaction(startup) {=
     // Initialize rclcpp
@@ -20,12 +20,9 @@ reactor Receiver {
   =}
 
   reaction(in) {=
-
     lf_print("[LF receiver] Received %s", in->value->data.c_str());
     self->subscriber_node->topic_callback(in->value);
   =}
 
-  reaction(shutdown) {=
-    rclcpp::shutdown();
-  =}
+  reaction(shutdown) {= rclcpp::shutdown(); =}
 }

@@ -1,21 +1,21 @@
-/**
- * Reactor that prints time-value pairs to a file.
- */
+/** Reactor that prints time-value pairs to a file. */
 target C
-reactor PrintToFile(filename:string("output.data")) {
-  input y:double;
-  state file:FILE*({=NULL=});
+
+reactor PrintToFile(filename: string = "output.data") {
+  input y: double
+  state file: FILE* = {= NULL =}
+
   reaction(startup) {=
     self->file = fopen(self->filename, "w");
     if(self->file == NULL) {
       lf_print_error_and_exit("Failed to open file: %s", self->filename);
     }
   =}
+
   reaction(y) {=
     double t = lf_time_logical_elapsed() / 1.0e9;
     fprintf(self->file, "%f %f\n", t, y->value);
   =}
-  reaction(shutdown) {=
-    fclose(self->file);
-  =}
+
+  reaction(shutdown) {= fclose(self->file); =}
 }
