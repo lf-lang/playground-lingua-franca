@@ -4,12 +4,37 @@ This directory contains Lingua Franca programs representing a number of common d
 
 ## Examples
 
-* [Chain_01_SendReceive](Chain_01_SendReceive.lf): Very simple two-reactor chain.
-* [Chain_02_Pipeline](Chain_02_Pipeline.lf): Using a bank to create pipeline.
-* [FullyConnected_00_Broadcast](FullyConnected_00_Broadcast.lf): A bank of reactors that broadcast to all others.
-* [FullyConnected_01_Addressable](FullyConnected_01_Addressable.lf): A bank of reactors that selectively send to each other.
-* [Loop_01_Single](Loop_01_Single.lf): A single reactor sends data to itself.
-* [Loop_02_SingleDelay](Loop_02_SingleDelay.lf): A single reactor sends data to itself with delay.
+<table>
+<tr>
+<td> <img src="img/Chain_01_SendReceive.png" alt="Chain_01_SendReceive" width="100%"> </td>
+<td> <a href="Chain_01_SendReceive.lf">Chain_01_SendReceive.lf</a>: Very simple two-reactor chain. </td>
+</tr>
+<tr>
+<td> <img src="img/Chain_02_Pipeline.png" alt="Chain_02_Pipeline" width="100%"> </td>
+<td> <a href="Chain_02_Pipeline.lf"> Chain_02_Pipeline.lf</a>: Using a bank to create pipeline. </td>
+</tr>
+<tr>
+<td> <img src="img/FullyConnected_00_Broadcast.png" alt="FullyConnected_00_Broadcast" width="50%"> </td>
+<td> <a href="FullyConnected_00_Broadcast.lf"> FullyConnected_00_Broadcast.lf</a>: A bank of reactors that broadcast to all others. </td>
+</tr>
+<tr>
+<td> <img src="img/FullyConnected_01_Addressable.png" alt="FullyConnected_01_Addressable" width="50%"> </td>
+<td> <a href="FullyConnected_01_Addressable.lf"> FullyConnected_01_Addressable.lf</a>: A bank of reactors that selectively send to each other. </td>
+</tr>
+<tr>
+<td> <img src="img/Loop_01_Single.png" alt="Loop_01_Single" width="50%"> </td>
+<td> <a href="Loop_01_Single.lf"> Loop_01_Single .lf</a>: A single reactor sends data to itself. </td>
+</tr>
+<tr>
+<td> <img src="img/Loop_02_SingleDelay.png" alt="Loop_02_SingleDelay" width="50%"> </td>
+<td> <a href="Loop_02_SingleDelay.lf"> Loop_02_SingleDelay.lf</a>: A single reactor sends data to itself with delay. </td>
+</tr>
+<tr>
+<td> <img src="img/Simultaneity.png" alt="Simultaneity" width="50%"> </td>
+<td> <a href="Simultaneity.lf"> Simultaneity.lf</a>: An illustration of logical simultaneity. </td>
+</tr>
+</table>
+
 
 ## Library
 
