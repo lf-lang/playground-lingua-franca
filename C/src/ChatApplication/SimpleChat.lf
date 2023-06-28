@@ -20,6 +20,7 @@ target C {
 }
 
 preamble {=
+  #include <string.h>
   #include <unistd.h>
 =}
 
