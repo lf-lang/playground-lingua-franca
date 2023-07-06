@@ -31,9 +31,10 @@ target C {
 }
 
 preamble {=
+  #ifndef RESOURCE_MANAGEMENT_H
+  #define RESOURCE_MANAGEMENT_H
   // Queue is a circular buffer. The tail variable points to the
   // position to write to.
-
   typedef struct request_q_t {
     int* queue;
     int head;
@@ -41,6 +42,7 @@ preamble {=
     int size;
     int capacity;
   } request_q_t;
+  #endif
 =}
 
 /**
