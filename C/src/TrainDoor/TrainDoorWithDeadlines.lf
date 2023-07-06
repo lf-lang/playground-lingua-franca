@@ -1,33 +1,37 @@
-// This is a variant of the example is considered in this paper:
-// https://www.mdpi.com/2227-7390/8/7/1068
-// where it is studied for its verifiability.
-target C
-
-reactor Controller {
-  output lock: bool
-  output unlock: bool
-  output move: bool
-  output stop: bool
-  physical action external_move(100 msec): bool
-
-  reaction(startup) {=
-    // ... Set up sensing.
-  =}
-
-  reaction(external_move) -> lock, move, unlock, stop {=
-    lf_set(lock, external_move->value);
-    lf_set(move, external_move->value);
-  =}
+/**
+ * This variant of the train door controller comes from this paper:
+ * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability.
+ * It accepts two commands, one to "lock and move" and one to "stop and unlock".
+ * It uses after delays to ensure that these occur in the right order and deadlines
+ * to enforce the ordering. This also includes a placeholder for a local sensor at
+ * the train door that, were it implemented, would allow for locally opening the door
+ * when it is unlocked. This is not implemented, however, so no mechanism is provided
+ * to open the door.
+ */
+target C {
+    keepalive: true
 }
+
+import Controller from "TrainDoorAsymmetric.lf"
 
 realtime reactor Train {
   input move: bool
   input stop: bool
   state moving: bool = false
 
-  reaction(stop) {= self->moving = false; =} deadline(50 msec) {=  =}
+  reaction(stop) {=
+    self->moving = false;
+    lf_print("Train stopped.");
+  =} deadline(50 msec) {=
+    lf_print_warning("Deadline violated! Ignoring stop command.");
+  =}
 
-  reaction(move) {= self->moving = false; =} deadline(48 msec) {=  =}
+  reaction(move) {=
+    self->moving = true;
+    lf_print("Train moving.");
+  =} deadline(48 msec) {=
+    lf_print_warning("Deadline violated! Ignoring move command.");
+  =}
 }
 
 realtime reactor Door {
@@ -38,25 +42,40 @@ realtime reactor Door {
   state open: bool = false
 
   reaction(startup) {=
+    // Placeholder for local door control.
     // ... Set up sensing.
   =} deadline(48 msec) {=  =}
 
   reaction(lock) {=
-    if (lock && self->open) {
-      // ... Actuate to close door.
-      self->open = false;
+    if (lock->value) {
+      self->locked = true;
+      if (self->open) {
+        // ... Actuate to close door.
+        self->open = false;
+        lf_print("Closing and locking the door.");
+      } else {
+        lf_print("Locking the door.");
+      }
+    } else {
+      self->locked = false;
+      lf_print("Unlocking the door.");
     }
     self->locked = lock->value;
   =} deadline(50 msec) {=
     // ... handle the deadline violation...
+    lf_print_warning("Deadline violated! Ignoring the command.");
   =}
 
-  reaction(unlock) {= self->locked = true; =}
+  reaction(unlock) {=
+    self->locked = false;
+    lf_print("Door unlocked.");
+ =}
 
   reaction(external_open) {=
     if (!self->locked) {
       // ... Actuate to open door.
       self->open = true;
+      lf_print("Door opened.");
     }
   =}
 }

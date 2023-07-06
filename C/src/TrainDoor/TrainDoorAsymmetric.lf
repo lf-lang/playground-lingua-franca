@@ -1,24 +1,59 @@
-// This is a variant of the example is considered in this paper:
-// https://www.mdpi.com/2227-7390/8/7/1068
-// where it is studied for its verifiability.
-target C
+/**
+ * This variant of the train door controller comes from this paper:
+ * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability.
+ * It accepts two commands, one to "lock and move" and one to "stop and unlock".
+ * It uses after delays to ensure that these occur in the right order.
+ */
+target C {
+    keepalive: true
+}
+
+preamble {=
+  #include "platform.h" // Defines thread types and functions.
+=}
 
 reactor Controller {
+  preamble {=
+    void* read_input(void* arg) {
+      printf("***************************************************************\n");
+      printf("Type 'g' and hit return to lock the door and move the train\n");
+      printf("Press 's' and hit return to stop the train and unlock the door\n");
+      printf("Press 'Control-d' to exit\n");
+      while(1) {
+        int c = getchar();
+        if (c == 'g') {
+          lf_schedule_int(arg, 0, 1);
+        }
+        if (c == 's') {
+          lf_schedule_int(arg, 0, 0);
+        }
+        if (c == EOF) {
+          break;
+        }
+      }
+      lf_request_stop();
+      return NULL;
+    }
+  =}
   output lock: bool
   output unlock: bool
   output move: bool
   output stop: bool
-  physical action external: bool
+  physical action external: int
 
-  reaction(startup) {=
-    // ... Set up external sensing.
+  reaction(startup) -> external {=
+    // ... Set up sensing.
+    lf_thread_t thread_id;
+    lf_thread_create(&thread_id, &read_input, external);
   =}
 
   reaction(external) -> lock, unlock, move, stop {=
     if (external->value) {
-      lf_set(lock, true); lf_set(move, true);
+      lf_set(lock, true);
+      lf_set(move, true);
     } else {
-      lf_set(unlock, true); lf_set(stop, true);
+      lf_set(unlock, true);
+      lf_set(stop, true);
     }
   =}
 }
@@ -28,9 +63,15 @@ reactor Train {
   input stop: bool
   state moving: bool = false
 
-  reaction(move) {= self->moving = true; =}
+  reaction(move) {=
+    self->moving = true;
+    lf_print("Train moving.");
+  =}
 
-  reaction(stop) {= self->moving = false; =}
+  reaction(stop) {=
+    self->moving = false;
+    lf_print("Train stopped.");
+  =}
 }
 
 reactor Door {
@@ -41,11 +82,13 @@ reactor Door {
   reaction(lock) {=
     // ... Actuate to lock door.
     self->locked = true;
+    lf_print("Door locked.");
   =}
 
   reaction(unlock) {=
     // ... Actuate to unlock door.
     self->locked = false;
+    lf_print("Door unlocked.");
   =}
 }
 

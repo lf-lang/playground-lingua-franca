@@ -1,15 +1,48 @@
-// This simple example is considered in this paper:
-// https://www.mdpi.com/2227-7390/8/7/1068
-// where it is studied for its verifiability.
-target C
+/**
+ * This variant of the train door controller comes from this paper:
+ * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability.
+ * It accepts two commands, one to "lock and move" and one to "stop and unlock".
+ * These are issued simultaneously.
+ */
+target C {
+    keepalive: true
+}
+
+preamble {=
+  #include "platform.h" // Defines thread types and functions.
+=}
 
 reactor Controller {
+  preamble {=
+    void* read_input(void* arg) {
+      printf("***************************************************************\n");
+      printf("Type 'g' and hit return to lock the door and move the train\n");
+      printf("Press 's' and hit return to stop the train and unlock the door\n");
+      printf("Press 'Control-d' to exit\n");
+      while(1) {
+        int c = getchar();
+        if (c == 'g') {
+          lf_schedule_int(arg, 0, 1);
+        }
+        if (c == 's') {
+          lf_schedule_int(arg, 0, 0);
+        }
+        if (c == EOF) {
+          break;
+        }
+      }
+      lf_request_stop();
+      return NULL;
+    }
+  =}
   output lock: bool
   output move: bool
-  physical action external_move: bool
+  physical action external_move: int
 
-  reaction(startup) {=
+  reaction(startup) -> external_move {=
     // ... Set up sensing.
+    lf_thread_t thread_id;
+    lf_thread_create(&thread_id, &read_input, external_move);
   =}
 
   reaction(external_move) -> lock, move {=
@@ -25,6 +58,11 @@ reactor Train {
   reaction(move) {=
     // ... actuate to move or stop
     self->moving = move->value;
+    if (self->moving) {
+      lf_print("Train moving.");
+    } else {
+      lf_print("Train stopped.");
+    }
   =}
 }
 
@@ -35,6 +73,11 @@ reactor Door {
   reaction(lock) {=
     // ... Actuate to lock or unlock door.
     self->locked = lock->value;
+    if (self->locked) {
+      lf_print("Door locked.");
+    } else {
+      lf_print("Door unlocked.");
+    }
   =}
 }
 

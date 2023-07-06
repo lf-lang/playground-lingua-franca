@@ -1,24 +1,59 @@
-// This is a variant of the example is considered in this paper:
-// https://www.mdpi.com/2227-7390/8/7/1068
-// where it is studied for its verifiability.
-target C
+/**
+ * This variant of the train door controller comes from this paper:
+ * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability.
+ * It accepts two commands, one to "close and lock" and one to "unlock and open".
+ * It uses after delays to ensure that these occur in the right order.
+ */
+target C {
+    keepalive: true
+}
+
+preamble {=
+  #include "platform.h" // Defines thread types and functions.
+=}
 
 reactor Controller {
+  preamble {=
+    void* read_input(void* arg) {
+      printf("***************************************************************\n");
+      printf("Type 'o' and hit return to unlock and open the door\n");
+      printf("Press 'c' and hit return to close and lock the door\n");
+      printf("Press 'Control-d' to exit\n");
+      while(1) {
+        int c = getchar();
+        if (c == 'o') {
+          lf_schedule_int(arg, 0, 0);
+        }
+        if (c == 'c') {
+          lf_schedule_int(arg, 0, 1);
+        }
+        if (c == EOF) {
+          break;
+        }
+      }
+      lf_request_stop();
+      return NULL;
+    }
+  =}
   output close: bool
   output lock: bool
   output unlock: bool
   output open: bool
-  physical action external: bool
+  physical action external: int
 
-  reaction(startup) {=
-    // ... Set up external sensing.
+  reaction(startup) -> external {=
+    // ... Set up sensing.
+    lf_thread_t thread_id;
+    lf_thread_create(&thread_id, &read_input, external);
   =}
 
   reaction(external) -> close, lock, open, unlock {=
     if (external->value) {
-      lf_set(close, true); lf_set(lock, true);
+      lf_set(close, true);
+      lf_set(lock, true);
     } else {
-      lf_set(open, true); lf_set(unlock, true);
+      lf_set(open, true);
+      lf_set(unlock, true);
     }
   =}
 }
@@ -28,30 +63,56 @@ reactor Door {
   input lock: bool
   input unlock: bool
   input open: bool
+  // Placeholder for local open command (not implemented).
   physical action ext_open: bool
   state locked: bool = false
   state is_open: bool = false
 
   reaction(close) {=
-    // ... Actuate to close door.
-    self->is_open = false;
+    if (self->is_open) {
+      // ... Actuate to close door.
+      self->is_open = false;
+      lf_print("Closing the door.");
+    } else {
+      lf_print("Door is already closed.");
+    }
   =}
 
   reaction(lock) {=
     // ... Actuate to lock door.
-    if(!self->is_open)
-       self->locked = true;
+    if(!self->is_open) {
+      if (!self->locked) {
+        self->locked = true;
+        lf_print("Locking the door.");
+      } else {
+        lf_print("Door is already locked.");
+      }
+    } else {
+      lf_print_error("Cannot lock the door. It is open.");
+    }
   =}
 
   reaction(unlock) {=
-    // ... Actuate to unlock door.
-    self->locked = false;
+    if (self->locked) {
+      // ... Actuate to unlock door.
+      self->locked = false;
+      lf_print("Unlocking the door.");
+    } else {
+      lf_print("Door is already unlocked.");
+    }
   =}
 
   reaction(open, ext_open) {=
-    // ... Actuate to open door.
-    if(!self->locked)
-       self->is_open = true;
+    if(!self->is_open) {
+      if (!self->locked) {
+        self->is_open = true;
+        lf_print("Opening the door.");
+      } else {
+        lf_print("Cannot open the door. It is locked.");
+      }
+    } else {
+      lf_print("Door is already open.");
+    }
   =}
 }
 
