@@ -1,11 +1,11 @@
 /**
  * This variant of the train door controller comes from this paper:
- * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability.
- * It accepts two commands, one to "close and lock" and one to "unlock and open".
- * It uses after delays to ensure that these occur in the right order.
+ * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability. It accepts
+ * two commands, one to "close and lock" and one to "unlock and open". It uses after delays to
+ * ensure that these occur in the right order.
  */
 target C {
-    keepalive: true
+  keepalive: true
 }
 
 preamble {=
@@ -63,8 +63,7 @@ reactor Door {
   input lock: bool
   input unlock: bool
   input open: bool
-  // Placeholder for local open command (not implemented).
-  physical action ext_open: bool
+  physical action ext_open: bool  // Placeholder for local open command (not implemented).
   state locked: bool = false
   state is_open: bool = false
 

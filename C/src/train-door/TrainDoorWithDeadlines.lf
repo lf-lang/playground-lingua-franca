@@ -1,15 +1,14 @@
 /**
  * This variant of the train door controller comes from this paper:
- * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability.
- * It accepts two commands, one to "lock and move" and one to "stop and unlock".
- * It uses after delays to ensure that these occur in the right order and deadlines
- * to enforce the ordering. This also includes a placeholder for a local sensor at
- * the train door that, were it implemented, would allow for locally opening the door
- * when it is unlocked. This is not implemented, however, so no mechanism is provided
- * to open the door.
+ * https://www.mdpi.com/2227-7390/8/7/1068, where it is studied for its verifiability. It accepts
+ * two commands, one to "lock and move" and one to "stop and unlock". It uses after delays to ensure
+ * that these occur in the right order and deadlines to enforce the ordering. This also includes a
+ * placeholder for a local sensor at the train door that, were it implemented, would allow for
+ * locally opening the door when it is unlocked. This is not implemented, however, so no mechanism
+ * is provided to open the door.
  */
 target C {
-    keepalive: true
+  keepalive: true
 }
 
 import Controller from "TrainDoorAsymmetric.lf"
@@ -22,16 +21,12 @@ realtime reactor Train {
   reaction(stop) {=
     self->moving = false;
     lf_print("Train stopped.");
-  =} deadline(50 msec) {=
-    lf_print_warning("Deadline violated! Ignoring stop command.");
-  =}
+  =} deadline(50 msec) {= lf_print_warning("Deadline violated! Ignoring stop command."); =}
 
   reaction(move) {=
     self->moving = true;
     lf_print("Train moving.");
-  =} deadline(48 msec) {=
-    lf_print_warning("Deadline violated! Ignoring move command.");
-  =}
+  =} deadline(48 msec) {= lf_print_warning("Deadline violated! Ignoring move command."); =}
 }
 
 realtime reactor Door {
@@ -69,7 +64,7 @@ realtime reactor Door {
   reaction(unlock) {=
     self->locked = false;
     lf_print("Door unlocked.");
- =}
+  =}
 
   reaction(external_open) {=
     if (!self->locked) {

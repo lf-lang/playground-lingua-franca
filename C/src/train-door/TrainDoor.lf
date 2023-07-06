@@ -45,7 +45,7 @@ reactor MotionDetector {
       return NULL;
     }
   =}
-  
+
   physical action movement
   state timestamp: time = 0
   input check: bool
