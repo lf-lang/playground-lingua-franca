@@ -5,8 +5,8 @@
  * timestamp cannot be assigned because the message arrived too late.
  *
  * If the sender and receiver are running in the same machine then there is no clock synchronization
- * error and the communication latency should be well less than 10msec, so an `offset` of 10 msec
- * should be plenty adequate to avoid any tardy messages. If you change the offset to 10 usec, then
+ * error and the communication latency should be well less than 10 ms, so an `offset` of 10 ms
+ * should be plenty adequate to avoid any tardy messages. If you change the offset to 10 us, then
  * tardy messages will likely occur, unless, on your machine, communication between two processes
  * can reliably occur within 10 microseconds.
  *
@@ -32,14 +32,14 @@ reactor PrintMessageWithDetector(offset: time = 10 msec) extends PrintMessage {
     // Empty. The base class will react and report the incoming message.
   =} STP(0) {=
     lf_print_warning("Message is tardy. Intended tag is (%lld, %u).",
-      message->intended_tag.time - start_time, message->intended_tag.microstep
+      message->intended_tag.time - lf_time_start(), message->intended_tag.microstep
     );
   =}
 
   reaction(local) {=
     tag_t tag = lf_tag();
     lf_print("Timer triggered at logical tag (%lld, %u).",
-      tag.time - start_time, tag.microstep
+      tag.time - lf_time_start(), tag.microstep
     );
   =}
 }

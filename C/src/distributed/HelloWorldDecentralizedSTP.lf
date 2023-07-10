@@ -28,11 +28,11 @@ import MessageGenerator from "HelloWorld.lf"
 import PrintMessageWithDetector from "HelloWorldDecentralized.lf"
 
 /** Subclass that simply adds an `STP` parameter, nothing more. */
-reactor PrintMessageWithSTP(STP_offset: time = 10 msec) extends PrintMessageWithDetector {
+reactor PrintMessageWithSTP(STP_offset: time = 10 ms) extends PrintMessageWithDetector {
 }
 
 federated reactor {
   source = new MessageGenerator(prefix = "Hello World")
-  print = new PrintMessageWithSTP(offset=0, STP_offset = 10 msec)
+  print = new PrintMessageWithSTP(offset=0, STP_offset = 10 ms)
   source.message -> print.message
 }

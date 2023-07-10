@@ -1,21 +1,17 @@
 /**
  * Distributed LF program where a MessageGenerator creates a string message that is sent via the RTI
- * (runtime infrastructure) to a receiver that prints the message.
+ * (runtime infrastructure) to a receiver that prints the message. To run this program, you must
+ * first [install the
+ * RTI](https://www.lf-lang.org/docs/handbook/distributed-execution?target=c#installation-of-the-rti).
  *
- * The code generator generates three programs:
+ * The code generator splits the program into two separate `.lf` files that it inserts into a
+ * directory called `fed-gen/HelloWorld/src` and then compiles those, inserting the executables into
+ * `fed-gen/HelloWorld/bin`. It also creates a shell script `bin/DistributedHelloWorld` that
+ * launches the the RTI and the two generated programs on localhost. Run this script.
  *
- * * bin/DistributedHelloWorld: A script that launches the other three programs on localhost. Run
- * this program.
- *
- * * bin/DistrubtedHelloWorld_source: The program that produces the sequence of messages.
- *
- * * bin/DistrubtedHelloWorld_print: The program that produces the sequence of messages.
- *
- * To run this manually, you can start the RTI and then each of the last two programs. They will
- * synchronize the start time and run for 10 seconds.
- *
- * Note: The RTI is a separate program that has to be installed separately. See
- * https://github.com/lf-lang/reactor-c/tree/main/core/federated/RTI
+ * To run this manually (without using the script), you can start the RTI and then each of the two
+ * programs in `fed-gen/HelloWorld/bin`. They will synchronize the start time and run for 10
+ * seconds.
  *
  * @author Edward A. Lee
  */
