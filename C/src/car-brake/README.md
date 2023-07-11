@@ -2,7 +2,7 @@
 
 This example illustrates a fundamental tradeoff between consistency and availability as explained in this paper:
 
-> E. A. Lee, R. Akella, S. Bateni, S. Lin, M. Lohstroh, and C. Menard, "Consistency vs. Availability in Distributed Real-Time Systems," arXiv:2301.08906 [cs.DC], January 21 2023. [Online]. Available: [https://arxiv.org/abs/2109.07771](https://arxiv.org/abs/2109.07771).
+> E. A. Lee, R. Akella, S. Bateni, S. Lin, M. Lohstroh, and C. Menard, "Consistency vs. Availability in Cyber-Physical Systems," EMSOFT, October 2023. Earlier version available at: [https://arxiv.org/abs/2109.07771](https://arxiv.org/abs/2109.07771).
 
 The scenario is an ADAS system (advanced driver assistance system), where images from a forward-looking camera are analyzed and may result in a command to sent to a car's braking system.
 These programs are sketches in that no actual image analysis or braking is performed, but rather image analysis is simulated by a reaction that sleeps for some time, emulating significant computation time.

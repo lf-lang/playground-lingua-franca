@@ -12,6 +12,10 @@ target C {
   keepalive: true
 }
 
+preamble {=
+    #include "platform.h"  // Defines PRINTF_TIME and threading functions.
+=}
+
 reactor Camera {
   timer t(20 ms, 33 ms)
   output frame: bool
@@ -41,7 +45,7 @@ reactor BrakingAssistant {
 
 reactor Braking {
   preamble {=
-    // Function to simulate the pressing of the brake pendal every 1005ms.
+    // Function to simulate the pressing of the brake pedal every 1005ms.
     bool stop_thread = false;
     void* press_pedal(void* pedal) {
       while(!stop_thread) {
