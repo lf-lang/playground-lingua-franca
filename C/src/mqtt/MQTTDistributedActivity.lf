@@ -39,7 +39,7 @@ reactor Destination {
   reaction(t) {=
     tag_t tag = lf_tag();
     lf_print("Destination: Activity at " PRINTF_TAG,
-      tag.time - start_time, tag.microstep
+      tag.time - lf_time_start(), tag.microstep
     );
   =}
 }

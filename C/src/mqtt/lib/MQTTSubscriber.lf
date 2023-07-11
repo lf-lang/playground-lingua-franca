@@ -1,5 +1,3 @@
-target C
-
 /**
  * Reactor that subscribes to a specified MQTT topic on which string messages are published. The
  * timestamp of the output will depend on the use_physical_time parameter and (if present) the
@@ -38,29 +36,42 @@ target C
  * @author Ravi Akella
  * @author Edward A. Lee
  */
+target C
+preamble {=
+  #ifndef MQTT_SUBSCRIBER_H
+  #define MQTT_SUBSCRIBER_H
+  
+  #include "platform.h" // Defines lf_critical_section_enter(), etc.
+  #include "tag.h"      // Defines lf_time_logical()
+  #include <string.h>   // Defines memcmp()
+
+  #include "MQTTClient.h"
+  #include "core/federated/net_util.h"
+
+  // Fix the QoS to indicate that the message will be delivered reliably exactly once.
+  #define QOS     2
+
+  typedef struct MQTTSubscriber_info_t {
+    void* logical_action;
+    environment_t* environment;
+    interval_t offset;
+    bool use_physical_time;
+    interval_t latencies;   // Sum of all observed latencies.
+    interval_t max_latency;
+    size_t count;
+  } MQTTSubscriber_info_t;
+  
+  #endif // MQTT_SUBSCRIBER_H
+=}
+
 reactor MQTTSubscriber(
     address: string = "tcp://localhost:1883",
     topic: string = "DefaultTopic",
     use_physical_time: bool = true,
     offset: time = 0) {
   preamble {=
-    #include "MQTTClient.h"
-    #include "core/federated/net_util.h"
-
-    // Fix the QoS to indicate that the message will be delivered reliably exactly once.
-    #define QOS     2
-
     // Count of instances of this reactor so that unique client IDs are generated.
     static size_t _lf_MQTTSubscriber_count = 0;
-
-    typedef struct MQTTSubscriber_info_t {
-      void* logical_action;
-      interval_t offset;
-      bool use_physical_time;
-      interval_t latencies;   // Sum of all observed latencies.
-      interval_t max_latency;
-      size_t count;
-    } MQTTSubscriber_info_t;
 
     // Connection options for the client.
     // Making this global means that all instances of this reactor have
@@ -85,10 +96,12 @@ reactor MQTTSubscriber(
 
       // Enter a critical section so that logical time does not elapse while
       // we calculate the delay to the logical time for the message.
-      lf_critical_section_enter();
+      // Since this is outside the scope of a reaction, we have to explicitly
+      // pass in the environment.
+      lf_critical_section_enter(my_info->environment);
 
       interval_t delay;
-      instant_t current_time = lf_time_logical();
+      instant_t current_time = lf_time_logical(my_info->environment);
       interval_t offset = my_info->offset;
 
       // Extract the publisher's timestamp from the message, if it is present.
@@ -150,7 +163,7 @@ reactor MQTTSubscriber(
         " ahead of current (elapsed) time, " PRINTF_TIME, delay, current_time - lf_time_start()
       );
 
-      lf_critical_section_exit();
+      lf_critical_section_exit(my_info->environment);
 
       // MQTTClient_freeMessage() also frees the memory allocated to the payload,
       // which is why we have to copy the message here.
@@ -186,7 +199,7 @@ reactor MQTTSubscriber(
   state client: MQTTClient = {= NULL =}
 
   /** Struct containing the action and offset. */
-  state info: MQTTSubscriber_info_t = {= {NULL, 0LL, false, 0LL, 0LL, 0} =}
+  state info: MQTTSubscriber_info_t = {= {NULL, NULL, 0LL, false, 0LL, 0LL, 0} =}
 
   reaction(startup) -> act {=
     int rc; // response code.
@@ -197,7 +210,7 @@ reactor MQTTSubscriber(
 
     // In case there are multiple instances of this or the subscriber, enter
     // a critical section. The Paho MQTT functions are not thread safe.
-    lf_critical_section_enter();
+    lf_critical_section_enter(self->base.environment);
 
     rc = MQTTClient_create(
       &self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL
@@ -211,6 +224,7 @@ reactor MQTTSubscriber(
     sub_connect_options.cleansession = 1;
 
     self->info.logical_action = act;
+    self->info.environment = self->base.environment;
     self->info.offset = self->offset;
     self->info.use_physical_time = self->use_physical_time;
 
@@ -230,7 +244,7 @@ reactor MQTTSubscriber(
 
     MQTTClient_subscribe(self->client, self->topic, QOS);
 
-    lf_critical_section_exit();
+    lf_critical_section_exit(self->base.environment);
   =}
 
   reaction(act) -> message {=

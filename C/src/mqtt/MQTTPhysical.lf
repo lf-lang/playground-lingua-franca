@@ -13,9 +13,9 @@
  */
 target C {
   cmake-include: [
-      "include/paho-extension.cmake",  // For #include "MQTTClient.h"
-      // For encode_int64()
-      "include/net_utils.cmake"],
+    "include/paho-extension.cmake",  // For #include "MQTTClient.h"
+    "include/net_utils.cmake"        // For encode_int64() and extract_int64()
+  ],
   timeout: 10 secs
 }
 

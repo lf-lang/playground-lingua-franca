@@ -1,5 +1,3 @@
-target C
-
 /**
  * Reactor that publishes strings (or arbitrary byte arrays cast to `char*`) to a specified MQTT
  * topic.
@@ -27,15 +25,34 @@ target C
  * @author Ravi Akella
  * @author Edward A. Lee
  */
+target C
+
+preamble {=
+  #ifndef MQTT_PUBLISHER_H
+  #define MQTT_PUBLISHER_H
+  
+  #include "platform.h" // Defines lf_critical_section_enter(), etc.
+  #include "tag.h"      // Defines lf_time_logical()
+  #include <string.h>   // Defines memcpy
+
+  #include "MQTTClient.h"
+  #include "core/federated/net_util.h"
+
+  // Struct type used to keep track of messages in flight between reactions.
+  typedef struct inflight_t {
+    bool message_in_flight;
+    MQTTClient_deliveryToken delivery_token;
+    char* message;
+  } inflight_t;
+  #endif // MQTT_PUBLISHER_H
+=}
+
 reactor MQTTPublisher(
     topic: string = "DefaultTopic",
     address: string = "tcp://localhost:1883",
     include_timestamp: bool = false,
     timeout: time = 10 sec) {
   preamble {=
-    #include "MQTTClient.h"
-    #include "core/federated/net_util.h"
-
     // Count of instances of this reactor so that unique client IDs are generated.
     static size_t _lf_MQTTPublisher_count = 0;
 
@@ -43,13 +60,6 @@ reactor MQTTPublisher(
     // Making this global means that all instances of this reactor have
     // the same connection options.
     MQTTClient_connectOptions pub_connect_options = MQTTClient_connectOptions_initializer;
-
-    // Struct type used to keep track of messages in flight between reactions.
-    typedef struct inflight_t {
-      bool message_in_flight;
-      MQTTClient_deliveryToken delivery_token;
-      char* message;
-    } inflight_t;
 
     // Callback invoked once delivery is complete.
     void pub_delivered(void *inflight, MQTTClient_deliveryToken dt) {
@@ -87,7 +97,7 @@ reactor MQTTPublisher(
   reaction(startup) {=
     // In case there are multiple instances of this or the subscriber, enter
     // a critical section. The Paho MQTT functions are not thread safe.
-    lf_critical_section_enter();
+    lf_critical_section_enter(self->base.environment);
 
     // Create a unique ID.
     if (asprintf(&self->clientID, "LF_MQTTPublisher_%zu", _lf_MQTTPublisher_count++) < 0) {
@@ -113,7 +123,7 @@ reactor MQTTPublisher(
           "Perhaps one is not running? Return code: %d", rc);
     }
 
-    lf_critical_section_exit();
+    lf_critical_section_exit(self->base.environment);
 
     LF_PRINT_LOG("MQTTPublisher: connected to broker.");
   =}
@@ -127,7 +137,7 @@ reactor MQTTPublisher(
   reaction(in) {=
     // In case there are multiple instances of this or the subscriber, enter
     // a critical section. The Paho MQTT functions are not thread safe.
-    lf_critical_section_enter();
+    lf_critical_section_enter(self->base.environment);
 
     if(self->inflight.message_in_flight) {
       // Wait for message delivery to be complete.
@@ -192,7 +202,7 @@ reactor MQTTPublisher(
     MQTTClient_publishMessage(self->client, self->topic, &self->mqtt_msg, &self->inflight.delivery_token);
     self->inflight.message_in_flight = true;
 
-    lf_critical_section_exit();
+    lf_critical_section_exit(self->base.environment);
 
     // It is not clear why the following is needed, but the message
     // does not go out until the next invocation without it.

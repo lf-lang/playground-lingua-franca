@@ -6,6 +6,10 @@
  */
 target C
 
+preamble {=
+    #include "platform.h" // Defines PRINTF_TAG.
+=}
+
 /**
  * Reactor that generates a sequence of messages, one per second. The message will be a string
  * consisting of a root string followed by a count.
