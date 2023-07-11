@@ -11,8 +11,8 @@ target C {
   docker: true
 }
 
-import MessageGenerator from "../HelloWorld.lf"
-import PrintMessage from "../HelloWorld.lf"
+import MessageGenerator from "../distributed/HelloWorld.lf"
+import PrintMessage from "../distributed/HelloWorld.lf"
 
 federated reactor HelloWorldContainerized at rti {
   source = new MessageGenerator(prefix = "Hello World")
