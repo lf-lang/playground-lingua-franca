@@ -22,6 +22,10 @@ target C {
   timeout: 5 s
 }
 
+preamble {=
+    #include "platform.h"  // Defines PRINTF_TIME and lf_sleep.
+=}
+
 reactor Sensor {
   output y: int
   state count: int = 0
