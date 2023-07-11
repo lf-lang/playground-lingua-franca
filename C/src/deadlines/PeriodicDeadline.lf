@@ -23,7 +23,7 @@ target C {
 }
 
 preamble {=
-    #include "platform.h"  // Defines PRINTF_TIME and lf_sleep.
+  #include "platform.h"  // Defines PRINTF_TIME and lf_sleep.
 =}
 
 reactor Sensor {

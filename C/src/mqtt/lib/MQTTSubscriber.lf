@@ -37,10 +37,11 @@
  * @author Edward A. Lee
  */
 target C
+
 preamble {=
   #ifndef MQTT_SUBSCRIBER_H
   #define MQTT_SUBSCRIBER_H
-  
+
   #include "platform.h" // Defines lf_critical_section_enter(), etc.
   #include "tag.h"      // Defines lf_time_logical()
   #include <string.h>   // Defines memcmp()
@@ -60,7 +61,7 @@ preamble {=
     interval_t max_latency;
     size_t count;
   } MQTTSubscriber_info_t;
-  
+
   #endif // MQTT_SUBSCRIBER_H
 =}
 
