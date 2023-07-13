@@ -27,7 +27,7 @@ if [ ! -d "lingua-franca" ]; then
         ;;
         *) 
             echo "::step:: Getting lf executable......"
-            python3 ./.scripts/get-lf-executable $RELEASE_BUILD
+            python3 "$(dirname $0)/get-lf-executable" $RELEASE_BUILD
             mkdir lingua-franca
             # While what we have here is tar.gz, lf release bot appear to have a bug and did not gunzip it.
             # Therefore `tar -xzf` will fail but `tar -xf` will work.

@@ -1,11 +1,11 @@
 image:
-  file: dockerfiles/gitpod-base.Dockerfile
+  file: utils/dockerfiles/gitpod-base.Dockerfile
 
 ## Example is handled separately in GitPod for faster initialization.
 tasks:
   - name: Setup LF
     init: |
-      bash ./.scripts/setup-lf.bash $RELEASE_BUILD
+      bash ./utils/scripts/setup-lf.bash $RELEASE_BUILD
       gp sync-done setup-lf
     command: exit
   - name: Setup Example
@@ -13,7 +13,7 @@ tasks:
     command: exit
   - name: Setup Java and node.js for user
     init: |
-      bash -i ./.scripts/setup-user-env.bash
+      bash -i ./utils/scripts/setup-user-env.bash
       gp sync-done setup-user-env
     command: exit
 ## Dirty hack, https://github.com/gitpod-io/gitpod/issues/9275#issuecomment-1098275529
