@@ -1,0 +1,33 @@
+{
+    "build": {
+      "dockerfile": "../../dockerfiles/github-codespace.Dockerfile",
+      // Needed to access .scripts directory, see https://containers.dev/implementors/json_reference/#image-specific
+      "context": "../.."
+    },
+    "hostRequirements": {
+      "cpus": 1
+    },
+    // Uncomment this line if GitHub displays no enough space
+    "waitFor": "postCreateCommand",
+    "updateContentCommand": "",
+    "postCreateCommand": {
+      "setup-lf": "bash -i ./.scripts/setup-user-env.bash && bash ./.scripts/setup-lf.bash nightly",
+      "setup-examples": "git clone https://github.com/lf-lang/examples-lingua-franca.git examples --branch main" 
+    }, 
+    "workspaceFolder": "/workspaces/lingua-franca-playground",
+    "remoteEnv": {
+        // Unsure if this is a good idea, as other people might fork this and change name
+        "LF_PATH": "${containerWorkspaceFolder}/lingua-franca",
+        "PATH": "${containerEnv:PATH}:${containerWorkspaceFolder}/lingua-franca/bin"
+    },
+    "customizations": {
+      "codespaces": {
+        "openFiles": []
+      },
+      "vscode": {
+        "extensions": [
+          "lf-lang.vscode-lingua-franca"
+        ]
+      }
+    }
+  }

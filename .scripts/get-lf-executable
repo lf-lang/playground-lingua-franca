@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+
+# This script downloads the latest stable or nightly release from GitHub to file lf.tar.gz; 
+# the first argument will be used to determine which version is to be downloaded,
+# "nightly" will be the default if no argument is supplied.
+
+import json
+import requests
+import sys
+
+NIGHTLY_JSON_URL = "https://api.github.com/repos/lf-lang/lingua-franca/releases/tags/nightly"
+STABLE_JSON_URL = "https://api.github.com/repos/lf-lang/lingua-franca/releases/latest"
+VER_TO_URL = {"nightly": NIGHTLY_JSON_URL, "stable": STABLE_JSON_URL}
+
+# https://stackoverflow.com/a/16696317
+def download_file(filename: str, url: str):
+    # NOTE the stream=True parameter below
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+def main(version: str):
+    if version not in VER_TO_URL:
+        raise ValueError("Version {0} not valid.".format(version))
+    url = VER_TO_URL[version]
+    r = requests.get(url)
+    assert r.ok
+    gh_response_json = r.json()
+
+    execucable_url: str
+    # Get URL of the tar.gz that looks like lf-*.gar.gz
+    for asset in gh_response_json["assets"]:
+        if asset["name"].startswith("lf") and asset["name"].endswith(".tar.gz"):
+            execucable_url = asset["browser_download_url"]
+
+    download_file("lf.tar.gz", execucable_url)
+
+if __name__ == "__main__":
+    main(sys.argv[1] if len(sys.argv) >= 2 else "nightly")
