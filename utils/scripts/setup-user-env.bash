@@ -51,6 +51,16 @@ install_nvm(){
     npm install --global typescript pnpm
 }
 
+setup_ros(){
+    # This is not a portable solution......
+    potential_setup_path="$(set -- /opt/ros/*/setup.bash; printf "%s" "$1")"
+    # Check if ROS is installed
+    if [ -f "${potential_setup_path}" ] && ! (grep -m 1 -q "/opt/ros" ~/.bashrc); then
+        echo "\. ${potential_setup_path}" >> ~/.bashrc
+    fi
+}
+
 install_sdk & 
 install_nvm &
+setup_ros
 wait
