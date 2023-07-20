@@ -16,12 +16,6 @@ jobs:
           echo "$JAVA_HOME_17_X64/bin" >> $GITHUB_PATH
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
         shell: bash
-    #   - name: Install ROS2
-    #     uses: lf-lang/lingua-franca/.github/actions/setup-ros2@master
-    #   - name: Setup ROS2
-    #     run: | 
-    #       source /opt/ros/*/setup.bash
-    #       printenv >> "$GITHUB_ENV"
       - name: Setup environment
         run: |
           source ./utils/scripts/setup-env.bash
