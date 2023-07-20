@@ -19,11 +19,16 @@ jobs:
       - name: Setup environment
         run: |
           source ./utils/scripts/setup-env.bash
+      - name: Run ROS setup script
+        run: |
+          source /opt/ros/*/setup.bash
+          printenv >> "$GITHUB_ENV"
+        shell: bash
       - uses: lf-lang/action-check-lf-files@main
         with:
           check_mode: "compile"
           no_compile_flag: false
-          exclude_dirs: '["failing", "experimental"]'
+          exclude_dirs: '["failing", "experiments"]'
   check-format:
     runs-on: ubuntu-latest
     steps:
@@ -36,4 +41,4 @@ jobs:
       - uses: lf-lang/action-check-lf-files@main
         with:
           check_mode: "format"
-          exclude_dirs: '["failing", "experimental"]'
+          exclude_dirs: '["failing", "experiments"]'
