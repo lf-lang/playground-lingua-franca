@@ -7,6 +7,10 @@
  */
 target CCpp
 
+preamble {=
+  #include "types.h"
+=}
+
 reactor AuthSim {
   input in: LockCommand
   output out: LockCommand

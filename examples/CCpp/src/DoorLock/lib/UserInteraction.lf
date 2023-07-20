@@ -13,30 +13,6 @@ target C {
 
 preamble {=
   #include "types.h"
-
-  void* read_input(void* user_response) {
-    lf_print("****************************************************\n"
-      "Press the following keys for the following actions:\n"
-      "  o - OPEN the door\n"
-      "  c - CLOSE the door\n"
-      "  l - LOCK using door button\n"
-      "  u - UNLOCK using door button\n"
-      "  f - LOCK using wireless key fob\n"
-      "  r - UNLOCK using wireless key fob\n"
-      "  m - LOCK using mobile device\n"
-      "  n - UNLOCK using mobile device\n"
-    );
-    int c;
-    while(1) {
-      while((c = getchar()) != '\n') {
-        lf_schedule_copy(user_response, 0, &c, 1);
-        if (c == EOF) break;
-      }
-
-      if (c == EOF) break;
-    }
-    return NULL;
-  }
 =}
 
 reactor UserInteraction {
@@ -46,6 +22,34 @@ reactor UserInteraction {
   output mobile: LockCommand
 
   physical action key: int
+
+  preamble {=
+    #include "platform.h"
+
+    void* read_input(void* user_response) {
+      lf_print("****************************************************\n"
+        "Press the following keys for the following actions:\n"
+        "  o - OPEN the door\n"
+        "  c - CLOSE the door\n"
+        "  l - LOCK using door button\n"
+        "  u - UNLOCK using door button\n"
+        "  f - LOCK using wireless key fob\n"
+        "  r - UNLOCK using wireless key fob\n"
+        "  m - LOCK using mobile device\n"
+        "  n - UNLOCK using mobile device\n"
+      );
+      int c;
+      while(1) {
+        while((c = getchar()) != '\n') {
+          lf_schedule_copy(user_response, 0, &c, 1);
+          if (c == EOF) break;
+        }
+
+        if (c == EOF) break;
+      }
+      return NULL;
+    }
+  =}
 
   reaction(startup) -> key {=
     // start new thread

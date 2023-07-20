@@ -11,15 +11,17 @@ target C {
 preamble {=
   #include <stdio.h>
   #include "platform.h" // Defines thread types and functions.
-  struct {
+  typedef struct {
     void* move;
     void* open;
     void* close;
-  } buttons;
+  } buttons_t;
+  extern buttons_t buttons;
 =}
 
 reactor MotionDetector {
   preamble {=
+    buttons_t buttons;
     void* read_input(void* arg) {
       printf("***************************************************************\n");
       printf("Press 'o' and hit return or enter to open the door\n");
