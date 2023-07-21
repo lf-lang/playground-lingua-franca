@@ -17,12 +17,9 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
         shell: bash
       - name: Setup environment
-        run: |
-          source ./utils/scripts/setup-env.bash
-      - name: Run ROS setup script
-        run: |
-          source /opt/ros/*/setup.bash
-          printenv >> "$GITHUB_ENV"
+        run: ./utils/scripts/setup-env.bash
+      - name: Make environment variables persistent
+        run: printenv >> "$GITHUB_ENV"
         shell: bash
       - uses: lf-lang/action-check-lf-files@main
         with:
