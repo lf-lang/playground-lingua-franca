@@ -1,2 +1,4 @@
-This directory contains experimental programs. The LF team uses it internally to demonstrate
-proposed features or APIs. **Not all programs in this directory should be expected to compile.**
+# Experiments
+This directory contains experimental Lingua Franca programs. Active developers use it internally to demonstrate proposed language features, patterns, or APIs. 
+
+Please beware, **not all programs in this directory should be expected to compile.**
