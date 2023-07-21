@@ -40,6 +40,10 @@ reactor Client(seed: int = 0, lambda: double = 10000000.0) {
   output request: time
   p = new PoissonClock(seed=seed, lambda=lambda)
 
+  preamble {=
+    #include "platform.h" // Defines PRINTF_TIME
+  =}
+
   reaction(p.event) -> request {= lf_set(request, lf_time_logical_elapsed()); =}
 
   reaction(response) {=

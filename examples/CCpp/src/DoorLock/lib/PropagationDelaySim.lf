@@ -9,11 +9,16 @@ target CCpp
 
 preamble {=
   #include <stdlib.h>   /* srand, rand */
+  #include "types.h"
 =}
 
 reactor PropagationDelaySim(min_delay: time = 100 msec) {
   input in: LockCommand
   output out: LockCommand
+
+  preamble {=
+    #include "platform.h"
+  =}
 
   reaction(startup) {=
     // Seed the random number generator.
@@ -21,7 +26,7 @@ reactor PropagationDelaySim(min_delay: time = 100 msec) {
   =}
 
   reaction(in) -> out {=
-    lf_nanosleep((rand()%10+1) * self->min_delay);
+    lf_sleep((rand()%10+1) * self->min_delay);
     lf_set(out, in->value);
   =}
 }

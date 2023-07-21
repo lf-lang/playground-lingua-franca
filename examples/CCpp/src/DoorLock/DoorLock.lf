@@ -23,6 +23,7 @@ preamble {=
   #include "types.h"
   #include <iostream>
   #include <string.h>
+  #include "platform.h"
 =}
 
 reactor DoorLockController {
