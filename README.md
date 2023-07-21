@@ -7,4 +7,4 @@ The examples are organized by target language:
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/new#https://github.com/lf-lang/examples-lingua-franca/tree/main)
 
-**NOTE**: Examples located in the `experiments` directory may not work as expected or may require the installation of additional dependencies.
+**NOTE**: Code located in the `experiments` directory may not work as expected or may require the installation of additional dependencies.
