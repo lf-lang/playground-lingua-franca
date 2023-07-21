@@ -12,7 +12,7 @@ A web-based VS Code editor, preloaded with the Lingua Franca extension, is acces
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/new#https://github.com/lf-lang/playground-lingua-franca/tree/main)
 
-Once in Codespaces or GitPod, navigate to [./examples](./examples) and click on any of the `.lf` files to open them into your editor. To build and run, use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> and select `Lingua Franca: Build and Run`.
+Once in Codespaces or GitPod, navigate to [./examples](./examples) and click on any of the `.lf` files to open them in the editor. To build and run, use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> and select `Lingua Franca: Build and Run`.
 
 #### :wrench: Alternate GitHub Codespaces configurations
 The default Codespaces configuration installs the nightly-built version of the Lingua Franca toolchain and checks out our examples repository. Links to alternate configurations are available below.
