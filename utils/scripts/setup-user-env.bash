@@ -1,7 +1,7 @@
 #!/bin/bash -i
 # This script specifically detects and set up nvm and SDKMAN in bash environment, and install
 # needed components for LF
-set -euxo pipefail
+set -ux
 
 # Check if SDK is installed like what SDKMAN installer does
 install_sdk(){

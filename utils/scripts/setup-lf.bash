@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script sets up LF runtime.
-set -euxo pipefail
+set -ux
 
 RELEASE_BUILD="nightly"
 EXAMPLE=0
