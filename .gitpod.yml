@@ -4,21 +4,19 @@ image:
 ## Example is handled separately in GitPod for faster initialization.
 tasks:
   - name: Setup LF
-    init: |
+## Fetch fresh LF and don't build it into prebuilts.
+    command: |
       bash ./utils/scripts/setup-lf.bash $RELEASE_BUILD
       gp sync-done setup-lf
-    command: exit
-  - name: Setup Example
-    init: git clone https://github.com/lf-lang/examples-lingua-franca.git examples --branch main
-    command: exit
+      exit
   - name: Setup Java and node.js for user
-    init: |
+    command: |
       bash -i ./utils/scripts/setup-user-env.bash
       gp sync-done setup-user-env
-    command: exit
+      exit
 ## Dirty hack, https://github.com/gitpod-io/gitpod/issues/9275#issuecomment-1098275529
   - name: Setup env
-    before: >
+    command: >
       printf 'export PATH="%s:$PATH"; export LF_PATH="%s";\n' "${GITPOD_REPO_ROOT}/lingua-franca/bin" "${GITPOD_REPO_ROOT}/lingua-franca/" >> $HOME/.bashrc && exit
   - name: Notificaton
     command: |
@@ -27,7 +25,6 @@ tasks:
       gp sync-await setup-user-env
       \. ~/.bashrc
       echo "Enjoy!"
-
 
 vscode: 
   extensions:
