@@ -1,0 +1,50 @@
+name: check-devcontainer
+on:
+  # No need to run on main, because prebuild will trigger itself.
+  pull_request:
+  workflow_dispatch: 
+
+# https://how.wtf/run-workflow-step-or-job-based-on-file-changes-github-actions.html
+jobs:
+  check-devcontainer-changed:
+    runs-on: ubuntu-latest
+    outputs:
+      devcontainer: ${{ steps.changes.outputs.devcontainer }}
+      docker: ${{ steps.changes.outputs.docker }}
+      scripts: ${{ steps.changes.outputs.scripts }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            devcontainer:
+              - '.devcontainer/**'
+            docker:
+              - 'utils/dockerfiles/**'
+            scripts:
+              - 'utils/scripts/**'
+
+  build-devcontainer:
+    needs: check-devcontainer-changed
+    if: ${{ needs.changes.outputs.devcontainer == 'true' }} || ${{ needs.changes.outputs.docker == 'true' }} || ${{ needs.changes.outputs.scripts == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v3
+      - name: make log
+        run: |
+          mkdir -p /home/runner/logs
+      # See the mount section. This is a very bad and weird hack as of now.
+      - name: Edit devcontainer.json to let it mount correctly.
+        run: |
+          sed --in-place 's/\/\/ REMOVE-BY-CI //' .devcontainer/devcontainer.json
+          cat .devcontainer/devcontainer.json
+      - uses: devcontainers/ci@v0.3
+        with:
+          runCmd: lfc --version
+      - name: Show failure reason
+        if: failure()
+        run: |
+          echo "Failure reason:"
+          cat /home/runner/logs/*.log
