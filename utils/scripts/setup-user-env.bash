@@ -1,6 +1,8 @@
 #!/bin/bash -i
-# This script specifically detects and set up nvm and SDKMAN in bash environment, and install
-# needed components for LF
+# This script specifically detects and set up nvm and SDKMAN in bash environment, and install needed components for LF.
+# The sad fact is that while this script should not at all be an interactive shell, both NVM and SDK puts, by default, their settings in .bashrc, which is inappropriate, and we need some parts of it to check if the installation is complete.
+# There are many side effects of a login shell, logging history is just one - but at least we need to turn it off!
+unset HISTFILE
 set -ux
 
 # Check if SDK is installed like what SDKMAN installer does
