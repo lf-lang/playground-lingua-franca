@@ -14,6 +14,10 @@ tasks:
       bash -i ./utils/scripts/setup-user-env.bash
       gp sync-done setup-user-env
       exit
+  - name: Setup .gitignore
+    command: |
+      echo 'lingua-franca/**' >> .gitignore
+      exit
 ## Dirty hack, https://github.com/gitpod-io/gitpod/issues/9275#issuecomment-1098275529
   - name: Setup env
     command: >
