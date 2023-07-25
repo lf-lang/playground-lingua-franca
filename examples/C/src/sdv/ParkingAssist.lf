@@ -34,6 +34,7 @@
  */
 target C {
   keepalive: true,
+  cmake-include: ["curses.cmake"]
 }
 
 import WebSocketServer from "../browser-ui/WebSocketServer.lf"
@@ -196,8 +197,4 @@ main reactor {
   s.speed -> d.speed
   s.front_distance -> d.front_distance
   s.front_distance -> a.front_distance
-  
-  reaction(startup) {=
-    lf_print("***** Started servers. Open ParkingAssist.html in a browser.");
-  =}
 }
