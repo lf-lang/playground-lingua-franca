@@ -31,7 +31,7 @@
       },
       "vscode": {
         "extensions": [
-          "lf-lang.vscode-lingua-franca",
+          "lf-lang.vscode-lingua-franca@prerelease",
           "kieler.klighd-vscode"
         ]
       }
