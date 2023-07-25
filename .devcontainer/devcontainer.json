@@ -23,7 +23,8 @@
     "remoteEnv": {
         // Unsure if this is a good idea, as other people might fork this and change name
         "LF_PATH": "${containerWorkspaceFolder}/lingua-franca",
-        "PATH": "${containerEnv:PATH}:${containerWorkspaceFolder}/lingua-franca/bin"
+        // We must include SDKMAN here, because otherwise node which VSCode uses will disregard new java installed by SDKMAN, LF extension will get confused and use the old version.
+        "PATH": "${containerWorkspaceFolder}/lingua-franca/bin:/home/vscode/.sdkman/candidates/java/current/bin:${containerEnv:PATH}"
     },
     "customizations": {
       "codespaces": {
