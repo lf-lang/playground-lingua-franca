@@ -198,5 +198,4 @@ main reactor {
   s.front_distance -> a.front_distance
 
   reaction(startup) {= lf_print("***** Started servers. Open ParkingAssist.html in a browser."); =}
-
 }
