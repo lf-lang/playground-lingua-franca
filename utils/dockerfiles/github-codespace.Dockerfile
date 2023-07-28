@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/devcontainers/base:jammy
 
 COPY utils/scripts scripts
-# RUN bash ./scripts/setup-env.bash
+RUN bash ./scripts/setup-env.bash
     # GitHub Codespaces container specific Java commands
     # Uncomment this line if you want SDKMAN to be installed with Docker.
     # A better way is to run setup-user-env
