@@ -5,9 +5,9 @@
  * "/foo". If there is nothing after the first slash or no first slash, then this reactor will
  * instead return the contents of the initial_file parameter, output true on the initialized output,
  * and output nothing on the request output.
- * 
- * @param initial_file Path to the initial HTML file to serve, relative to the source directory.
- * Defaults to "page.html".
+ *
+ * @param initial_file Path to the initial HTML file to serve, relative to the source directory of
+ * the main reactor. Defaults to "page.html".
  * @param hostport The host port number, which defults to 8080.
  *
  * @author Edward A. Lee
