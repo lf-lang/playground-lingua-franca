@@ -27,7 +27,7 @@ jobs:
 
   build-devcontainer:
     needs: check-devcontainer-changed
-    if: ${{ needs.changes.outputs.devcontainer == 'true' }} || ${{ needs.changes.outputs.docker == 'true' }} || ${{ needs.changes.outputs.scripts == 'true' }}
+    if: ${{ needs.changes.outputs.devcontainer == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.scripts == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (GitHub)
