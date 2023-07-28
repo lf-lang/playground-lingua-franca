@@ -36,8 +36,9 @@ target C {
   keepalive: true
 }
 
-import WebSocketServer from "../browser-ui/WebSocketServer.lf"
+import WebSocketServer from "../lib/WebSocketServer.lf"
 import PlayWaveform from "../rhythm/PlayWaveform.lf"
+import ServerUI from "../lib/ServerUI.lf"
 
 /**
  * Emulator for automotive sensors. It outputs sensor data periodically with the specified sample
@@ -193,9 +194,8 @@ main reactor {
   s = new Sensors()
   d = new Dashboard()
   a = new SoundAlert()
+  p = new ServerUI(initial_file="ParkingAssist.html")
   s.speed -> d.speed
   s.front_distance -> d.front_distance
   s.front_distance -> a.front_distance
-
-  reaction(startup) {= lf_print("***** Started servers. Open ParkingAssist.html in a browser."); =}
 }

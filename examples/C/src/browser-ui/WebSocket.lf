@@ -16,11 +16,10 @@
  * @author Edward A. Lee
  */
 target C {
-  keepalive: true,
-  cmake-include: ["WebSocketCmake.txt"]
+  keepalive: true
 }
 
-import WebSocketServer from "WebSocketServer.lf"
+import WebSocketServer from "../lib/WebSocketServer.lf"
 
 preamble {=
   #include "hashset/hashset.h"  // For storing web socket instances that are connected.
