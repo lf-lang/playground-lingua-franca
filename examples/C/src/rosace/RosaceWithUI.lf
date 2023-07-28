@@ -50,7 +50,7 @@ target C {
 
 import Aircraft from "AircraftSimulator.lf"
 import RosaceController from "RosaceController.lf"
-import ServerUI from "../browser-ui/BrowserUI.lf"
+import ServerUI from "../lib/ServerUI.lf"
 
 preamble {=
   // Shared constants.
