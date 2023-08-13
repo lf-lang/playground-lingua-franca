@@ -26,7 +26,7 @@
  * them fail on their own. The program should also be extended to include STP violation handlers to
  * deal with the fundamental CAL theorem limitations, where unexpected network delays make it
  * impossible to execute the program as designed. For example, if the network becomes partitioned,
- * then it becomes possible to have two primary nodes simultaenously active.
+ * then it becomes possible to have two primary nodes simultaneously active.
  *
  * @author Edward A. Lee
  * @author Marjan Sirjani
