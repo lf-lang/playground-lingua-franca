@@ -1,0 +1,201 @@
+/**
+ * This program models a redundant fault tolerant system where a primary node, if and when it fails,
+ * is replaced by one of several backup nodes. The protocol is described in this paper:
+ *
+ * Bjarne Johansson; Mats Rågberger; Alessandro V. Papadopoulos; Thomas Nolte, "Heartbeat Bully:
+ * Failure Detection and Redundancy Role Selection for Network-Centric Controller," Proc. of the
+ * 46th Annual Conference of the IEEE Industrial Electronics Society (IECON), 8-21 October 2020.
+ * https://doi.org/10.1109/IECON43393.2020.9254494
+ *
+ * The program has a bank of redundant nodes where exactly one is the primary node and the rest are
+ * backups. The primary node is always the one with the highest bank index that has not failed. The
+ * primary sends a heartbeat message once per second (by default). When the primary fails, a leader
+ * election protocol selects a new primary which then starts sending heartbeat messages. The program
+ * is set so that each primary fails after sending three heartbeat messages. When all nodes have
+ * failed, then the program exits.
+ *
+ * This example is designed to be run as a federated program with decentralized coordination.
+ * However, as of this writing, bugs in the federated code generator cause the program to fail to
+ * compile when you change it to be federated. See:
+ *
+ * - https://github.com/lf-lang/lingua-franca/issues/1942
+ * - https://github.com/lf-lang/lingua-franca/issues/1940
+ *
+ * When these bugs are fixed, then the federated version should operate exactly the same as the
+ * unfederated version except that it will become possible to kill the federates instead of having
+ * them fail on their own. The program should also be extended to include STP violation handlers to
+ * deal with the fundamental CAL theorem limitations, where unexpected network delays make it
+ * impossible to execute the program as designed. For example, if the network becomes partitioned,
+ * then it becomes possible to have two primary nodes simultaenously active.
+ *
+ * @author Edward A. Lee
+ * @author Marjan Sirjani
+ */
+target C
+
+preamble {=
+  enum message_type {
+    heartbeat,
+    reveal,
+    sorry
+  };
+  typedef struct message_t {
+    enum message_type type;
+    int id;
+  } message_t;
+=}
+
+reactor Node(
+    bank_index: int = 0,
+    num_nodes: int = 3,
+    heartbeat_period: time = 1 s,
+    max_missed_heartbeats: int = 2,
+    primary_fails_after_heartbeats: int = 3) {
+  input[num_nodes] in: message_t
+  output[num_nodes] out: message_t
+
+  state heartbeats_missed: int = 0
+  state primary_heartbeats_counter: int = 0
+
+  initial mode Idle {
+    reaction(startup) -> reset(Backup), reset(Primary) {=
+      if (self->bank_index == self->num_nodes - 1) {
+        lf_set_mode(Primary);
+      } else {
+        lf_set_mode(Backup);
+      }
+    =}
+  }
+
+  mode Backup {
+    timer t(heartbeat_period, heartbeat_period)
+    reaction(in) -> out, reset(Prospect) {=
+      int primary_id = -1;
+      for (int i = 0; i < in_width; i++) {
+        if (in[i]->is_present && in[i]->value.id != self->bank_index) {
+          if (in[i]->value.type == heartbeat) {
+            if (primary_id >= 0) {
+              lf_print_error("Multiple primaries detected!!");
+            }
+            primary_id = in[i]->value.id;
+            lf_print("Node %d received heartbeat from node %d.", self->bank_index, primary_id);
+            self->heartbeats_missed = 0;
+          } else if (in[i]->value.type == reveal && in[i]->value.id < self->bank_index) {
+            // NOTE: This will not occur if the LF semantics are followed because
+            // all nodes will (logically) simultaneously detect heartbeat failure and
+            // transition to the Prospect mode.  But we include this anyway in case
+            // a federated version experiences a fault.
+
+            // Send a sorry message.
+            message_t message;
+            message.type = sorry;
+            message.id = self->bank_index;
+            lf_set(out[in[i]->value.id], message);
+            lf_print("Node %d sends sorry to node %d", self->bank_index, in[i]->value.id);
+            // Go to Prospect mode to send reveal to any higher-priority nodes.
+            lf_set_mode(Prospect);
+          }
+        }
+      }
+      // FIXME
+      // =} STP (0) {=
+      // FIXME: What should we do here.
+      //  lf_print_error("Node %d had an STP violation. Ignoring heartbeat as if it didn't arrive at all.", self->bank_index);
+    =}
+
+    reaction(t) -> reset(Prospect) {=
+      if (self->heartbeats_missed > self->max_missed_heartbeats) {
+        lf_set_mode(Prospect);
+      }
+      // Increment the counter so if it's not reset to 0 by the next time,
+      // we detect the missed heartbeat.
+      self->heartbeats_missed++;
+    =}
+  }
+
+  mode Primary {
+    timer heartbeat(0, heartbeat_period)
+    reaction(heartbeat) -> out, reset(Failed) {=
+      if (self->primary_heartbeats_counter++ >= self->primary_fails_after_heartbeats) {
+        // Stop sending heartbeats.
+        lf_print("**** Primary node %d fails.", self->bank_index);
+        lf_set_mode(Failed);
+      } else {
+        lf_print("Primary node %d sends heartbeat.", self->bank_index);
+        for (int i = 0; i < out_width; i++) {
+          if (i != self->bank_index) {
+            message_t message;
+            message.type = heartbeat;
+            message.id = self->bank_index;
+            lf_set(out[i], message);
+          }
+        }
+      }
+    =}
+  }
+
+  mode Failed {
+  }
+
+  mode Prospect {
+    logical action wait_for_sorry
+    reaction(reset) -> out, wait_for_sorry {=
+      lf_print("***** Node %d entered Prospect mode.", self->bank_index);
+      // Send a reveal message with my ID in a bid to become primary.
+      // NOTE: It is not necessary to send to nodes that have a lower
+      // priority than this node, but the connection is broadcast, so
+      // we send to all.
+      message_t message;
+      message.type = reveal;
+      message.id = self->bank_index;
+      for (int i = self->bank_index + 1; i < self->num_nodes; i++) {
+        lf_print("Node %d sends reveal to node %d", self->bank_index, i);
+        lf_set(out[i], message);
+      }
+      // The reveal message is delayed by heartbeat_period, and if
+      // there is a sorry response, it too will be delayed by heartbeat_period,
+      // so the total logical delay is twice heartbeat_period.
+      lf_schedule(wait_for_sorry, 2 * self->heartbeat_period);
+    =}
+
+    reaction(in) -> out {=
+      for (int i = 0; i < in_width; i++) {
+        if (in[i]->value.type == reveal && in[i]->value.id < self->bank_index) {
+          // Send a sorry message.
+          message_t message;
+          message.type = sorry;
+          message.id = self->bank_index;
+          lf_set(out[in[i]->value.id], message);
+          lf_print("Node %d sends sorry to node %d", self->bank_index, in[i]->value.id);
+        }
+      }
+    =}
+
+    reaction(wait_for_sorry) in -> reset(Backup), reset(Primary) {=
+      // Check for sorry messages.
+      // Sorry messages are guaranteed to be logically simultaneous
+      // with the wait_for_sorry event, so we just need to check for
+      // presence of sorry inputs.
+      int i;
+      for (i = 0; i < in_width; i++) {
+        if (in[i]->is_present && in[i]->value.type == sorry) {
+          // A sorry message arrived.  Go to Backup mode.
+          lf_set_mode(Backup);
+          break;
+        }
+      }
+      if (i == in_width) {
+        // No sorry message arrived. Go to Primary mode.
+        lf_set_mode(Primary);
+      }
+    =}
+  }
+}
+
+// FIXME: This should be federated, but it fails:
+// See https://github.com/lf-lang/lingua-franca/issues/1942
+// and https://github.com/lf-lang/lingua-franca/issues/1940.
+main reactor(num_nodes: int = 4, heartbeat_period: time = 1 s) {
+  nodes = new[num_nodes] Node(num_nodes=num_nodes, heartbeat_period=heartbeat_period)
+  nodes.out -> interleaved(nodes.in) after heartbeat_period
+}
