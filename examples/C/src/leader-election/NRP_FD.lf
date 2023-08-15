@@ -1,0 +1,292 @@
+/**
+ * This program models a redundant fault tolerant system where a primary node, if and when it fails,
+ * is replaced by a backup node. The protocol is described in this paper:
+ *
+ * Bjarne Johansson; Mats Rågberger; Alessandro V. Papadopoulos; Thomas Nolte, "Consistency Before
+ * Availability: Network Reference Point based Failure Detection for Controller Redundancy,"
+ * paper draft 8/15/23.
+ *
+ * @author Edward A. Lee
+ * @author Marjan Sirjani
+ */
+target C
+
+preamble {=
+  enum message_type {
+    heartbeat,
+    reveal,
+    sorry,
+    pingNRP,
+    pingNRP_response
+  };
+  typedef struct message_t {
+    enum message_type type;
+    int source;
+    int destination;
+  } message_t;
+=}
+
+reactor Node(
+    id: int = 0,
+    heartbeat_period: time = 1 s,
+    max_missed_heartbeats: int = 2,
+    primary_fails_after_heartbeats: int = 6
+) {
+        
+  // There are two network interfaces:
+  @side("east")
+  input in1: message_t
+  @side("east")
+  input in2: message_t
+  output out1: message_t
+  output out2: message_t
+
+  state heartbeats_missed_1: int = 0
+  state heartbeats_missed_2: int = 0
+  
+  state NRP_network: int = 1
+  state NRP_switch_id: int = 1
+  
+  state primary_heartbeats_counter: int = 0
+  
+  initial mode Waiting {
+    reaction(startup) -> out1, out2 {=
+        message_t ping_message;
+        ping_message.type = pingNRP;
+        ping_message.source = self->id;
+        // We send a ping only to switch 1 at startup for this test case.
+        ping_message.destination = 1;
+        lf_set(out1, ping_message);
+    =}
+    reaction(in1, in2) -> reset(Backup), reset(Primary) {=
+      // Got a response to the ping from one or both switches.
+      // FIXME: The paper calls for user intervention to select which is primary.
+      // Here, we just choose id 1 to be primary.
+      if (self->id == 1) {
+        // Become primary.
+        lf_set_mode(Primary);
+        if (in1->is_present && in1->value.type == pingNRP_response) {
+          lf_print("Node %d received ping response from network 1. Primary is making switch %d the NRP.", self->id, in1->value.source);
+          self->NRP_network = 1;
+          self->NRP_switch_id = in1->value.source;
+        } else if (in2->is_present && in2->value.type == pingNRP) {
+          lf_print("Node %d received ping response from network 2. Primary is making switch %d the NRP.", self->id, in2->value.source);
+          self->NRP_network = 2;
+          self->NRP_switch_id = in2->value.source;
+        } else if (in1->is_present && in1->value.type == heartbeat) {
+          lf_print("Node %d received heartbeat from network 1.", self->id);
+          lf_set_mode(Backup);
+        } else if (in2->is_present && in2->value.type == heartbeat) {
+          lf_print("Node %d received heartbeat from network 2.", self->id);
+          lf_set_mode(Backup);
+        }
+      } else {
+        lf_set_mode(Backup);
+      }
+    =}
+  }
+
+  mode Backup {
+    timer t(heartbeat_period, heartbeat_period)
+    // FIXME: Need SENDIMHERETOPRIMARY with "longer interval"
+    
+    reaction(in1) {=
+      if (in1->value.type == heartbeat) {
+        lf_print("Node %d received heartbeat from node %d on network 1.", self->id, in1->value.source);
+        self->heartbeats_missed_1 = 0;
+      }
+    =}
+    
+    reaction(in2) {=
+      if (in2->value.type == heartbeat) {
+        lf_print("Node %d received heartbeat from node %d on network 2.", self->id, in2->value.source);
+        self->heartbeats_missed_2 = 0;
+      }
+    =}
+
+    reaction(t) -> reset(Primary) {=
+      if (self->heartbeats_missed_1 > self->max_missed_heartbeats) {
+        if (self->heartbeats_missed_2 > self->max_missed_heartbeats) {
+          // Simultaneous heartbeat misses. Assume the primary failed.
+          lf_set_mode(Primary);
+        } else {
+          // Heartbeat missed on network 1 but not yet on network 2.
+          // Possible network failure.
+          // FIXME
+        }
+      } else {
+        // Heartbeat missed on network 2 but not yet on network 1.
+        // Possible network failure.
+        // FIXME
+      }
+      // Increment the counters so if they are not reset to 0 by the next time,
+      // we detect the missed heartbeat.
+      self->heartbeats_missed_1++;
+      self->heartbeats_missed_2++;
+    =}
+  }
+
+  mode Primary {
+    timer heartbeat(0, heartbeat_period)
+    reaction(reset) {=
+      lf_print("--- Node %d becomes primary.", self->id);
+    =}
+    reaction(heartbeat) -> out1, out2, reset(Failed) {=
+      if (self->primary_heartbeats_counter++ >= self->primary_fails_after_heartbeats) {
+        // Stop sending heartbeats.
+        lf_print("**** Primary node %d fails.", self->id);
+        lf_set_mode(Failed);
+      } else {
+        lf_print("Primary node %d sends heartbeat on both networks.", self->id);
+        message_t message;
+        message.type = heartbeat;
+        message.source = self->id;
+        lf_set(out1, message);
+        lf_set(out2, message);
+      }
+    =}
+  }
+
+  mode Failed {
+  }
+}
+
+/**
+ * Switch with two interfaces. Interface 1 is meant to be connected directly
+ * to a node, while interface 2 is meant to be connected to another switch.
+ * When a pingNRP message arrives on interface 1, the switch responds on interface 1
+ * with the specified delay with a copy of the ping message.
+ * When any other message arrives on interface 1, the switch forwards a copy
+ * of the message to interface 2 with the specified delay.
+ * When a message arrives on interface 2, the message is forwarded to
+ * interface 1.
+ * If a pingNRP and message from the network are simultaneous, the
+ * response to the ping will be further delayed by the specified delay.
+ */
+reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
+  input in1: message_t
+  @side("east")
+  input in2: message_t
+  @side("west")
+  output out1: message_t
+  output out2: message_t
+  
+  logical action pending_out1: message_t
+  logical action pending_out2: message_t
+  
+  timer switch_fails(switch_fails_after)
+  
+    reaction(pending_out1) -> out1 {=
+      lf_set(out1, pending_out1->value);
+    =}
+    
+    reaction(pending_out2) -> out2 {=
+      lf_set(out2, pending_out2->value);
+    =}
+    
+    reaction(in1, in2) -> out1, out2, pending_out1, pending_out2 {=
+      if (in1->is_present) {
+        if (in1->value.type == pingNRP) {
+          if (in1->value.destination == self->id) {
+            // Respond to the ping.
+            message_t message;
+            message.source = self->id;
+            message.destination = in1->value.source;
+            message.type = pingNRP_response;
+            if (!out1->is_present) {
+              lf_set(out1, message);
+            } else {
+              lf_schedule_copy(pending_out1, 0, &message, 1);
+            }
+          } else {
+            // Forward the ping.
+            if (!out2->is_present) {
+              lf_set(out2, in1->value);
+            } else {
+              lf_schedule_copy(pending_out2, 0, &in1->value, 1);
+            }
+          }
+        } else {
+          // Forward the message.
+          if (!out2->is_present) {
+            lf_set(out2, in1->value);
+          } else {
+            lf_schedule_copy(pending_out2, 0, &in1->value, 1);
+          }
+        }
+      }
+      if (in2->is_present) {
+        if (in2->value.type == pingNRP) {
+          if (in2->value.destination == self->id) {
+            // Construct a response to the ping.
+            message_t message;
+            message.source = self->id;
+            message.destination = in1->value.source;
+            message.type = pingNRP_response;
+            // Respond to the ping if out2 is available.
+            if (!out2->is_present) {
+              lf_set(out2, message);
+            } else {
+              lf_schedule_copy(pending_out2, 0, &message, 1);
+            }
+          } else {
+            // Forward the ping to out1 if out1 is available.
+            if (!out1->is_present) {
+              lf_set(out1, in2->value);
+            } else {
+              lf_schedule_copy(pending_out1, 0, &in2->value, 1);
+            }
+          }
+        } else {
+          // Forward the message if out1 is available.
+          if (!out1->is_present) {
+            lf_set(out1, in2->value);
+          } else {
+            lf_schedule_copy(pending_out1, 0, &in2->value, 1);
+          }
+        }
+      }
+    =}
+    
+  initial mode Working {
+    reaction(switch_fails) -> Failed {=
+      // Only switch 1 fails.
+      if (self->id == 1) {
+        lf_set_mode(Failed);
+      }
+    =}
+  }
+  mode Failed {}
+}
+
+// FIXME: This should be federated, but it fails:
+// See https://github.com/lf-lang/lingua-franca/issues/1942
+// and https://github.com/lf-lang/lingua-franca/issues/1940.
+main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
+  node1 = new Node(heartbeat_period=heartbeat_period, id = 1)
+  node2 = new Node(heartbeat_period=heartbeat_period, id = 2)
+  
+  switch1 = new Switch(id = 1)
+  switch2 = new Switch(id = 2)
+  
+  node1.out1 -> switch1.in1 after delay
+  switch1.out1 -> node1.in1 after delay
+  
+  switch1.out2 -> switch2.in2 after delay
+  switch2.out2 -> switch1.in2 after delay
+  
+  switch2.out1 -> node2.in1 after delay
+  node2.out1 -> switch2.in1 after delay
+
+  switch3 = new Switch(id = 3)
+  switch4 = new Switch(id = 4)
+  
+  node1.out2 -> switch3.in1 after delay
+  switch3.out1 -> node1.in2 after delay
+  
+  switch3.out2 -> switch4.in2 after delay
+  switch4.out2 -> switch3.in2 after delay
+  
+  switch4.out1 -> node2.in2 after delay
+  node2.out2 -> switch4.in1 after delay
+}
