@@ -176,6 +176,8 @@ reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
   
   timer switch_fails(switch_fails_after)
   
+  initial mode Working {
+    
     reaction(pending_out1) -> out1 {=
       lf_set(out1, pending_out1->value);
     =}
@@ -248,15 +250,18 @@ reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
       }
     =}
     
-  initial mode Working {
-    reaction(switch_fails) -> Failed {=
+    reaction(switch_fails) -> reset(Failed) {=
       // Only switch 1 fails.
       if (self->id == 1) {
         lf_set_mode(Failed);
       }
     =}
   }
-  mode Failed {}
+  mode Failed {
+    reaction(reset) {=
+      lf_print("######## Switch %d fails.", self->id);
+    =}
+  }
 }
 
 // FIXME: This should be federated, but it fails:
