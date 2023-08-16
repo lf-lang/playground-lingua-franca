@@ -30,7 +30,7 @@ reactor Node(
     id: int = 0,
     heartbeat_period: time = 1 s,
     max_missed_heartbeats: int = 2,
-    primary_fails_after_heartbeats: int = 10
+    fails_at_time: time = 0  // For testing. 0 for no failure.
 ) {
         
   // There are two network interfaces:
@@ -41,44 +41,44 @@ reactor Node(
   output out1: message_t
   output out2: message_t
 
+  timer node_fails(fails_at_time)
+
   state heartbeats_missed_1: int = 0
   state heartbeats_missed_2: int = 0
   
   state NRP_network: int = 1
   state NRP_switch_id: int = 1
   
-  state primary_heartbeats_counter: int = 0
-  
+  state primary: int = 0  // The known primary node.
+    
   initial mode Waiting {
     reaction(startup) -> out1, out2 {=
-        message_t ping_message;
-        ping_message.type = pingNRP;
-        ping_message.source = self->id;
-        // We send a ping only to switch 1 at startup for this test case.
-        ping_message.destination = 1;
-        lf_set(out1, ping_message);
+      message_t ping_message;
+      ping_message.type = pingNRP;
+      ping_message.source = self->id;
+      // NOTE: The paper does not specify how to select the initial NRP.
+      // Here, we just choose id 1 to be the NRP.
+      // Hence, we send a ping only to id 1 at startup, then wait for a reply before
+      // actually becoming the primary or backup.
+      ping_message.destination = 1;
+      lf_set(out1, ping_message);
     =}
     reaction(in1, in2) -> reset(Backup), reset(Primary) {=
       // Got a response to the ping from one or both switches.
-      // FIXME: The paper calls for user intervention to select which is primary.
+      // NOTE: The paper calls for user intervention to select which is primary.
       // Here, we just choose id 1 to be primary.
+      self->primary = 1;
       if (self->id == 1) {
         // Become primary.
         lf_set_mode(Primary);
         if (in1->is_present && in1->value.type == pingNRP_response) {
-          lf_print("Node %d received ping response from network 1. Primary is making switch %d the NRP.", self->id, in1->value.source);
+          lf_print("Primary node %d received ping response on network 1. Making switch %d the NRP.", self->id, in1->value.source);
           self->NRP_network = 1;
           self->NRP_switch_id = in1->value.source;
         } else if (in2->is_present && in2->value.type == pingNRP) {
-          lf_print("Node %d received ping response from network 2. Primary is making switch %d the NRP.", self->id, in2->value.source);
+          lf_print("Primary node %d received ping response on network 2. Making switch %d the NRP.", self->id, in2->value.source);
           self->NRP_network = 2;
           self->NRP_switch_id = in2->value.source;
-        } else if (in1->is_present && in1->value.type == heartbeat) {
-          lf_print("Node %d received heartbeat from network 1.", self->id);
-          lf_set_mode(Backup);
-        } else if (in2->is_present && in2->value.type == heartbeat) {
-          lf_print("Node %d received heartbeat from network 2.", self->id);
-          lf_set_mode(Backup);
         }
       } else {
         lf_set_mode(Backup);
@@ -90,25 +90,33 @@ reactor Node(
     timer t(heartbeat_period, heartbeat_period)
     
     // FIXME: Need SENDIMHERETOPRIMARY with "longer interval"
+
+    reaction(reset) {=
+      lf_print("---- Node %d becomes backup.", self->id);
+    =}
+
+    reaction(node_fails) -> reset(Failed) {=
+      if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
+    =}
     
     reaction(in1) {=
       if (in1->value.type == heartbeat) {
-        lf_print("Node %d received heartbeat from node %d on network 1.", self->id, in1->value.source);
+        lf_print("Backup node %d received heartbeat from node %d on network 1.", self->id, in1->value.source);
         self->heartbeats_missed_1 = 0;
       } else if (in1->value.type == pingNRP_response && in1->value.destination == self->id) {
         // Got a response from the NRP to a ping we sent after a partial timeout.
-        lf_print("Node %d received ping response on network 1 from NRP on switch %d.", self->id, in1->value.source);
+        lf_print("Backup node %d received ping response on network 1 from NRP on switch %d.", self->id, in1->value.source);
         // Don't do anything. Remain the backup.
       }
     =}
     
     reaction(in2) {=
       if (in2->value.type == heartbeat) {
-        lf_print("Node %d received heartbeat from node %d on network 2.", self->id, in2->value.source);
+        lf_print("Backup node %d received heartbeat from node %d on network 2.", self->id, in2->value.source);
         self->heartbeats_missed_2 = 0;
       } else if (in2->value.type == pingNRP_response && in2->value.destination == self->id) {
         // Got a response from the NRP to a ping we sent after a partial timeout.
-        lf_print("Node %d received ping response on network 2 from NRP on switch %d.", self->id, in2->value.source);
+        lf_print("Backup node %d received ping response on network 2 from NRP on switch %d.", self->id, in2->value.source);
         // Don't do anything. Remain the backup.
       }
     =}
@@ -117,12 +125,13 @@ reactor Node(
       if (self->heartbeats_missed_1 > self->max_missed_heartbeats
           && self->heartbeats_missed_2 > self->max_missed_heartbeats) {
         // Simultaneous heartbeat misses. Assume the primary failed.
+        lf_print("**** Backup node %d detects missing heartbeats on both networks.", self->id);
         lf_set_mode(Primary);
       } else if (self->heartbeats_missed_1 > self->max_missed_heartbeats
           || self->heartbeats_missed_2 > self->max_missed_heartbeats) {
         // Heartbeat missed on one network but not yet on the other.
         // Possible network failure.
-        lf_print("**** Backup detects missing heartbeats on one network!");
+        lf_print("**** Backup node %d detects missing heartbeats on one network.", self->id);
         // Ping the NRP.
         message_t message;
         message.source = self->id;
@@ -134,7 +143,7 @@ reactor Node(
           lf_set(out2, message);
         }
         lf_print("Backup node %d pings NRP on network %d, switch %d", self->id, self->NRP_network, self->NRP_switch_id);
-        // FIXME: Set a timeout in case we don't get a pingNRP_response.
+        // FIXME: Set a timeout in case we don't get a pingNRP_response, in which case we should ask the primary to switch NRP.
       }
       // Increment the counters so if they are not reset to 0 by the next time,
       // we detect the missed heartbeat.
@@ -146,25 +155,25 @@ reactor Node(
   mode Primary {
     timer heartbeat(0, heartbeat_period)
     reaction(reset) {=
-      lf_print("--- Node %d becomes primary.", self->id);
+      lf_print("---- Node %d becomes primary.", self->id);
     =}
-    reaction(heartbeat) -> out1, out2, reset(Failed) {=
-      if (self->primary_heartbeats_counter++ >= self->primary_fails_after_heartbeats) {
-        // Stop sending heartbeats.
-        lf_print("**** Primary node %d fails.", self->id);
-        lf_set_mode(Failed);
-      } else {
-        lf_print("Primary node %d sends heartbeat on both networks.", self->id);
-        message_t message;
-        message.type = heartbeat;
-        message.source = self->id;
-        lf_set(out1, message);
-        lf_set(out2, message);
-      }
+    reaction(node_fails) -> reset(Failed) {=
+      if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
+    =}
+    reaction(heartbeat) -> out1, out2 {=
+      lf_print("Primary node %d sends heartbeat on both networks.", self->id);
+      message_t message;
+      message.type = heartbeat;
+      message.source = self->id;
+      lf_set(out1, message);
+      lf_set(out2, message);
     =}
   }
 
   mode Failed {
+    reaction(reset) {=
+      lf_print("#### Node %d fails.", self->id);
+    =}
   }
 }
 
@@ -177,7 +186,10 @@ reactor Node(
  * of the message to the other interface.
  * If any two messages would be simultaneous on an output, one will be sent one microstep later.
  */
-reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
+reactor Switch(
+    id: int = 0,
+    fails_at_time: time = 0  // For testing. 0 for no failure.
+) {
   input in1: message_t
   @side("east")
   input in2: message_t
@@ -188,10 +200,14 @@ reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
   logical action pending_out1: message_t
   logical action pending_out2: message_t
   
-  timer switch_fails(switch_fails_after)
+  timer switch_fails(fails_at_time)
   
   initial mode Working {
     
+    reaction(switch_fails) -> reset(Failed) {=
+      if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
+    =}
+
     reaction(pending_out1) -> out1 {=
       lf_set(out1, pending_out1->value);
     =}
@@ -204,7 +220,7 @@ reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
       if (in1->is_present) {
         if (in1->value.type == pingNRP) {
           if (in1->value.destination == self->id) {
-            lf_print("\n=== Switch %d pinged by node %d. Responding.\n", self->id, in1->value.source);
+            lf_print("==== Switch %d pinged by node %d. Responding.", self->id, in1->value.source);
             // Respond to the ping.
             message_t message;
             message.source = self->id;
@@ -235,7 +251,7 @@ reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
       if (in2->is_present) {
         if (in2->value.type == pingNRP) {
           if (in2->value.destination == self->id) {
-            lf_print("\n=== Switch %d pinged by node %d. Responding.\n", self->id, in2->value.source);
+            lf_print("==== Switch %d pinged by node %d. Responding.", self->id, in2->value.source);
             // Construct a response to the ping.
             message_t message;
             message.source = self->id;
@@ -265,27 +281,17 @@ reactor Switch(id: int = 0, switch_fails_after: time = 3 s) {
         }
       }
     =}
-    
-    reaction(switch_fails) -> reset(Failed) {=
-      // Only switch 3 fails.
-      if (self->id == 3) {
-        lf_set_mode(Failed);
-      }
-    =}
   }
   mode Failed {
     reaction(reset) {=
-      lf_print("######## Switch %d fails.", self->id);
+      lf_print("==== Switch %d fails.", self->id);
     =}
   }
 }
 
-// FIXME: This should be federated, but it fails:
-// See https://github.com/lf-lang/lingua-franca/issues/1942
-// and https://github.com/lf-lang/lingua-franca/issues/1940.
 main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
-  node1 = new Node(heartbeat_period=heartbeat_period, id = 1)
-  node2 = new Node(heartbeat_period=heartbeat_period, id = 2)
+  node1 = new Node(heartbeat_period=heartbeat_period, id = 1, fails_at_time = 10 s)
+  node2 = new Node(heartbeat_period=heartbeat_period, id = 2, fails_at_time = 15 s)
   
   switch1 = new Switch(id = 1)
   switch2 = new Switch(id = 2)
@@ -299,7 +305,7 @@ main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   switch2.out1 -> node2.in1 after delay
   node2.out1 -> switch2.in1 after delay
 
-  switch3 = new Switch(id = 3)
+  switch3 = new Switch(id = 3, fails_at_time = 3 s)
   switch4 = new Switch(id = 4)
   
   node1.out2 -> switch3.in1 after delay
