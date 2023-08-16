@@ -3,8 +3,8 @@
  * is replaced by a backup node. The protocol is described in this paper:
  *
  * Bjarne Johansson; Mats Rågberger; Alessandro V. Papadopoulos; Thomas Nolte, "Consistency Before
- * Availability: Network Reference Point based Failure Detection for Controller Redundancy,"
- * paper draft 8/15/23.
+ * Availability: Network Reference Point based Failure Detection for Controller Redundancy," paper
+ * draft 8/15/23.
  *
  * @author Edward A. Lee
  * @author Marjan Sirjani
@@ -30,9 +30,8 @@ reactor Node(
     id: int = 0,
     heartbeat_period: time = 1 s,
     max_missed_heartbeats: int = 2,
-    fails_at_time: time = 0  // For testing. 0 for no failure.
-) {
-        
+    // For testing. 0 for no failure.
+    fails_at_time: time = 0) {
   // There are two network interfaces:
   @side("east")
   input in1: message_t
@@ -45,12 +44,12 @@ reactor Node(
 
   state heartbeats_missed_1: int = 0
   state heartbeats_missed_2: int = 0
-  
+
   state NRP_network: int = 1
   state NRP_switch_id: int = 1
-  
+
   state primary: int = 0  // The known primary node.
-    
+
   initial mode Waiting {
     reaction(startup) -> out1, out2 {=
       message_t ping_message;
@@ -63,6 +62,7 @@ reactor Node(
       ping_message.destination = 1;
       lf_set(out1, ping_message);
     =}
+
     reaction(in1, in2) -> reset(Backup), reset(Primary) {=
       // Got a response to the ping from one or both switches.
       // NOTE: The paper calls for user intervention to select which is primary.
@@ -88,17 +88,13 @@ reactor Node(
 
   mode Backup {
     timer t(heartbeat_period, heartbeat_period)
-    
     // FIXME: Need SENDIMHERETOPRIMARY with "longer interval"
-
-    reaction(reset) {=
-      lf_print("---- Node %d becomes backup.", self->id);
-    =}
+    reaction(reset) {= lf_print("---- Node %d becomes backup.", self->id); =}
 
     reaction(node_fails) -> reset(Failed) {=
       if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
     =}
-    
+
     reaction(in1) {=
       if (in1->value.type == heartbeat) {
         lf_print("Backup node %d received heartbeat from node %d on network 1.", self->id, in1->value.source);
@@ -109,7 +105,7 @@ reactor Node(
         // Don't do anything. Remain the backup.
       }
     =}
-    
+
     reaction(in2) {=
       if (in2->value.type == heartbeat) {
         lf_print("Backup node %d received heartbeat from node %d on network 2.", self->id, in2->value.source);
@@ -154,12 +150,12 @@ reactor Node(
 
   mode Primary {
     timer heartbeat(0, heartbeat_period)
-    reaction(reset) {=
-      lf_print("---- Node %d becomes primary.", self->id);
-    =}
+    reaction(reset) {= lf_print("---- Node %d becomes primary.", self->id); =}
+
     reaction(node_fails) -> reset(Failed) {=
       if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
     =}
+
     reaction(heartbeat) -> out1, out2 {=
       lf_print("Primary node %d sends heartbeat on both networks.", self->id);
       message_t message;
@@ -178,44 +174,37 @@ reactor Node(
 }
 
 /**
- * Switch with two interfaces.
- * When a pingNRP message arrives on either interface, if the destination
- * matches the ID of this switch, then the switch responds on the same interface
- * with a pingNRP_response message.
- * When any other message arrives on either interface, the switch forwards a copy
- * of the message to the other interface.
- * If any two messages would be simultaneous on an output, one will be sent one microstep later.
+ * Switch with two interfaces. When a pingNRP message arrives on either interface, if the
+ * destination matches the ID of this switch, then the switch responds on the same interface with a
+ * pingNRP_response message. When any other message arrives on either interface, the switch forwards
+ * a copy of the message to the other interface. If any two messages would be simultaneous on an
+ * output, one will be sent one microstep later.
  */
 reactor Switch(
     id: int = 0,
-    fails_at_time: time = 0  // For testing. 0 for no failure.
-) {
+    // For testing. 0 for no failure.
+    fails_at_time: time = 0) {
   input in1: message_t
   @side("east")
   input in2: message_t
   @side("west")
   output out1: message_t
   output out2: message_t
-  
+
   logical action pending_out1: message_t
   logical action pending_out2: message_t
-  
+
   timer switch_fails(fails_at_time)
-  
+
   initial mode Working {
-    
     reaction(switch_fails) -> reset(Failed) {=
       if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
     =}
 
-    reaction(pending_out1) -> out1 {=
-      lf_set(out1, pending_out1->value);
-    =}
-    
-    reaction(pending_out2) -> out2 {=
-      lf_set(out2, pending_out2->value);
-    =}
-    
+    reaction(pending_out1) -> out1 {= lf_set(out1, pending_out1->value); =}
+
+    reaction(pending_out2) -> out2 {= lf_set(out2, pending_out2->value); =}
+
     reaction(in1, in2) -> out1, out2, pending_out1, pending_out2 {=
       if (in1->is_present) {
         if (in1->value.type == pingNRP) {
@@ -282,38 +271,37 @@ reactor Switch(
       }
     =}
   }
+
   mode Failed {
-    reaction(reset) {=
-      lf_print("==== Switch %d fails.", self->id);
-    =}
+    reaction(reset) {= lf_print("==== Switch %d fails.", self->id); =}
   }
 }
 
 main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
-  node1 = new Node(heartbeat_period=heartbeat_period, id = 1, fails_at_time = 10 s)
-  node2 = new Node(heartbeat_period=heartbeat_period, id = 2, fails_at_time = 15 s)
-  
-  switch1 = new Switch(id = 1)
-  switch2 = new Switch(id = 2)
-  
+  node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 10 s)
+  node2 = new Node(heartbeat_period=heartbeat_period, id=2, fails_at_time = 15 s)
+
+  switch1 = new Switch(id=1)
+  switch2 = new Switch(id=2)
+
   node1.out1 -> switch1.in1 after delay
   switch1.out1 -> node1.in1 after delay
-  
+
   switch1.out2 -> switch2.in2 after delay
   switch2.out2 -> switch1.in2 after delay
-  
+
   switch2.out1 -> node2.in1 after delay
   node2.out1 -> switch2.in1 after delay
 
-  switch3 = new Switch(id = 3, fails_at_time = 3 s)
-  switch4 = new Switch(id = 4)
-  
+  switch3 = new Switch(id=3, fails_at_time = 3 s)
+  switch4 = new Switch(id=4)
+
   node1.out2 -> switch3.in1 after delay
   switch3.out1 -> node1.in2 after delay
-  
+
   switch3.out2 -> switch4.in2 after delay
   switch4.out2 -> switch3.in2 after delay
-  
+
   switch4.out1 -> node2.in2 after delay
   node2.out2 -> switch4.in1 after delay
 }
