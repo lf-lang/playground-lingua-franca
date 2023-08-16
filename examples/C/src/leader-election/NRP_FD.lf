@@ -16,7 +16,8 @@ preamble {=
     heartbeat,
     pingNRP,
     pingNRP_response,
-    request_new_NRP
+    request_new_NRP,
+    new_NRP
   };
   typedef struct message_t {
     enum message_type type;
@@ -47,6 +48,7 @@ reactor Node(
 
   state NRP_network: int = 1
   state NRP_switch_id: int = 1
+  state NRP_pending: bool = true
 
   state primary: int = 0  // The known primary node.
 
@@ -55,18 +57,15 @@ reactor Node(
 
   initial mode Waiting {
     reaction(startup) -> out1, out2 {=
-      message_t ping_message;
-      ping_message.type = pingNRP;
-      ping_message.source = self->id;
       // NOTE: The paper does not specify how to select the initial NRP.
       // Here, we send with destination 0, which the switches interpret as first to respond.
       // First to respond will be id 1 at startup; then wait for a reply before
       // actually becoming the primary or backup.
-      ping_message.destination = 0;
+      message_t ping_message ={pingNRP, self->id, 0};
       lf_set(out1, ping_message);
     =}
 
-    reaction(in1, in2) -> reset(Backup), reset(Primary) {=
+    reaction(in1, in2) -> out1, out2, reset(Backup), reset(Primary) {=
       // Got a response to the ping from one or both switches.
       // NOTE: The paper calls for user intervention to select which is primary.
       // Here, we just choose id 1 to be primary.
@@ -78,10 +77,18 @@ reactor Node(
           lf_print("Primary node %d received ping response on network 1. Making switch %d the NRP.", self->id, in1->value.source);
           self->NRP_network = 1;
           self->NRP_switch_id = in1->value.source;
+          self->NRP_pending = false;
+          // Notify the backup of the NRP.
+          message_t message = {new_NRP, in1->value.source, 0};
+          lf_set(out1, message);
         } else if (in2->is_present && in2->value.type == pingNRP) {
           lf_print("Primary node %d received ping response on network 2. Making switch %d the NRP.", self->id, in2->value.source);
           self->NRP_network = 2;
           self->NRP_switch_id = in2->value.source;
+          self->NRP_pending = false;
+          // Notify the backup of the NRP.
+          message_t message = {new_NRP, in1->value.source, 0};
+          lf_set(out2, message);
         }
       } else {
         lf_set_mode(Backup);
@@ -106,6 +113,11 @@ reactor Node(
         // Got a response from the NRP to a ping we sent after a partial timeout.
         lf_print("Backup node %d received ping response on network 1 from NRP on switch %d.", self->id, in1->value.source);
         // Don't do anything. Remain the backup.
+      } else if (in1->value.type == new_NRP) {
+        // FIXME: Ping the new NRP and send confirmation back to primary.
+        self->NRP_network = 1;
+        self->NRP_switch_id = in1->value.source;
+        self->NRP_pending = false;
       }
     =}
 
@@ -118,6 +130,11 @@ reactor Node(
         lf_print("Backup node %d received ping response on network 2 from NRP on switch %d.", self->id, in2->value.source);
         self->ping_pending = false;
         // Don't do anything. Remain the backup.
+      } else if (in2->value.type == new_NRP) {
+        // FIXME: Ping the new NRP and send confirmation back to primary.
+        self->NRP_network = 2;
+        self->NRP_switch_id = in2->value.source;
+        self->NRP_pending = false;
       }
     =}
 
@@ -133,18 +150,17 @@ reactor Node(
         // Possible network failure.
         lf_print("**** Backup node %d detects missing heartbeats on one network.", self->id);
         // Ping the NRP.
-        message_t message;
-        message.source = self->id;
-        message.type = pingNRP;
-        message.destination = self->NRP_switch_id;
-        if (self->NRP_network == 1) {
-          lf_set(out1, message);
-        } else {
-          lf_set(out2, message);
+        message_t message = {pingNRP, self->id, self->NRP_switch_id};
+        if (!self->ping_pending && !self->NRP_pending) {
+          if (self->NRP_network == 1) {
+            lf_set(out1, message);
+          } else {
+            lf_set(out2, message);
+          }
+          lf_print("Backup node %d pings NRP on network %d, switch %d", self->id, self->NRP_network, self->NRP_switch_id);
+          self->ping_pending = true;
+          lf_schedule(ping_timed_out, 0);
         }
-        lf_print("Backup node %d pings NRP on network %d, switch %d", self->id, self->NRP_network, self->NRP_switch_id);
-        self->ping_pending = true;
-        lf_schedule(ping_timed_out, 0);
       }
       // Increment the counters so if they are not reset to 0 by the next time,
       // we detect the missed heartbeat.
@@ -154,17 +170,19 @@ reactor Node(
 
     reaction(ping_timed_out) -> out1, out2 {=
       if (self->ping_pending) {
-        // Ping timed out.  Send request for new NRP on the other network.
-        lf_print("Backup node %d gets no response from ping. Requesting new NRP.");
-        message_t message;
-        message.type = request_new_NRP;
-        message.source = self->id;
-        message.destination = self->primary;
-        if (self->NRP_network == 1) {
-          // Use network 2.
-          lf_set(out2, message);
-        } else {
-          lf_set(out1, message);
+        // Ping timed out.
+        lf_print("Backup node %d gets no response from ping.", self->id);
+        if (!self->NRP_pending) {
+          // Send request for new NRP on the other network.
+          lf_print("Backup node %d requests new NRP.", self->id);
+          message_t message = {request_new_NRP, self->id, self->primary};
+          if (self->NRP_network == 1) {
+            // Use network 2.
+            lf_set(out2, message);
+          } else {
+            lf_set(out1, message);
+          }
+          self->NRP_pending = true;
         }
         self->ping_pending = false;
       }
@@ -181,24 +199,52 @@ reactor Node(
 
     reaction(heartbeat) -> out1, out2 {=
       lf_print("Primary node %d sends heartbeat on both networks.", self->id);
-      message_t message;
-      message.type = heartbeat;
-      message.source = self->id;
+      message_t message = {heartbeat, self->id, 0};
       lf_set(out1, message);
       lf_set(out2, message);
     =}
 
-    reaction(in1) {=
+    reaction(in1) -> out1 {=
       if (in1->value.type == request_new_NRP) {
-        // FIXME: Find a new candidate NRP on network 1.
-        // FIXME: Confirm new NRP with backup.
+        // Find a new candidate NRP on network 1.
+        lf_print("Primary node %d looking for new NRP on network 1.", self->id);
+        message_t message = {pingNRP, self->id, 0};
+        lf_set(out1, message);
+        self->NRP_pending = true;
+      } else if (in1->value.type == pingNRP_response) {
+        lf_print("Primary node %d received ping response on network 1. NRP is %d.", self->id, in1->value.source);
+        self->NRP_network = 1;
+        self->NRP_switch_id = in1->value.source;
+        if (self->NRP_pending) {
+          self->NRP_pending = false;
+          // Notify backup of new NRP. source field encodes the switch id.
+          lf_print("Primary node %d notifies backup of new NRP %d.", self->id, in1->value.source);
+          message_t message = {new_NRP, in1->value.source, 0};
+          lf_set(out1, message);
+          // FIXME: Wait for confirmation of new NRP with backup.
+        }
       }
     =}
 
-    reaction(in2) {=
+    reaction(in2) -> out2 {=
       if (in2->value.type == request_new_NRP) {
-        // FIXME: Find a new candidate NRP on network 1.
-        // FIXME: Confirm new NRP with backup.
+        // Find a new candidate NRP on network 2.
+        lf_print("Primary node %d looking for new NRP on network 2.", self->id);
+        message_t message = {pingNRP, self->id, 0};
+        lf_set(out2, message);
+        self->NRP_pending = true;
+      } else if (in2->value.type == pingNRP_response) {
+        lf_print("Primary node %d received ping response on network 2. NRP is %d.", self->id, in2->value.source);
+        self->NRP_network = 2;
+        self->NRP_switch_id = in2->value.source;
+        if (self->NRP_pending) {
+          self->NRP_pending = false;
+          // Notify backup of new NRP. source field encodes the switch id.
+          lf_print("Primary node %d notifies backup of new NRP %d.", self->id, in2->value.source);
+          message_t message = {new_NRP, in2->value.source, 0};
+          lf_set(out2, message);
+          // FIXME: Wait for confirmation of new NRP with backup.
+        }        
       }
     =}
   }
@@ -248,10 +294,7 @@ reactor Switch(
           if (in1->value.destination == self->id || in1->value.destination == 0) {
             lf_print("==== Switch %d pinged by node %d. Responding.", self->id, in1->value.source);
             // Respond to the ping.
-            message_t message;
-            message.source = self->id;
-            message.destination = in1->value.source;
-            message.type = pingNRP_response;
+            message_t message = {pingNRP_response, self->id, in1->value.source};
             if (!out1->is_present) {
               lf_set(out1, message);
             } else {
@@ -279,10 +322,7 @@ reactor Switch(
           if (in2->value.destination == self->id) {
             lf_print("==== Switch %d pinged by node %d. Responding.", self->id, in2->value.source);
             // Construct a response to the ping.
-            message_t message;
-            message.source = self->id;
-            message.destination = in2->value.source;
-            message.type = pingNRP_response;
+            message_t message = {pingNRP_response, self->id, in2->value.source};
             // Respond to the ping if out2 is available.
             if (!out2->is_present) {
               lf_set(out2, message);
