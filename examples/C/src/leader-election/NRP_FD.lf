@@ -14,10 +14,9 @@ target C
 preamble {=
   enum message_type {
     heartbeat,
-    reveal,
-    sorry,
     pingNRP,
-    pingNRP_response
+    pingNRP_response,
+    request_new_NRP
   };
   typedef struct message_t {
     enum message_type type;
@@ -30,8 +29,9 @@ reactor Node(
     id: int = 0,
     heartbeat_period: time = 1 s,
     max_missed_heartbeats: int = 2,
-    // For testing. 0 for no failure.
-    fails_at_time: time = 0) {
+    fails_at_time: time = 0,     // For testing. 0 for no failure.
+    // Time until ping is deemed to have failed.
+    ping_timeout: time = 500 ms) {
   // There are two network interfaces:
   @side("east")
   input in1: message_t
@@ -50,16 +50,19 @@ reactor Node(
 
   state primary: int = 0  // The known primary node.
 
+  state ping_pending: bool = false
+  logical action ping_timed_out(ping_timeout)
+
   initial mode Waiting {
     reaction(startup) -> out1, out2 {=
       message_t ping_message;
       ping_message.type = pingNRP;
       ping_message.source = self->id;
       // NOTE: The paper does not specify how to select the initial NRP.
-      // Here, we just choose id 1 to be the NRP.
-      // Hence, we send a ping only to id 1 at startup, then wait for a reply before
+      // Here, we send with destination 0, which the switches interpret as first to respond.
+      // First to respond will be id 1 at startup; then wait for a reply before
       // actually becoming the primary or backup.
-      ping_message.destination = 1;
+      ping_message.destination = 0;
       lf_set(out1, ping_message);
     =}
 
@@ -113,11 +116,12 @@ reactor Node(
       } else if (in2->value.type == pingNRP_response && in2->value.destination == self->id) {
         // Got a response from the NRP to a ping we sent after a partial timeout.
         lf_print("Backup node %d received ping response on network 2 from NRP on switch %d.", self->id, in2->value.source);
+        self->ping_pending = false;
         // Don't do anything. Remain the backup.
       }
     =}
 
-    reaction(t) -> reset(Primary), out1, out2 {=
+    reaction(t) -> reset(Primary), out1, out2, ping_timed_out {=
       if (self->heartbeats_missed_1 > self->max_missed_heartbeats
           && self->heartbeats_missed_2 > self->max_missed_heartbeats) {
         // Simultaneous heartbeat misses. Assume the primary failed.
@@ -139,12 +143,31 @@ reactor Node(
           lf_set(out2, message);
         }
         lf_print("Backup node %d pings NRP on network %d, switch %d", self->id, self->NRP_network, self->NRP_switch_id);
-        // FIXME: Set a timeout in case we don't get a pingNRP_response, in which case we should ask the primary to switch NRP.
+        self->ping_pending = true;
+        lf_schedule(ping_timed_out, 0);
       }
       // Increment the counters so if they are not reset to 0 by the next time,
       // we detect the missed heartbeat.
       self->heartbeats_missed_1++;
       self->heartbeats_missed_2++;
+    =}
+
+    reaction(ping_timed_out) -> out1, out2 {=
+      if (self->ping_pending) {
+        // Ping timed out.  Send request for new NRP on the other network.
+        lf_print("Backup node %d gets no response from ping. Requesting new NRP.");
+        message_t message;
+        message.type = request_new_NRP;
+        message.source = self->id;
+        message.destination = self->primary;
+        if (self->NRP_network == 1) {
+          // Use network 2.
+          lf_set(out2, message);
+        } else {
+          lf_set(out1, message);
+        }
+        self->ping_pending = false;
+      }
     =}
   }
 
@@ -164,6 +187,20 @@ reactor Node(
       lf_set(out1, message);
       lf_set(out2, message);
     =}
+
+    reaction(in1) {=
+      if (in1->value.type == request_new_NRP) {
+        // FIXME: Find a new candidate NRP on network 1.
+        // FIXME: Confirm new NRP with backup.
+      }
+    =}
+
+    reaction(in2) {=
+      if (in2->value.type == request_new_NRP) {
+        // FIXME: Find a new candidate NRP on network 1.
+        // FIXME: Confirm new NRP with backup.
+      }
+    =}
   }
 
   mode Failed {
@@ -175,10 +212,10 @@ reactor Node(
 
 /**
  * Switch with two interfaces. When a pingNRP message arrives on either interface, if the
- * destination matches the ID of this switch, then the switch responds on the same interface with a
- * pingNRP_response message. When any other message arrives on either interface, the switch forwards
- * a copy of the message to the other interface. If any two messages would be simultaneous on an
- * output, one will be sent one microstep later.
+ * destination matches the ID of this switch or the destination is 0, then the switch responds on
+ * the same interface with a pingNRP_response message. When any other message arrives on either
+ * interface, the switch forwards a copy of the message to the other interface. If any two messages
+ * would be simultaneous on an output, one will be sent one microstep later.
  */
 reactor Switch(
     id: int = 0,
@@ -208,7 +245,7 @@ reactor Switch(
     reaction(in1, in2) -> out1, out2, pending_out1, pending_out2 {=
       if (in1->is_present) {
         if (in1->value.type == pingNRP) {
-          if (in1->value.destination == self->id) {
+          if (in1->value.destination == self->id || in1->value.destination == 0) {
             lf_print("==== Switch %d pinged by node %d. Responding.", self->id, in1->value.source);
             // Respond to the ping.
             message_t message;
@@ -281,7 +318,7 @@ main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 10 s)
   node2 = new Node(heartbeat_period=heartbeat_period, id=2, fails_at_time = 15 s)
 
-  switch1 = new Switch(id=1)
+  switch1 = new Switch(id=1, fails_at_time = 3 s)
   switch2 = new Switch(id=2)
 
   node1.out1 -> switch1.in1 after delay
@@ -293,7 +330,7 @@ main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   switch2.out1 -> node2.in1 after delay
   node2.out1 -> switch2.in1 after delay
 
-  switch3 = new Switch(id=3, fails_at_time = 3 s)
+  switch3 = new Switch(id=3)
   switch4 = new Switch(id=4)
 
   node1.out2 -> switch3.in1 after delay
