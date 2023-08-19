@@ -5,26 +5,6 @@ target C
 
 import Switch, Node from "NRP_FD.lf"
 
-// FIXME: Due to this bug: https://github.com/lf-lang/reactor-c/issues/261
-// we have to repeat the preamble from the imported file here.
-preamble {=
-  #ifndef NRF_FD
-  #define NRF_FD
-  enum message_type {
-    heartbeat,
-    pingNRP,
-    pingNRP_response,
-    request_new_NRP,
-    new_NRP
-  };
-  typedef struct message_t {
-    enum message_type type;
-    int source;
-    int destination;
-  } message_t;
-  #endif // NRF_FD
-=}
-
 main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 15 s)
   node2 = new Node(heartbeat_period=heartbeat_period, id=2, fails_at_time = 15 s)
