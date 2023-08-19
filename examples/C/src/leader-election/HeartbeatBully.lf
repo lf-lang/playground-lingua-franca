@@ -16,11 +16,12 @@
  *
  * This example is designed to be run as a federated program with decentralized coordination.
  * However, as of this writing, bugs in the federated code generator cause the program to fail
- * because all federates get the same bank_index == 0. This may be related to this bug:
+ * because all federates get the same bank_index == 0. This may be related to these bugs:
  *
  * - https://github.com/lf-lang/lingua-franca/issues/1961
+ * - https://github.com/lf-lang/lingua-franca/issues/1962
  *
- * When this bugs are fixed, then the federated version should operate exactly the same as the
+ * When these bugs are fixed, then the federated version should operate exactly the same as the
  * unfederated version except that it will become possible to kill the federates instead of having
  * them fail on their own. The program should also be extended to include STP violation handlers to
  * deal with the fundamental CAL theorem limitations, where unexpected network delays make it
@@ -193,8 +194,9 @@ reactor Node(
 }
 
 // FIXME: This should be federated, but it fails because all federates get the bank_index = 0.
-// This may be related to this bug:
+// This may be related to these bugs:
 // https://github.com/lf-lang/lingua-franca/issues/1961
+// https://github.com/lf-lang/lingua-franca/issues/1962
 main reactor(num_nodes: int = 4, heartbeat_period: time = 1 s) {
   nodes = new[num_nodes] Node(num_nodes=num_nodes, heartbeat_period=heartbeat_period)
   nodes.out -> interleaved(nodes.in) after heartbeat_period
