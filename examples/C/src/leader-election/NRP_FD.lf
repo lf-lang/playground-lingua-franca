@@ -7,13 +7,12 @@
  * draft 8/15/23.
  *
  * The key idea in this protocol is that when a backup fails to detect the heartbeats of a primary
- * node, it becomes primary only if it has access to Network Reference Point (NRP), which is a
- * point in the network.  This way, if the network becomes partitioned, only a backup that is
- * on the side of the partition that still has access to the NRP can become a primary.
- * If a primary loses access to the NRP, then it relinquishes its primary role because it
- * is now on the wrong side of a network partition. A backup on the right side of the partition
- * will take over.
- * 
+ * node, it becomes primary only if it has access to Network Reference Point (NRP), which is a point
+ * in the network. This way, if the network becomes partitioned, only a backup that is on the side
+ * of the partition that still has access to the NRP can become a primary. If a primary loses access
+ * to the NRP, then it relinquishes its primary role because it is now on the wrong side of a
+ * network partition. A backup on the right side of the partition will take over.
+ *
  * @author Edward A. Lee
  * @author Marjan Sirjani
  */
@@ -41,9 +40,8 @@ reactor Node(
     id: int = 0,
     heartbeat_period: time = 1 s,
     max_missed_heartbeats: int = 2,
-    fails_at_time: time = 0,     // For testing. 0 for no failure.
-    // Time until ping is deemed to have failed.
-    ping_timeout: time = 500 ms,
+    fails_at_time: time = 0,      // For testing. 0 for no failure.
+    ping_timeout: time = 500 ms,  // Time until ping is deemed to have failed.
     // Time until new NRP request is deemed to have failed.
     nrp_timeout: time = 500 ms) {
   // There are two network interfaces:
@@ -236,7 +234,7 @@ reactor Node(
         self->ping_pending = false;
       }
     =}
-    
+
     reaction(new_NRP_request_timed_out) {=
       if (self->NRP_pending) {
         self->NRP_pending = false;
@@ -304,7 +302,7 @@ reactor Node(
           message_t message = {new_NRP, in2->value.source, 0};
           lf_set(out2, message);
           // FIXME: Wait for confirmation of new NRP with backup.
-        }        
+        }
       }
     =}
   }
