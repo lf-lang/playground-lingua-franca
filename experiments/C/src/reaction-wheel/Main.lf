@@ -1,0 +1,200 @@
+target C {
+};
+
+preamble {=
+    #include <math.h>
+    #include <time.h>
+    #include <stdlib.h>
+
+    typedef struct  {
+        double platform_inertia; // [kg * m^2]
+        double wheel_inertia; // [kg * m^2]
+        double viscous_friction; // [m * N * m]
+        double coulomb_friction; // [m * N * m]
+        double max_platform_position; // + pi [radian]
+        double min_platform_position; // - pi [radian]
+    } WheelConfiguration;
+
+    typedef struct {
+        double voltage;
+        double max_ampere;
+        double min_ampere;
+    } MotorConfiguration;
+
+    #define MAX(x, y) (((x) > (y)) ? (x) : (y))
+    #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+=}
+
+reactor Simulator {
+    timer t(0s, 10ms);
+    state rotation_platform: double;
+    state rotation_wheel: double;
+    
+    input get_rotation_platform: void;
+    input get_rotation_wheel: void;
+    
+    input set_rotation_platform: double;
+    input set_rotation_wheel: double;
+
+    output return_rotation_wheel: double;
+    output return_rotation_platform: double;
+
+    logical action event: double;
+
+    reaction(get_rotation_wheel) -> return_rotation_wheel {=
+        lf_set(return_rotation_wheel, get_rotation_wheel->value);
+    =}
+
+    reaction(get_rotation_platform) -> return_rotation_platform {=
+        lf_set(return_rotation_platform, get_rotation_platform->value);
+    =}
+
+    reaction (set_rotation_wheel) {=
+        self->rotation_wheel += set_rotation_wheel->value;
+    =}
+
+    reaction (set_rotation_platform) {=
+        self->rotation_platform += set_rotation_platform->value;
+    =}
+
+    reaction (t) {=
+        // adds random noise
+        self->rotation_platform +=  0.00001 * ((rand() - 1000) % 2000);
+    =}
+
+    reaction(event) {=
+        self->rotation_platform += event->value;
+    =}
+
+    reaction (startup) {=
+        lf_schedule_token(event, 1ms, 0.5);
+        lf_schedule_token(event, 5ms, -0.25);
+        lf_schedule_token(event, 7ms, 1.25);
+    =}
+}
+
+reactor Gyrosscope {
+    timer sensor_read_timer(0s, 100ms);
+    
+    output current_angle: double;
+    output request_angle: void;
+    input set_angle: double;
+
+    state sensor_value: double;
+    
+    reaction (set_angle) -> current_angle {=
+        self->sensor_value = set_angle->value;
+        lf_set(current_angle, self->sensor_value);
+    =}
+
+    reaction(sensor_read_timer) -> request_angle {=
+        printf("reading sensor \n");
+        lf_set(request_angle);
+    =}
+}
+
+reactor ReactionWheel {
+    timer update(1ms, 10ms);
+    
+    // this are the angles of the platform not the wheel
+    input desired_angle: double;
+    input current_angle: double;
+    input setup: WheelConfiguration;
+
+    output diff_angular_moment_platform: double;
+    output diff_angular_moment_wheel: double;
+
+    state current_angular_momentum: double;
+    state configuration: WheelConfiguration;
+    state last_tag: tag_t;
+
+    // this are the angles of the platform not the wheel
+    state current_angle: double;
+    state desired_angle: double;
+
+    reaction (setup) {=
+        self->configuration = setup->value;
+        self->current_angular_momentum = 0;
+        self->last_tag = lf_tag();
+        self->current_angle = 0;
+        self->desired_angle = 0;
+    =}
+
+    reaction (desired_angle) {=
+        self->desired_angle = desired_angle->value;
+    =}
+
+    reaction (current_angle) {=
+        self->current_angle = current_angle->value;
+    =}
+
+    reaction (update) -> diff_angular_moment_platform, diff_angular_moment_wheel {=
+        float raw_diff_angle = (self->desired_angle - self->current_angle);  // phi_desired - phi_current
+        float diff_angle = fmod((raw_diff_angle + M_PI), (2 * M_PI)) - M_PI; // self forces the angle to be inbetween -pi and +pi
+
+        float max_angular_momentum_platform = 2 * M_PI; // self is the max angular momentum the platform can experience
+        float max_angular_momentum_wheel = 5 * M_PI; // self is the max angular momentum the wheel can experience
+        float growth_parameter = 0.01; // parameter to tune 
+        float sign = (diff_angle > 0) ? 1 : ((diff_angle < 0) ? -1 : 0); // get the sign of the error 
+        float angular_momentum_platform = growth_parameter * max_angular_momentum_platform * sign * (M_PI - abs(diff_angle));
+
+        double angular_momentum_wheel = MAX(
+            (self->configuration.wheel_inertia * angular_momentum_platform) / self->configuration.platform_inertia, 
+            max_angular_momentum_wheel);
+        
+        printf("angle error e = %f \n", diff_angle);
+        printf("turning platform by dw = %f \n", angular_momentum_platform);
+        printf("turning wheel by dw = %f \n", angular_momentum_wheel);
+
+        self->current_angle = self->current_angle + 0.01 * angular_momentum_platform;
+
+        lf_set(diff_angular_moment_platform, 0.01 * angular_momentum_platform);
+        lf_set(diff_angular_moment_wheel, 0.01 * angular_momentum_wheel);
+    =}
+
+}
+
+reactor Setup {
+    output wheel_configuration: WheelConfiguration;
+    reaction(startup) -> wheel_configuration {=
+        WheelConfiguration configuration;
+        configuration.platform_inertia = 0.00124;
+        configuration.wheel_inertia = 0.00124 / 100.0;
+        configuration.viscous_friction = 1.5;
+        configuration.coulomb_friction = 2.5;
+        configuration.max_platform_position = 3.14;
+        configuration.min_platform_position = -3.14;
+
+        lf_set(wheel_configuration, configuration);
+    =}
+}
+
+main reactor {    
+    timer t(0s, 100ms);
+
+    setup = new Setup();
+    sim = new Simulator();
+    reaction_wheel = new ReactionWheel();
+        
+
+    setup.wheel_configuration -> reaction_wheel.setup;
+
+    reaction_wheel.diff_angular_moment_platform -> sim.set_rotation_platform;
+    reaction_wheel.diff_angular_moment_wheel -> sim.set_rotation_wheel;
+
+    reaction(startup) -> reaction_wheel.desired_angle {=
+        printf("start up\n");
+        lf_set(reaction_wheel.desired_angle, 0.1);
+    =}
+
+    reaction(shutdown) {=
+        printf("shutdown up\n");
+    =}
+    
+    reaction(t) {=
+        printf("compute\n");
+    =} deadline(100ms) {=
+        printf("deadline missed\n");
+    =}
+    
+}
