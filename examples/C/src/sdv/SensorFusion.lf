@@ -60,7 +60,7 @@ reactor Display_QM{
     =}
 }
 
- main reactor adas{
+ main reactor {
      sensor = new Sensor_ASILB();
      processor = new Processor_ASILD();
      ivi = new Display_QM();

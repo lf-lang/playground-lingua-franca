@@ -1,0 +1,109 @@
+/**
+ * @author Ravi Akella
+ */
+ target C{
+    timeout: 10 sec,
+    //docker: true,
+    //coordination: centralized
+ };
+
+ preamble{=
+    #include <time.h>
+    #include "platform.h"
+=}
+
+ reactor Sensor_ASILB{
+    timer t(0, 200 msec);
+    output x:int;
+    state count:int(0);
+    reaction(t) -> x {=
+           lf_set(x, self->count);
+           self->count++;
+    =}
+ }
+
+ reactor Processor_ASILD {
+    input y:int;
+    input deadline_missed:bool;
+    logical action a(100 msec):int;
+    reaction(y) -> a {=
+        lf_schedule_int(a, 0, y->value);
+    =}
+
+    output z:int;
+    state count:int(0);
+
+    initial mode Advanced {
+        reaction(a) -> z {=
+
+            if (2 * (a->value / 2) != a->value) {
+                // The count variable is odd.
+                // Take time to cause a deadline violation.
+                lf_nanosleep(MSEC(100));
+            }
+    
+            lf_set(z, a->value);
+        =} 
+        deadline(150 msec){=
+            lf_print("STP violation occurred in a trigger ??");
+        =}
+        reaction(deadline_missed) -> Safe {=
+            if (deadline_missed->value == true) {
+                lf_print("***** Switching to the safe controller.");
+                lf_set_mode(Safe);
+            }
+        =}
+    }
+    
+    mode Safe {
+        reaction(a) -> z {=
+
+            if (2 * (a->value / 2) != a->value) {
+                // The count variable is odd.
+                // Take time to cause a deadline violation.
+                // lf_nanosleep(MSEC(100));
+            }
+    
+            lf_set(z, a->value);
+        =} 
+        deadline(150 msec){=
+            lf_print("STP violation occurred in a trigger ??");
+        =}
+        reaction(deadline_missed) -> Advanced {=
+            self->count++;
+            if (deadline_missed->value == false && self->count > 10) {
+                self->count = 0;
+                lf_print("***** Switching to the advanced controller.");
+                lf_set_mode(Advanced);
+            }
+        =}
+    }
+}
+
+reactor Display_QM{
+    input z:int;
+    output deadline_missed:bool;
+    reaction(z) -> deadline_missed {=
+        printf("Logical time: %lld, Physical time %lld"
+        		", Value: %d\n",
+        		lf_time_logical_elapsed(),
+        		lf_time_physical_elapsed(), z->value);
+        lf_set(deadline_missed, false);
+    =} deadline(100 msec) {=
+        instant_t d = lf_time_physical_elapsed()
+        		- lf_time_logical_elapsed();
+        printf("***** Deadline missed at %lld nsecs\n", d);
+        instant_t lt =  lf_time_logical();
+        lf_set(deadline_missed, true);
+    =}
+}
+
+ main reactor {
+     sensor = new Sensor_ASILB();
+     processor = new Processor_ASILD();
+     ivi = new Display_QM();
+     sensor.x -> processor.y;
+     processor.z -> ivi.z;
+     ivi.deadline_missed -> processor.deadline_missed after 1 nsec;
+ }
+ 
