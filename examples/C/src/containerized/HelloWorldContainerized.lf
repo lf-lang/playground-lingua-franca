@@ -14,7 +14,7 @@ target C {
 import MessageGenerator from "../distributed/HelloWorld.lf"
 import PrintMessage from "../distributed/HelloWorld.lf"
 
-federated reactor HelloWorldContainerized at rti {
+federated reactor HelloWorldContainerized {
   source = new MessageGenerator(prefix = "Hello World")
   print = new PrintMessage()
   source.message -> print.message
