@@ -95,7 +95,7 @@ reactor Node(
           // Notify the backup of the NRP.
           message_t message = {new_NRP, in1->value.source, 0};
           lf_set(out1, message);
-        } else if (in2->is_present && in2->value.type == pingNRP) {
+        } else if (in2->is_present && in2->value.type == pingNRP_response) {
           lf_print(PRINTF_TIME ": Primary node %d received ping response on network 2. Making switch %d the NRP.", lf_time_logical_elapsed(), self->id, in2->value.source);
           self->NRP_network = 2;
           self->NRP_switch_id = in2->value.source;
@@ -415,6 +415,9 @@ reactor Switch(
   }
 }
 
+// FIXME: This should be federated, but bugs in federated execution make it fail.
+// Specifically:
+// FATAL ERROR: Received a message at tag (4000000, 0) that has a tag (4000000, 0) that has violated the STP offset. Centralized coordination should not have these types of messages.
 main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 10 s)
   node2 = new Node(heartbeat_period=heartbeat_period, id=2, fails_at_time = 15 s)
