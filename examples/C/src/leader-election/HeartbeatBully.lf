@@ -31,9 +31,12 @@
  * @author Edward A. Lee
  * @author Marjan Sirjani
  */
-target C
+target C {
+  timeout: 30 s
+}
 
 preamble {=
+  #include "platform.h" // Defines PRINTF_TIME
   enum message_type {
     heartbeat,
     reveal,
@@ -59,7 +62,7 @@ reactor Node(
 
   initial mode Idle {
     reaction(startup) -> reset(Backup), reset(Primary) {=
-      lf_print("Starting node %d", self->bank_index);
+      lf_print(PRINTF_TIME ": Starting node %d", lf_time_logical_elapsed(), self->bank_index);
       if (self->bank_index == self->num_nodes - 1) {
         lf_set_mode(Primary);
       } else {
@@ -79,7 +82,7 @@ reactor Node(
               lf_print_error("Multiple primaries detected!!");
             }
             primary_id = in[i]->value.id;
-            lf_print("Node %d received heartbeat from node %d.", self->bank_index, primary_id);
+            lf_print(PRINTF_TIME ": Node %d received heartbeat from node %d.", lf_time_logical_elapsed(), self->bank_index, primary_id);
             self->heartbeats_missed = 0;
           } else if (in[i]->value.type == reveal && in[i]->value.id < self->bank_index) {
             // NOTE: This will not occur if the LF semantics are followed because
@@ -92,7 +95,7 @@ reactor Node(
             message.type = sorry;
             message.id = self->bank_index;
             lf_set(out[in[i]->value.id], message);
-            lf_print("Node %d sends sorry to node %d", self->bank_index, in[i]->value.id);
+            lf_print(PRINTF_TIME ": Node %d sends sorry to node %d", lf_time_logical_elapsed(), self->bank_index, in[i]->value.id);
             // Go to Prospect mode to send reveal to any higher-priority nodes.
             lf_set_mode(Prospect);
           }
@@ -119,10 +122,10 @@ reactor Node(
     reaction(heartbeat) -> out, reset(Failed) {=
       if (self->primary_heartbeats_counter++ >= self->primary_fails_after_heartbeats) {
         // Stop sending heartbeats.
-        lf_print("**** Primary node %d fails.", self->bank_index);
+        lf_print(PRINTF_TIME ": **** Primary node %d fails.", lf_time_logical_elapsed(), self->bank_index);
         lf_set_mode(Failed);
       } else {
-        lf_print("Primary node %d sends heartbeat.", self->bank_index);
+        lf_print(PRINTF_TIME ": Primary node %d sends heartbeat.", lf_time_logical_elapsed(), self->bank_index);
         for (int i = 0; i < out_width; i++) {
           if (i != self->bank_index) {
             message_t message;
@@ -141,7 +144,7 @@ reactor Node(
   mode Prospect {
     logical action wait_for_sorry
     reaction(reset) -> out, wait_for_sorry {=
-      lf_print("***** Node %d entered Prospect mode.", self->bank_index);
+      lf_print(PRINTF_TIME ": ***** Node %d entered Prospect mode.", lf_time_logical_elapsed(), self->bank_index);
       // Send a reveal message with my ID in a bid to become primary.
       // NOTE: It is not necessary to send to nodes that have a lower
       // priority than this node, but the connection is broadcast, so
@@ -150,7 +153,7 @@ reactor Node(
       message.type = reveal;
       message.id = self->bank_index;
       for (int i = self->bank_index + 1; i < self->num_nodes; i++) {
-        lf_print("Node %d sends reveal to node %d", self->bank_index, i);
+        lf_print(PRINTF_TIME ": Node %d sends reveal to node %d", lf_time_logical_elapsed(), self->bank_index, i);
         lf_set(out[i], message);
       }
       // The reveal message is delayed by heartbeat_period, and if
@@ -167,7 +170,7 @@ reactor Node(
           message.type = sorry;
           message.id = self->bank_index;
           lf_set(out[in[i]->value.id], message);
-          lf_print("Node %d sends sorry to node %d", self->bank_index, in[i]->value.id);
+          lf_print(PRINTF_TIME ": Node %d sends sorry to node %d", lf_time_logical_elapsed(), self->bank_index, in[i]->value.id);
         }
       }
     =}
@@ -197,6 +200,8 @@ reactor Node(
 // This may be related to these bugs:
 // https://github.com/lf-lang/lingua-franca/issues/1961
 // https://github.com/lf-lang/lingua-franca/issues/1962
+// Although these issues have been closed, this program still does not bahave the same
+// federated as unfederated.
 main reactor(num_nodes: int = 4, heartbeat_period: time = 1 s) {
   nodes = new[num_nodes] Node(num_nodes=num_nodes, heartbeat_period=heartbeat_period)
   nodes.out -> interleaved(nodes.in) after heartbeat_period
