@@ -10,7 +10,7 @@
     // Uncomment this line if GitHub displays no enough space
     "waitFor": "postCreateCommand",
     "updateContentCommand": "",
-    "onCreateCommand": "sudo mkdir -p /workspaces/.codespaces/.persistedshare/logs && sudo chown -R vscode /workspaces/.codespaces/.persistedshare/logs",
+    "onCreateCommand": "sudo mkdir -p /workspaces/.codespaces/.persistedshare/logs && sudo chmod -R 777 /workspaces/.codespaces/.persistedshare/logs",
     "postStartCommand": {
       "setup-user-env": ["/bin/bash", "-c", "(bash -i ./utils/scripts/setup-user-env.bash >> /workspaces/.codespaces/.persistedshare/logs/stdout-env.log 2>> /workspaces/.codespaces/.persistedshare/logs/stderr-env.log) || (echo setup-user-env exited with nonzero code)"],
       "setup-lf": ["/bin/bash", "-c", "(bash ./utils/scripts/setup-lf.bash nightly >> /workspaces/.codespaces/.persistedshare/logs/stdout-lf.log 2>> /workspaces/.codespaces/.persistedshare/logs/stderr-lf.log) || (echo setup-lf exited with nonzero code)"],
