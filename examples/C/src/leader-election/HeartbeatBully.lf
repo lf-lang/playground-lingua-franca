@@ -196,13 +196,7 @@ reactor Node(
   }
 }
 
-// FIXME: This should be federated, but it fails because all federates get the bank_index = 0.
-// This may be related to these bugs:
-// https://github.com/lf-lang/lingua-franca/issues/1961
-// https://github.com/lf-lang/lingua-franca/issues/1962
-// Although these issues have been closed, this program still does not bahave the same
-// federated as unfederated.
-main reactor(num_nodes: int = 4, heartbeat_period: time = 1 s) {
+federated reactor(num_nodes: int = 4, heartbeat_period: time = 1 s) {
   nodes = new[num_nodes] Node(num_nodes=num_nodes, heartbeat_period=heartbeat_period)
   nodes.out -> interleaved(nodes.in) after heartbeat_period
 }
