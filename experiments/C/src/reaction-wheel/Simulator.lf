@@ -1,0 +1,44 @@
+target C;
+
+reactor Simulator {
+    timer t(0s, 10ms);
+    state rotation_platform: double;
+    state rotation_wheel: double;
+
+    state rotational_velocity_wheel: double;
+    state rotational_velocity_platform: double;
+
+    state inertia_wheel: double;
+    state inertia_platform: double;
+
+    physical action applied_energy: double;
+    physical action get_sensor_reading: double;
+
+    output return_rotation_platform: double;
+  
+    
+    reaction (applied_energy) {=
+      self->rotation_velocity_wheel += (2 * applied_energy->value) / self->inertia_wheel;
+      self->rotation_velocity_platform +=  (2 * applied_energy->value) / self->inertia_platform;
+    =}
+
+    reaction(get_sensor_reading) -> return_rotation_platform {=
+      lf_set(return_rotation_platform, self->rotation_platform);
+    =}
+    
+    reaction(event) -> applied_energy {=
+        lf_set(applied_energy, event->value);
+    =}
+    
+    reaction(t) {=
+      self->rotation_platform = 0.01 * self->rotation_velocity_platform;
+      self->rotation_wheel  = 0.01 * self->rotation_velocity_wheel;
+    =}
+
+    reaction (startup) {=
+        lf_schedule_token(event, 1ms, 10);
+        lf_schedule_token(event, 5ms, -4.25);
+        lf_schedule_token(event, 7ms, 10.25);
+    =}
+}
+

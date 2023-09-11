@@ -1,0 +1,64 @@
+target C {
+  files: ["./shared_header.h"]
+};
+
+import Controller from "./Controller.lf";
+import Motor from "./Motor.lf";
+import  AngularRateSensorSimualted, Gyroscope from "./Sensor.lf";
+import GPIOSimulated from "./GPIO.lf";
+
+preamble {=
+  #include "./shared_header.h"
+=}
+
+reactor UserInput {
+    logical action event: double*;
+    output desired_angle: double;
+    
+    state push_1: double = 3.41;
+    state push_2: double = -3.41;
+    state push_3: double = 0;
+
+    reaction(event) -> desired_angle {=
+        lf_set(desired_angle, *event->value);
+    =}
+   
+    reaction (startup) -> event {=
+        lf_schedule_value(event, SEC(1), &(self->push_1), sizeof(double));
+        lf_schedule_value(event, SEC(5), &(self->push_2), sizeof(double));
+        lf_schedule_value(event, SEC(7), &(self->push_3), sizeof(double));
+    =}
+
+}
+
+reactor Setup {
+    output wheel_configuration: WheelConfiguration;
+    reaction(startup) -> wheel_configuration {=
+        WheelConfiguration configuration;
+        configuration.platform_inertia = 0.00124;
+        configuration.wheel_inertia = 0.00124 / 100.0;
+        configuration.viscous_friction = 1.5;
+        configuration.coulomb_friction = 2.5;
+        configuration.max_platform_position = 3.14;
+        configuration.min_platform_position = -3.14;
+
+        lf_set(wheel_configuration, configuration);
+    =}
+}
+
+
+reactor Program {
+  user_input = new UserInput();
+  controller = new Controller();
+  motor = new Motor(freq=10000.0);
+  speed_sensor = new AngularRateSensorSimualted();
+  gyroscope = new Gyroscope();
+  gpio = new GPIOSimulated(freq=10000.0, voltage=5.0, current=1.0); // 5V 1A Motor
+
+  gyroscope.current_angle -> controller.current_angle;
+  speed_sensor.current_angular_momentum -> controller.current_angular_momentum;
+  user_input.desired_angle -> controller.desired_angle;
+
+  controller.angular_momentum -> motor.set_desired_angular_momentum;
+  motor.pwm_pin_duty_cycle -> gpio.pwm_pin_duty_cycle;
+}

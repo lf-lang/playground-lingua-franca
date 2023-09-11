@@ -1,0 +1,19 @@
+target C;
+
+reactor AngularRateSensorSimualted {
+    input receive_sensor_angular_momentum: double;
+
+    output current_angular_momentum: double;
+
+    state sensor_value: double;
+    
+    reaction (receive_sensor_angular_momentum) {=
+        self->sensor_value = receive_sensor_angular_momentum->value;
+    =}
+}
+
+reactor Gyroscope {
+  
+  output current_angle: double;
+
+}
