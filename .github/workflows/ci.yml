@@ -7,8 +7,12 @@ on:
       - 'releases/*'
 
 jobs:
+  find-latest-release:
+    uses: lf-lang/lingua-franca/.github/workflows/latest-release.yml@master
+    
   check-compile:
     runs-on: ubuntu-latest
+    needs: find-latest-release
     steps:
       - uses: actions/checkout@v3
       - name: Set up Java 17
@@ -28,8 +32,11 @@ jobs:
           check_mode: "compile"
           no_compile_flag: false
           exclude_dirs: '["failing", "experiments"]'
+          compiler_ref: ${{ needs.find-latest-release.outputs.ref }}
+
   check-format:
     runs-on: ubuntu-latest
+    needs: find-latest-release
     steps:
       - uses: actions/checkout@v3
       - name: Set up Java 17
@@ -41,3 +48,4 @@ jobs:
         with:
           check_mode: "format"
           exclude_dirs: '["failing", "experiments"]'
+          compiler_ref: ${{ needs.find-latest-release.outputs.ref }}

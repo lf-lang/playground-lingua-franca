@@ -30,13 +30,13 @@ done
 
 # Install dependencies
 sudo apt-get update
-## Setup C, C++, Python, Rust, protobuf, gRPC
+## Setup C, C++, Python, Rust, protobuf, gRPC, gnuplot
 sudo apt-get install --assume-yes \
     build-essential \
     python3 python3-dev python3-pip \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
-    protobuf-compiler-grpc libgrpc-dev libgrpc++-dev
+    protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot
     
 python3 -m pip install --upgrade pip
 # Install python dependencies and
