@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 # This script compiles the generated code,
 # executes it, and plots the results.
 # The one argument is the name of the main reactor.
