@@ -115,7 +115,9 @@ reactor Node(
   mode Backup {
     timer t(heartbeat_period, heartbeat_period)
     // FIXME: Need SENDIMHERETOPRIMARY with "longer interval"
-    reaction(reset) {= lf_print(PRINTF_TIME ": ---- Node %d becomes backup.", lf_time_logical_elapsed(), self->id); =}
+    reaction(reset) {=
+      lf_print(PRINTF_TIME ": ---- Node %d becomes backup.", lf_time_logical_elapsed(), self->id);
+    =}
 
     reaction(node_fails) -> reset(Failed) {=
       if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
@@ -254,7 +256,9 @@ reactor Node(
 
   mode Primary {
     timer heartbeat(0, heartbeat_period)
-    reaction(reset) {= lf_print(PRINTF_TIME ": ---- Node %d becomes primary.", lf_time_logical_elapsed(), self->id); =}
+    reaction(reset) {=
+      lf_print(PRINTF_TIME ": ---- Node %d becomes primary.", lf_time_logical_elapsed(), self->id);
+    =}
 
     reaction(node_fails) -> reset(Failed) {=
       if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
@@ -347,9 +351,13 @@ reactor Switch(
       if(lf_time_logical_elapsed() > 0LL) lf_set_mode(Failed);
     =}
 
-    reaction(pending_out1) -> out1 {= lf_set(out1, pending_out1->value); =}
+    reaction(pending_out1) -> out1 {=
+      lf_set(out1, pending_out1->value);
+    =}
 
-    reaction(pending_out2) -> out2 {= lf_set(out2, pending_out2->value); =}
+    reaction(pending_out2) -> out2 {=
+      lf_set(out2, pending_out2->value);
+    =}
 
     reaction(in1, in2) -> out1, out2, pending_out1, pending_out2 {=
       if (in1->is_present) {
@@ -413,7 +421,9 @@ reactor Switch(
   }
 
   mode Failed {
-    reaction(reset) {= lf_print(PRINTF_TIME ": ==== Switch %d fails.", lf_time_logical_elapsed(), self->id); =}
+    reaction(reset) {=
+      lf_print(PRINTF_TIME ": ==== Switch %d fails.", lf_time_logical_elapsed(), self->id);
+    =}
   }
 }
 
