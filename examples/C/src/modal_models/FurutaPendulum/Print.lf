@@ -37,5 +37,7 @@ reactor Print(filename: string = "pendulum.csv") {
     );
   =}
 
-  reaction(shutdown) {= fclose(self->file); =}
+  reaction(shutdown) {=
+    fclose(self->file);
+  =}
 }

@@ -87,7 +87,9 @@ reactor KeyboardInput(exit_key: int = 0) {
     lf_thread_create(&thread_id, &read_input, &keyboard_input);
   =}
 
-  reaction(keypress) -> key {= lf_set(key, keypress->value); =}
+  reaction(keypress) -> key {=
+    lf_set(key, keypress->value);
+  =}
 
   reaction(shutdown) {=
     endwin();
@@ -98,5 +100,7 @@ reactor KeyboardInput(exit_key: int = 0) {
 main reactor {
   k = new KeyboardInput(exit_key=120)
 
-  reaction(k.key) {= lf_print("You typed %c (keycode %d).", k.key->value, k.key->value); =}
+  reaction(k.key) {=
+    lf_print("You typed %c (keycode %d).", k.key->value, k.key->value);
+  =}
 }

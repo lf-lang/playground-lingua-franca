@@ -213,7 +213,11 @@ reactor Network {
     });
   =}
 
-  reaction(updated_events) {= events  = std::move(*updated_events.get()); =}
+  reaction(updated_events) {=
+    events  = std::move(*updated_events.get());
+  =}
 
-  reaction(shutdown) {= thread.join(); =}
+  reaction(shutdown) {=
+    thread.join();
+  =}
 }

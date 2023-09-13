@@ -100,7 +100,9 @@ reactor GetUserInput {
     lf_thread_create(&thread_id, &read_input, user_response);
   =}
 
-  reaction(prompt) {= self->prompt_time = lf_time_logical(); =}
+  reaction(prompt) {=
+    self->prompt_time = lf_time_logical();
+  =}
 
   reaction(user_response) -> another {=
     if (user_response->value == EOF) {

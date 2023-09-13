@@ -27,7 +27,9 @@ main reactor {
 
   timer t(0, 500 ms)
 
-  reaction(startup) {= publisher = lf_node->create_publisher<std_msgs::msg::String>("topic", 10); =}
+  reaction(startup) {=
+    publisher = lf_node->create_publisher<std_msgs::msg::String>("topic", 10);
+  =}
 
   reaction(t) {=
     auto message = std_msgs::msg::String();

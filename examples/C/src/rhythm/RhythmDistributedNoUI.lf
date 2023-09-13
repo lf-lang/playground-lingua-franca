@@ -45,7 +45,9 @@ reactor BeatSource(period: time = 1600 msec) {
 
   timer tick(0, period)
 
-  reaction(tick) -> note {= lf_set(note, 1.0f); =}
+  reaction(tick) -> note {=
+    lf_set(note, 1.0f);
+  =}
 }
 
 reactor RhythmPlayer {

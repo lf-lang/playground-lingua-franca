@@ -44,7 +44,9 @@ reactor Client(seed: int = 0, lambda: double = 10000000.0) {
     #include "platform.h" // Defines PRINTF_TIME
   =}
 
-  reaction(p.event) -> request {= lf_set(request, lf_time_logical_elapsed()); =}
+  reaction(p.event) -> request {=
+    lf_set(request, lf_time_logical_elapsed());
+  =}
 
   reaction(response) {=
     if (response->value > 0) {
@@ -74,7 +76,9 @@ reactor Cache(miss_probability: double = 0.1, hit_delay: time = 10 ns) extends R
   state pending: bool = false
   logical action a: time
 
-  reaction(a) -> response {= lf_set(response, a->value); =}
+  reaction(a) -> response {=
+    lf_set(response, a->value);
+  =}
 
   reaction(request) -> a, response, miss {=
     bool hit = random() >= (int)(self->miss_probability * RAND_MAX);
@@ -101,7 +105,11 @@ reactor Memory(seed: int = 0, average_delay: time = 100 ns) {
   output response: time
   delay = new RandomDelay(average=average_delay)
 
-  reaction(request) -> delay.in {= lf_set(delay.in, request->value); =}
+  reaction(request) -> delay.in {=
+    lf_set(delay.in, request->value);
+  =}
 
-  reaction(delay.out) -> response {= lf_set(response, delay.out->value); =}
+  reaction(delay.out) -> response {=
+    lf_set(response, delay.out->value);
+  =}
 }

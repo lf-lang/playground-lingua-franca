@@ -17,5 +17,7 @@ reactor PrintToFile(filename: string = "output.data") {
     fprintf(self->file, "%f %f\n", t, y->value);
   =}
 
-  reaction(shutdown) {= fclose(self->file); =}
+  reaction(shutdown) {=
+    fclose(self->file);
+  =}
 }

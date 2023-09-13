@@ -21,7 +21,9 @@ reactor WebCam {
   state video_capture_thread
   state thread_should_be_running
 
-  preamble {= import cv2 =}
+  preamble {=
+    import cv2
+  =}
 
   timer camera_tick(3 sec, 100 msec)
 
@@ -40,7 +42,9 @@ reactor WebCam {
       camera_frame.set((lf.time.physical_elapsed(), frame))
   =}
 
-  reaction(shutdown) {= self.stream.release() =}
+  reaction(shutdown) {=
+    self.stream.release()
+  =}
 }
 
 main reactor {

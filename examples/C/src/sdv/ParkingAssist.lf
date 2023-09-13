@@ -71,7 +71,11 @@ reactor Sensors(
    * into the result and return 0. Otherwise, return -1 if the key is not present, -2 if the value
    * is not an int, and -3 if the JSON string does not have the expected form.
    */
-  method json_to_int(json: {= const char* =}, key: {= const char* =}, result: int*): int {=
+  method json_to_int(json: {=
+    const char*
+  =}, key: {=
+    const char*
+  =}, result: int*): int {=
     char* key_position = strstr(json, key);
     if (key_position == NULL) return -1;
     // Check that the next character is closing quotation mark.
@@ -144,7 +148,9 @@ reactor Dashboard {
   =}
 
   // Make sure disconnections occur after messages are sent.
-  reaction(s.connected) {= self->connection = s.connected->value; =}
+  reaction(s.connected) {=
+    self->connection = s.connected->value;
+  =}
 }
 
 reactor SoundAlert {

@@ -71,7 +71,9 @@ reactor Trigger {
     ignore_flag = false;
   =}
 
-  reaction(interrupt) {= ignore_flag = true; =}
+  reaction(interrupt) {=
+    ignore_flag = true;
+  =}
 }
 
 reactor Clock {

@@ -5,7 +5,9 @@
  */
 target Python
 
-preamble {= BILLION = 1_000_000_000 =}
+preamble {=
+  BILLION = 1_000_000_000
+=}
 
 /**
  * Use OpenCV2 to read from the user webcam.
@@ -50,7 +52,9 @@ reactor WebCam(webcam_id=0) {
     self.video_capture_thread.start()
   =}
 
-  reaction(frame_action) -> camera_frame {= camera_frame.set(frame_action.value) =}
+  reaction(frame_action) -> camera_frame {=
+    camera_frame.set(frame_action.value)
+  =}
 
   reaction(shutdown) {=
     self.thread_should_be_running.clear()
@@ -110,7 +114,9 @@ reactor Plotter(label_deadline = 100 msec) {
   state _model  # Keep the model
   state _prev_time = 0
 
-  preamble {= from cv2 import cv2 =}
+  preamble {=
+    from cv2 import cv2
+  =}
 
   /** Receive the DNN model */
   reaction(model) {=

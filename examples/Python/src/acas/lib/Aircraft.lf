@@ -24,7 +24,9 @@
  */
 target Python
 
-preamble {= import math =}
+preamble {=
+  import math
+=}
 
 reactor Aircraft(
     x_init=0.0,     # Initial x position in feet.
@@ -53,7 +55,9 @@ reactor Aircraft(
     v.set(self.v_init)
   =}
 
-  reaction(turn) {= self.latest_turn = turn.value =}
+  reaction(turn) {=
+    self.latest_turn = turn.value
+  =}
 
   reaction(t) -> x, y, psi, v {=
     delta_t = self.period / 1e9  # Period is seconds

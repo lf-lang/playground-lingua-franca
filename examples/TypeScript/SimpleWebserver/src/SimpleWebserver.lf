@@ -11,7 +11,9 @@ target TypeScript {
 }
 
 main reactor {
-  preamble {= import * as http from "http" =}
+  preamble {=
+    import * as http from "http"
+  =}
   state server: {= http.Server | undefined =} = {= undefined =}
   physical action serverRequest: {= [http.IncomingMessage, http.ServerResponse] =}
 

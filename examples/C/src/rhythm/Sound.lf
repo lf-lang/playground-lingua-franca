@@ -45,7 +45,9 @@ reactor RhythmSource(
 
   state count: int = 0  // Count of sixteenth notes.
 
-  reaction(startup) -> note, tick {= lf_schedule(tick, self->sixteenth); =}
+  reaction(startup) -> note, tick {=
+    lf_schedule(tick, self->sixteenth);
+  =}
 
   reaction(tick) -> note, tick {=
     int position = 1 << self->count;

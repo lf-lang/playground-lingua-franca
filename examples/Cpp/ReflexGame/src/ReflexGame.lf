@@ -90,7 +90,9 @@ reactor GetUserInput {
     });
   =}
 
-  reaction(prompt) {= prompt_time = get_physical_time(); =}
+  reaction(prompt) {=
+    prompt_time = get_physical_time();
+  =}
 
   reaction(user_response) -> another {=
      auto c = user_response.get();

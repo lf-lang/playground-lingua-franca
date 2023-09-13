@@ -35,7 +35,9 @@ reactor DoorLockController {
   output actuate: LockCommand
 
   initial mode ClosedLocked {
-    reaction(reset) {= lf_print("*** Door is closed and has been locked."); =}
+    reaction(reset) {=
+      lf_print("*** Door is closed and has been locked.");
+    =}
 
     reaction(button, fob, mobile) -> reset(ClosedUnlocked), actuate {=
       if (
@@ -50,11 +52,15 @@ reactor DoorLockController {
       }
     =}
 
-    reaction(door) {= lf_print("Door is closed and locked."); =}
+    reaction(door) {=
+      lf_print("Door is closed and locked.");
+    =}
   }
 
   mode ClosedUnlocked {
-    reaction(reset) {= lf_print("*** Door has been closed and is unlocked."); =}
+    reaction(reset) {=
+      lf_print("*** Door has been closed and is unlocked.");
+    =}
 
     reaction(button, fob, mobile) -> reset(ClosedLocked), actuate {=
       if (
@@ -76,14 +82,18 @@ reactor DoorLockController {
   }
 
   mode Open {
-    reaction(reset) {= lf_print("*** Door has been opened."); =}
+    reaction(reset) {=
+      lf_print("*** Door has been opened.");
+    =}
 
     reaction(door) -> reset(ClosedUnlocked) {=
       if (door->value == CLOSE) lf_set_mode(ClosedUnlocked);
       else lf_print("Door is already open.");
     =}
 
-    reaction(button, fob, mobile) {= lf_print("Door is open."); =}
+    reaction(button, fob, mobile) {=
+      lf_print("Door is open.");
+    =}
   }
 }
 

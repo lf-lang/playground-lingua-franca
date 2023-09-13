@@ -125,5 +125,8 @@ main reactor Snake(grid_side: usize = 32, tempo_step: time = 40 msec, food_limit
     }
   =}
 
-  reaction(shutdown) {= println!("New high score: {}", self.snake.len()); =}  // @label shutdown
+  // @label shutdown
+  reaction(shutdown) {=
+    println!("New high score: {}", self.snake.len());
+  =}
 }

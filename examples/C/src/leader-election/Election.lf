@@ -21,9 +21,13 @@ reactor Node(id: int = 0) {
   logical action a: int
 
   initial mode NotElected {
-    reaction(startup) -> out {= lf_set(out, self->id); =}
+    reaction(startup) -> out {=
+      lf_set(out, self->id);
+    =}
 
-    reaction(a) -> out {= lf_set(out, a->value); =}
+    reaction(a) -> out {=
+      lf_set(out, a->value);
+    =}
 
     reaction(in) -> a, reset(Elected) {=
       if (in->value > self->id) {

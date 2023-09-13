@@ -27,5 +27,7 @@ main reactor AlarmClock {
   network.delete_index -> clock.cancel_by_index
   clock.event_dump -> network.updated_events
 
-  reaction(startup) {= std::cout << "Starting Lingua Franca AlarmClock" << std::endl; =}
+  reaction(startup) {=
+    std::cout << "Starting Lingua Franca AlarmClock" << std::endl;
+  =}
 }

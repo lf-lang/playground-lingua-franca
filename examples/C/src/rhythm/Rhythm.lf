@@ -284,7 +284,9 @@ reactor RhythmSource(
     lf_schedule(tick, self->tick_duration);
   =}
 
-  reaction(shutdown) {= end_sensor_simulator(); =}
+  reaction(shutdown) {=
+    end_sensor_simulator();
+  =}
 }
 
 main reactor {

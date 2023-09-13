@@ -63,7 +63,9 @@ reactor BrakePedal {
     trigger_brake.set();
   =}
 
-  reaction(shutdown) {= thread.join(); =}
+  reaction(shutdown) {=
+    thread.join();
+  =}
 }
 
 reactor Brake {
