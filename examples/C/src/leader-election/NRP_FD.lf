@@ -16,7 +16,9 @@
  * @author Edward A. Lee
  * @author Marjan Sirjani
  */
-target C
+target C {
+  timeout: 20 s
+}
 
 preamble {=
   #ifndef NRF_FD
@@ -415,10 +417,7 @@ reactor Switch(
   }
 }
 
-// FIXME: This should be federated, but bugs in federated execution make it fail.
-// Specifically:
-// FATAL ERROR: Received a message at tag (4000000, 0) that has a tag (4000000, 0) that has violated the STP offset. Centralized coordination should not have these types of messages.
-main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
+federated reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 10 s)
   node2 = new Node(heartbeat_period=heartbeat_period, id=2, fails_at_time = 15 s)
 
