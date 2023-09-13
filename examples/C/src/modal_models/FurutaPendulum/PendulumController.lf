@@ -9,18 +9,6 @@
  */
 target C
 
-preamble {=
-  #include <math.h>
-  #define PI 3.14159265
-  #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-  double sign(double x) {
-    return (x > 0.0) - (x < 0.0);
-  }
-  double restrictAngle(double theta) {
-    return((fmod(fabs(theta) + PI, 2 * PI) - PI) * sign(theta));
-  }
-=}
-
 reactor PendulumController(
     h: double = 0.005,         // Sample interval
     w0: double = 6.3,
@@ -38,6 +26,18 @@ reactor PendulumController(
     si3: double = -0.03254225945714,
     si4: double = -0.05808270221773,
     phi2: double = -7.0124562) {
+  preamble {=
+    #include <math.h>
+    #define PI 3.14159265
+    #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+    double sign(double x) {
+      return (x > 0.0) - (x < 0.0);
+    }
+    double restrictAngle(double theta) {
+      return((fmod(fabs(theta) + PI, 2 * PI) - PI) * sign(theta));
+    }
+  =}
+
   input theta: double
   input d_theta: double
   input phi: double
