@@ -26,7 +26,9 @@ reactor Client {
     counter++;
   =}
 
-  reaction(add_response) {= reactor::log::Info() << "It is " << add_response.get()->data(); =}
+  reaction(add_response) {=
+    reactor::log::Info() << "It is " << add_response.get()->data();
+  =}
 }
 
 main reactor {

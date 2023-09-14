@@ -33,5 +33,7 @@ main reactor {
   s.theta -> p.theta
   s.phi -> p.phi
 
-  reaction(disturb) -> s.d {= lf_set(s.d, 0.5); =}
+  reaction(disturb) -> s.d {=
+    lf_set(s.d, 0.5);
+  =}
 }

@@ -61,7 +61,9 @@ reactor Filter(
     self->x2 = self->init_x2;
   =}
 
-  reaction(t) -> y {= lf_set(y, self->x2); =}
+  reaction(t) -> y {=
+    lf_set(y, self->x2);
+  =}
 
   reaction(t) x {=
     double x1_tmp = - self->a[0] * self->x2 + self->b[0] * x->value;
@@ -76,7 +78,9 @@ reactor Command(period: time = 100 ms, value: double = 0.0) {
   timer t(0, period)
   output c: double
 
-  reaction(t) -> c {= lf_set(c, self->value); =}
+  reaction(t) -> c {=
+    lf_set(c, self->value);
+  =}
 }
 
 reactor Hold(

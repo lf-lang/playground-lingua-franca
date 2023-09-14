@@ -156,5 +156,7 @@ reactor PendulumSimulation(
     self->x[1] += d->value;
   =}
 
-  reaction(u) {= self->latest_u = u->value; =}
+  reaction(u) {=
+    self->latest_u = u->value;
+  =}
 }

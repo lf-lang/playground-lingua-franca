@@ -14,7 +14,9 @@ reactor RandomDelay(average: time = 1 sec) extends Random {
   output out: time
   logical action a: time
 
-  reaction(a) -> out {= lf_set(out, a->value); =}
+  reaction(a) -> out {=
+    lf_set(out, a->value);
+  =}
 
   reaction(in) -> a {=
     double lambda = SEC(1) / ((double)self->average);

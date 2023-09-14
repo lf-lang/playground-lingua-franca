@@ -64,7 +64,9 @@ reactor Braking {
 
   state thread: lf_thread_t
 
-  reaction(startup) -> pedal {= lf_thread_create(&self->thread, &press_pedal, pedal); =}
+  reaction(startup) -> pedal {=
+    lf_thread_create(&self->thread, &press_pedal, pedal);
+  =}
 
   reaction(shutdown) {=
     stop_thread = true;

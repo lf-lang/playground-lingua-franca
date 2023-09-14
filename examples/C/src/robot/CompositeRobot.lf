@@ -32,9 +32,13 @@ reactor Handler {
   }
 
   mode HANDLING {
-    reaction(arm_status, agv_status, gripper_status) -> reset(IDLE) {= lf_set_mode(IDLE); =}
+    reaction(arm_status, agv_status, gripper_status) -> reset(IDLE) {=
+      lf_set_mode(IDLE);
+    =}
 
-    reaction(job) {= lf_print("Job rejected at %lld ns. Busy.", lf_time_logical_elapsed()); =}
+    reaction(job) {=
+      lf_print("Job rejected at %lld ns. Busy.", lf_time_logical_elapsed());
+    =}
   }
 }
 
@@ -44,7 +48,9 @@ reactor Jobs {
 
   p = new PoissonClock()
 
-  reaction(p.event) -> job {= lf_set(job, self->job_count++); =}
+  reaction(p.event) -> job {=
+    lf_set(job, self->job_count++);
+  =}
 }
 
 reactor ManualControl {

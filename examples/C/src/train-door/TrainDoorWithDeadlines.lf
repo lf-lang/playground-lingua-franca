@@ -21,12 +21,16 @@ realtime reactor Train {
   reaction(stop) {=
     self->moving = false;
     lf_print("Train stopped.");
-  =} deadline(50 msec) {= lf_print_warning("Deadline violated! Ignoring stop command."); =}
+  =} deadline(50 msec) {=
+    lf_print_warning("Deadline violated! Ignoring stop command.");
+  =}
 
   reaction(move) {=
     self->moving = true;
     lf_print("Train moving.");
-  =} deadline(48 msec) {= lf_print_warning("Deadline violated! Ignoring move command."); =}
+  =} deadline(48 msec) {=
+    lf_print_warning("Deadline violated! Ignoring move command.");
+  =}
 }
 
 realtime reactor Door {

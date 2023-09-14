@@ -14,7 +14,9 @@ reactor InputHandler {
   output out: string
   physical action response
 
-  preamble {= import * as readline from "readline"; =}
+  preamble {=
+    import * as readline from "readline";
+  =}
 
   reaction(startup, response) -> out, response {=
     const rl = readline.createInterface({
@@ -36,7 +38,9 @@ reactor InputHandler {
 reactor Printer {
   input inp: string
 
-  reaction(inp) {= console.log("Received: " + inp); =}
+  reaction(inp) {=
+    console.log("Received: " + inp);
+  =}
 }
 
 reactor ChatHandler {
@@ -45,9 +49,13 @@ reactor ChatHandler {
   u = new InputHandler()
   p = new Printer()
 
-  reaction(u.out) -> send {= send = u.out; =}
+  reaction(u.out) -> send {=
+    send = u.out;
+  =}
 
-  reaction(receive) -> p.inp {= p.inp = receive; =}
+  reaction(receive) -> p.inp {=
+    p.inp = receive;
+  =}
 }
 
 federated reactor SimpleChat {

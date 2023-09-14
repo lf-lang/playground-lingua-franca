@@ -7,7 +7,9 @@ reactor Source(period: time = 100 ms) {
   output out: int
   state count: int = 0
 
-  reaction(t) -> out {= lf_set(out, self->count++); =}
+  reaction(t) -> out {=
+    lf_set(out, self->count++);
+  =}
 }
 
 reactor Sink {

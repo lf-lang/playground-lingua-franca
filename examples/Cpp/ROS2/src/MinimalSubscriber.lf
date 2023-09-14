@@ -35,5 +35,7 @@ main reactor {
     // const std_msgs::msg::String::SharedPtr& msg
   =}
 
-  reaction(message) {= reactor::log::Info() << "I heard: " << *message.get(); =}
+  reaction(message) {=
+    reactor::log::Info() << "I heard: " << *message.get();
+  =}
 }

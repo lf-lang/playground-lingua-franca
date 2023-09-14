@@ -9,7 +9,9 @@ target C
 reactor SendOnce {
   output out: int
 
-  reaction(startup) -> out {= lf_set(out, 42); =}
+  reaction(startup) -> out {=
+    lf_set(out, 42);
+  =}
 }
 
 /**
@@ -47,14 +49,18 @@ reactor ReceiveAndSend {
   input in: int
   output out: int
 
-  reaction(in) -> out {= lf_set(out, in->value); =}
+  reaction(in) -> out {=
+    lf_set(out, in->value);
+  =}
 }
 
 reactor SendOnceAndReceive {
   input in: int
   output out: int
 
-  reaction(startup) -> out {= lf_set(out, 42); =}
+  reaction(startup) -> out {=
+    lf_set(out, 42);
+  =}
 
   reaction(in) {=
     lf_print("At tag (%lld, %d), received %d.",
@@ -164,7 +170,9 @@ reactor SendAndReceiveWithLocalQuery(query_offset: time = 0, query_period: time 
     extends LocalRemoteUpdates {
   local_query = new SendPeriodicallyAndReceive(offset=query_offset, period=query_period)
 
-  reaction(local_query.out) -> local_query.in {= lf_set(local_query.in, self->count); =}
+  reaction(local_query.out) -> local_query.in {=
+    lf_set(local_query.in, self->count);
+  =}
 }
 
 // @label Accumulate local/remote increments, delayed query.
@@ -175,7 +183,11 @@ reactor SendAndReceiveWithDelayedQuery(
   local_query = new SendPeriodicallyAndReceive(offset=query_offset, period=query_period)
   logical action a(query_delay)
 
-  reaction(local_query.out) -> a {= lf_schedule(a, 0); =}
+  reaction(local_query.out) -> a {=
+    lf_schedule(a, 0);
+  =}
 
-  reaction(a) -> local_query.in {= lf_set(local_query.in, self->count); =}
+  reaction(a) -> local_query.in {=
+    lf_set(local_query.in, self->count);
+  =}
 }

@@ -8,7 +8,9 @@
  */
 target C
 
-preamble {= typedef enum {paper=0, rock=1, scissors=2} symbol_t; =}
+preamble {=
+  typedef enum {paper=0, rock=1, scissors=2} symbol_t;
+=}
 
 main reactor RockPaperScissors {
   player1 = new Player(id=1)
@@ -19,7 +21,9 @@ main reactor RockPaperScissors {
 }
 
 reactor Player(id: char = 0) {
-  preamble {= const char* symbol_names[] = {"paper", "rock", "scissors"}; =}
+  preamble {=
+    const char* symbol_names[] = {"paper", "rock", "scissors"};
+  =}
 
   input observe: symbol_t
   output reveal: symbol_t

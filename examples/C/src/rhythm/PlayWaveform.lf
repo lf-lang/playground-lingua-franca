@@ -86,7 +86,9 @@ reactor PlayWaveform(
     lf_start_audio_loop(lf_time_logical());
   =}
 
-  reaction(waveform) {= self->waveform_id = waveform->value; =}
+  reaction(waveform) {=
+    self->waveform_id = waveform->value;
+  =}
 
   reaction(note) {=
     if (self->waveform_id < 0 || self->waveform_id > NUM_WAVEFORMS) {
@@ -96,5 +98,7 @@ reactor PlayWaveform(
     }
   =}
 
-  reaction(shutdown) {= lf_stop_audio_loop(); =}
+  reaction(shutdown) {=
+    lf_stop_audio_loop();
+  =}
 }
