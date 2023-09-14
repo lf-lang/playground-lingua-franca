@@ -158,7 +158,9 @@ reactor ServerUI(initial_file: string = "page.html", hostport: uint16_t = 8080) 
    * with its contents. The caller is responsible for freeing the pointer returned.
    * @param path File path relative to the source .lf file.
    */
-  method read_file(path: {= const char* =}): char* {=
+  method read_file(path: {=
+    const char*
+  =}): char* {=
     // Construct the path to the file to be read
     char* file_path = (char *) malloc(strlen(LF_SOURCE_DIRECTORY) + strlen(path) + 2);
     if (file_path == NULL) lf_print_error_and_exit("Out of memory.");

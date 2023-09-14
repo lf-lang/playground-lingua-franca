@@ -39,7 +39,9 @@ reactor OffsetSensor(offset: time = 0) extends Sensor {
     lf_sleep(SEC(2));
   =}
 
-  reaction(t) -> y {= lf_set(y, self->count++); =}
+  reaction(t) -> y {=
+    lf_set(y, self->count++);
+  =}
 }
 
 reactor StartupSensor extends Sensor {

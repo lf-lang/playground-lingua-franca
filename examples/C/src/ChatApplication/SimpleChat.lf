@@ -72,7 +72,9 @@ reactor InputHandler {
 reactor Printer {
   input in: string
 
-  reaction(in) {= printf("Received: %s\n", in->value); =}
+  reaction(in) {=
+    printf("Received: %s\n", in->value);
+  =}
 }
 
 reactor ChatHandler {
@@ -81,9 +83,13 @@ reactor ChatHandler {
   u = new InputHandler()
   r = new Printer()
 
-  reaction(u.out) -> send {= lf_set(send, u.out->value); =}
+  reaction(u.out) -> send {=
+    lf_set(send, u.out->value);
+  =}
 
-  reaction(receive) -> r.in {= lf_set(r.in, receive->value); =}
+  reaction(receive) -> r.in {=
+    lf_set(r.in, receive->value);
+  =}
 }
 
 federated reactor SimpleChat {

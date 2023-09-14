@@ -25,7 +25,9 @@ main reactor {
   state count: int = 0
   s = new ServerUI()
 
-  reaction(s.initialized) {= self->count = 0; =}
+  reaction(s.initialized) {=
+    self->count = 0;
+  =}
 
   reaction(s.request) -> s.response {=
     char* response;

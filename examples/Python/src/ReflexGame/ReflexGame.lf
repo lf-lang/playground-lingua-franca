@@ -24,7 +24,9 @@ reactor RandomSource(min_time = 2 sec, max_time = 8 sec) {
   logical action prompt(min_time)
   state count = 0
 
-  reaction(startup) {= self.random.seed() =}
+  reaction(startup) {=
+    self.random.seed()
+  =}
 
   reaction(prompt) -> out {=
     self.count += 1
@@ -67,7 +69,9 @@ reactor GetUserInput {
     t.start()
   =}
 
-  reaction(user_response) -> user_input {= user_input.set(user_response.value) =}
+  reaction(user_response) -> user_input {=
+    user_input.set(user_response.value)
+  =}
 }
 
 /** Sends graphics updates to the pygame process. */
@@ -154,7 +158,9 @@ reactor UpdateGraphics {
  * and UpdateGraphics
  */
 reactor StartGui {
-  preamble {= import gui =}
+  preamble {=
+    import gui
+  =}
 
   output user_input_pipe
   output update_graphics_pipe

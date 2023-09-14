@@ -27,7 +27,9 @@ reactor Random(seed: {= unsigned int =} = 0) {
     }
   =}
 
-  method random(): int {= return rand_r(&self->seed); =}
+  method random(): int {=
+    return rand_r(&self->seed);
+  =}
 
   method exponential(lambda: double): double {=
     double u = random() / (RAND_MAX + 1.0);

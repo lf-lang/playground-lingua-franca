@@ -105,7 +105,9 @@ reactor PostProcessor(
     command.set(self.available_commands[next.value] * math.pi/180.0)
   =}
 
-  reaction(score) -> next {= next.schedule(0, np.argmin(score.value)) =}
+  reaction(score) -> next {=
+    next.schedule(0, np.argmin(score.value))
+  =}
 }
 
 reactor ACASController(period = 1 s) {

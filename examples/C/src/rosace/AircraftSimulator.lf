@@ -140,7 +140,9 @@ reactor Engine(period: time = 5 ms, scale: double = 26350.0, tau: double = 0.75)
 
   state x1: double = {= delta_th_eq =}
 
-  reaction(t) -> T {= lf_set(T, self->scale * self->x1); =}
+  reaction(t) -> T {=
+    lf_set(T, self->scale * self->x1);
+  =}
 
   reaction(t) delta_thc {=
     const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
@@ -161,7 +163,9 @@ reactor Elevator(period: time = 5 ms, omega: double = 25.0, xi: double = 0.85) {
   state x1: double = {= delta_e_eq =}
   state x2: double = 0.0
 
-  reaction(t) -> delta_e {= lf_set(delta_e, self->x1); =}
+  reaction(t) -> delta_e {=
+    lf_set(delta_e, self->x1);
+  =}
 
   reaction(t) delta_ec {=
     const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)

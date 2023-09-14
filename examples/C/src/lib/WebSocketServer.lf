@@ -270,7 +270,9 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     self->status.running = true;
   =}
 
-  reaction(received_action) -> received {= lf_set_token(received, received_action->token); =}
+  reaction(received_action) -> received {=
+    lf_set_token(received, received_action->token);
+  =}
 
   reaction(send) {=
     // NOTE: This send must be before the reaction to connected_action
@@ -290,7 +292,11 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     }
   =}
 
-  reaction(connected_action) -> connected {= lf_set(connected, connected_action->value); =}
+  reaction(connected_action) -> connected {=
+    lf_set(connected, connected_action->value);
+  =}
 
-  reaction(shutdown) {= self->status.running = false; =}
+  reaction(shutdown) {=
+    self->status.running = false;
+  =}
 }

@@ -72,8 +72,9 @@ reactor Server(
     self->queries_outstanding++;
   =}
 
-  reaction(update_trigger) -> update {= lf_set(update, self->update_amount); =} deadline(
-      update_deadline) {=
+  reaction(update_trigger) -> update {=
+    lf_set(update, self->update_amount);
+  =} deadline(update_deadline) {=
     tag_t tag = lf_tag();
     lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
         "   Elapsed physical time is %lld.",
@@ -186,7 +187,9 @@ reactor Database(name: char* = "unnamed database", num_remote_inputs: int = 1) {
     #endif
   =}
 
-  reaction(query) -> balance {= lf_set(balance, self->record); =}
+  reaction(query) -> balance {=
+    lf_set(balance, self->record);
+  =}
 }
 
 /**

@@ -358,7 +358,9 @@ reactor ResourceManager(
     }
   =}
 
-  reaction(shutdown) {= free(self->queue.queue); =}
+  reaction(shutdown) {=
+    free(self->queue.queue);
+  =}
 }
 
 /**

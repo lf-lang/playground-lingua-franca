@@ -49,13 +49,17 @@ reactor Prime {
 
     // Output the largest prime found.
     lf_set(out, (long long)primes.start[num_primes - 1]);
-  =} deadline(3 sec) {= lf_print("Deadline handler called!"); =}
+  =} deadline(3 sec) {=
+    lf_print("Deadline handler called!");
+  =}
 }
 
 reactor Print {
   input in: {= long long =}
 
-  reaction(in) {= printf("Largest prime found within the deadline: %lld\n", in->value); =}
+  reaction(in) {=
+    printf("Largest prime found within the deadline: %lld\n", in->value);
+  =}
 }
 
 main reactor AnytimePrime {
