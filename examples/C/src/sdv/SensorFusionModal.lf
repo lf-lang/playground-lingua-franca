@@ -27,7 +27,7 @@
     input y:int;
     input deadline_missed:bool;
     logical action a(100 msec):int;
-    reaction(y) -> a {=
+    reaction(a) -> z {=
         lf_schedule_int(a, 0, y->value);
     =}
 
@@ -35,7 +35,7 @@
     state count:int(0);
 
     initial mode Advanced {
-        reaction(a) -> z {=
+        reaction(y) -> a {=
 
             if (2 * (a->value / 2) != a->value) {
                 // The count variable is odd.
@@ -46,7 +46,7 @@
             lf_set(z, a->value);
         =} 
         deadline(150 msec){=
-            lf_print("STP violation occurred in a trigger ??");
+            lf_set_mode(Advanced);
         =}
         reaction(deadline_missed) -> Safe {=
             if (deadline_missed->value == true) {
@@ -57,7 +57,7 @@
     }
     
     mode Safe {
-        reaction(a) -> z {=
+        reaction(y) -> a, Advanced {=
 
             if (2 * (a->value / 2) != a->value) {
                 // The count variable is odd.
@@ -67,7 +67,7 @@
     
             lf_set(z, a->value);
         =} 
-        deadline(150 msec){=
+        deadline(150 msec) {=
             lf_print("STP violation occurred in a trigger ??");
         =}
         reaction(deadline_missed) -> Advanced {=
