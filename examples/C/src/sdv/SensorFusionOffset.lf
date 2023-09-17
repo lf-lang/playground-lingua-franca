@@ -81,13 +81,15 @@ reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
   =}
 }
 
-main reactor(offset: time = 50ms) {
-  sensor1 = new Sensor(period = 40 ms)
+main reactor(offset: time = 30ms) {
+  // Note: if period of the sensor is smaller than the processing time,
+  // then lag will grow without bound.
+  sensor1 = new Sensor(period = 40ms)
   lidar = new Sensor(period = 200 ms)  // 5hz
   processor = new Processor(processingDelay = offset)
   ivi = new Display(name="display")
   sensor1.y, lidar.y -> processor.x
   processor.z -> ivi.inp after offset
-  brakes = new Brakes(name="brakes", maxLag=50ms)
+  brakes = new Brakes(name="brakes", maxLag=10ms)
   processor.z -> brakes.inp after offset
 }
