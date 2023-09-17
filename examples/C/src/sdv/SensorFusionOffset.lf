@@ -1,4 +1,4 @@
-/** 
+/**
  * Sensor fusion mock up.
  * @author Ravi Akella
  * @author Marten Lohstroh
@@ -25,27 +25,12 @@ reactor Sensor(period: time = 100 ms) {
 }
 
 @label("ASIL D")
-reactor Brakes(maxDelay: time = 50 ms) {
-  input apply: int
-
-  reaction(apply) {=
-    interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(brakes lagging physical time by %lld us)\n", diff_us);
-  =} deadline(maxDelay) {=
-    printf("---- DEADLINE MISS ----\n");
-    interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(brakes lagging physical time by %lld us)\n", diff_us);
-    printf("---- DEADLINE MISS ----\n");
-  =}
-}
-
-@label("ASIL D")
-reactor Processor {
+reactor Processor(processingDelay: time = 50ms) {
   input[2] x: int
   output z: int
 
   reaction(x) -> z {=
-      // lf_sleep(MSEC(10));
+    lf_sleep(self->processingDelay);
     bool synced = false;
     if (x[0]->is_present && x[1]->is_present) {
        synced = true;
@@ -68,28 +53,41 @@ reactor Processor {
   =}
 }
 
-@label("QM")
-reactor Display(maxDelay: time = 100 ms) {
-  input show: int
+@label("ASIL D")
+reactor Brakes extends Actuator {
+}
 
-  reaction(show) {=
+@label("QM")
+reactor Display extends Actuator {
+}
+
+reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
+  input inp: int
+  state misses: int = 0
+
+  reaction(inp) {=
     interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(display lagging physical time by %lld us)\n", diff_us);
-  =} deadline(maxDelay) {=
+    printf("(%s lagging physical time by %lld us)\n", self->name, diff_us);
+  =} deadline(maxLag) {=
+    self->misses++;
     printf("---- DEADLINE MISS ----\n");
     interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(display lagging physical time by %lld us)\n", diff_us);
+    printf("(%s lagging physical time by %lld us)\n", self->name, diff_us);
     printf("---- DEADLINE MISS ----\n");
+  =}
+
+  reaction(shutdown) {=
+    printf("---- Deadline misses at %s: %d\n", self->name, self->misses);
   =}
 }
 
-main reactor {
+main reactor(offset: time = 50ms) {
   sensor1 = new Sensor(period = 40 ms)
   lidar = new Sensor(period = 200 ms)  // 5hz
-  processor = new Processor()
-  ivi = new Display()
+  processor = new Processor(processingDelay = offset)
+  ivi = new Display(name="display")
   sensor1.y, lidar.y -> processor.x
-  processor.z -> ivi.show
-  brakes = new Brakes()
-  processor.z -> brakes.apply
+  processor.z -> ivi.inp after offset
+  brakes = new Brakes(name="brakes", maxLag=50ms)
+  processor.z -> brakes.inp after offset
 }
