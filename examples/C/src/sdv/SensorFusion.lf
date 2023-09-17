@@ -1,93 +1,70 @@
 /**
- * Sensor fusion mock up.
  * @author Ravi Akella
- * @author Marten Lohstroh
  */
-target C {
-  timeout: 10 sec
-}
+ target C{
+    timeout: 10 sec,
+    //docker: true,
+    //coordination: centralized
+ };
 
-preamble {=
-  #include "platform.h"
-  #include <stdlib.h> // rand, srand
+ preamble{=
+    #include <time.h>
+    #include "platform.h"
 =}
 
-@label("ASIL B")
-reactor Sensor(period: time = 100 ms) {
-  timer t(0, period)
-  output y: int
-  state count: int
+ reactor Sensor_ASILB{
+    timer t(0, 200 msec);
+    output x:int;
+    state count:int(0);
+    reaction(t) -> x {=
+           lf_set(x, self->count);
+           self->count++;
+    =}
+ }
 
-  reaction(t) -> y {=
-    lf_set(y, self->count);
-    self->count++;
-  =}
+ reactor Processor_ASILD {
+    input y:int;
+    logical action a(100 msec):int;
+    reaction(y) -> a {=
+        lf_schedule_int(a, 0, y->value);
+    =}
+
+    output z:int;
+    reaction(a) -> z {=
+
+        if (2 * (a->value / 2) != a->value) {
+            // The count variable is odd.
+            // Take time to cause a deadline violation.
+            lf_nanosleep(MSEC(100));
+        }
+
+        lf_set(z, a->value);
+    =} 
+    deadline(150 msec){=
+        lf_print("STP violation occurred in a trigger ??");
+    =}
 }
 
-@label("ASIL D")
-reactor Processor {
-  input[2] x: int
-  output z: int
-
-  reaction(x) -> z {=
-      // lf_sleep(MSEC(10));
-    bool synced = false;
-    if (x[0]->is_present && x[1]->is_present) {
-       synced = true;
-       printf("---- SYNC'ED ----\n");
-    }
-    if (x[0]->is_present) {
-        printf(">>> camera frame: %d\n", x[0]->value);
-    }
-    if (x[1]->is_present) {
-        printf(">>>> lidar frame: %d\n", x[1]->value);
-    }
-    if (synced) {
-        printf("-----------------\n");
-    }
-    srand(x[0]->value);
-    int r = rand();
-    if (r % 2) {
-        lf_set(z, r % 100);
-    }
-  =}
+reactor Display_QM{
+    input z:int;
+    reaction(z) {=
+        printf("Logical time: %lld, Physical time %lld"
+        		", Value: %d\n",
+        		lf_time_logical_elapsed(),
+        		lf_time_physical_elapsed(), z->value);
+    =} deadline(100 msec) {=
+        instant_t d = lf_time_physical_elapsed()
+        		- lf_time_logical_elapsed();
+        printf("***** Deadline missed at %lld nsecs\n", d);
+        instant_t lt =  lf_time_logical();
+    =}
 }
 
-@label("ASIL D")
-reactor Brakes extends Actuator {
-}
-
-@label("QM")
-reactor Display extends Actuator {
-}
-
-reactor Actuator(name: char* = "actuator", maxDelay: time = 150 ms) {
-  input inp: int
-  state misses: int = 0
-
-  reaction(inp) {=
-    interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(%s lagging physical time by %lld us)\n", self->name, diff_us);
-  =} deadline(maxDelay) {=
-    self->misses++;
-    printf("---- DEADLINE MISS ----\n");
-    interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(%s lagging physical time by %lld us)\n", self->name, diff_us);
-    printf("---- DEADLINE MISS ----\n");
-  =}
-
-  reaction(shutdown) {=
-    printf("---- Deadline misses at %s: %d\n", self->name, self->misses);
-  =}
-}
-
-main reactor {
-  sensor1 = new Sensor(period = 40 ms)
-  lidar = new Sensor(period = 200 ms)  // 5hz
-  processor = new Processor()
-  ivi = new Display(name="display")
-  sensor1.y, lidar.y -> processor.x
-  processor.z -> ivi.inp
-  brakes = new Brakes(name="brakes", maxDelay=50ms)
-  processor.z -> brakes.inp
-}
+ main reactor {
+     sensor = new Sensor_ASILB();
+     processor = new Processor_ASILD();
+     ivi = new Display_QM();
+     sensor.x -> processor.y;
+     processor.z -> ivi.z;
+ }
+ 
