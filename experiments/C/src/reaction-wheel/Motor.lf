@@ -2,17 +2,18 @@ target C;
 
 
 reactor Motor(freq: float=1000.0) {
-  
+  timer t(10ms, 0ms);
+
   state frequency: double = freq;
   state voltage: double = 5.0;
   state current: double = 1.0;
 
-  state motor_command_offset: double;
-  state motor_command_gain: double;
-  state interia_wheel: double;
+  state motor_command_offset: double = 0.0;
+  state motor_command_gain: double = 0.0;
+  state interia_wheel: double = 0.0;
 
-  state desired_angular_momentum: double;
-  state current_angular_momentum: double;
+  state desired_angular_momentum: double = 0.0;
+  state current_angular_momentum: double = 0.0;
   
   input set_desired_angular_momentum: double;
   input current_angular_momentum: double;
@@ -28,18 +29,9 @@ reactor Motor(freq: float=1000.0) {
     self->current_angular_momentum = current_angular_momentum->value;
   =}
 
-  reaction (set_desired_angular_momentum) -> pwm_pin_duty_cycle {=
+  reaction (t) -> pwm_pin_duty_cycle {=
     float percent = (self->interia_wheel * self->desired_angular_momentum) / ( 2 * self->voltage * self->current);
-    
+
     lf_set(pwm_pin_duty_cycle, percent);
   =}
-
-  reaction (current_angular_momentum) -> pwm_pin_duty_cycle {=
-    float percent = (self->interia_wheel * self->desired_angular_momentum) / ( 2 * self->voltage * self->current);
-    
-    lf_set(pwm_pin_duty_cycle, percent);
-  =}
-
-
-
 }

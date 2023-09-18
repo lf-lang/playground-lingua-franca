@@ -4,15 +4,16 @@ target C {
 
 import Controller from "./Controller.lf";
 import Motor from "./Motor.lf";
-import  AngularRateSensorSimualted, Gyroscope from "./Sensor.lf";
+import  AngularRateSensorSimualted, GyroscopeSimulated from "./Sensor.lf";
 import GPIOSimulated from "./GPIO.lf";
+import Simulator from "./Simulator.lf";
 
 preamble {=
   #include "./shared_header.h"
 =}
 
 reactor UserInput {
-    logical action event: double*;
+    logical action event: double;
     output desired_angle: double;
     
     state push_1: double = 3.41;
@@ -20,13 +21,14 @@ reactor UserInput {
     state push_3: double = 0;
 
     reaction(event) -> desired_angle {=
-        lf_set(desired_angle, *event->value);
+        printf("Impact: %f\n", event->value);
+        lf_set(desired_angle, event->value);
     =}
    
     reaction (startup) -> event {=
-        lf_schedule_value(event, SEC(1), &(self->push_1), sizeof(double));
-        lf_schedule_value(event, SEC(5), &(self->push_2), sizeof(double));
-        lf_schedule_value(event, SEC(7), &(self->push_3), sizeof(double));
+        lf_schedule_copy(event, SEC(1), &(self->push_1), sizeof(double));
+        lf_schedule_copy(event, SEC(5), &(self->push_2), sizeof(double));
+        lf_schedule_copy(event, SEC(7), &(self->push_3), sizeof(double));
     =}
 
 }
@@ -49,16 +51,33 @@ reactor Setup {
 
 reactor Program {
   user_input = new UserInput();
+  simualtor = new Simulator();
   controller = new Controller();
   motor = new Motor(freq=10000.0);
   speed_sensor = new AngularRateSensorSimualted();
-  gyroscope = new Gyroscope();
-  gpio = new GPIOSimulated(freq=10000.0, voltage=5.0, current=1.0); // 5V 1A Motor
+  gyroscope = new GyroscopeSimulated();
+  gpio = new GPIOSimulated(input_freq=10000.0, input_voltage=5.0, input_current=1.0); // 5V 1A Motor
 
+  // give current angle to main controller
   gyroscope.current_angle -> controller.current_angle;
-  speed_sensor.current_angular_momentum -> controller.current_angular_momentum;
+
+  // give current wheel speed to controller and motor
+  speed_sensor.current_angular_momentum -> motor.current_angular_momentum;
+
+  // feed user input to controller 
   user_input.desired_angle -> controller.desired_angle;
 
+  // give desired angular momentum to motor
   controller.angular_momentum -> motor.set_desired_angular_momentum;
+
+  // feed duty cycle to gpio pin out
   motor.pwm_pin_duty_cycle -> gpio.pwm_pin_duty_cycle;
+
+  // <<<<< Simualtor >>>>>
+  
+  // feeding the current angle from the simulator to the gyroscope
+  simualtor.return_angle_platform -> gyroscope.receive_sensor_current_angle;
+  simualtor.return_rotation_wheel -> speed_sensor.receive_sensor_angular_momentum;
+
+  gpio.energy ~> simualtor.input_energy_wheel;
 }

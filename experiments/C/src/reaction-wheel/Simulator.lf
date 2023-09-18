@@ -1,44 +1,41 @@
 target C;
 
-reactor Simulator {
-    timer t(0s, 10ms);
-    state rotation_platform: double;
-    state rotation_wheel: double;
+reactor Simulator(period=1ms){
+    timer t(0s, period);
 
-    state rotational_velocity_wheel: double;
-    state rotational_velocity_platform: double;
+    state rotation_platform: double = 0.0;
+    state rotation_wheel: double = 0.0;
 
-    state inertia_wheel: double;
-    state inertia_platform: double;
+    state rotational_velocity_wheel: double = 0.0;
+    state rotational_velocity_platform: double = 0.0;
 
-    physical action applied_energy: double;
-    physical action get_sensor_reading: double;
+    state inertia_wheel: double = 0.0000124;
+    state inertia_platform: double = 0.00124;
+
+    input input_energy_wheel: double;
 
     output return_rotation_platform: double;
+    output return_rotation_wheel: double;
+    output return_angle_platform: double;
+    output return_angle_wheel: double;
   
     
-    reaction (applied_energy) {=
-      self->rotation_velocity_wheel += (2 * applied_energy->value) / self->inertia_wheel;
-      self->rotation_velocity_platform +=  (2 * applied_energy->value) / self->inertia_platform;
-    =}
+    reaction (input_energy_wheel) -> return_rotation_platform, return_rotation_wheel {=
+      self->rotational_velocity_wheel +=  ((2 * input_energy_wheel->value) / self->inertia_wheel);
+      self->rotational_velocity_platform -= ((2 * input_energy_wheel->value) / self->inertia_platform);
 
-    reaction(get_sensor_reading) -> return_rotation_platform {=
-      lf_set(return_rotation_platform, self->rotation_platform);
+      lf_set(return_rotation_platform, self->rotational_velocity_platform);
+      lf_set(return_rotation_wheel, self->rotational_velocity_wheel);
     =}
     
-    reaction(event) -> applied_energy {=
-        lf_set(applied_energy, event->value);
-    =}
     
-    reaction(t) {=
-      self->rotation_platform = 0.01 * self->rotation_velocity_platform;
-      self->rotation_wheel  = 0.01 * self->rotation_velocity_wheel;
+    reaction(t) -> return_angle_platform, return_angle_wheel {=
+      self->rotation_platform += 0.001 * self->rotational_velocity_platform;
+      self->rotation_wheel += 0.001 * self->rotational_velocity_wheel;
+
+      lf_set(return_angle_platform, self->rotation_platform);
+      lf_set(return_angle_wheel, self->rotation_wheel);
     =}
 
-    reaction (startup) {=
-        lf_schedule_token(event, 1ms, 10);
-        lf_schedule_token(event, 5ms, -4.25);
-        lf_schedule_token(event, 7ms, 10.25);
-    =}
 }
 

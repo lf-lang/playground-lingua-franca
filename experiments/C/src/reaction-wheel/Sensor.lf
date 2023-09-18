@@ -1,19 +1,37 @@
 target C;
 
-reactor AngularRateSensorSimualted {
+reactor AngularRateSensorSimualted(period=40ms) {
+    timer t(0s, period);
+
     input receive_sensor_angular_momentum: double;
 
     output current_angular_momentum: double;
 
-    state sensor_value: double;
+    state sensor_value: double = 0.0;
     
     reaction (receive_sensor_angular_momentum) {=
         self->sensor_value = receive_sensor_angular_momentum->value;
     =}
-}
 
-reactor Gyroscope {
+    reaction (t) -> current_angular_momentum {=
+      lf_set(current_angular_momentum, self->sensor_value);
+    =}
+} 
+
+reactor GyroscopeSimulated(period=40ms) {
+  timer t(0s, period);
+
+  input receive_sensor_current_angle: double;
   
   output current_angle: double;
 
+  state sensor_value: double = 0.0;
+
+  reaction (receive_sensor_current_angle) {=
+    self->sensor_value = receive_sensor_current_angle->value;
+  =}
+
+  reaction (t) -> current_angle {=
+    lf_set(current_angle, self->sensor_value);
+  =}
 }

@@ -6,8 +6,8 @@ preamble {=
 
 // this is an abstract PWM GPIO Pin interface
 reactor GPIOSimulated(input_freq: float = 1000.0, input_voltage: float = 5.0, input_current: float = 1.0) {
-  input pwm_pin_duty_cycle: float;
-  output energy: float;
+  input pwm_pin_duty_cycle: double;
+  output energy: double;
   
   state frequency: float = input_freq;
   state voltage: float = input_voltage;
@@ -18,7 +18,7 @@ reactor GPIOSimulated(input_freq: float = 1000.0, input_voltage: float = 5.0, in
     float percent = fmin(fmax(pwm_pin_duty_cycle->value, 1.0), 0.0);
     unsigned long duty = percent / self->frequency;
 
-    printf("setting PWM: percent: %d duty: %i", percent, duty);
+    printf("setting PWM: percent: %d duty: %i\n", percent, duty);
     
     lf_set(energy, self->voltage * self->current * percent);
   =}

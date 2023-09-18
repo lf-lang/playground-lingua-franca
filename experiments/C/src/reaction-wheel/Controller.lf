@@ -5,31 +5,27 @@ preamble {=
   #include "./shared_header.h"
 =}
 
-reactor Controller {
-    timer update(1ms, 10ms);
+reactor Controller(period=10ms) {
+    timer update(0s, period);
     
     // this are the angles of the platform not the wheel
     input desired_angle: double;
     input current_angle: double;
-    input current_angular_momentum: double;
     input setup: WheelConfiguration;
     
     // desired anguar momentum feed to the motor reactor
     output angular_momentum: double;
 
     // this are the angles of the platform not the wheel
-    state current_angle: double;
-    state desired_angle: double;
+    state current_angle: double = 0.0;
+    state desired_angle: double = 0.0;
+    state accumulated_error: double = 0.0;
 
-    state current_angular_momentum: double;
     state configuration: WheelConfiguration;
 
 
     reaction (setup) {=
         self->configuration = setup->value;
-        self->current_angular_momentum = 0;
-        self->current_angle = 0;
-        self->desired_angle = 0;
     =}
 
     reaction (desired_angle) {=
@@ -37,27 +33,36 @@ reactor Controller {
     =}
 
     reaction (current_angle) {=
+        printf("%f --> %f\n", current_angle->value, self->current_angle);
         self->current_angle = current_angle->value;
     =}
 
     reaction (update) -> angular_momentum {=
+        const float p_param = 0.005; // p parameter value
+        const float i_param = 0.04; // i parameter value
+        const float max_angular_momentum_platform = 2 * M_PI; // self is the max angular momentum the platform can experience
+        const float max_angular_momentum_wheel = 5 * M_PI; // self is the max angular momentum the wheel can experience
+
         float raw_diff_angle = (self->desired_angle - self->current_angle);  // phi_desired - phi_current
         float diff_angle = fmod((raw_diff_angle + M_PI), (2 * M_PI)) - M_PI; // self forces the angle to be inbetween -pi and +pi
-
-        float max_angular_momentum_platform = 2 * M_PI; // self is the max angular momentum the platform can experience
-        float max_angular_momentum_wheel = 5 * M_PI; // self is the max angular momentum the wheel can experience
-        float growth_parameter = 0.01; // parameter to tune 
+        
+        self->accumulated_error = diff_angle + 0.5 * self->accumulated_error; // recaculating the accumulated error
+        
         float sign = (diff_angle > 0) ? 1 : ((diff_angle < 0) ? -1 : 0); // get the sign of the error 
-        float angular_momentum_platform = growth_parameter * max_angular_momentum_platform * sign * (M_PI - abs(diff_angle));
+        float angular_momentum_platform = p_param * max_angular_momentum_platform * sign * (M_PI - abs(diff_angle)) + i_param * self->accumulated_error;
 
         double angular_momentum_wheel = MAX(
             ((self->configuration.wheel_inertia * angular_momentum_platform) / self->configuration.platform_inertia), 
             max_angular_momentum_wheel);
-        
+
+        printf("p = %f\n", p_param * max_angular_momentum_platform * sign * (M_PI - abs(diff_angle)));
+        printf("i = %f\n", i_param * self->accumulated_error);
+
         printf("angle error e = %f \n", diff_angle);
         printf("turning platform by dw = %f \n", angular_momentum_platform);
         printf("turning wheel by dw = %f \n", angular_momentum_wheel);
-
+        
+        // estimating the current_angle with new platform velocity
         self->current_angle = self->current_angle + 0.01 * angular_momentum_platform;
 
         lf_set(angular_momentum, angular_momentum_wheel);
