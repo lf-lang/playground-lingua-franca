@@ -89,7 +89,7 @@ reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
   =}
 }
 
-federated reactor(processingTime: time = 30 ms) {
+main reactor(processingTime: time = 30 ms) {
   // Note: if period of the sensor is smaller than the processing time,
   // then lag will grow without bound, and all deadlines will be missed!
   // The processor implements a logical delay (effectively a LET) equal
