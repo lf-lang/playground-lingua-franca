@@ -4,7 +4,8 @@
  * @author Marten Lohstroh
  */
 target C {
-  timeout: 10 sec
+  timeout: 10 sec,
+  coordination: decentralized  // better performance than centralized
 }
 
 preamble {=
@@ -25,7 +26,7 @@ reactor Sensor(period: time = 100 ms) {
 }
 
 @label("ASIL D")
-reactor Processor(processingDelay: time = 50ms) {
+reactor Processor(processingDelay: time = 10 ms) {
   input[2] x: int
   output z: int
 
@@ -64,6 +65,7 @@ reactor Display extends Actuator {
 reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
   input inp: int
   state misses: int = 0
+  state stp_violations: int = 0
 
   reaction(inp) {=
     interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
@@ -78,18 +80,26 @@ reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
 
   reaction(shutdown) {=
     printf("---- Deadline misses at %s: %d\n", self->name, self->misses);
+    printf("---- Out-of-order events at %s: %d\n", self->name, self->stp_violations);
   =}
 }
 
-main reactor(offset: time = 30ms) {
+federated reactor(physicalDelay: time = 30 ms, logicalDelay: time = 50 ms) {
   // Note: if period of the sensor is smaller than the processing time,
-  // then lag will grow without bound.
-  sensor1 = new Sensor(period = 40ms)
+  // then lag will grow without bound, and all deadlines will be missed!
+  // The logical delay (effectively a LET), should be greater than the
+  // processing time + the delay incurred by message relay.
+  // The end-to-end physical time delay between sensor and actuator then
+  // will be equal to the logicalDelay. Practically, logicalDelay is a
+  // lower bound on the delay, and logicalDelay + maxLag (used to specify
+  // the deadline in the brakes) is an upper bound on the delay.
+  // A violation of the upper bound is a deadline miss.
+  sensor1 = new Sensor(period = 40 ms)
   lidar = new Sensor(period = 200 ms)  // 5hz
-  processor = new Processor(processingDelay = offset)
+  processor = new Processor(processingDelay=physicalDelay)
   ivi = new Display(name="display")
   sensor1.y, lidar.y -> processor.x
-  processor.z -> ivi.inp after offset
-  brakes = new Brakes(name="brakes", maxLag=10ms)
-  processor.z -> brakes.inp after offset
+  processor.z -> ivi.inp after logicalDelay
+  brakes = new Brakes(name="brakes", maxLag = 30 ms)
+  processor.z -> brakes.inp after logicalDelay
 }
