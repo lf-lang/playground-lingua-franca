@@ -65,7 +65,6 @@ reactor Display extends Actuator {
 reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
   input inp: int
   state misses: int = 0
-  state stp_violations: int = 0
 
   reaction(inp) {=
     interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
@@ -80,11 +79,10 @@ reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
 
   reaction(shutdown) {=
     printf("---- Deadline misses at %s: %d\n", self->name, self->misses);
-    printf("---- Out-of-order events at %s: %d\n", self->name, self->stp_violations);
   =}
 }
 
-federated reactor(physicalDelay: time = 30 ms, logicalDelay: time = 50 ms) {
+main reactor(physicalDelay: time = 30 ms, logicalDelay: time = 50 ms) {
   // Note: if period of the sensor is smaller than the processing time,
   // then lag will grow without bound, and all deadlines will be missed!
   // The logical delay (effectively a LET), should be greater than the
