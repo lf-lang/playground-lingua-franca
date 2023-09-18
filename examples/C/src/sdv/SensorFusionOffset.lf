@@ -16,42 +16,42 @@ preamble {=
 @label("ASIL B")
 reactor Sensor(period: time = 100 ms) {
   timer t(0, period)
-  output y: int
+  output out: int
   state count: int
 
-  reaction(t) -> y {=
-    lf_set(y, self->count);
+  reaction(t) -> out {=
+    lf_set(out, self->count);
     self->count++;
   =}
 }
 
 @label("ASIL D")
 reactor Processor(processingTime: time = 10 ms) {
-  input[2] x: int
-  output z: int
+  input[2] inp: int
+  output out: int
 
-  reaction(x) -> z {=
+  reaction(inp) -> out {=
     //interval_t before = lf_time_physical_elapsed();
     lf_sleep(self->processingTime);
     //printf("Physical time elapsed: %lld\n", lf_time_physical_elapsed() - before);
     bool synced = false;
-    if (x[0]->is_present && x[1]->is_present) {
+    if (inp[0]->is_present && inp[1]->is_present) {
        synced = true;
-       printf("---- SYNC'ED ----\n");
+       printf("\n---- SYNC'ED ----\n");
     }
-    if (x[0]->is_present) {
-        printf(">>> camera frame: %d\n", x[0]->value);
+    if (inp[0]->is_present) {
+        printf(">>> camera frame: %d\n", inp[0]->value);
     }
-    if (x[1]->is_present) {
-        printf(">>>> lidar frame: %d\n", x[1]->value);
+    if (inp[1]->is_present) {
+        printf(">>>> lidar frame: %d\n", inp[1]->value);
     }
     if (synced) {
-        printf("-----------------\n");
+        printf("-----------------\n\n");
     }
-    srand(x[0]->value);
+    srand(inp[0]->value);
     int r = rand();
     if (r % 2) {
-        lf_set(z, r % 100);
+        lf_set(out, r % 100);
     }
     interval_t logical_elapsed = lf_time_logical_elapsed();
     interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
@@ -98,12 +98,15 @@ main reactor(processingTime: time = 30 ms) {
   // will be equal to the processingTime plus additional lag incurred
   // by message relay. This additional lag is bounded by the specified
   // deadline.
-  sensor1 = new Sensor(period = 40 ms)
+  video = new Sensor(period = 40 ms)
   lidar = new Sensor(period = 200 ms)  // 5hz
+
   processor = new Processor(processingTime=processingTime)
-  ivi = new Display(name="display")
-  sensor1.y, lidar.y -> processor.x
-  processor.z -> ivi.inp after processingTime
+  display = new Display(name="display")
   brakes = new Brakes(name="brakes", maxLag = 50 ms)
-  processor.z -> brakes.inp after processingTime
+
+  video.out, lidar.out -> processor.inp
+
+  processor.out -> display.inp
+  processor.out -> brakes.inp
 }
