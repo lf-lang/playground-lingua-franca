@@ -26,10 +26,17 @@ reactor Sensor(period: time = 100 ms) {
 }
 
 @label("ASIL D")
-reactor Processor(processingTime: time = 10 ms, logicalDelay: time = 50ms) {
+reactor Processor(processingTime: time = 10 ms) {
   input[2] x: int
   output z: int
-  logical action a:int
+  logical action a(processingTime):int
+
+  reaction(a) -> z {=
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(processor lagging physical time by %lld us at %lld ms <<after action>>)\n", diff_us, logical_elapsed / 1000000);
+    lf_set(z, a->value);
+  =}
 
   reaction(x) -> a {=
     //interval_t before = lf_time_physical_elapsed();
@@ -52,19 +59,13 @@ reactor Processor(processingTime: time = 10 ms, logicalDelay: time = 50ms) {
     srand(x[0]->value);
     int r = rand();
     if (r % 2) {
-        lf_schedule_int(a, MSEC(39), r % 100); // FIXME: Change this to 40 and the delay goes to zero. WHY???
+        lf_schedule_int(a, 0, r % 100); // FIXME: Change this to 40 and the delay goes to zero. WHY???
     }
     interval_t logical_elapsed = lf_time_logical_elapsed();
     interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
     printf("(processor lagging physical time by %lld us at %lld ms)\n", diff_us, logical_elapsed / 1000000);
   =}
 
-  reaction(a) -> z{=
-    interval_t logical_elapsed = lf_time_logical_elapsed();
-    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
-    printf("(processor lagging physical time by %lld us at %lld ms <<after action>>)\n", diff_us, logical_elapsed / 1000000);
-    lf_set(z, a->value);
-  =}
 }
 
 @label("ASIL D")
@@ -97,22 +98,21 @@ reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
   =}
 }
 
-main reactor(physicalDelay: time = 30 ms, logicalDelay: time = 50 ms) {
+federated reactor(processingTime: time = 30 ms) {
   // Note: if period of the sensor is smaller than the processing time,
   // then lag will grow without bound, and all deadlines will be missed!
-  // The logical delay (effectively a LET), should be greater than the
-  // processing time + the delay incurred by message relay.
+  // The processor implements a logical delay (effectively a LET) equal
+  // to the processing time.
   // The end-to-end physical time delay between sensor and actuator then
-  // will be equal to the logicalDelay. Practically, logicalDelay is a
-  // lower bound on the delay, and logicalDelay + maxLag (used to specify
-  // the deadline in the brakes) is an upper bound on the delay.
-  // A violation of the upper bound is a deadline miss.
+  // will be equal to the processingTime plus additional lag incurred
+  // by message relay. This additional lag is bounded by the specified
+  // deadline.
   sensor1 = new Sensor(period = 40 ms)
   lidar = new Sensor(period = 200 ms)  // 5hz
-  processor = new Processor(processingTime=physicalDelay)
+  processor = new Processor(processingTime=processingTime)
   ivi = new Display(name="display")
   sensor1.y, lidar.y -> processor.x
   processor.z -> ivi.inp
-  brakes = new Brakes(name="brakes", maxLag = 30 ms)
+  brakes = new Brakes(name="brakes", maxLag = 50 ms)
   processor.z -> brakes.inp
 }
