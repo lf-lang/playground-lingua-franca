@@ -4,7 +4,7 @@
  * @author Marten Lohstroh
  */
 target C {
-  timeout: 10 sec,
+  timeout: 1 sec,
   coordination: decentralized  // better performance than centralized
 }
 
@@ -31,7 +31,9 @@ reactor Processor(processingDelay: time = 10 ms) {
   output z: int
 
   reaction(x) -> z {=
+    //interval_t before = lf_time_physical_elapsed();
     lf_sleep(self->processingDelay);
+    //printf("Physical time elapsed: %lld\n", lf_time_physical_elapsed() - before);
     bool synced = false;
     if (x[0]->is_present && x[1]->is_present) {
        synced = true;
@@ -51,6 +53,9 @@ reactor Processor(processingDelay: time = 10 ms) {
     if (r % 2) {
         lf_set(z, r % 100);
     }
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(processor lagging physical time by %lld us at %lld ms)\n", diff_us, logical_elapsed / 1000000);
   =}
 }
 
@@ -67,13 +72,15 @@ reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
   state misses: int = 0
 
   reaction(inp) {=
-    interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(%s lagging physical time by %lld us)\n", self->name, diff_us);
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(%s lagging physical time by %lld us at %lld ms)\n", self->name, diff_us, logical_elapsed / 1000000);
   =} deadline(maxLag) {=
     self->misses++;
     printf("---- DEADLINE MISS ----\n");
-    interval_t diff_us = (lf_time_physical_elapsed() - lf_time_logical_elapsed()) / 1000;
-    printf("(%s lagging physical time by %lld us)\n", self->name, diff_us);
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(%s lagging physical time by %lld us at %lld ms)\n", self->name, diff_us, logical_elapsed / 1000000);
     printf("---- DEADLINE MISS ----\n");
   =}
 
