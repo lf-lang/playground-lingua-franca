@@ -1,0 +1,118 @@
+/**
+ * Sensor fusion mock up.
+ * @author Ravi Akella
+ * @author Marten Lohstroh
+ */
+target C {
+  timeout: 1 sec,
+  coordination: decentralized  // better performance than centralized
+}
+
+preamble {=
+  #include "platform.h"
+  #include <stdlib.h> // rand, srand
+=}
+
+@label("ASIL B")
+reactor Sensor(period: time = 100 ms) {
+  timer t(0, period)
+  output y: int
+  state count: int
+
+  reaction(t) -> y {=
+    lf_set(y, self->count);
+    self->count++;
+  =}
+}
+
+@label("ASIL D")
+reactor Processor(processingTime: time = 10 ms, logicalDelay: time = 50ms) {
+  input[2] x: int
+  output z: int
+  logical action a:int
+
+  reaction(x) -> a {=
+    //interval_t before = lf_time_physical_elapsed();
+    lf_sleep(self->processingTime);
+    //printf("Physical time elapsed: %lld\n", lf_time_physical_elapsed() - before);
+    bool synced = false;
+    if (x[0]->is_present && x[1]->is_present) {
+       synced = true;
+       printf("---- SYNC'ED ----\n");
+    }
+    if (x[0]->is_present) {
+        printf(">>> camera frame: %d\n", x[0]->value);
+    }
+    if (x[1]->is_present) {
+        printf(">>>> lidar frame: %d\n", x[1]->value);
+    }
+    if (synced) {
+        printf("-----------------\n");
+    }
+    srand(x[0]->value);
+    int r = rand();
+    if (r % 2) {
+        lf_schedule_int(a, MSEC(39), r % 100); // FIXME: Change this to 40 and the delay goes to zero. WHY???
+    }
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(processor lagging physical time by %lld us at %lld ms)\n", diff_us, logical_elapsed / 1000000);
+  =}
+
+  reaction(a) -> z{=
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(processor lagging physical time by %lld us at %lld ms <<after action>>)\n", diff_us, logical_elapsed / 1000000);
+    lf_set(z, a->value);
+  =}
+}
+
+@label("ASIL D")
+reactor Brakes extends Actuator {
+}
+
+@label("QM")
+reactor Display extends Actuator {
+}
+
+reactor Actuator(name: char* = "actuator", maxLag: time = 150 ms) {
+  input inp: int
+  state misses: int = 0
+
+  reaction(inp) {=
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(%s lagging physical time by %lld us at %lld ms)\n", self->name, diff_us, logical_elapsed / 1000000);
+  =} deadline(maxLag) {=
+    self->misses++;
+    printf("---- DEADLINE MISS ----\n");
+    interval_t logical_elapsed = lf_time_logical_elapsed();
+    interval_t diff_us = (lf_time_physical_elapsed() - logical_elapsed) / 1000;
+    printf("(%s lagging physical time by %lld us at %lld ms)\n", self->name, diff_us, logical_elapsed / 1000000);
+    printf("---- DEADLINE MISS ----\n");
+  =}
+
+  reaction(shutdown) {=
+    printf("---- Deadline misses at %s: %d\n", self->name, self->misses);
+  =}
+}
+
+main reactor(physicalDelay: time = 30 ms, logicalDelay: time = 50 ms) {
+  // Note: if period of the sensor is smaller than the processing time,
+  // then lag will grow without bound, and all deadlines will be missed!
+  // The logical delay (effectively a LET), should be greater than the
+  // processing time + the delay incurred by message relay.
+  // The end-to-end physical time delay between sensor and actuator then
+  // will be equal to the logicalDelay. Practically, logicalDelay is a
+  // lower bound on the delay, and logicalDelay + maxLag (used to specify
+  // the deadline in the brakes) is an upper bound on the delay.
+  // A violation of the upper bound is a deadline miss.
+  sensor1 = new Sensor(period = 40 ms)
+  lidar = new Sensor(period = 200 ms)  // 5hz
+  processor = new Processor(processingTime=physicalDelay)
+  ivi = new Display(name="display")
+  sensor1.y, lidar.y -> processor.x
+  processor.z -> ivi.inp
+  brakes = new Brakes(name="brakes", maxLag = 30 ms)
+  processor.z -> brakes.inp
+}
