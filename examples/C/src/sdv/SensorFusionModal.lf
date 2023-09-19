@@ -27,7 +27,7 @@
     input y:int;
     input deadline_missed:bool;
     logical action a(100 msec):int;
-    reaction(a) -> z {=
+    reaction(a) y -> z {=
         lf_schedule_int(a, 0, y->value);
     =}
 
@@ -35,18 +35,18 @@
     state count:int(0);
 
     initial mode Advanced {
-        reaction(y) -> a {=
+        reaction(y) a -> Safe, z {=
 
             if (2 * (a->value / 2) != a->value) {
                 // The count variable is odd.
                 // Take time to cause a deadline violation.
-                lf_nanosleep(MSEC(100));
+                lf_sleep(MSEC(100));
             }
     
             lf_set(z, a->value);
         =} 
         deadline(150 msec){=
-            lf_set_mode(Advanced);
+            lf_set_mode(Safe);
         =}
         reaction(deadline_missed) -> Safe {=
             if (deadline_missed->value == true) {
@@ -57,7 +57,7 @@
     }
     
     mode Safe {
-        reaction(y) -> a, Advanced {=
+        reaction(y) -> z, a, Advanced {=
 
             if (2 * (a->value / 2) != a->value) {
                 // The count variable is odd.

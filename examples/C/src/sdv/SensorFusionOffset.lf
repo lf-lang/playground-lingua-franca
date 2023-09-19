@@ -107,6 +107,6 @@ main reactor(processingTime: time = 30 ms) {
 
   video.out, lidar.out -> processor.inp
 
-  processor.out -> display.inp
-  processor.out -> brakes.inp
+  processor.out -> display.inp after processingTime
+  processor.out -> brakes.inp after processingTime
 }
