@@ -57,8 +57,9 @@ reactor Controller(period=10ms) {
 
         printf("p = %f\n", p_param * max_angular_momentum_platform * sign * (M_PI - abs(diff_angle)));
         printf("i = %f\n", i_param * self->accumulated_error);
-
-        printf("angle error e = %f \n", diff_angle);
+        printf("angle phi = %f\n", self->current_angle);
+        printf("adjusted angle error e = %f \n", diff_angle);
+        printf("angle e = %f \n", raw_diff_angle);
         printf("turning platform by dw = %f \n", angular_momentum_platform);
         printf("turning wheel by dw = %f \n", angular_momentum_wheel);
         

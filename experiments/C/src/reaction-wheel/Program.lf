@@ -16,9 +16,9 @@ reactor UserInput {
     logical action event: double;
     output desired_angle: double;
     
-    state push_1: double = 3.41;
+    state push_1: double = 1.41;
     state push_2: double = -3.41;
-    state push_3: double = 0;
+    state push_3: double = -1.0;
 
     reaction(event) -> desired_angle {=
         printf("Impact: %f\n", event->value);
