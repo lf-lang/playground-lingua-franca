@@ -1,6 +1,6 @@
 # Distributed Lingua Franca
 
-When intead of a **main reactor** you defined a **federated reactor**, a Lingua Franca program gets divided into multiple programs that execute as separate processes and can execute on different machines. The coordination and communication is automatically generated to preserve LF semantics so that the programs will logically the same as a non-federated program. See [Distributed Execution documentation](https://www.lf-lang.org/docs/handbook/distributed-execution?target=c) for more details.
+When intead of a **main reactor** you defined a **federated reactor**, a Lingua Franca program gets divided into multiple programs that execute as separate processes and can execute on different machines. The coordination and communication is automatically generated to preserve LF semantics so that the programs will logically behave the same as a non-federated program. See [Distributed Execution documentation](https://www.lf-lang.org/docs/handbook/distributed-execution?target=c) for more details.
 
 This directory includes a series of very simple "Hello World" examples.
 
