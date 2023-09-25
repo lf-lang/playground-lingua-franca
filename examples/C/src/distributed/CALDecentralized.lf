@@ -22,10 +22,13 @@
  *
  * This program uses decentralized coordination, so if the processing latency plus communication
  * latency exceeds the 200ms tolerance for inconsistency plus the 30ms tolerance for unavailability
- * (the deadline), then the coordinator will preserve availability at the expense of consistency. If
- * you remove the 200ms `after` delay, however, then you will need to increase the STP offset in the
- * `Actuate` reactor to get proper decentralized control. Any number significantly larger than the
- * 35ms processing latency should be sufficient to prevent STP violations.
+ * (the deadline), then the coordinator can preserve availability at the expense of consistency.
+ * However, in order to do that, you need to adjust the STP offset, which corresponds to the
+ * processing offset in the CAL theorem. If you remove the 200ms `after` delay, you will need to
+ * increase the STP offset in the `Actuate` reactor to get proper decentralized control. Any number
+ * significantly larger than the 35ms processing latency should be sufficient to prevent STP
+ * violations, but such a number will result in a deadline violation. Setting a lower number
+ * prevents the deadline violation, but at the cost of getting consistency violations.
  *
  * @author Edward A. Lee
  */
