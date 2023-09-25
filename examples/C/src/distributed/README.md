@@ -37,10 +37,10 @@ To run these programs, you are required to first [install the RTI](https://www.l
 </tr>
 <tr>
 <td> <img src="img/CAL.png" alt="CAL" width="100%"> </td>
-<td> <a href="CAL.lf"> CAL.lf </a>: An illustration of the fundamental tradeoff between consistency, availability, and latency, using centralized control.</td>
+<td> <a href="CAL.lf"> CAL.lf </a>: An illustration of the fundamental tradeoff between consistency, availability, and latency, using centralized coordination.</td>
 </tr>
 <tr>
 <td> <img src="img/CALDecentralized.png" alt="CALDecentralized" width="100%"> </td>
-<td> <a href="CALDecentralized.lf"> CALDecentralized.lf </a>: An illustration of the fundamental tradeoff between consistency, availability, and latency, using decentralized control.</td>
+<td> <a href="CALDecentralized.lf"> CALDecentralized.lf </a>: An illustration of the fundamental tradeoff between consistency, availability, and latency, using decentralized coordination.</td>
 </tr>
 </table>
