@@ -85,32 +85,60 @@ reactor MainView(size: unsigned = 32) {
     }
   =}
 
-  method view_handler(key_pressed: {=
-    reactor::PhysicalAction<int>*
-  =}) {=
-    initscr();
-    refresh();
-    cbreak();
-    noecho();
-    curs_set(0);
+  method init_ncurses() {=
+    initscr();    // initialize the terminal
+    refresh();    // refresh the terminal
+    cbreak();     // dirable line buffering (all characters are received immediately when typed)
+    noecho();     // don't echo characters typed by the user
+    curs_set(0);  // hide thu cursor
+  =}
 
+  method init_board_window(): WINDOW* {=
+    // get the size of the terminal
     std::size_t x_max, y_max;
     getmaxyx(stdscr, y_max, x_max);
-    std::size_t x_pos = (x_max - size * 2) / 2;
-    std::size_t y_pos = (y_max - size) / 2;
 
+    // The height as drawn by ncurses. The height is the size plus 2 to account for the boarder.
+    std::size_t height = size + 2;
+    // The width of the board as drawn by ncurses. We want a square board, but characters in the 
+    // terminal are rectangular (not as wide as high). Therefore, we multiply the width by 2 and
+    // two charecter positions to display one element of the board. We also add 1 to account for
+    // the boarder (We can use only 1 here, as we have two characters per field, but we only 
+    // need one in the right most field).
+    std::size_t width = size * 2 + 1;
+  
+    // determine the center position
+    std::size_t x_pos = (x_max - width) / 2;
+    std::size_t y_pos = (y_max - height) / 2;
+    
+    // create the board and draw a frame around it
     WINDOW* board_win = newwin(size + 2, size * 2 + 1, y_pos, x_pos);
     box(board_win, 0, 0);
     wrefresh(board_win);
+    // Enable keypad input (allows to directly read the arrow keys) and set the timeout for 
+    // reading charaters to 5 ms.
     wtimeout(board_win, 5);
     keypad(board_win, TRUE);
 
+    return board_win;
+  =}
+
+  method view_handler(key_pressed: {=
+    reactor::PhysicalAction<int>*
+  =}) {=
+    init_ncurses();
+ 
+    WINDOW* board_win = init_board_window();
+
     while(!terminate.load()) {
+      // Read a charcter. This is a blocking call, but it times out after 5 ms returning ERR if no
+      // key was pressed.
       int ch = wgetch(board_win);
       if (ch != ERR) {
         key_pressed->schedule(ch);
       }
       {
+        // redraw the board if needed
         std::lock_guard<std::mutex> guard(mutex);
         if (new_board != nullptr) {
           for (int x{0}; x < static_cast<int>(size); x++) {
@@ -125,7 +153,7 @@ reactor MainView(size: unsigned = 32) {
       }
     }
 
-    endwin();
+    endwin(); // suspend the ncurses session
   =}
 
   reaction init(startup) -> key_pressed_action {=
@@ -143,11 +171,10 @@ reactor MainView(size: unsigned = 32) {
     new_board = std::move(draw_board.get());
   =}
 
-
   reaction cleanup(shutdown) print_final_score {=
     terminate.store(true);
     view_handler_thread.join();
-    std::cout << "Your score: " << *print_final_score.get() << std::endl;
+    std::cout << "Game Over! Your score: " << *print_final_score.get() << std::endl;
   =}
 }
 
@@ -338,7 +365,7 @@ reactor ScoreController {
   =}
 }
 
-main reactor(size: unsigned = 32) {
+main reactor(size: unsigned = 20) {
   snake_model = new SnakeModel()
   apple_model = new AppleModel(size = size)
   snake_controller = new SnakeController(size = size)
