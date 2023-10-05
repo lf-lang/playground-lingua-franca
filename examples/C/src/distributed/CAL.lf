@@ -6,73 +6,77 @@
  * "Consistency vs. Availability in Distributed Cyber-Physical Systems". ACM Transactions on
  * Embedded Computing Systems (TECS), September 2023. https://dl.acm.org/doi/10.1145/3609119
  *
- * This program has two `Sense` sources of events, `s1` and `s2`, with periods 500ms and 1s
- * respectively. The `s1` output is processed by the `Process` reactor, which takes at least 35ms to
- * process the data (emulated by sleeping). As a consequence of this processing latency, were it not
- * for the 200ms `after` delay, the 30ms deadline of the `Actuate` reactor would be violated every
- * time. The deadline is on the second reaction, which cannot be invoked before the first reaction
- * when both reactions are enabled.
+ * This program has two `Sense` sources of events, `s1` and `s2` with identical periods of 1s. The
+ * `s1` output is processed by the `Process` reactor, which takes at least 35ms to process the data
+ * (emulated by sleeping). As a consequence of this processing latency, were it not for the 200ms
+ * `after` delay, the 30ms deadline of the `Actuate` reactor would be violated every time. The
+ * deadline is on the second reaction, which cannot be invoked before the first reaction when both
+ * reactions are enabled.
  *
  * The deadline is an availability requirement, the `after` delay is a tolerance for inconsistency,
- * and the 35ms processing time is a latency. As long as the actual latency is not greater than the
- * 200ms tolerance for inconsistency plus the 30ms tolerance for unavailability, then availability
- * requirement will be met.
+ * and the 35ms processing time is a latency (The C A L in CAL). As long as the actual latency is
+ * not greater than the 200ms tolerance for inconsistency plus the 30ms tolerance for
+ * unavailability, then availability requirement will be met.
  *
  * Removing or reducing the after delay strengthens consistency but causes deadline violations.
  *
  * This program uses centralized coordination, so if the processing latency plus communication
  * latency exceeds the 200ms tolerance for inconsistency and the 30ms tolerance for unavailability
  * (the deadline), then the coordinator will preserve consistency at the expense of availability.
+ * I.e., the deadline will be violated.
  *
  * @author Edward A. Lee
  */
 target C {
-  coordination: centralized
+  timeout: 5 s
 }
 
 preamble {=
   #include "platform.h"
 =}
 
-reactor Sense(period: time = 500 ms) {
+// Produce a counting sequence starting with 1.
+reactor Sense(period: time = 1 s) {
   state count: int = 1
   output out: int
-  timer t(period, period)
+  timer t(0, period)
 
   reaction(t) -> out {=
     lf_set(out, self->count++);
   =}
 }
 
+// Pass the input unchanged to the output, but take a long time to do it.
 reactor Process {
   input in: int
   output out: int
 
   reaction(in) -> out {=
     lf_sleep(MSEC(35));
-    lf_set(out, in->value * 2);
+    lf_set(out, in->value);
   =}
 }
 
+// Report the inputs.
 reactor Actuate {
   input in1: int
   input in2: int
 
   reaction(in1) {=
-    printf(PRINTF_TIME ": Received %d\n", lf_time_logical_elapsed(), in1->value);
+    lf_print(PRINTF_TIME ": Received on in1: %d", lf_time_logical_elapsed(), in1->value);
   =}
 
   reaction(in2) {=
-    printf(PRINTF_TIME ": Second input: %d\n", lf_time_logical_elapsed(), in2->value);
+    lf_print(PRINTF_TIME ": Received on in2: %d", lf_time_logical_elapsed(), in2->value);
   =} deadline(30 ms) {=
-    printf(PRINTF_TIME ": Second input: %d    ", lf_time_logical_elapsed(), in2->value);
-    printf("PANIC! Deadline violated!\n");
+    lf_print(PRINTF_TIME ": Received on in2: %d", lf_time_logical_elapsed(), in2->value);
+    lf_print("  *** PANIC! Deadline violated!");
   =}
 }
 
 federated reactor {
-  s1 = new Sense(period = 500 ms)
-  s2 = new Sense(period = 1 s)
+  s1 = new Sense()
+  s2 = new Sense()
   c1 = new Process()
   a = new Actuate()
   s1.out -> c1.in
