@@ -59,12 +59,14 @@ reactor MainView(size: unsigned = 32) {
   state new_board: {= reactor::ImmutableValuePtr<Board> =}
   state mutex: std::mutex
   state terminate: std::atomic<bool> = false
+  state score: std::atomic<unsigned> = 0
 
   state view_handler_thread: std::thread
 
   physical action key_pressed_action: int
   output key_pressed: int
   input draw_board: Board
+  input draw_score: unsigned
   input print_final_score: unsigned
 
   method element_to_symbol(element: BoardElement): chtype {=
@@ -123,12 +125,20 @@ reactor MainView(size: unsigned = 32) {
     return board_win;
   =}
 
+  method init_score_window(board_win: WINDOW*): WINDOW* {=
+    std::size_t x_board, y_board;
+    getbegyx(board_win, y_board, x_board);
+    // create the score window
+    return newwin(1, size * 2 + 1, y_board + size + 3, x_board);
+  =}
+
   method view_handler(key_pressed: {=
     reactor::PhysicalAction<int>*
   =}) {=
     init_ncurses();
  
     WINDOW* board_win = init_board_window();
+    WINDOW* score_win = init_score_window(board_win);
 
     while(!terminate.load()) {
       // Read a charcter. This is a blocking call, but it times out after 5 ms returning ERR if no
@@ -149,6 +159,10 @@ reactor MainView(size: unsigned = 32) {
           }
           new_board = nullptr;
           wrefresh(board_win);
+
+          // also update the score
+          mvwprintw(score_win, 0, 0, "Score: %6u", score.load());
+          wrefresh(score_win);
         }
       }
     }
@@ -169,6 +183,10 @@ reactor MainView(size: unsigned = 32) {
   reaction(draw_board) {=
     std::lock_guard<std::mutex> guard(mutex);
     new_board = std::move(draw_board.get());
+  =}
+
+  reaction(draw_score) {=
+    score.store(*draw_score.get());
   =}
 
   reaction cleanup(shutdown) print_final_score {=
@@ -380,6 +398,7 @@ main reactor(size: unsigned = 20) {
   apple_controller.add_apple -> apple_model.add_apple
 
   score_controller.print_final_score -> view.print_final_score
+  score_controller.draw_score -> view.draw_score
 
   snake_model.updated_board -> snake_controller.updated_board_from_snake
   snake_model.invalid_move -> score_controller.game_over
