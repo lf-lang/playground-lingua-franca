@@ -289,17 +289,23 @@ reactor AppleModel(size: unsigned = 32) {
   =}
 }
 
-reactor SnakeController(size: unsigned = 32) {
+reactor SnakeController(size: unsigned = 32, initial_interval = 500 ms) {
   output move_snake: Board
   output draw_board: Board
   input updated_board_from_snake: Board
   input updated_board_from_apple: Board
+  input ate_apple: void
 
-  timer t(0, 250 ms)
+  logical action next_move: void
 
-  state current_board: Board = {= Board{size} =};
+  state interval: time = initial_interval
+  state current_board: Board{size}
+  state apple_count: unsigned = 0
 
-  reaction(t) -> move_snake {= move_snake.set(std::move(current_board)); =}
+  reaction(startup, next_move) -> next_move, move_snake {= 
+    move_snake.set(std::move(current_board)); 
+    next_move.schedule(interval);
+  =}
 
   reaction(updated_board_from_snake) -> draw_board {=
     current_board = std::move(*updated_board_from_snake.get());
@@ -309,6 +315,13 @@ reactor SnakeController(size: unsigned = 32) {
   reaction(updated_board_from_apple) -> draw_board {=
     current_board = std::move(*updated_board_from_apple.get());
     draw_board.set(current_board);
+  =}
+
+  reaction(ate_apple) {=
+    apple_count++;
+    if (apple_count % 5 == 0) {
+      interval = std::chrono::duration_cast<reactor::Duration>(interval * 0.8);
+    }
   =}
 }
 
@@ -353,8 +366,6 @@ reactor AppleController {
   input ate_apple: void
   output add_apple: Board
 
-  //timer t(3s, 3s) 
-
   reaction(startup, ate_apple) board_from_snake -> add_apple {=
     add_apple.set(std::move(board_from_snake.get()));
   =}
@@ -383,10 +394,10 @@ reactor ScoreController {
   =}
 }
 
-main reactor(size: unsigned = 20) {
+main reactor(size: unsigned = 20, initial_interval: time = 300 ms) {
   snake_model = new SnakeModel()
   apple_model = new AppleModel(size = size)
-  snake_controller = new SnakeController(size = size)
+  snake_controller = new SnakeController(size = size, initial_interval=initial_interval)
   apple_controller = new AppleController()
   score_controller = new ScoreController()
   key_controller = new KeyController()
@@ -402,8 +413,7 @@ main reactor(size: unsigned = 20) {
 
   snake_model.updated_board -> snake_controller.updated_board_from_snake
   snake_model.invalid_move -> score_controller.game_over
-  snake_model.ate_apple -> apple_controller.ate_apple
-  snake_model.ate_apple -> score_controller.increment_score
+  (snake_model.ate_apple)+ -> apple_controller.ate_apple, score_controller.increment_score, snake_controller.ate_apple
   snake_model.updated_board -> apple_controller.board_from_snake
 
   apple_model.updated_board -> snake_controller.updated_board_from_apple
