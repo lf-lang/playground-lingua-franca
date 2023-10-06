@@ -1,0 +1,99 @@
+target Cpp
+
+public preamble {=
+  #include "snake.hh"
+=}
+
+reactor SnakeModel {
+  public preamble {=
+    #include <deque>
+  =}
+
+  input set_direction: Direction
+  input move: Board
+  output updated_board: Board
+  output ate_apple: void
+  output invalid_move: void
+
+  state direction: Direction = {= Direction::RIGHT =}
+  state elements: std::deque<std::pair<unsigned, unsigned>>{{-1, 0}, {-2, 0}, {-3, 0}}
+
+  reaction(set_direction) {=
+    auto new_direction = *set_direction.get();
+        // This checks if the new direction is not the opposit of the current direction
+        if (static_cast<int>(direction) + static_cast<int>(new_direction) != 0) {
+          direction = new_direction;
+        }
+  =}
+
+  reaction(move) -> updated_board, ate_apple, invalid_move {=
+    Board board = *move.get();
+          auto head_pos = next_head_pos();
+          auto element_at_head = board.at(head_pos.first, head_pos.second);
+
+          if (element_at_head != BoardElement::EMPTY && element_at_head != BoardElement::APPLE) {
+            invalid_move.set();
+          }
+
+          // set the old head position to snake body
+          board.set(elements.front().first, elements.front().second, BoardElement::SNAKE_BODY);
+          // add new head and place it on the board
+          elements.push_front(head_pos);
+          board.set(head_pos.first, head_pos.second, BoardElement::SNAKE_HEAD);
+          if (element_at_head != BoardElement::APPLE) {
+             // remove the old tail
+             board.set(elements.back().first, elements.back().second, BoardElement::EMPTY);
+             elements.pop_back();
+          } else {
+            ate_apple.set();
+          }
+
+          // send the updated board back
+          updated_board.set(std::move(board));
+  =}
+
+  method next_head_pos(): {=
+    std::pair<int, int>
+  =} {=
+    int pos_x = elements.front().first;
+    int pos_y = elements.front().second;
+    switch(direction) {
+      case Direction::UP:
+        pos_y--;
+        break;
+      case Direction::DOWN:
+        pos_y++;
+        break;
+      case Direction::RIGHT:
+        pos_x++;
+        break;
+      case Direction::LEFT:
+        pos_x--;
+        break;
+    }
+    return std::make_pair(pos_x, pos_y);
+  =}
+}
+
+reactor AppleModel(size: unsigned = 32) {
+  public preamble {=
+    #include <random>
+  =}
+
+  input add_apple: Board
+  output updated_board: Board
+
+  state rand: std::mt19937({= std::chrono::system_clock::now().time_since_epoch().count() =})
+  state dist: std::uniform_int_distribution<int>(0, {= size - 1 =})
+
+  reaction(add_apple) -> updated_board {=
+    Board board = *add_apple.get();
+    int pos_x{-1}, pos_y{-1};
+    while (board.at(pos_x, pos_y) != BoardElement::EMPTY) {
+      pos_x = dist(rand);
+      pos_y = dist(rand);
+    }
+    board.set(pos_x, pos_y, BoardElement::APPLE);
+    updated_board.set(std::move(board));
+  =}
+}
