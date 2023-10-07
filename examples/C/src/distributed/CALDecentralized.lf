@@ -1,0 +1,67 @@
+/**
+ * This program illustrates how relaxing consistency improves availability, as predicted by the CAL
+ * Theorem reported in the following paper:
+ *
+ * Edward A. Lee, Ravi Akella, Soroush Bateni, Shaokai Lin, Marten Lohstroh, Christian Menard.
+ * "Consistency vs. Availability in Distributed Cyber-Physical Systems". ACM Transactions on
+ * Embedded Computing Systems (TECS), September 2023. https://dl.acm.org/doi/10.1145/3609119
+ *
+ * This program is just like CAL.lf except that it uses decentralized coordination.
+ *
+ * Removing or reducing the after delay strengthens consistency but causes deadline violations.
+ *
+ * This program uses decentralized coordination, so if the processing latency plus communication
+ * latency exceeds the 200ms tolerance for inconsistency plus the 30ms tolerance for unavailability
+ * (the deadline), then the system can only preserve availability at the expense of consistency.
+ * However, in order to do that, you need to adjust the STP offset, which corresponds to the
+ * processing offset in the CAL theorem. If you remove the 200ms `after` delay, you will need to
+ * increase the STP offset in the `Actuate` reactor to ensure that it does not prematurely assume
+ * the inputs are absent. Any number significantly larger than the 35ms processing latency should be
+ * sufficient to prevent STP violations, but such a number will result in a deadline violation.
+ * Setting a lower number prevents the deadline violation, but at the cost of getting consistency
+ * violations. It is also possible to get _both_ deadline and consistency violations.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  coordination: decentralized,
+  timeout: 5 s
+}
+
+import Sense, Process from "CAL.lf"
+
+// Override the base class to provide an STP offset.
+reactor ProcessFed(STP_offset: time = 10 ms) extends Process {
+}
+
+// Report inputs received.
+// STP_offset parameter is needed to ensure receiving the last input at time 5s.
+// This has to be less than the deadline or the deadline will always be violated.
+reactor Actuate(STP_offset: time = 20 ms) {
+  input in1: int
+  input in2: int
+
+  reaction(in1) {=
+    lf_print(PRINTF_TIME ": Received on in1: %d", lf_time_logical_elapsed(), in1->value);
+  =} STP(0) {=
+    // No _additional_ STP offset is needed here.
+    lf_print(PRINTF_TIME ": Consistency violation! Received %d", lf_time_logical_elapsed(), in1->value);
+  =}
+
+  reaction(in2) {=
+    lf_print(PRINTF_TIME ": Received on in2: %d", lf_time_logical_elapsed(), in2->value);
+  =} deadline(30 ms) {=
+    lf_print(PRINTF_TIME ": Received on in2: %d", lf_time_logical_elapsed(), in2->value);
+    lf_print("  *** PANIC! Deadline violated!");
+  =}
+}
+
+federated reactor {
+  s1 = new Sense()
+  s2 = new Sense()
+  c1 = new ProcessFed()
+  a = new Actuate()
+  s1.out -> c1.in
+  c1.out -> a.in1 after 200 ms
+  s2.out -> a.in2
+}
