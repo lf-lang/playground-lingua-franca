@@ -41,11 +41,13 @@ reactor ImageProcessor {
     output objectsDetected:{=object_t=}
     logical action infer(10 msec)
     state opMode:int = 0
-    // Perhaps incoming packets can change opMode, the mode of operation.
+    // Perhaps incoming packets can change opMode, the mode of operation?
     reaction(fromRadio) {==}
     // Sensor fusion
     reaction(fromCameraColor, fromCameraBW) -> infer {==}
-    // Run neural network inference, output command.
+    // Run neural network inference, output objectsDetected.
+    // FIXME: Not sure if this is a reasonable design. Is Ingenuity actually
+    // doing object detection when flying?
     reaction(infer) -> objectsDetected {==}
 }
 
