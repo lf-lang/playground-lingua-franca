@@ -1,6 +1,6 @@
 target C;
 
-reactor AngularRateSensorSimualted(period=40ms) {
+reactor AngularRateSensorSimulated(period=40ms) {
     timer t(0s, period);
 
     input receive_sensor_angular_momentum: double;

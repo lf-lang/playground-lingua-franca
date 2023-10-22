@@ -4,7 +4,7 @@ target C {
 
 import Controller from "./Controller.lf";
 import Motor from "./Motor.lf";
-import  AngularRateSensorSimualted, GyroscopeSimulated from "./Sensor.lf";
+import  AngularRateSensorSimulated, GyroscopeSimulated from "./Sensor.lf";
 import GPIOSimulated from "./GPIO.lf";
 import Simulator from "./Simulator.lf";
 
@@ -54,7 +54,7 @@ reactor Program {
   simualtor = new Simulator();
   controller = new Controller();
   motor = new Motor(freq=10000.0);
-  speed_sensor = new AngularRateSensorSimualted();
+  speed_sensor = new AngularRateSensorSimulated();
   gyroscope = new GyroscopeSimulated();
   gpio = new GPIOSimulated(input_freq=10000.0, input_voltage=5.0, input_current=1.0); // 5V 1A Motor
 
