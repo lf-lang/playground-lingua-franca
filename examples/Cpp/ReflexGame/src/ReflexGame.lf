@@ -18,7 +18,7 @@ reactor RandomDelay(min_delay: time(2 sec), max_delay: time(8 sec)) {
   output out: void
   logical action delay(min_delay): void
 
-  // a random number generator seeded with the current physiceal time
+  // a random number generator seeded with the current physical time
   state rand: std::mt19937({= get_physical_time().time_since_epoch().count() =})
   // a uniform random distribution with a range from 1 to (max_delay - min_delay) milliseconds
   state dist: std::uniform_int_distribution<int>(
