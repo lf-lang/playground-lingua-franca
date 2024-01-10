@@ -1,0 +1,78 @@
+/**
+ * The POSIX Realtime Extension includes a mechanism for processes on a single machine
+ * to share memory.  A writer opens a "file" using `shm_open` and then uses `mmap` to
+ * map a sequence of memory addresses to the contents of this in-memory file. The `mmap`
+ * function returns a pointer to this memory, which the writer can then use to store data.
+ * 
+ * A reader needs only the file name to open the file using `shm_open`, which it can then
+ * also map to memory locations using `mmap`.
+ * 
+ * This example shows how you can safely use this mechanism to exchange large chunks of
+ * data between LF federates without serializing, streaming, and then deserializing the
+ * data.  The Sender reactor creates a file name using the current logical time (to ensure
+ * uniqueness, assuming no use of microsteps).  It populates the shared memory with data
+ * and then sends the filename to the Reader.  The Reader will only receive the file name
+ * after the Sender has finished writing to it, so precedence constraints are satisfied.
+ * 
+ * @author Edward A. Lee
+ */
+target C {
+  timeout: 0 s
+}
+
+preamble {=
+  #include <sys/mman.h>
+  #include <fcntl.h>
+  #include <unistd.h>
+  #include <string.h>
+  #define SIZE 4096
+=}
+
+reactor Sender {
+  // Do not use string data type because the string filename is dynamically allocated.
+  output out: char*
+
+  reaction(startup) -> out {=
+    tag_t now = lf_tag();
+    char *name;
+    // Create a file name based on current time.
+    if (asprintf(&name, "Sender_" PRINTF_TIME "_%d", now.time, now.microstep) < 0) {
+      lf_print_error_and_exit("Memory allocation error.");
+    }
+    lf_print("**** Writing to shared memory with filename: %s", name);
+    int fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+    ftruncate(fd, SIZE); // Limit the size.
+    char* ptr = (char*)mmap(0, SIZE, PROT_WRITE, MAP_SHARED, fd, 0);
+    const char* message = "Hello World!";
+
+    // Write to the shared memory file.
+    char* offset = ptr;
+    while (offset < ptr + SIZE - strlen(message)) {
+      sprintf(offset, "%s", message);
+      offset += strlen(message);
+    }
+    // Send out the file name only, not the data it contains.
+    lf_set_array(out, name, strlen(name) + 1);
+  =}
+}
+
+reactor Reader {
+  input in: char*
+
+  reaction(in) {=
+    lf_print("**** Reading shared memory file %s", in->value);
+    int fd = shm_open(in->value, O_RDONLY, 0666);
+
+    // Memory map the shared memory object.
+    char* ptr = (char*)mmap(0, SIZE, PROT_READ, MAP_SHARED, fd, 0);
+
+    // Read the shared memory data.
+    lf_print("%s", ptr);
+  =}
+}
+
+federated reactor {
+  s = new Sender()
+  r = new Reader()
+  s.out -> r.in
+}
