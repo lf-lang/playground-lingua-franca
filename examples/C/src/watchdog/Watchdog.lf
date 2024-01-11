@@ -1,21 +1,19 @@
 /**
  * @brief Demonstration of watchdogs in LF.
- * 
- * This program has a periodic source that triggers events every 500 ms,
- * but where every fourth event is delayed before being delivered to the
- * downstream Watcher.  This delay models either communication or
- * computation time.
- * 
- * The Watcher has a deadline of 200 ms.  It wants to see events within
- * 200 ms of their logical time, but, because of the delay every fourth event,
- * the deadline will be violated.  The deadline violation handler is invoked
- * in this case, but it is only invoked after the event arrives, which is late.
- * What if we need to react to the deadline violation sooner, e.g. in order to
- * drive an actuator?
- * 
- * To handle this, the Watcher includes watchdog named "dog" that triggers if
- * any input event is more than 250 ms late.
- * 
+ *
+ * This program has a periodic source that triggers events every 500 ms, but where every fourth
+ * event is delayed before being delivered to the downstream Watcher. This delay models either
+ * communication or computation time.
+ *
+ * The Watcher has a deadline of 200 ms. It wants to see events within 200 ms of their logical time,
+ * but, because of the delay every fourth event, the deadline will be violated. The deadline
+ * violation handler is invoked in this case, but it is only invoked after the event arrives, which
+ * is late. What if we need to react to the deadline violation sooner, e.g. in order to drive an
+ * actuator?
+ *
+ * To handle this, the Watcher includes watchdog named "dog" that triggers if any input event is
+ * more than 250 ms late.
+ *
  * @author Benjamin Asch
  * @author Edward A. Lee
  */
@@ -25,9 +23,9 @@ target C {
 
 reactor SometimesSlowSource {
   output out: int
-  // Offset ameliorates startup time.
-  timer t(500 ms, 500 ms)
+  timer t(500 ms, 500 ms)  // Offset ameliorates startup time.
   state count: int = 1
+
   reaction(t) -> out {=
     if (self->count % 4 == 0) {
       // Be slow.
@@ -35,7 +33,7 @@ reactor SometimesSlowSource {
     }
     lf_set(out, self->count++);
   =}
-} 
+}
 
 reactor Watcher {
   input in: int
@@ -57,7 +55,7 @@ reactor Watcher {
     lf_print("Will expire at " PRINTF_TIME, lf_time_logical_elapsed() + MSEC(750));
     lf_set(out, in->value);
     self->count++;
-  =} deadline (200 ms) {=
+  =} deadline(200 ms) {=
     // This input is more than 200 ms late. It must have been from the slow cycles.
     lf_print("Watcher received late input %d. Ignoring it.", in->value);
   =}
@@ -69,7 +67,7 @@ reactor Watcher {
     // Use a logical action so that the logical time of the output aligns.
     lf_schedule(a, 0);
   =}
-  
+
   reaction(a) -> out, dog {=
     lf_print("******** Backup output being produced.");
     lf_set(out, self->count++);
@@ -87,6 +85,7 @@ reactor Watcher {
 reactor Checker {
   input in: int
   state count: int = 1
+
   reaction(in) {=
     lf_print("Checker received %d at logical time " PRINTF_TIME
         " and physical time " PRINTF_TIME, in->value,
@@ -97,6 +96,7 @@ reactor Checker {
     }
     self->count++;
   =}
+
   reaction(shutdown) {=
     if (self->count < 10) {
       lf_print_error_and_exit("Received %d inputs. Expected at least 10.", self->count);
@@ -105,7 +105,6 @@ reactor Checker {
 }
 
 federated reactor {
-
   s = new SometimesSlowSource()
   w = new Watcher()
   c = new Checker()
