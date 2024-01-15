@@ -1,34 +1,30 @@
 // This version simply has the primary failing after 5 seconds.
 // Switch 1 remains the NRP.
-target C
+target C {
+  tracing: true,
+  timeout: 20 s
+}
 
 import Switch, Node from "NRP_FD.lf"
 
-main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
+federated reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 5 s)
   node2 = new Node(heartbeat_period=heartbeat_period, id=2, fails_at_time = 15 s)
 
   switch1 = new Switch(id=1)
   switch2 = new Switch(id=2)
+  switch3 = new Switch(id=3)
+  switch4 = new Switch(id=4)
 
-  node1.out1 -> switch1.in1 after delay
-  switch1.out1 -> node1.in1 after delay
+  node1.out -> switch1.in1, switch3.in1 after delay
+  switch1.out1, switch3.out1 -> node1.in after delay
 
   switch1.out2 -> switch2.in2 after delay
   switch2.out2 -> switch1.in2 after delay
 
-  switch2.out1 -> node2.in1 after delay
-  node2.out1 -> switch2.in1 after delay
-
-  switch3 = new Switch(id=3)
-  switch4 = new Switch(id=4)
-
-  node1.out2 -> switch3.in1 after delay
-  switch3.out1 -> node1.in2 after delay
+  switch2.out1, switch4.out1 -> node2.in after delay
+  node2.out -> switch2.in1, switch4.in1 after delay
 
   switch3.out2 -> switch4.in2 after delay
   switch4.out2 -> switch3.in2 after delay
-
-  switch4.out1 -> node2.in2 after delay
-  node2.out2 -> switch4.in1 after delay
 }

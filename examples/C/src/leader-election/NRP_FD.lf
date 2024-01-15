@@ -1,6 +1,6 @@
 /**
- * This program models a redundant fault tolerant system where a primary node, if and when it fails,
- * is replaced by a backup node. The protocol is described in this paper:
+ * This program implements a redundant fault-tolerant system where a primary node, if and when
+ * it fails, is replaced by a backup node. The protocol is described in this paper:
  *
  * Bjarne Johansson; Mats Rågberger; Alessandro V. Papadopoulos; Thomas Nolte, "Consistency Before
  * Availability: Network Reference Point based Failure Detection for Controller Redundancy," Emerging
@@ -465,8 +465,7 @@ reactor Switch(
     =}
   }
 }
-// FIXME: This should be federated, but bugs in federated execution make it fail.
-main reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
+federated reactor(heartbeat_period: time = 1 s, delay: time = 1 ms) {
   node1 = new Node(heartbeat_period=heartbeat_period, id=1, fails_at_time = 10 s)
   switch1 = new Switch(id=1, fails_at_time = 3 s)
   switch3 = new Switch(id=3)
