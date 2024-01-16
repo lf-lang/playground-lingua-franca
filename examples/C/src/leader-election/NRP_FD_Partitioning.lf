@@ -1,6 +1,11 @@
-// This version partitions the network and shows that the protocol
-// prevents the backup from becoming primary, thereby preventing
-// two primaries.
+/**
+ * This version of NRP_FD partitions the network and shows that the protocol prevents the backup
+ * from becoming primary, thereby preventing two primaries.
+ *
+ * @author Edward A. Lee
+ * @author Marjan Sirjani
+ */
+// This version
 target C {
   tracing: true,
   timeout: 20 s

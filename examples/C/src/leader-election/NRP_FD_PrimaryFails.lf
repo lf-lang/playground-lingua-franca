@@ -1,5 +1,12 @@
-// This version simply has the primary failing after 5 seconds.
-// Switch 1 remains the NRP.
+/**
+ * This version of NRP_FD simply has the primary (node1) failing after 5 seconds and the backup
+ * (node2) failing at at 15s. The backup detects simultaneous loss of the heartbeat on both networks
+ * and hence assumes that the primary has failed rather than there being a network failure. Switch 1
+ * remains the NRP.
+ *
+ * @author Edward A. Lee
+ * @author Marjan Sirjani
+ */
 target C {
   tracing: true,
   timeout: 20 s

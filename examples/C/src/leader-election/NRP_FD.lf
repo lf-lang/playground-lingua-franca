@@ -16,12 +16,13 @@
  *
  * This implementation omits some details in the paper. See NOTEs in the comments.
  *
+ * This version has switch1 failing at 3s, node1 failing at 10s, and node2 failing at 15s.
+ *
  * @author Edward A. Lee
  * @author Marjan Sirjani
  */
 target C {
   tracing: true,
-  logging: DEBUG,
   timeout: 20 s
 }
 
@@ -271,7 +272,7 @@ reactor Node(
             }
             self->ping_pending = false;
           } else if (in[c]->value.type == new_NRP) {
-            // FIXME: Should ping the new NRP and send confirmation back to primary.
+            // NOTE: Should ping the new NRP and send confirmation back to primary.
             lf_print(PRINTF_TIME ": Backup node %d received new NRP %d on network %d.",
                 lf_time_logical_elapsed(), self->id, in[c]->value.payload, c
             );
