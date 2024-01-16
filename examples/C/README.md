@@ -11,3 +11,4 @@
 * [SDV](src/sdv/README.md): Software defined vehicle sketch integrating user input, a web display, and sound.
 * [Train Door](src/train-door/README.md): Train door controller from a verification paper.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
+* [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.
