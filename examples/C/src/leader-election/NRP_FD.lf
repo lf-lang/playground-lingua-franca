@@ -346,6 +346,7 @@ reactor Node(
     =}
 
     reaction(ping_timed_out) -> out, new_NRP_request_timed_out, reset(Failed) {=
+      self->ping_timeout_pending = false;
       if (self->ping_pending) {
         // Ping timed out.
         lf_print(PRINTF_TIME ": Backup node %d gets no response from ping.", lf_time_logical_elapsed(), self->id);
