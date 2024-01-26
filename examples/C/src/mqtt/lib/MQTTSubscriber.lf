@@ -47,7 +47,7 @@ preamble {=
   #include <string.h>   // Defines memcmp()
 
   #include "MQTTClient.h"
-  #include "core/federated/net_util.h"
+  #include "core/federated/network/net_util.h"
 
   // Fix the QoS to indicate that the message will be delivered reliably exactly once.
   #define QOS     2

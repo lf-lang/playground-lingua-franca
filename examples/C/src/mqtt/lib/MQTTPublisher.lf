@@ -36,7 +36,7 @@ preamble {=
   #include <string.h>   // Defines memcpy
 
   #include "MQTTClient.h"
-  #include "core/federated/net_util.h"
+  #include "core/federated/network/net_util.h"
 
   // Struct type used to keep track of messages in flight between reactions.
   typedef struct inflight_t {
