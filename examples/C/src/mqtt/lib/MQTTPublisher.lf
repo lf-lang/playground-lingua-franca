@@ -25,14 +25,18 @@
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-target C
+target C {
+  cmake-include: [
+      "../include/paho-extension.cmake",
+      "../include/net_utils.cmake"  // For encode_int64()
+  ]
+}
 
 preamble {=
   #ifndef MQTT_PUBLISHER_H
   #define MQTT_PUBLISHER_H
 
   #include "platform.h" // Defines lf_critical_section_enter(), etc.
-  #include "tag.h"      // Defines lf_time_logical()
   #include <string.h>   // Defines memcpy
 
   #include "MQTTClient.h"
