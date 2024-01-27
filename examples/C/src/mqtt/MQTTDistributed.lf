@@ -12,8 +12,8 @@
  * The code generator produces three programs, bin/MQTTDistributed_RTI, bin/MQTTDistributed_source,
  * and bin/MQTTDistributed_destination, plus a script bin/MQTTDistributed that runs all three.
  *
- * If the source and destination are running in the same machine, there is no clock
- * synchronization error.
+ * If the source and destination are running in the same machine, there is no clock synchronization
+ * error.
  *
  * See README.md for prerequisites and further information.
  *
