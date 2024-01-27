@@ -20,11 +20,11 @@ fi
 
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
-cmake -DLF_REACTION_GRAPH_BREADTH=3 -DLF_THREADED=1 -DNUMBER_OF_WORKERS=0 -DSCHEDULER=NP -DMODAL_REACTORS=TRUE .
-cmake --build .
+cmake -Bbuild
+make -C build
 
 # Move the executable to the bin directory.
-mv $1 ${LF_BIN_DIRECTORY}
+mv build/$1 ${LF_BIN_DIRECTORY}
 
 # Move back to source directory to run program
 cd ${LF_SOURCE_DIRECTORY}
