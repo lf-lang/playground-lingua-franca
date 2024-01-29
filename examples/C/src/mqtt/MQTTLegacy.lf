@@ -13,18 +13,13 @@
  *
  * This is a federated program, the publisher and subscriber run in separate programs. This would
  * work pretty much the same way, however, as an unfederated program. To run as an unfederated
- * program, add to cmake-include the following file:
- *
- * "include/net_utils.cmake"
- *
- * and change the `federated` keyword to `main`.
+ * program, just change the `federated` keyword to `main`.
  *
  * See README.md for prerequisites and further information.
  *
  * @author Edward A. Lee
  */
 target C {
-  cmake-include: ["include/paho-extension.cmake", "include/mosquitto-extension.cmake"],
   timeout: 1 min,
   coordination: centralized
 }
@@ -49,7 +44,7 @@ reactor Subscriber {
   sub.message -> dsp.message
 }
 
-federated reactor {
+main reactor {
   source = new Publisher()
   destination = new Subscriber()
 }

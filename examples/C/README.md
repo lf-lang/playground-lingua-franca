@@ -9,6 +9,7 @@
 * [Furuta Pendulum](src/modal_models/FurutaPendulum/README.md): A controller and simulation illustrating a modal reactor.
 * [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
 * [SDV](src/sdv/README.md): Software defined vehicle sketch integrating user input, a web display, and sound.
+* [Shared Memory](src/shared-memory/README.md): Using shared memory to exchange large data objects between federates. 
 * [Train Door](src/train-door/README.md): Train door controller from a verification paper.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
 * [Watchdog](src/watchdog/README.md): Federated illustration of watchdogs.
