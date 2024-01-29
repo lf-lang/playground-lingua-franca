@@ -8,7 +8,6 @@
 target C {
   timeout: 5 secs,
   fast: true,
-  flags: "-lm",
   build: "./build_run_plot.sh FurutaPendulumDisturbance"
 }
 
