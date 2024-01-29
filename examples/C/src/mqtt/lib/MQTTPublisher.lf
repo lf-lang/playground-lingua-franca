@@ -28,8 +28,8 @@
 target C {
   cmake-include: [
       "../include/paho-extension.cmake",
-      "../include/net_utils.cmake"  // For encode_int64()
-  ]
+      // For encode_int64()
+      "../include/net_utils.cmake"]
 }
 
 preamble {=
