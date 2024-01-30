@@ -12,3 +12,4 @@
 * [Shared Memory](src/shared-memory/README.md): Using shared memory to exchange large data objects between federates. 
 * [Train Door](src/train-door/README.md): Train door controller from a verification paper.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
+* [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.
