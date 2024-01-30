@@ -13,3 +13,4 @@
 * [Train Door](src/train-door/README.md): Train door controller from a verification paper.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
 * [Watchdog](src/watchdog/README.md): Federated illustration of watchdogs.
+* [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.
