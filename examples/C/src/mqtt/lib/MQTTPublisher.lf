@@ -25,18 +25,22 @@
  * @author Ravi Akella
  * @author Edward A. Lee
  */
-target C
+target C {
+  cmake-include: [
+      "../include/paho-extension.cmake",
+      // For encode_int64()
+      "../include/net_utils.cmake"]
+}
 
 preamble {=
   #ifndef MQTT_PUBLISHER_H
   #define MQTT_PUBLISHER_H
 
   #include "platform.h" // Defines lf_critical_section_enter(), etc.
-  #include "tag.h"      // Defines lf_time_logical()
   #include <string.h>   // Defines memcpy
 
   #include "MQTTClient.h"
-  #include "core/federated/net_util.h"
+  #include "core/federated/network/net_util.h"
 
   // Struct type used to keep track of messages in flight between reactions.
   typedef struct inflight_t {

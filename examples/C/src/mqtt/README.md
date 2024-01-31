@@ -25,8 +25,23 @@ The following examples illustrate more advanced features, particularly the limit
 
 ## Prerequisites:
 
-To get this example to compile, you will need to install the [Eclipse Paho MQTT C client library](https://github.com/eclipse/paho.mqtt.c), which requires that you first install
-[openSSL](https://github.com/openssl/openssl.git) (see [https://www.openssl.org](https://www.openssl.org). To run the compiled code, you need an MQTT broker to be running. For example, the [Mosquitto Eclipse project](https://mosquitto.org/download/) provides one. On a Mac, you can use homebrew to install the Mosquitto broker:
+To get this example to compile, you will need to install
+
+1. [openSSL](https://github.com/openssl/openssl.git). See [https://www.openssl.org](https://www.openssl.org).
+2. The [Eclipse Paho MQTT C client library](https://github.com/eclipse/paho.mqtt.c). E.g., the following might work:
+
+```shell
+    git clone git@github.com:eclipse/paho.mqtt.c.git
+    mkdir /tmp/build.paho ; cd /tmp/build.paho
+    cmake -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_DOCUMENTATION=TRUE \
+    		-DPAHO_BUILD_SAMPLES=TRUE ~/paho.mqtt.c
+    sudo make install
+    export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
+```
+
+The last line could be put in your `~/.bash_profile` file so that you don't have to type each time you run the LF program in a new shell.
+
+To run the compiled code, you need an MQTT broker to be running. For example, the [Mosquitto Eclipse project](https://mosquitto.org/download/) provides one. On a Mac, you can use homebrew to install the Mosquitto broker:
 
     brew install mosquitto
 
@@ -43,6 +58,12 @@ To start the broker and test it, do this:
 3. In another terminal window, publish a message:
 
     > mosquitto_pub -t 'test/topic' -m 'Hello World'
+
+If you want to start the broker always upon login, you can do this:
+
+```
+brew services start mosquitto
+```
 
 ## Implementation
 
