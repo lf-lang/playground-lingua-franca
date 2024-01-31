@@ -6,9 +6,9 @@
  *
  * This file contains the networking implementation it is really just an simple socket application
  * which parses simple HTTP headers and responds in text/plain.
- * 
- * This requires [installing Crow](https://crowcpp.org/master/getting_started/setup), which
- * provides the HTTP server implementation.
+ *
+ * This requires [installing Crow](https://crowcpp.org/master/getting_started/setup), which provides
+ * the HTTP server implementation.
  *
  * @author Tassilo Tanneberer <tassilo.tanneberger@tu-dresden.de>
  */
