@@ -69,7 +69,8 @@ preamble {=
 
       def setup_car(self):
           """
-          Spawns actor-vehicle to be controled.
+          Spawns actor-vehicle to be controlled.
+
           """
           car_bp = self.world.get_blueprint_library().filter("vehicle.*")[0]
           location = random.choice(self.world.get_map().get_spawn_points())

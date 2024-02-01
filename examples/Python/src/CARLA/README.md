@@ -48,10 +48,10 @@ The configuration of time-step and synchrony, leads for different settings. Here
 | Synchronous mode  | Client is in total control over the simulation and its information.    | Risk of non reliable simulations.  |
 | Asynchronous mode | Good time references for information. Server runs as fast as possible. | Non easily repeatable simulations. |
 
-- **Synchronous mode + variable time-step.** This is almost for sure a non-desirable state. Physics cannot run properly when the time-step is bigger than 0.1s and. If the server has to wait for the client to compute the steps, this is likely to happen. Simulation time and physics will not be in synchrony. The simulation will not be reliable.
+- **Synchronous mode + variable time-step.** This is almost for sure a non-desirable state. Physics cannot run properly when the time-step is bigger than 0.1s, and if the server has to wait for the client to compute the steps, this is likely to happen. Simulation time and physics will not be in synchrony. The simulation will not be reliable.
 - **Asynchronous mode + variable time-step.** This is the default CARLA state. Client and server are asynchronous. The simulation time flows according to the real time. Reenacting the simulation needs to take into account float-arithmetic error, and possible differences in time steps between servers.
 - **Asynchronous mode + fixed time-step.** The server will run as fast as possible. The information retrieved will be easily related with an exact moment in the simulation. This configuration makes possible to simulate long periods of time in much less real time, if the server is fast enough.
-- **Synchronous mode + fixed time-step.** The client will rule the simulation. The time step will be fixed. The server will not compute the following step until the client sends a tick. This is the best mode when synchrony and precision is relevant. Especially when dealing with slow clients or different elements retrieving information.
+- **Synchronous mode + fixed time-step.** The client will rule the simulation. The time step will be fixed. The server will not compute the following step until the client sends a tick. This is the best mode when synchrony and precision is relevant, especially when dealing with slow clients or different elements retrieving information.
 
 **Fixed time-step**
 
