@@ -32,6 +32,13 @@ class BasicClient(ABC):
     """
     Basic implementation of a synchronous client.
     """
+    @abstractmethod
+    def game_start(self):
+        pass
+
+    @abstractmethod
+    def control(self, car):
+        pass
 
     def __init__(self):
         self.client = None
@@ -53,9 +60,14 @@ class BasicClient(ABC):
         camera_bp.set_attribute("fov", str(VIEW_FOV))
         return camera_bp
 
-    @abstractmethod
     def set_synchronous_mode(self, synchronous_mode):
-        pass
+        """
+        Sets synchronous mode.
+        """
+        settings = self.world.get_settings()
+        settings.fixed_delta_seconds = 0.05
+        settings.synchronous_mode = synchronous_mode
+        self.world.apply_settings(settings)
 
     def setup_car(self):
         """
@@ -96,10 +108,6 @@ class BasicClient(ABC):
             (2.0 * np.tan(VIEW_FOV * np.pi / 360.0))
         self.camera.calibration = calibration
 
-    @abstractmethod
-    def control(self, car):
-        pass
-
     def process_imu_data(self, data):
         """
         Processes and stores IMU data.
@@ -123,10 +131,6 @@ class BasicClient(ABC):
             display.blit(surface, (0, 0))
             return array
 
-    @abstractmethod
-    def game_start(self):
-        pass
-
     def game_step(self):
         """
         Simulates one step in the game, processing inputs and rendering the image.
@@ -149,14 +153,6 @@ class BasicClient(ABC):
 
 
 class SyncClient(BasicClient):
-    def set_synchronous_mode(self, synchronous_mode):
-        """
-        Sets synchronous mode.
-        """
-        settings = self.world.get_settings()
-        settings.synchronous_mode = synchronous_mode
-        self.world.apply_settings(settings)
-
     def control(self, car):
         keys = pygame.key.get_pressed()
         if keys[K_ESCAPE]:
@@ -204,15 +200,6 @@ class SyncClient(BasicClient):
 
 
 class AsyncClient(BasicClient):
-    def set_synchronous_mode(self, synchronous_mode):
-        """
-        Sets synchronous mode.
-        """
-        settings = self.world.get_settings()
-        settings.fixed_delta_seconds = 0.05
-        settings.synchronous_mode = synchronous_mode
-        self.world.apply_settings(settings)
-
     def control(self, car):
         control = car.get_control()
         control.throttle = 1
