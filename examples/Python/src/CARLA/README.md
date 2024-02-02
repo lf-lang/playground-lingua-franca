@@ -25,17 +25,17 @@ Note: Please restart the CARLA Server before running each of the examples below.
 
 ### **Compiling LF**
 
-Compile the `carla_manual_control.lf` and `carla_circle.lf` using the `lfc` command.
+Compile the `carla_sync.lf` and `carla_async.lf` using the `lfc` command. Make sure that `carla_client.py` is in the include folder.
 
 ### Synchronous Example - Manual Control
 
-Run the generated script `/.carla_manual_control` which connects to the CARLA server in synchronous mode and initiates a driving simulator in pygame. Use ARROWS or WASD keys for control. Image and IMU data will be displayed on the console.
+Run the generated script `/.carla_sync` which connects to the CARLA server in synchronous mode and initiates a driving simulator in pygame. Use ARROWS or WASD keys for control. Image and IMU data will be displayed on the console.
 
 <img src="img/carla_manual.png" alt="drawing" width="800"/>
 
 ### Asynchronous Example - Driving in Circles
 
-Run the generated script `/.carla_circles` which connects to the CARLA server in asynchronous mode and initiates a driving simulator in pygame. The vehicle will drive in circles. Image and IMU data will be displayed on the console.
+Run the generated script `/.carla_async` which connects to the CARLA server in asynchronous mode and initiates a driving simulator in pygame. The vehicle will drive in circles. Image and IMU data will be displayed on the console.
 
 <img src="img/carla_circles.gif" alt="drawing" width="800"/>
 
