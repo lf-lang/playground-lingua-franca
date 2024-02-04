@@ -1,5 +1,4 @@
 target Python {
-  threading: True,
   files: include/carla_client.py
 }
 
