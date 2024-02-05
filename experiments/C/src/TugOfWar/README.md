@@ -12,6 +12,6 @@ a post request. The UI's gauges are updated with these values, along with the po
 ## Steps:
 
  1. Compile `TugOfWar.lf`. 
- 2. Launch the UI by runnig the script `start.sh` under `C/src/TugOfWar/Interface`. The script will create a virtual environment and install the requirements listed in `requirements.txt`, if not there already. It then lauches Falsk server, accessible on: [http://127.0.0.1:5004](http://127.0.0.1:5004).
+ 2. Launch the UI by running the script `start.sh` under `C/src/TugOfWar/Interface`. The script will create a virtual environment and install the requirements listed in `requirements.txt`, if not there already. It then lauches Falsk server, accessible on: [http://127.0.0.1:5004](http://127.0.0.1:5004).
  3. Run the launching script under `bin` and watch the game on the UI. 
 
