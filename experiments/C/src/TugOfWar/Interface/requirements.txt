@@ -5,3 +5,4 @@ pandas
 plotly_express
 dash_bootstrap_components
 dash_daq
+setuptools
