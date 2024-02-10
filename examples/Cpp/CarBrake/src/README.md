@@ -14,7 +14,7 @@ The second version forsakes consistency altogether using a Lingua Franca physica
 
 ## Variant that fixes this
 
-The CarBrake2.lf variant, if made federated, decouples the vision system from the handling of brake pedal actions
+The CarBrake2.lf variant decouples the vision system from the handling of brake pedal actions
 in a way that makes it impossible for the vision system to have any effect on the ability of the other component
 to make deadlines. The price for this decoupling is added nondeterminacy because the physical connection
 reassigns time stamps based on the current physical clock.
@@ -23,5 +23,9 @@ reassigns time stamps based on the current physical clock.
 <tr>
 <td> <img src="img/CarBrake.png" alt="CarBrake" width="400">
 <td> <a href="CarBrake.lf">CarBrake.lf</a>: Sketch of an ADAS implementation that emphasizes strong consistency at the expense of availability and therefore will miss deadlines when the brake pedal is pushed while image analysis is being performed.</td>
+</tr>
+<tr>
+<td> <img src="img/CarBrake2.png" alt="CarBrake2" width="400">
+<td> <a href="CarBrake2.lf">CarBrake.lf</a>: Variant that decouples the vision system from the handling of the brake pedal using a physical connection.</td>
 </tr>
 </table>
