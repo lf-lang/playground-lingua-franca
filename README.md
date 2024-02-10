@@ -19,7 +19,7 @@ Spin up a fully configured dev environment in the cloud that start in seconds.
 Any dependencies required for building or running any of the examples are preinstalled.
 A web-based VS Code editor, preloaded with the Lingua Franca extension, is accessible through either **GitHub Codespaces** or **GitPod**. Simply click on either of the links below to get started.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=477928779&ref=main&skip_quickstart=true&devcontainer_path=.devcontainer%2Fnightly%2Fdevcontainer.json)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=477928779&ref=main&skip_quickstart=true&devcontainer_path=.devcontainer%2Fnightly%2Fdevcontainer.json) (NOTE: This can be quite slow to start.)
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/new#https://github.com/lf-lang/playground-lingua-franca/tree/main)
 
