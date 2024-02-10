@@ -14,6 +14,7 @@ By default the AlarmClock expects the sound files to be placed in `~/music/Alarm
 path by editing the `shared_header.cpp` file. Furthermore is it possible to configure paths to other binaries
 in this file e.g. kill, mpg321 -commands. 
 
+This program requires that you first [install Crow](https://crowcpp.org/master/getting_started/setup).
 If you have installed Crow in a location where CMake does not automatically find it, then you can manually specify the location when compiling the LF program as follows:
 
 ```bash
