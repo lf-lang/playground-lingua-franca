@@ -1,8 +1,8 @@
 /**
  * A web socket server enabling a user interface realized in the browser. This creates a web server
  * that listens on a port (default 8000) for web socket connections. The intended usage is that you
- * create a client in an HTML/JavaScript file that connects to this server and provides a browser-based
- * user interface.
+ * create a client in an HTML/JavaScript file that connects to this server and provides a
+ * browser-based user interface.
  *
  * When a connection is established with a client, an output is produced on the connected port that
  * is a struct with a unique wsi (web socket interface) for the client and a boolean indicating
