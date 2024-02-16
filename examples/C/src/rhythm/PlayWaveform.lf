@@ -26,7 +26,8 @@ target C {
       "/lib/c/reactor-c/util/wave_file_reader.h",
       "/lib/c/reactor-c/util/audio_loop_mac.c",
       "/lib/c/reactor-c/util/audio_loop.h",
-      "/lib/c/reactor-c/util/audio_loop_linux.c"],
+      "/lib/c/reactor-c/util/audio_loop_linux.c",
+      "sounds"],
   cmake-include: [
       "/lib/c/reactor-c/util/audio_loop.cmake",
       "/lib/c/reactor-c/util/wave_file_reader.cmake"]
@@ -44,7 +45,7 @@ reactor PlayWaveform(
         // wav files giving the waveforms.
         // These have to also be included in the files target directive.
         #define NUM_WAVEFORMS 9  // Number of waveforms.
-        #define SOUNDS LF_PACKAGE_DIRECTORY LF_FILE_SEPARATOR "src" LF_FILE_SEPARATOR "rhythm" LF_FILE_SEPARATOR "sounds" LF_FILE_SEPARATOR
+        #define SOUNDS LF_TARGET_FILES_DIRECTORY "/sounds/"
         char* waveform_files[] = {
           SOUNDS "Bass-Drum-1.wav",
           SOUNDS "Hi-Bongo.wav",
