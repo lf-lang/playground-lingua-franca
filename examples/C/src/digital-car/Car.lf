@@ -1,0 +1,36 @@
+/**
+ * This code is generated using OpenAI gpt-3.5-turbo model for text generation 
+ * and text-embedding-ada-002 for retrieval and embeddings. 
+ * 
+ * @author Moez Ben Hajhmida
+ */
+
+
+ target C
+
+
+
+reactor Car {
+  state lock: char* = "locked"  
+  input from_websocket: char*
+  output to_websocket: char*
+  logical action state_change
+
+  reaction(startup) {=
+    // Initialize state as 'locked'.
+    lf_print("Car door is locked.");
+    self->lock = "locked";
+  =}
+
+  reaction(from_websocket){=
+    self->lock = from_websocket->value;
+    lf_print("Car door is now %s.", self->lock);
+  =}
+
+  reaction(state_change)->to_websocket{=
+   to_websocket->value = self->lock;
+    lf_print("Sending %s.", self->lock);
+    lf_schedule(state_change, SEC(.3));
+  =}
+}
+

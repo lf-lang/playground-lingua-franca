@@ -1,0 +1,22 @@
+target C
+import WebSocketServer from "../lib/WebSocketServer.lf"
+import Car from "Car.lf"
+
+reactor PortAdapter{
+  input in: char*
+  output out: char*
+  ws = new WebSocketServer()
+
+  reaction(ws.received)->out{=
+    lf_set(out, ws.received->value->message);
+  =} 
+
+ 
+}
+
+main reactor {
+    car = new Car()
+    ws = new PortAdapter()
+  
+    ws.out -> car.from_websocket
+  }
