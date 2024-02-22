@@ -214,8 +214,10 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     }
 
     void web_socket_message_destructor(void* message) {
-      free(((web_socket_message_t*)message)->message);
+      // Commented because it's causing a "double free detected in tcache 2" error.
+      //free(((web_socket_message_t*)message)->message);
       free(message);
+
     }
 
     void* web_socket_message_copy_constructor(void* message) {
