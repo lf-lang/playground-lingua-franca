@@ -1,0 +1,279 @@
+/**
+ * This implements a 4-dimensional cube connection pattern. This is not just a mathematical
+ * curiosity; this pattern has the nice property that the length of the shortest path between two
+ * nodes grows logarithmically wrt number of nodes while the number of edges grows only
+ * linearithmically. I believe CS 70 folks like to point to the old Connection Machines as an
+ * application for this connection pattern.
+ */
+target C {
+    Build-Type: Debug
+}
+
+import Stdout from "Stdout.lf"
+
+reactor UnevenSplitter(a: int(1), b: int(1)) {
+    input[a + b] in: int
+    output[a] out_a: int
+    output[b] out_b: int
+
+    in -> out_a, out_b
+}
+
+/**
+ * Specify how the outputs of subcubes are routed.
+ * @param n_crossing The number of connections going from either subcube to the other.
+ * @param n_continuing The number of connections per subcube that will be forwarded to this
+ * cube's parent cube
+ * @param subcube_vertices The number of vertices in each subcube.
+ * @param n_continuing_per_vertex n_continuing / n_crossing (workaround for the fact that we do not
+ * have an expression language involving division)
+ */
+reactor Distributor(
+    n_crossing: int(1),
+    n_continuing: int(1),
+    subcube_vertices: int(1),
+    n_continuing_per_vertex: int(1)
+) {
+    // This reactor implements the core logic of the connection pattern, and I find it difficult to
+    // read. Is this because I am a bad programmer, is it because of a defect of the language, or is
+    // it because the program that I am trying to write is an aberration?
+    input[n_crossing + n_continuing] zero_subcube_outputs: int
+    input[n_crossing + n_continuing] one_subcube_outputs: int
+
+    output[n_continuing + n_continuing] outputs: int
+    output[n_crossing] zero_subcube_inputs: int
+    output[n_crossing] one_subcube_inputs: int
+
+    // The following could be done (less intuitively) using the generalized "interleaved"
+    // infrastructure
+    splitters0 = new[subcube_vertices] UnevenSplitter(a(1), b(n_continuing_per_vertex))
+    splitters1 = new[subcube_vertices] UnevenSplitter(a(1), b(n_continuing_per_vertex))
+    zero_subcube_outputs -> splitters0.in
+    one_subcube_outputs -> splitters1.in
+    splitters0.out_a -> one_subcube_inputs
+    splitters1.out_a -> zero_subcube_inputs
+    splitters0.out_b, splitters1.out_b -> outputs
+}
+
+/** Convert integers to their binary representation. */
+reactor BinaryToString(digits:int(4)) {
+    input id: int
+    output out: char*
+    reaction(id) -> out {=
+        int i = id->value;
+        char* s = (char*) malloc((self->digits + 1) * sizeof(char));
+        for (int j = 0; j < self->digits; j++) {
+            snprintf(s + j, 2, "%d", (i & (1 << j)) != 0);
+        }
+        lf_set(out, s);
+    =}
+}
+
+/** Emit the given string constant. */
+reactor StringEmitter(n_upstream: int(1), s:string("")) {
+    // The input port does nothing except to trigger the string emitter.
+    input[n_upstream] in: char*
+    output out: char*
+    state length: int
+    reaction(startup) {=
+        self->length = strlen(self->s);
+    =}
+    reaction(in) -> out {=
+        // The reason why this has to be allocated every time (potentially creating heap
+        // fragmentation, hard-to-predict performance profiles with GC-like pauses when space is
+        // being found on the heap, etc.) is that we free tokens and in order to free, we must
+        // allocate. AFAIK we do not have a semantics for "here's a view of some data this reactor
+        // manages explicitly; the data won't change until I know you're done looking."
+        char* s = (char*) malloc((self->length + 1) * sizeof(char));
+        strcpy(s, self->s);
+        lf_set(out, s);
+    =}
+}
+
+reactor Hello {
+    input id: int
+    output[3] out: char*
+    // The string-passing strategy here is to avoid copying strings by keeping them in order in
+    // multiports, even when they are all part of the same sentence. This use of ports may have
+    // overhead in the runtime, but even if it does, that overhead may not be fundamental whereas
+    // the overhead of string-copying certainly is.
+
+    // This string-passing strategy is consistent with what could be a core tenet of LF: "data does
+    // not have legs." The data is triggered, and then downstream reactors can look at it. Ideally,
+    // no copying is required. If no hidden copying happens, then the performance profile is
+    // comprehensible; one lesson from the popularity of C++ in comparison to higher-level languages
+    // such as Haskell is that many programmers, both skilled and unskilled, want performance
+    // behavior to be easy for humans to predict and understand. The other aspect of "data does not
+    // have legs" is that no references are held, so that memory management is easy and entirely
+    // local. Data management without the downsides of copying and held references is an audacious
+    // goal that could be difficult to achieve.
+    binary_to_string = new BinaryToString()
+    hello = new StringEmitter(s("Hello from vertex "))
+    eol = new StringEmitter(s("\n"))
+    id -> binary_to_string.id
+    binary_to_string.out -> hello.in
+    binary_to_string.out -> eol.in
+    hello.out, binary_to_string.out, eol.out -> out
+}
+
+reactor WhoTalksToWhom {
+    input sender: int
+    input receiver: int
+    output[4] out: char*
+    sender_id = new BinaryToString()
+    receiver_id = new BinaryToString()
+    arrow = new StringEmitter(s(" -> "))
+    eol = new StringEmitter(s("\n"))
+    sender_id.out -> arrow.in
+    sender_id.out -> eol.in
+    sender -> sender_id.id
+    receiver -> receiver_id.id
+    sender_id.out, arrow.out, receiver_id.out, eol.out -> out
+}
+
+/** A vertex of the cube. */
+reactor Vertex {
+    input[4] in: int
+    output[4] out: int
+    input[1] probe: int
+    output[19] stdout: char*
+
+    state id: int
+
+    message = new Hello()
+    who = new[4] WhoTalksToWhom()
+    probe -> message.id
+    message.out, who.out -> stdout
+    in -> who.sender
+
+    /** Send messages to neighbors. */
+    reaction(probe) -> out {=
+        self->id = probe[0]->value;
+        for (int i = 0; i < 4; i++) {
+            lf_set(out[i], self->id);
+        }
+    =}
+
+    /** Report received messages on stdout. */
+    reaction(in) -> who.receiver {=
+        for (int i = 0; i < 4; i++) {
+            if (in[i]->is_present) {
+                lf_set(who[i].receiver, self->id);
+            }
+        }
+    =}
+}
+
+/** A 1-dimensional cube (basically just a pair of connected vertices). */
+reactor Cube1 {
+    input[6] in: int  // 6 = 2 * (4 - 1)
+    output[6] out: int
+    input[2] probe: int
+    output[38] stdout: char*
+    zero_subcube = new Vertex()
+    one_subcube = new Vertex()
+    distributor = new Distributor(
+        n_crossing(1),
+        n_continuing(3),
+        subcube_vertices(1),
+        n_continuing_per_vertex(3)
+    )
+    // This 1-cube communicates with 3 other 1-cubes (one for each dimension other than the one
+    // taken by the 1-cube), and for each of those 3 others, one output goes to the zero 0-cube and
+    // the other output goes to the one 0-cube.
+    inputs = new[3] UnevenSplitter(a(1), b(1))
+    zero_subcube.out -> distributor.zero_subcube_outputs
+    one_subcube.out -> distributor.one_subcube_outputs
+    distributor.outputs -> out
+    in -> inputs.in
+    distributor.zero_subcube_inputs, inputs.out_a -> zero_subcube.in
+    distributor.one_subcube_inputs, inputs.out_b -> one_subcube.in
+    probe -> zero_subcube.probe, one_subcube.probe
+    zero_subcube.stdout, one_subcube.stdout -> stdout
+}
+
+reactor Cube2 {
+    input[8] in: int  // 8 = 2 * (6 - 2)
+    output[8] out: int
+    input[4] probe: int
+    output[76] stdout: char*
+    zero_subcube = new Cube1()
+    one_subcube = new Cube1()
+    distributor = new Distributor(
+        n_crossing(2),
+        n_continuing(4),
+        subcube_vertices(2),
+        n_continuing_per_vertex(2)
+    )
+    inputs = new[2] UnevenSplitter(a(2), b(2))
+    zero_subcube.out -> distributor.zero_subcube_outputs
+    one_subcube.out -> distributor.one_subcube_outputs
+    distributor.outputs -> out
+    in -> inputs.in
+    distributor.zero_subcube_inputs, inputs.out_a -> zero_subcube.in
+    distributor.one_subcube_inputs, inputs.out_b -> one_subcube.in
+    probe -> zero_subcube.probe, one_subcube.probe
+    zero_subcube.stdout, one_subcube.stdout -> stdout
+}
+
+reactor Cube3 {
+    input[8] in: int  // 8 = 2 * (8 - 4)
+    output[8] out: int
+    input[8] probe: int
+    output[152] stdout: char*
+    zero_subcube = new Cube2()
+    one_subcube = new Cube2()
+    distributor = new Distributor(
+        n_crossing(4),
+        n_continuing(4),
+        subcube_vertices(4),
+        n_continuing_per_vertex(1)
+    )
+    inputs = new[1] UnevenSplitter(a(4), b(4))
+    zero_subcube.out -> distributor.zero_subcube_outputs
+    one_subcube.out -> distributor.one_subcube_outputs
+    distributor.outputs -> out
+    in -> inputs.in
+    distributor.zero_subcube_inputs, inputs.out_a -> zero_subcube.in
+    distributor.one_subcube_inputs, inputs.out_b -> one_subcube.in
+    probe -> zero_subcube.probe, one_subcube.probe
+    zero_subcube.stdout, one_subcube.stdout -> stdout
+}
+
+reactor Cube4 {
+    input[0] in: int  // 0 = 2 * (8 - 8)
+    output[0] out: int
+    input[16] probe: int
+    output[304] stdout: char*
+    zero_subcube = new Cube3()
+    one_subcube = new Cube3()
+    distributor = new Distributor(
+        n_crossing(8),
+        n_continuing(0),
+        subcube_vertices(8),
+        n_continuing_per_vertex(0)
+    )
+    inputs = new[1] UnevenSplitter(a(0), b(0)) // The 1 here should be 0
+    zero_subcube.out -> distributor.zero_subcube_outputs
+    one_subcube.out -> distributor.one_subcube_outputs
+    distributor.outputs -> out
+    in -> inputs.in
+    distributor.zero_subcube_inputs, inputs.out_a -> zero_subcube.in
+    distributor.one_subcube_inputs, inputs.out_b -> one_subcube.in
+    probe -> zero_subcube.probe, one_subcube.probe
+    zero_subcube.stdout, one_subcube.stdout -> stdout
+}
+
+main reactor {
+    hypercube = new Cube4()
+    // Note that 304 is computed from the sizes of the outputs of all child reactors -- not very
+    // modular. Perhaps this should be inferred?
+    stdout = new Stdout(n(304))
+    hypercube.stdout -> stdout.in
+
+    reaction(startup) -> hypercube.probe {=
+        for (int i = 0b0000; i <= 0b1111; i++) {
+            lf_set(hypercube.probe[i], i);
+        }
+    =}
+}
