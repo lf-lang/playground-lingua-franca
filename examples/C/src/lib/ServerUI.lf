@@ -17,8 +17,8 @@ target C {
 }
 
 preamble {=
-  #ifndef BROWSERUI_H
-  #define BROWSERUI_H
+  #ifndef SERVERUI_H
+  #define SERVERUI_H
   #include "util.h"     // Defines lf_print()
   #include "platform.h"   // Defines lf_thread_t, etc.
 
@@ -35,7 +35,7 @@ preamble {=
     uint16_t hostport;  // The port to use for HTTP access.
     char* initial_page; // Initial web page contents.
   } browser_ui_t;
-  #endif // BROWSERUI_H
+  #endif // SERVERUI_H
 =}
 
 reactor ServerUI(initial_file: string = "page.html", hostport: uint16_t = 8080) {
