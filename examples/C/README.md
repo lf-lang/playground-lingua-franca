@@ -2,6 +2,7 @@
 
 (in alphabetical order)
 
+* [Browser UIs](src/browser-ui/README.md): How to create a browser-based UI for an LF program.
 * [Car Brake](src/car-brake/README.md): Sketch of ADAS system illustrating the CAL theorem.
 * [Deadlines](src/deadlines/README.md): Uses of deadlines in Lingua Franca.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
