@@ -33,12 +33,9 @@ main reactor {
 
   s = new WebSocketServer(max_clients=2)  // Limit number of clients to 2.
 
-  reaction(startup) -> s.send {=
-    lf_set_destructor(s.send, web_socket_message_destructor);
-    lf_set_copy_constructor(s.send, web_socket_message_copy_constructor);
-
+  reaction(startup) {=
     lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
-    self->connected_instances = hashset_create(2); // Default capacity for four instances.
+    self->connected_instances = hashset_create(2); // Default capacity for two instances.
   =}
 
   reaction(send_action) -> s.send, send_action {=
@@ -77,7 +74,8 @@ main reactor {
   =}
 
   reaction(s.received) {=
-    lf_print("======== Application received: %s", s.received->value->message);
+    // NOTE: The WebSocketServer ensures that the received message is null terminated.
+    lf_print("======== Application received: %s", (char*)s.received->value->message);
   =}
 
   reaction(shutdown) {=
