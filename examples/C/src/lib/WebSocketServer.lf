@@ -307,20 +307,36 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     if(send->value->message == NULL) {
       lf_print_error("Cannot send NULL message.");
     } else if (send->value->wsi == NULL) {
-      // FIXME: Broadcast requested
-    } else if (hashset_is_member(self->connected_instances, send->value->wsi)) {
-      int length = strlen(send->value->message);
-      // The buffer needs LWS_PRE bytes _before_ the message.
-      // Do not include the null terminator, because this make JSON unable to parse it.
-      char buffer[LWS_PRE + length];
-      strncpy(buffer + LWS_PRE, send->value->message, length);
-      int result = lws_write(send->value->wsi, (unsigned char*)(buffer + LWS_PRE), length, LWS_WRITE_TEXT);
-      if (result < length) {
-        lf_print_warning("Send on web socket failed. Dropping message.");
+      // Broadcast requested.
+      // There does not appear to be a way to iterate over hashset contents.
+      // So we iterate over the entire hashset storage and skip empty slots.
+      for (int i = 0; i < self->connected_instances->capacity; i++) {
+        struct lws* instance = (struct lws*) self->connected_instances->items[i];
+        if (instance == NULL || instance == (struct lws*)1) continue; // Empty or deleted items.
+        web_socket_message_t to_send;
+        to_send.wsi = instance;
+        to_send.length = send->value->length;
+        to_send.message = send->value->message;
+        send_message(&to_send);
       }
+    } else if (hashset_is_member(self->connected_instances, send->value->wsi)) {
+      send_message(send->value);
     } else {
       lf_print_warning("Web socket no longer connected. Dropping message.");
     }
+  =}
+  
+  method send_message(to_send: web_socket_message_t*): int {=
+    int length = to_send->length;
+    // The buffer needs LWS_PRE bytes _before_ the message.
+    // Do not include the null terminator, because this make JSON unable to parse it.
+    char buffer[LWS_PRE + length];
+    strncpy(buffer + LWS_PRE, to_send->message, length);
+    int result = lws_write(to_send->wsi, (unsigned char*)(buffer + LWS_PRE), length, LWS_WRITE_TEXT);
+    if (result < length) {
+      lf_print_warning("Send on web socket failed. Message send is incomplete.");
+    }
+    return result;
   =}
 
   reaction(shutdown) {=
