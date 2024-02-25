@@ -1,0 +1,53 @@
+/**
+ * FIXME.
+ * http://localhost:8080
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  build-type: debug,
+  keepalive: true
+}
+
+import ServerUI from "../lib/ServerUI.lf"
+import WebSocketServer from "../lib/WebSocketServer.lf"
+
+main reactor {
+  timer seconds(0, 1s)
+  
+  state count: int = 0
+  
+  s = new ServerUI(hostport = 8080, initial_file = "Uptime.html")
+  w = new WebSocketServer()
+
+  reaction(startup) {=
+    lf_print("Point your browser to http://localhost:8080");
+  =}
+  
+  reaction(s.initialized) {=
+    self->count++; // Count the number of connections.
+  =}
+
+  reaction(seconds) -> w.send {=
+    instant_t uptime = lf_time_logical_elapsed();
+    // Truncate to the nearest second.
+    uptime = (uptime / SEC(1)) * SEC(1);
+    char* message = (char*)malloc(LF_TIME_BUFFER_LENGTH * sizeof(char));
+    size_t length = lf_readable_time(message, uptime);
+    
+    // Broadcast to all connected sockets.  This is accomplished by providing a NULL wsi.
+    web_socket_message_t* to_send = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+    to_send->wsi = NULL;
+    to_send->length = length;
+    to_send->message = message;
+    lf_set(w.send, to_send);
+  =}
+  
+  reaction(w.connected) {=
+    if (w.connected->value.connected) {
+      lf_print("======== Connected a new client: %p", w.connected->value.wsi);
+    } else {
+      lf_print("======== Disconnected client: %p", w.connected->value.wsi);
+    }
+  =}
+}
