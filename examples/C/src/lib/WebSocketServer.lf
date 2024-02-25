@@ -22,7 +22,7 @@
  * You can limit the number of clients by setting the `max_clients` parameter. It defaults to 0,
  * which means there is no limit. A common case for an embedded application might be 1 to ensure
  * that only one client connects to your application.
- * 
+ *
  * To broadcast a message to all active clients, simply provide an input where the `wsi` field is
  * `NULL`.
  *
@@ -103,7 +103,7 @@ preamble {=
 reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
   output connected: web_socket_instance_t
   output received: web_socket_message_t*
-  
+
   input send: web_socket_message_t*
 
   physical action connected_action: web_socket_instance_t
@@ -325,7 +325,7 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
       lf_print_warning("Web socket no longer connected. Dropping message.");
     }
   =}
-  
+
   method send_message(to_send: web_socket_message_t*): int {=
     int length = to_send->length;
     // The buffer needs LWS_PRE bytes _before_ the message.
