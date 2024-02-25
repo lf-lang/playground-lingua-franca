@@ -16,4 +16,8 @@ The UI runs in the browser and connects to the program via either HTTP or via a 
 <td> <img src="img/WebSocketString.png" alt="WebSocketString" width="400">
 <td> <a href="WebSocketString.lf">WebSocketString.lf</a>: This version uses the simpler WebSocketServerString reactor, which is simpler in that it restricts the messages transported over the web socket to be of string types and it allows only one client to connect.</td>
 </tr>
+<tr>
+<td> <img src="img/Uptime.png" alt="Uptime" width="400">
+<td> <a href="Uptime.lf"> Uptime.lf</a>: This version combines ServerUI with WebSocketServer to serve a web page and then feed it data continuously through a web socket. The application displays the total time that application has been running and updates this time once per second.</td>
+</tr>
 </table>
