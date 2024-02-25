@@ -1,9 +1,9 @@
 /**
- * This example combines `ServerUI` with `WebSocketServer`. The former starts a web server
- * that listens for HTTP requests on port 8080 and serves the web page defined in `uptime.html`.
- * That web page includes JavaScript that connects to a web socket on port 8000 that is provided
- * by the `WebSocketServer` reactor.  The resulting web page simply reports the total time that
- * this program has been running.  That time is updated on the web page once per second.
+ * This example combines `ServerUI` with `WebSocketServer`. The former starts a web server that
+ * listens for HTTP requests on port 8080 and serves the web page defined in `uptime.html`. That web
+ * page includes JavaScript that connects to a web socket on port 8000 that is provided by the
+ * `WebSocketServer` reactor. The resulting web page simply reports the total time that this program
+ * has been running. That time is updated on the web page once per second.
  *
  * @author Edward A. Lee
  */
@@ -16,22 +16,22 @@ import ServerUI from "../lib/ServerUI.lf"
 import WebSocketServer from "../lib/WebSocketServer.lf"
 
 main reactor {
-  timer seconds(0, 1s)
-    
-  s = new ServerUI(hostport = 8080, initial_file = "Uptime.html")
+  timer seconds(0, 1 s)
+
+  s = new ServerUI(hostport=8080, initial_file="Uptime.html")
   w = new WebSocketServer()
 
   reaction(startup) {=
     lf_print("Point your browser to http://localhost:8080");
   =}
-  
+
   reaction(seconds) -> w.send {=
     instant_t uptime = lf_time_logical_elapsed();
     // Truncate to the nearest second.
     uptime = (uptime / SEC(1)) * SEC(1);
     char* message = (char*)malloc(LF_TIME_BUFFER_LENGTH * sizeof(char));
     size_t length = lf_readable_time(message, uptime);
-    
+
     // Broadcast to all connected sockets.  This is accomplished by providing a NULL wsi.
     web_socket_message_t* to_send = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
     to_send->wsi = NULL;

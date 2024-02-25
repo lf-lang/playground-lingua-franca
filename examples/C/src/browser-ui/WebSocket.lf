@@ -8,9 +8,9 @@
  * the WebSocket.html web page more than twice, only the first two attempts will succeed in
  * connecting. By default, WebSocketServer imposes no such limit.
  *
- * In this example, if you connect two clients, one will receive even numbered counts,
- * and the other will receive odd numbered counts. This is because the count state variable
- * is shared across all clients.
+ * In this example, if you connect two clients, one will receive even numbered counts, and the other
+ * will receive odd numbered counts. This is because the count state variable is shared across all
+ * clients.
  *
  * @author Edward A. Lee
  */
