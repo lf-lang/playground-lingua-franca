@@ -29,7 +29,8 @@
  * instructions</a>). To install on MacOS, we recommending using brew:
  * <pre> brew install libwebsockets
  * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
- * linked to providing the {@code -lwebsockets} compile option.
+ * linked to using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake
+ * include file.
  *
  * The data conveyed can be any byte array. In case a received value is a string that is not null
  * terminated, this reactor appends a null character after the message payload. It does not include
@@ -297,7 +298,7 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
       // The buffer needs LWS_PRE bytes _before_ the message.
       // Do not include the null terminator, because this make JSON unable to parse it.
       char buffer[LWS_PRE + length];
-      strcpy(buffer + LWS_PRE, send->value->message);
+      strncpy(buffer + LWS_PRE, send->value->message, length);
       int result = lws_write(send->value->wsi, (unsigned char*)(buffer + LWS_PRE), length, LWS_WRITE_TEXT);
       if (result < length) {
         lf_print_warning("Send on web socket failed. Dropping message.");
