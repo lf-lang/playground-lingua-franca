@@ -22,6 +22,9 @@
  * You can limit the number of clients by setting the `max_clients` parameter. It defaults to 0,
  * which means there is no limit. A common case for an embedded application might be 1 to ensure
  * that only one client connects to your application.
+ * 
+ * To broadcast a message to all active clients, simply provide an input where the `wsi` field is
+ * `NULL`.
  *
  * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
@@ -54,6 +57,7 @@ preamble {=
   #define WEBSOCKET_H
   #include "util.h"     // Defines lf_print()
   #include "platform.h"   // Defines lf_thread_t, etc.
+  #include "hashset/hashset.h"  // For storing web socket instances that are connected.
 
   #include <libwebsockets.h>
 
@@ -99,6 +103,7 @@ preamble {=
 reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
   output connected: web_socket_instance_t
   output received: web_socket_message_t*
+  
   input send: web_socket_message_t*
 
   physical action connected_action: web_socket_instance_t
@@ -106,6 +111,7 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
 
   state status: server_status_t
   state client_count: int = 0
+  state connected_instances: hashset_t = {= NULL =}
 
   preamble {=
     // Thread handling incoming messages.
@@ -244,6 +250,8 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     lf_set_destructor(send, web_socket_message_destructor);
     lf_set_copy_constructor(send, web_socket_message_copy_constructor);
 
+    self->connected_instances = hashset_create(8); // Default capacity for eight instances.
+
     struct lws_context_creation_info info;
     memset(&info, 0, sizeof(info));
     info.port = self->hostport;
@@ -286,6 +294,11 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
 
   reaction(connected_action) -> connected {=
     lf_set(connected, connected_action->value);
+    if (connected_action->value.connected) {
+      hashset_add(self->connected_instances, connected_action->value.wsi);
+    } else {
+      hashset_remove(self->connected_instances, connected_action->value.wsi);
+    }
   =}
 
   reaction(send) {=
@@ -293,7 +306,9 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     // because the latter could cause a disconnection.
     if(send->value->message == NULL) {
       lf_print_error("Cannot send NULL message.");
-    } else {
+    } else if (send->value->wsi == NULL) {
+      // FIXME: Broadcast requested
+    } else if (hashset_is_member(self->connected_instances, send->value->wsi)) {
       int length = strlen(send->value->message);
       // The buffer needs LWS_PRE bytes _before_ the message.
       // Do not include the null terminator, because this make JSON unable to parse it.
@@ -303,10 +318,15 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
       if (result < length) {
         lf_print_warning("Send on web socket failed. Dropping message.");
       }
+    } else {
+      lf_print_warning("Web socket no longer connected. Dropping message.");
     }
   =}
 
   reaction(shutdown) {=
     self->status.running = false;
+    if (self->connected_instances != NULL) {
+      hashset_destroy(self->connected_instances);
+    }
   =}
 }
