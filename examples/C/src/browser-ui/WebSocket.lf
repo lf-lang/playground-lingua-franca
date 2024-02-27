@@ -12,6 +12,15 @@
  * will receive odd numbered counts. This is because the count state variable is shared across all
  * clients.
  *
+ * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
+ * instructions</a>). To install on MacOS, we recommending using brew:
+ * <pre> brew install libwebsockets
+ * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
+ * linked to using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake
+ * include file.
+ *
  * @author Edward A. Lee
  */
 target C {
