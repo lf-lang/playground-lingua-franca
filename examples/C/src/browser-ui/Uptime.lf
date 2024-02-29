@@ -46,6 +46,7 @@ main reactor {
     to_send->wsi = NULL;
     to_send->length = length;
     to_send->message = message;
+    to_send->binary = false;
     lf_set(w.send, to_send);
   =}
 }

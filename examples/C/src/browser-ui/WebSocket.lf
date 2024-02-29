@@ -47,6 +47,7 @@ main reactor {
     container->message = message;
     container->length = strlen(message) + 1;
     container->wsi = send_action->value->wsi;
+    container->binary = false; // Sending text.
 
     lf_set(s.send, container);
     // Schedule the next send.
