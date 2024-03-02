@@ -97,7 +97,7 @@ reactor ServerUI(initial_file: string = "page.html", hostport: uint16_t = 8080) 
           continue;
         }
         
-        LF_PRINT_LOG("Received: '%s'", buffer);
+        lf_print("Received: '%s'", buffer);
 
         // The response depends on the path part of the request.
         const char *start_of_path = strchr(buffer, ' ');
