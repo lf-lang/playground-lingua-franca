@@ -14,7 +14,7 @@ window.onload = function() {
     var socketStatus = document.getElementById('status');
     var closeBtn = document.getElementById('close');
     
-    const socket = new WebSocket('ws://localhost:8000', 'ws');
+    const socket = new WebSocket('ws://localhost:8080', 'ws');
     
     socket.addEventListener('open', (event) => {
         console.log('WebSocket connection established');

@@ -1,8 +1,20 @@
 /**
  * A web socket server enabling a user interface realized in the browser. This creates a web server
- * that listens on a port (default 8000) for web socket connections. The intended usage is that you
+ * that listens on a port (default 8080) for web socket connections. The intended usage is that you
  * create a client in an HTML/JavaScript file that connects to this server and provides a
  * browser-based user interface.
+ * 
+ * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified
+ * path to a file that this server will serve upon receiving an HTTP request. This can be used
+ * to provide the initial HTML (with embedded JavaScript) that will then establish a web socket
+ * connection to the running LF program.  To specify a file located in the same directory as
+ * your source LF file, you can use a syntax like this:
+ * 
+ * ```
+ * s = new WebSocketServer(
+ *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
+ * )  
+ * ```
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
@@ -43,7 +55,8 @@
  *
  * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
  *
- * @param hostport The host port number, which defaults to 8000.
+ * @param hostport The host port number, which defaults to 8080.
+ * @param initial_file If non-NULL and non-empty, a file name to serve to HTTP requests.
  * @param max_clients Maximum number of clients, or 0 for no upper bound.
  *
  * @author Edward A. Lee
@@ -84,6 +97,7 @@ preamble {=
     bool running;               // Indicator that the listening thread is running.
     web_socket_message_t* pending_messages; // Head of a list of pending messages to send.
     lf_mutex_t* mutex;          // Mutex for modifying this struct.
+    string initial_file;        // File to serve in response to HTTP requests.
   } server_status_t;
 
   /**
@@ -106,9 +120,9 @@ preamble {=
 =}
 
 reactor WebSocketServer(
-    hostport: int = 8000,
-    max_clients: int = 0,
-    binary: bool = false
+    hostport: int = 8080,
+    initial_file: string = {= NULL =},
+    max_clients: int = 0
 ) {
   output connected: web_socket_instance_t
   output received: web_socket_message_t*
@@ -131,8 +145,8 @@ reactor WebSocketServer(
       while(status->running) {
         // Invoke any pending callbacks.
         // According to the docs, the timeout argument is ignored.
-        // Nevertheless, set to 500ms.
-        lws_service(status->context, 500);
+        // Nevertheless, set to 100ms.
+        lws_service(status->context, 100);
       }
       lws_context_destroy(status->context);
       return NULL;
@@ -148,6 +162,13 @@ reactor WebSocketServer(
       LF_PRINT_LOG("HTTP callback invoked with reason: %d", reason);
       web_socket_instance_t ws_instance;
       switch(reason) {
+        case LWS_CALLBACK_HTTP:
+          // HTTP request that is not asking for an upgrade.
+          // If the initial_file parameter is non-empty, serve that file.
+          if (status->initial_file != NULL && strlen(status->initial_file) > 0) {
+            lws_serve_http_file(wsi, status->initial_file, "text/html", NULL, 0);
+          }
+          break;
         case LWS_CALLBACK_WSI_CREATE:
           LF_PRINT_LOG("**** Web socket connection requested.");
           break;
@@ -204,6 +225,7 @@ reactor WebSocketServer(
           lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
           break;
         default:
+          LF_PRINT_LOG("*** Unhandled callback with lws_callback_reasons %d.", reason);
           break;
       }
       return 0;
@@ -296,6 +318,7 @@ reactor WebSocketServer(
         // Seems to be handled in the HTTP callback.
 
         default:
+          LF_PRINT_LOG("*** Unhandled callback with lws_callback_reasons %d.", reason);
           break;
       }
       return 0;
@@ -370,6 +393,7 @@ reactor WebSocketServer(
 
     self->status.max_clients = self->max_clients;
     self->status.client_count = &self->client_count;
+    self->status.initial_file = self->initial_file;
     self->status.running = true;
 
     lf_thread_t listener;
