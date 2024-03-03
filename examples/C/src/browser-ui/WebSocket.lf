@@ -34,10 +34,9 @@ main reactor {
   logical action send_action: web_socket_instance_t*
 
   s = new WebSocketServer(
-    hostport = 8080,
-    max_clients=2,   // Limit number of clients to 2.
-    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "WebSocket.html" =}
-  )  
+      hostport=8080,
+      max_clients=2,  // Limit number of clients to 2.
+      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "WebSocket.html" =})
 
   reaction(startup) {=
     lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");

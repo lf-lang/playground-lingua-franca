@@ -27,9 +27,8 @@ main reactor {
   timer seconds(0, 1 s)
 
   w = new WebSocketServer(
-    hostport = 8080,
-    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Uptime.html" =}
-  )  
+      hostport=8080,
+      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Uptime.html" =})
 
   reaction(startup) {=
     lf_print("Point your browser to http://localhost:8080");
