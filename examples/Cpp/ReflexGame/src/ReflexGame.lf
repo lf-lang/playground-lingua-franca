@@ -7,7 +7,6 @@
  * @author Marten Lohstroh
  */
 target Cpp {
-  keepalive: true,
   cmake-include: "ReflexGame.cmake"
 }
 

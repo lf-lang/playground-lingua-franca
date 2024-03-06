@@ -11,7 +11,6 @@
  */
 target Cpp {
   cmake-include: "AlarmClock.cmake",
-  keepalive: true
 }
 
 import Network from "./Network.lf"

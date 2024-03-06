@@ -8,7 +8,6 @@
  */
 target Cpp {
   cmake-include: "AlarmClock.cmake",
-  keepalive: true
 }
 
 public preamble {=
