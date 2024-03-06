@@ -1,7 +1,7 @@
-/** PacMan Dresden Reactor **/
-target Python{
+/** PacMan Dresden Reactor * */
+target Python {
   files: ["include/hbpacman.py", "include/AIPacSupport.py"]
-};
+}
 
 preamble {=
   import hbpacman as pacman
@@ -32,13 +32,11 @@ reactor EatPills extends BehaviorNode {
   input pacman_sprite
   input block_list
   input init_sprite
-  
-  #output sprite
 
-  state character_instance
-  state _ghosts({=[]=})
-  state _block_list({=pacman.pygame.sprite.RenderPlain()=})
-  state _eat_moves(0)
+  state character_instance  # output sprite
+  state _ghosts = {= [] =}
+  state _block_list = {= pacman.pygame.sprite.RenderPlain() =}
+  state _eat_moves = 0
 
   reaction(start) -> success, failure {=
     print("eat ghosts leng is ", len(self._ghosts))
@@ -72,17 +70,14 @@ reactor EatPills extends BehaviorNode {
     else:
       self.character_instance = init_sprite.value
   =}
-
 }
 
 reactor AvoidGhost extends BehaviorNode {
   input pacman_sprite
   input[4] ghost_sprites
 
-  #output sprite
-
-  state character_instance
-  state _ghosts({=[]=})
+  state character_instance  # output sprite
+  state _ghosts = {= [] =}
 
   reaction(start) -> success, failure {=
     if len(self._ghosts) > 0:
@@ -92,7 +87,7 @@ reactor AvoidGhost extends BehaviorNode {
     else:
       failure.set(True)
   =}
- 
+
   reaction(pacman_sprite) {=
     self.character_instance = pacman_sprite.value
   =}
@@ -109,10 +104,8 @@ reactor ChaseGhost extends BehaviorNode {
   input pacman_sprite
   input[4] ghost_sprites
 
-  #output sprite
-
-  state character_instance
-  state _ghosts({=[]=})
+  state character_instance  # output sprite
+  state _ghosts = {= [] =}
 
   reaction(start) -> success, failure {=
     if len(self._ghosts) > 0:
@@ -139,10 +132,8 @@ reactor GhostClose extends BehaviorNode {
   input pacman_sprite
   input[4] ghost_sprites
 
-  #output sprite
-
-  state character_instance
-  state _ghosts({=[]=})
+  state character_instance  # output sprite
+  state _ghosts = {= [] =}
 
   reaction(start) -> success, failure {=
     if len(self._ghosts) > 0 and len(self._ghosts) > 0 and self.character_instance is not None:
@@ -168,7 +159,7 @@ reactor GhostClose extends BehaviorNode {
 
 reactor GhostScared extends BehaviorNode {
   input frenzy
-  state _frenzy(False)
+  state _frenzy = False
 
   reaction(start) -> success, failure {=
     if self._frenzy:
@@ -180,11 +171,14 @@ reactor GhostScared extends BehaviorNode {
   reaction(frenzy) {=
     self._frenzy = frenzy.value
   =}
-
 }
 
-#fallback
-reactor PacMan0(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) extends BehaviorNode {
+# fallback
+reactor PacMan0(
+    width=0,
+    height=0,
+    image="images/Trollman.png",
+    character_class = {= pacman.Player =}) extends BehaviorNode {
   left = new PacMan1()
   right = new EatPills()
   merge = new MergeOr()
@@ -195,10 +189,6 @@ reactor PacMan0(width(0), height(0), image("images/Trollman.png"), character_cla
   input frenzy
   input icon
   input init_sprite
-
-  reaction(icon) {=
-    self.character_instance = self.character_class(self.width, self.height, icon.value)
-  =}
 
   start -> left.start
   (ghost_sprites)+ -> right.ghost_sprites, left.ghost_sprites
@@ -212,8 +202,13 @@ reactor PacMan0(width(0), height(0), image("images/Trollman.png"), character_cla
   right.success -> merge.right
   right.failure -> failure
   merge.merged -> success
+
+  reaction(icon) {=
+    self.character_instance = self.character_class(self.width, self.height, icon.value)
+  =}
 }
-#sequence
+
+# sequence
 reactor PacMan1 extends BehaviorNode {
   left = new GhostClose()
   right = new PacMan2()
@@ -234,7 +229,7 @@ reactor PacMan1 extends BehaviorNode {
   merge.merged -> failure
 }
 
-#fallback
+# fallback
 reactor PacMan2 extends BehaviorNode {
   left = new PacMan3()
   right = new AvoidGhost()
@@ -256,7 +251,7 @@ reactor PacMan2 extends BehaviorNode {
   merge.merged -> success
 }
 
-#sequence
+# sequence
 reactor PacMan3 extends BehaviorNode {
   left = new GhostScared()
   right = new ChaseGhost()

@@ -1,26 +1,27 @@
-target C {timeout: 200 msec};
+target C {
+  timeout: 200 msec
+}
 
 // Test illustrating that the current implementation of lf_schedule leads to unexpected behavior.
+reactor Source(name: string = "source", even: bool = true) {
+  output out: bool
+  state on: bool = false
+  state count: int = 0
+  logical action next
 
-reactor Source(name:string="source", even:bool=true) {
-  output out:bool;
-  state on:bool=false;
-  state count:int=0;
-  logical action next;
-  
   reaction(startup) -> out {=
     if (!self->even) {
       self->on = true;
     }
   =}
-  
+
   reaction(startup, next) -> next, out {=
     if (self->on) {
       lf_set(out, true);
     }
-    
+
     self->on = !self->on;
-    
+
     if (self->count < 9) {
       self->count++;
       lf_schedule(next, 0);
@@ -32,23 +33,23 @@ reactor Source(name:string="source", even:bool=true) {
 }
 
 reactor LogicalAnd {
-  input a:bool;
-  input b:bool;
-   
+  input a: bool
+  input b: bool
+
   reaction(a, b) {=
-    printf("Output: %d, tag: (%lld, %u)\n", 
+    printf("Output: %d, tag: (%lld, %u)\n",
       a->is_present & b->is_present, lf_time_logical_elapsed(), lf_tag().microstep
     );
   =}
 }
 
 main reactor Logic {
-  x = new Source(name="x", even=true);
-  y = new Source(name="y", even=false);
-  z = new LogicalAnd();
-  
-  x.out -> z.a after 1 msec;
-  y.out -> z.b after 1 msec;
-  //x.out -> z.a;
-  //y.out -> z.b;
+  x = new Source(name="x", even=true)
+  y = new Source(name="y", even=false)
+  z = new LogicalAnd()
+
+  x.out -> z.a after 1 msec
+  // x.out -> z.a;
+  // y.out -> z.b;
+  y.out -> z.b after 1 msec
 }

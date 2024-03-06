@@ -1,66 +1,57 @@
-target Python;
+target Python
+
 /**
- * A simple forward-Euler simulation of a Furuta pendulum,
- * based on the Ptolemy II model constructed by Johan Eker
- * and described in this paper:
- * 
- * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee,
- * “Realistic simulations of embedded control systems,”
- * IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
- * 
- * The Ptolemy II model is more accurate because it uses an
- * RK-45 solver, but this is adequate for many purposes.
- * 
- * This outputs its state every `sample_period`.
- * It updates the state before outputting it
- * using the most recently received control input.
- * 
- * The `theta` output is the angle of the pendulum,
- * which is 0 when the pendulum is pointing straight up,
- * and `d_theta` is its initial angular velocity.
- * The `phi` output is the angle of the horizontal
- * arm and `d_phi` is its angular velocity.
+ * A simple forward-Euler simulation of a Furuta pendulum, based on the Ptolemy II model constructed
+ * by Johan Eker and described in this paper:
  *
- * The `u` input is the control input, which applies
- * torque to the arm. The `d` input is an impulsive
- * disturbance applied to the pendulum, as if you were
- * to tap it with a hard object. When an input is
- * received on `d`, its value provides an instantaneous
- * increment or decrement to `d_theta`.
- * Notice that no output is produced when an input
- * is received on `d` unless that input is simultaneous
- * with the sampling period. The effect of the disturbance
- * will not be seen on the outputs until the next sample,
- * as would usually be the case for digital controller.
+ * J. Liu, J. Eker, J. W. Janneck, and E. A. Lee, “Realistic simulations of embedded control
+ * systems,” IFAC Proceedings Volumes, vol. 35, no. 1, pp. 391–396, 2002.
+ *
+ * The Ptolemy II model is more accurate because it uses an RK-45 solver, but this is adequate for
+ * many purposes.
+ *
+ * This outputs its state every `sample_period`. It updates the state before outputting it using the
+ * most recently received control input.
+ *
+ * The `theta` output is the angle of the pendulum, which is 0 when the pendulum is pointing
+ * straight up, and `d_theta` is its initial angular velocity. The `phi` output is the angle of the
+ * horizontal arm and `d_phi` is its angular velocity.
+ *
+ * The `u` input is the control input, which applies torque to the arm. The `d` input is an
+ * impulsive disturbance applied to the pendulum, as if you were to tap it with a hard object. When
+ * an input is received on `d`, its value provides an instantaneous increment or decrement to
+ * `d_theta`. Notice that no output is produced when an input is received on `d` unless that input
+ * is simultaneous with the sampling period. The effect of the disturbance will not be seen on the
+ * outputs until the next sample, as would usually be the case for digital controller.
  *
  * @author Edward A. Lee
  */
 preamble {=
   import math
 =}
+
 reactor PendulumSimulation(
-  initial_theta(-3.14159),   #  Initial pendulum angle.
-  sample_period(5 msec),   #  Sample period.
-  g(9.81),           #  Acceleration of gravity.
-  alpha(0.00260569),
-  beta(0.05165675),
-  gamma(9.7055e-4),
-  epsilon(0.08103060)
-){
-  input u        #  Control input.
-  input d        #  Impulsive disturbance
-  
-  output theta       #  Pendulum angle.
-  output d_theta     #  Pendulum angular velocity.
-  output phi       #  Arm angle.
-  output d_phi       #  Arm angular velocity.
-  
+    initial_theta=-3.14159,  # Initial pendulum angle.
+    sample_period = 5 msec,  # Sample period.
+    g=9.81,                  # Acceleration of gravity.
+    alpha=0.00260569,
+    beta=0.05165675,
+    gamma=9.7055e-4,
+    epsilon=0.08103060) {
+  input u         # Control input.
+  input d         # Impulsive disturbance
+
+  output theta    # Pendulum angle.
+  output d_theta  # Pendulum angular velocity.
+  output phi      # Arm angle.
+  output d_phi    # Arm angular velocity.
+
   state x(0.0, 0.0, 0.0, 0.0)
-  state first(True)
-  state latest_u(0.0)
-  
+  state first = True
+  state latest_u = 0.0
+
   timer t(0, sample_period)
-  
+
   reaction(d) {=
     # NOTE: Here, we effectively shift the disturbance to be
     # simultaneous with the next sample. A more accurate model
@@ -101,14 +92,14 @@ reactor PendulumSimulation(
           * math.cos(self.x[0])
           * self.g
           * self.latest_u
-        + 
+        +
           (self.alpha * self.beta + math.pow(self.alpha * math.sin(self.x[0]), 2.0))
           * self.epsilon / self.alpha * math.sin(self.x[0])
         )
       )
       x2_dot = self.x[3]
       x3_dot = ((1.0 / (
-          self.alpha * self.beta 
+          self.alpha * self.beta
           + math.pow(self.alpha * math.sin(self.x[0]), 2.0)
           - math.pow(self.gamma * math.cos(self.x[0]), 2.0)
         )) * (
@@ -148,13 +139,14 @@ reactor PendulumSimulation(
     else:
       self.x[0] = self.initial_theta
       self.first = False
-    
+
     # Output the state.
     theta.set(self.x[0])
     d_theta.set(self.x[1])
     phi.set(self.x[2])
     d_phi.set(self.x[3])
   =}
+
   reaction(u) {=
     self.latest_u = u.value
   =}

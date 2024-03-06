@@ -1,23 +1,19 @@
 /**
  * This Lingua Franca (LF) program simulates a machine controller with two buttons
- * - an emergency stop button and a run button. The machine can operate in two
- * modes: Off and Running. When the run button is pressed, the machine enters the
- * Running mode and prints a tick every 100 milliseconds. If the emergency stop
- * button is pressed, the machine immediately goes back to the Off mode. If a
- * deadline is violated in the Running mode, the program prints a deadline
- * violation message and switches back to the Off mode. Furthermore, a sensor
- * simulator is started at the beginning of the program, and pressing the 'x' key
- * will stop the program. This LF program shows a rudimentary example of a
- * safety-critical system where safety operations (like an emergency stop) have
- * priority and time-sensitive operations are monitored for deadline violations. 
+ * - an emergency stop button and a run button. The machine can operate in two modes: Off and
+ * Running. When the run button is pressed, the machine enters the Running mode and prints a tick
+ * every 100 milliseconds. If the emergency stop button is pressed, the machine immediately goes
+ * back to the Off mode. If a deadline is violated in the Running mode, the program prints a
+ * deadline violation message and switches back to the Off mode. Furthermore, a sensor simulator is
+ * started at the beginning of the program, and pressing the 'x' key will stop the program. This LF
+ * program shows a rudimentary example of a safety-critical system where safety operations (like an
+ * emergency stop) have priority and time-sensitive operations are monitored for deadline
+ * violations.
  */
 target C {
   workers: 2,
   keepalive: true,
-  files: [
-    "/lib/c/reactor-c/util/sensor_simulator.c",
-    "/lib/c/reactor-c/util/sensor_simulator.h"
-  ],
+  files: ["/lib/c/reactor-c/util/sensor_simulator.c", "/lib/c/reactor-c/util/sensor_simulator.h"],
   cmake-include: ["/lib/c/reactor-c/util/sensor_simulator.cmake"],
   build-type: RelWithDebInfo  // Release with debug info
 }
@@ -42,7 +38,9 @@ reactor ButtonController(key: char = '\0', description: string = "Button") {
     }
   =}
 
-  reaction(pushed) -> push {= lf_set(push, true); =}
+  reaction(pushed) -> push {=
+    lf_set(push, true);
+  =}
 }
 
 reactor MachineController {
@@ -50,7 +48,9 @@ reactor MachineController {
   input run: bool
 
   initial mode Off {
-    reaction(run) -> reset(Running) {= lf_set_mode(Running); =}
+    reaction(run) -> reset(Running) {=
+      lf_set_mode(Running);
+    =}
   }
 
   mode Running {
@@ -64,15 +64,17 @@ reactor MachineController {
 
     // With centralized coordination, time cannot advance to trigger this
     // reaction unless null messages have arrived on emergencyStop.
-    reaction(t) -> reset(Off) {= show_tick("*"); =} deadline(10 msec) {=
+    reaction(t) -> reset(Off) {=
+      show_tick("*");
+    =} deadline(10 msec) {=
       lf_set_mode(Off);
     =}
   }
 }
 
 main reactor {
-  eStop = new ButtonController(key = 'e', description = "Emergency stop")
-  run = new ButtonController(key = 'r', description = "Run")
+  eStop = new ButtonController(key='e', description = "Emergency stop")
+  run = new ButtonController(key='r', description="Run")
   m = new MachineController()
 
   eStop.push -> m.emergencyStop
@@ -87,5 +89,7 @@ main reactor {
     lf_print("Exit with 'x'");
   =}
 
-  reaction(stop) {= lf_request_stop(); =}
+  reaction(stop) {=
+    lf_request_stop();
+  =}
 }

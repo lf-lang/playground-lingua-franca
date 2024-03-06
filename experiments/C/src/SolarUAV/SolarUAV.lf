@@ -1,57 +1,48 @@
 /**
- * This example illustrates the high level design of a Solar powered Unmanned 
- * Aerial Vehicle (Solar UAV). 
- * The LF program is meant for timing analysis and identfying the critical paths.  
-
- * The Solar UAV main mission is to take pictures of an area, stitch them to
- * reconstruct a map, perform image processing (when possible), and then send 
- * the result to the base station.
- *  
+ * This example illustrates the high level design of a Solar powered Unmanned Aerial Vehicle (Solar
+ * UAV). The LF program is meant for timing analysis and identfying the critical paths.
+ *
+ * The Solar UAV main mission is to take pictures of an area, stitch them to reconstruct a map,
+ * perform image processing (when possible), and then send the result to the base station.
+ *
  * There are 3 main paths in the LF program:
- *  * Flight control path: Its goal is to maintain the UAV stable and moving,
-    so it does not crash. It is hard real-time and it includes the following 
-    reactors: IMUSensor, GPSSensor, KalmanFilter, Controller and Actuator.
- *  * Mission critical path: This path identifies the reactors that are realtive
-    to the mission success, which is covering the entire target zone. To this
-    end, the Planner will compute where to go, based on target zone and the
-    coverage. This is hard real-time as well, and the reactors involved are:
-    IMUSensor, GPSSensor, Gimbal, Camera, BatterySensor, ComIn, ImageStitching,
-    Planner, Controller, and Actuator. 
- *  * Non mission critical path: Processing the stitched images should only happen 
-    whenever there are empty time slots and enough power. Reactors in this 
-    path are: ImageProcessing and ComOut and this is soft real-time.
-    FIXME: Reactions in this path can/need to be preambtable. LF semantics, 
-    however, say that reactions are atomic...
- * 
+ * * Flight control path: Its goal is to maintain the UAV stable and moving, so it does not crash.
+ * It is hard real-time and it includes the following reactors: IMUSensor, GPSSensor, KalmanFilter,
+ * Controller and Actuator.
+ * * Mission critical path: This path identifies the reactors that are realtive to the mission
+ * success, which is covering the entire target zone. To this end, the Planner will compute where to
+ * go, based on target zone and the coverage. This is hard real-time as well, and the reactors
+ * involved are: IMUSensor, GPSSensor, Gimbal, Camera, BatterySensor, ComIn, ImageStitching,
+ * Planner, Controller, and Actuator.
+ * * Non mission critical path: Processing the stitched images should only happen whenever there are
+ * empty time slots and enough power. Reactors in this path are: ImageProcessing and ComOut and this
+ * is soft real-time. FIXME: Reactions in this path can/need to be preambtable. LF semantics,
+ * however, say that reactions are atomic...
+ *
  * @author Mirco Theile
  * @author Chadlia Jerad
  * @author Shaokai Lin
  * @author Erling R. Jellum
  */
-
 target C {
-  keepalive: true
-  // FIXME: add the structures. Currently everything is either int or void.
-};
+  keepalive: true  // FIXME: add the structures. Currently everything is either int or void.
+}
 
-/**
- * Control related reactors
- */
-
+/** Control related reactors */
 // Sensing reactors
-reactor IMUSensor (period:time=20ms){
+reactor IMUSensor(period: time = 20 ms) {
   timer t(0, period)
-  output imuOutput: int // struct 9 values double (64bits)
+  output imuOutput: int  // struct 9 values double (64bits)
 
   reaction(t) -> imuOutput {=
     lf_set(imuOutput, 5);
   =}
 }
 
-reactor GPSSensor (period:time=50ms){
+reactor GPSSensor(period: time = 50 ms) {
   timer t(0, period)
-  output gpsOutput : int 
-  
+  output gpsOutput: int
+
   reaction(t) -> gpsOutput {=
     //
   =}
@@ -61,25 +52,25 @@ reactor GPSSensor (period:time=50ms){
 reactor KalmanFilter {
   input imuInput: int
   input gpsInput: int
-  output inertialData: int // Filtred sensor data everything
+  output inertialData: int  // Filtred sensor data everything
 
   reaction(imuInput, gpsInput) -> inertialData {=
     // lf_set(inertialData, 5);
   =}
 }
 
-// The Planner will periodically call an AI agent to process the controlTarget.  
+// The Planner will periodically call an AI agent to process the controlTarget.
 reactor Planner {
   input targetZoneIn: int
   input inertialData: int
-  input coverageIn : void
-  input weatherForecast : int
-  input batteryState : int
+  input coverageIn: void
+  input weatherForecast: int
+  input batteryState: int
   output controlTraget: int
-  timer t(0, 100ms)
+  timer t(0, 100 ms)
   state targetZone: int
   state coverage: void
-  state stateValues: void // All remaining stuff
+  state stateValues: void  // All remaining stuff
 
   reaction(inertialData) {=
     // Update state stateValues
@@ -99,15 +90,14 @@ reactor Planner {
 
   reaction(coverageIn) {=
     // Update state coverage
-  =} deadline (20ms) {=
+  =} deadline(20 ms) {=
     lf_print("help coverage");
   =}
 
   reaction(t) -> controlTraget {=
-    // This is the main task: compute where to go based on target zone 
-    // and coverage 
+    // This is the main task: compute where to go based on target zone
+    // and coverage
   =}
-
 }
 
 // Controller
@@ -115,84 +105,78 @@ reactor Controller {
   input inertialData: int
   input controlTraget: int
   output actuation: int
-  state previousTarget : int
+  state previousTarget: int
 
-  reaction(inertialData) -> actuation {=
-  =}
+  reaction(inertialData) -> actuation {=  =}
 
-  reaction(controlTraget)  {=
-    // Just updates the 
+  reaction(controlTraget) {=
+    // Just updates the
     previousTarget = controlTraget;
-  =} deadline (100ms) {=
+  =} deadline(100 ms) {=
     lf_print("help");
   =}
 }
 
 reactor Actuator {
-  input actuation : int
-  reaction(actuation) {=
-  =}
+  input actuation: int
+
+  reaction(actuation) {=  =}
 }
 
-/**
- * Camera actuation control 
- */
-reactor Gimbal{
+/** Camera actuation control */
+reactor Gimbal {
   input imuData: int
   logical action gimbalDone
-  
+
   reaction(imuData) -> gimbalDone {=
     lf_schedule(gimbalDone, 0);
   =}
-  
-  reaction (gimbalDone) {==} deadline (10ms) {=
-    // 
+
+  reaction(gimbalDone) {=  =} deadline(10 ms) {=
+    //
   =}
 }
 
-/**
- * Communication modules with the base station
- */
+/** Communication modules with the base station */
 reactor ComIn {
   output targetZone: int
   output weatherForecast: int
-  timer t(0, 50ms);
+  timer t(0, 50 ms)
+
   reaction(t) -> targetZone {=
     // polling commands form base station
-    // and then updating the wayPoints 
+    // and then updating the wayPoints
   =}
 }
 
 reactor ComOut {
   input inertialData: int
   input result: int
-  
+
   reaction(inertialData, result) {=
     // sendiong packets
   =}
 }
 
-/**
- * Mission 
- */
+/** Mission */
 reactor Camera {
-  timer t(20msecs, 20msecs)
+  timer t(20 msecs, 20 msecs)
   output frame: void
 
-  reaction (t) -> frame {=
+  reaction(t) -> frame {=
     frame.set(); // send a "frame"
   =}
 }
 
 reactor ImageStitching {
   input inertialData: int
-  input frame : void
+  input frame: void
   output coverage: void
-  output stitchedImageChunk : void
+  output stitchedImageChunk: void
   state stitchedImage: void
 
-  state latestInertialData : int
-  timer t(0, 1s)
+  state latestInertialData: int
+  timer t(0, 1 s)
 
   reaction(frame) -> coverage {=
     // Do batch processing and only set the output
@@ -200,19 +184,19 @@ reactor ImageStitching {
   =}
 
   reaction(t) -> stitchedImageChunk {=
-    // 
+    //
   =}
+
   reaction(inertialData) {=
     latestInertialData = inertialData;
   =}
-
 }
 
 reactor ImageProcessing {
   input stitchedImageChunk: void
   input batteryState: int
   input weatherForecast: int
-  output result : int 
+  output result: int
   state processedImage: void
 
   reaction(stitchedImageChunk) -> result {=
@@ -221,27 +205,21 @@ reactor ImageProcessing {
   =}
 }
 
-/**
- * Battery management
- */
+/** Battery management */
 reactor BatterySensor {
-  output batteryState : int
-  timer t(0, 100ms)
-  reaction(t) -> batteryState {=
+  output batteryState: int
+  timer t(0, 100 ms)
 
-  =}
+  reaction(t) -> batteryState {=  =}
 }
 
-/**
- * Main reactor
- */
+/** Main reactor */
 main reactor {
-  // Instantiations
-  imuSensor = new IMUSensor()
+  imuSensor = new IMUSensor()                   // Instantiations
   gpsSensor = new GPSSensor()
   kalmanFilter = new KalmanFilter()
   planner = new Planner()
-  controller =  new Controller()
+  controller = new Controller()
   actuator = new Actuator()
   gimbal = new Gimbal()
   comIn = new ComIn()
@@ -251,8 +229,7 @@ main reactor {
   imageProcessing = new ImageProcessing()
   batterySensor = new BatterySensor()
 
-  // Connections 
-  imuSensor.imuOutput -> kalmanFilter.imuInput
+  imuSensor.imuOutput -> kalmanFilter.imuInput  // Connections
   gpsSensor.gpsOutput -> kalmanFilter.gpsInput
   kalmanFilter.inertialData -> planner.inertialData
   kalmanFilter.inertialData -> controller.inertialData

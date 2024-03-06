@@ -7,7 +7,7 @@ preamble {==}
 ### Ant
 reactor Ant {
   timer t(0, 100msec)
-  state _standing(0)
+  state _standing=0
   
   input in0
   

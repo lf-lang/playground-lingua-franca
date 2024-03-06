@@ -1,12 +1,11 @@
-target C{
+target C {
   keepalive: true
-};
+}
 
-reactor Display(width: int=4){
-  //Center/HUD/Cluster indicating direction of obstacle
-  input[width] obstacleList:int
-  output angleOfObstacle:int[]
-  
+reactor Display(width: int = 4) {
+  input[width] obstacleList: int  // Center/HUD/Cluster indicating direction of obstacle
+  output angleOfObstacle: int[]
+
   reaction(startup) -> angleOfObstacle {=
     for (int i = 0; i < 4; i++) {
       angleOfObstacle->value[i] = 0;
@@ -14,7 +13,7 @@ reactor Display(width: int=4){
     SET_PRESENT(angleOfObstacle);
   =}
 
-  reaction(obstacleList)->angleOfObstacle{=
+  reaction(obstacleList) -> angleOfObstacle {=
     //TODO: Handling of graphics
       //0 - left front (135)
       //1 - right front (45)
@@ -28,18 +27,18 @@ reactor Display(width: int=4){
       if (obstacleList[i]->is_present && obstacleList[i]->value) {
 
         //lf_set(angleOfObstacle[i], 1);
-      
+
       lf_sleep(MSEC(100));
       }
     }
   =}
 }
 
-reactor Speaker(width: int=4){
-  //3D sound generation
-  input[width] obstacleList:int
-  output alert:bool
-  reaction(obstacleList)->alert{=
+reactor Speaker(width: int = 4) {
+  input[width] obstacleList: int  // 3D sound generation
+  output alert: bool
+
+  reaction(obstacleList) -> alert {=
     //Handling of device audio
     instant_t processing_delay = MSEC(30);
     lf_sleep(processing_delay);
@@ -48,49 +47,49 @@ reactor Speaker(width: int=4){
       if (obstacleList[i]->is_present && obstacleList[i]->value){
         lf_set(alert, true);
       }
-      else{ 
+      else{
         lf_set(alert, false);
       }
     }
   =}
 }
 
-reactor DistanceSensor(bank_index: int=0){
-  timer t(0, 10 ms);
-  physical action pa;
-  output range:int; //in meters
+reactor DistanceSensor(bank_index: int = 0) {
+  timer t(0, 10 ms)
+  physical action pa
+  output range: int  // in meters
 
-  reaction(t)->pa{=
+  reaction(t) -> pa {=
     //Schedule scan
     lf_schedule(pa, MSEC(5000));
   =}
 
-  reaction(pa)->range{=
+  reaction(pa) -> range {=
     int distance = rand() % 25;
     lf_set(range, distance);
   =}
 }
 
-reactor Monitor{
-  mutable input display_event:int[];
-  input speaker_event:bool;
+reactor Monitor {
+  mutable input display_event: int[]
+  input speaker_event: bool
 
-  reaction(display_event){=
+  reaction(display_event) {=
     for (int i = 0; i < display_event->length; i++) {
       lf_print("Display: %d", display_event->value[i]);
     }
   =}
 
-  reaction(speaker_event){=
+  reaction(speaker_event) {=
     lf_print("Speaker: %d", speaker_event->value);
   =}
 }
 
-reactor ProcessSignals(width: int=4){
-  input[width] rangeList:int
-  output[width] obstacles:int
-  
-  reaction(rangeList)->obstacles{=
+reactor ProcessSignals(width: int = 4) {
+  input[width] rangeList: int
+  output[width] obstacles: int
+
+  reaction(rangeList) -> obstacles {=
     for (int i = 0; i < rangeList_width; i++) {
       //0 - left front
       //1 - right front
@@ -109,16 +108,13 @@ reactor ProcessSignals(width: int=4){
 }
 
 main reactor {
-  #speaker = new Speaker()
-  display = new Display()
+  display = new Display()  // speaker = new Speaker()
   ds = new[4] DistanceSensor()
   ps = new ProcessSignals(width=4)
+  // ps.obstacles -> display.obstacleList
+  // ps.obstacles -> speaker.obstacleList
+  // monitor = new Monitor()
+  // display.angleOfObstacle -> monitor.display_event
+  // speaker.alert -> monitor.speaker_event
   ds.range -> ps.rangeList
-
-  #ps.obstacles -> display.obstacleList
-  #ps.obstacles -> speaker.obstacleList
-
-  #monitor = new Monitor()
-  #display.angleOfObstacle -> monitor.display_event
-  #speaker.alert -> monitor.speaker_event 
 }

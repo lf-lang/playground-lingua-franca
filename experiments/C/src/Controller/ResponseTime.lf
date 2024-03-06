@@ -1,28 +1,30 @@
 /**
- * This Lingua Franca (LF) program models a real-time control system consisting of
- * a physical plant, a controller, and a planner. The physical plant produces
- * sensor data at regular intervals, which are then sent to the controller. The
- * controller sends this sensor data to the planner, which takes a brief pause to
- * plan and then sends back a response, mimicking the latency often encountered in
- * real-world control systems. The controller then sends a control signal back to
- * the physical plant based on this response. The program also monitors the time
- * taken for the control signal to reach the physical plant from the controller and
- * issues a warning if the signal transmission time exceeds a certain threshold.
- * This setup mimics a real-time, latency-sensitive, feedback control system with
- * planning involved, such as those found in industrial automation or robotics. 
+ * This Lingua Franca (LF) program models a real-time control system consisting of a physical plant,
+ * a controller, and a planner. The physical plant produces sensor data at regular intervals, which
+ * are then sent to the controller. The controller sends this sensor data to the planner, which
+ * takes a brief pause to plan and then sends back a response, mimicking the latency often
+ * encountered in real-world control systems. The controller then sends a control signal back to the
+ * physical plant based on this response. The program also monitors the time taken for the control
+ * signal to reach the physical plant from the controller and issues a warning if the signal
+ * transmission time exceeds a certain threshold. This setup mimics a real-time, latency-sensitive,
+ * feedback control system with planning involved, such as those found in industrial automation or
+ * robotics.
  */
 target C {
   timeout: 1 sec
 }
+
 reactor PhysicalPlant {
-  input control:double;
-  output sensor:double;
-  timer t(0,  33 msec);
-  state last_sensor_time:time(0);
+  input control: double
+  output sensor: double
+  timer t(0, 33 msec)
+  state last_sensor_time: time = 0
+
   reaction(t) -> sensor {=
     lf_set(sensor, 42);
     self->last_sensor_time = lf_time_physical();
   =}
+
   reaction(control) {=
     instant_t control_time = lf_time_physical();
     lf_print("Latency %lld.", control_time - self->last_sensor_time);
@@ -30,35 +32,40 @@ reactor PhysicalPlant {
     lf_print_warning("STP violation.");
   =}
 }
+
 reactor Controller {
-  input sensor:double;
-  output control:double;
-  
-  output request_for_planning:double;
-  input planning:double;
-  
+  input sensor: double
+  output control: double
+
+  output request_for_planning: double
+  input planning: double
+
   reaction(sensor) -> request_for_planning {=
     lf_set(request_for_planning, sensor->value);
   =}
+
   reaction(planning) -> control {=
     lf_set(control, planning->value);
   =}
 }
+
 reactor Planner {
-  input request:double;
-  output response: double;
+  input request: double
+  output response: double
+
   reaction(request) -> response {=
     lf_nanosleep(MSEC(10));
     lf_set(response, request->value);
   =}
 }
+
 main reactor {
-  p = new PhysicalPlant();
-  c = new Controller();
-  pl = new Planner();
-  
-  p.sensor -> c.sensor;
-  c.request_for_planning -> pl.request;
-  pl.response -> c.planning;
-  c.control -> p.control;
+  p = new PhysicalPlant()
+  c = new Controller()
+  pl = new Planner()
+
+  p.sensor -> c.sensor
+  c.request_for_planning -> pl.request
+  pl.response -> c.planning
+  c.control -> p.control
 }
