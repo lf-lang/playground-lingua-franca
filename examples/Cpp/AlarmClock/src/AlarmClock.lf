@@ -10,7 +10,7 @@
  * @author Tassilo Tanneberer <tassilo.tanneberger@tu-dresden.de>
  */
 target Cpp {
-  cmake-include: "AlarmClock.cmake",
+  cmake-include: "AlarmClock.cmake"
 }
 
 import Network from "./Network.lf"

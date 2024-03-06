@@ -7,7 +7,7 @@
  * Author: Tassilo Tanneberer <tassilo.tanneberger@tu-dresden.de>
  */
 target Cpp {
-  cmake-include: "AlarmClock.cmake",
+  cmake-include: "AlarmClock.cmake"
 }
 
 public preamble {=
