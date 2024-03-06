@@ -3,18 +3,18 @@
  * that listens on a port (default 8080) for web socket connections. The intended usage is that you
  * create a client in an HTML/JavaScript file that connects to this server and provides a
  * browser-based user interface.
- * 
- * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified
- * path to a file that this server will serve upon receiving an HTTP request. This can be used
- * to provide the initial HTML (with embedded JavaScript) that will then establish a web socket
- * connection to the running LF program.  To specify a file located in the same directory as
- * your source LF file, you can use a syntax like this:
- * 
+ *
+ * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified path to
+ * a file that this server will serve upon receiving an HTTP request. This can be used to provide
+ * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
+ * the running LF program. To specify a file located in the same directory as your source LF file,
+ * you can use a syntax like this:
  * ```
  * s = new WebSocketServer(
  *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
  * )  
  * ```
+
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
@@ -50,8 +50,8 @@
  * The data conveyed can be any byte array. In case a received value is a string that is not null
  * terminated, this reactor appends a null character after the message payload. It does not include
  * this null character in the length field of the output struct, but rather just reports the length
- * as reported by the incoming message.  If the `binary` parameter is set to true, then JavaScript
- * at the receiving end will get a Blob. Otherwise, it gets text.
+ * as reported by the incoming message. If the `binary` parameter is set to true, then JavaScript at
+ * the receiving end will get a Blob. Otherwise, it gets text.
  *
  * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
  *
@@ -122,8 +122,7 @@ preamble {=
 reactor WebSocketServer(
     hostport: int = 8080,
     initial_file: string = {= NULL =},
-    max_clients: int = 0
-) {
+    max_clients: int = 0) {
   output connected: web_socket_instance_t
   output received: web_socket_message_t*
 
@@ -141,7 +140,7 @@ reactor WebSocketServer(
     // All lws calls except lws_cancel_service must occur in this thread.
     void* websocket_thread(void* args) {
       server_status_t* status = (server_status_t*)args;
-      
+
       while(status->running) {
         // Invoke any pending callbacks.
         // According to the docs, the timeout argument is ignored.
@@ -187,7 +186,7 @@ reactor WebSocketServer(
             // Increment the client count past the maximum because it will be
             // decremented when this closes and the browser will retry.
             *status->client_count = *status->client_count + 1;
-            
+
             return 1;
           }
 
@@ -216,7 +215,7 @@ reactor WebSocketServer(
         case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
           lf_print_error("*** connection error.");
-          
+
           *status->client_count = *status->client_count - 1;
 
           ws_instance.wsi = wsi;
@@ -242,11 +241,11 @@ reactor WebSocketServer(
             lf_print_error("Failed to lock mutex in WebSocketServer.");
             return 0;
           }
-          
+
           if (status->pending_messages) {
             lws_callback_on_writable(status->pending_messages->wsi);
           }
-          
+
           if (lf_mutex_unlock(status->mutex)) {
             lf_print_error("Failed to unlock mutex in WebSocketServer.");
           }
@@ -278,13 +277,13 @@ reactor WebSocketServer(
             lf_print_error("Failed to lock mutex in WebSocketServer.");
             return 0;
           }
-          
+
           web_socket_message_t* to_send = status->pending_messages;
           if (to_send) {
             // There is a message to send. Remove it from the list.
             status->pending_messages = to_send->next;
-            
-            // Send it.    
+
+            // Send it.
             int length = to_send->length;
             // The buffer needs LWS_PRE bytes _before_ the message.
             // Do not include the null terminator, because this makes JSON unable to parse it.
@@ -307,19 +306,19 @@ reactor WebSocketServer(
             }
             // Free the memory for the pending send.
             web_socket_message_destructor(to_send);
-            
+
             // If there is another message, request another callback.
             if (status->pending_messages) {
               lws_callback_on_writable(status->pending_messages->wsi);
             }
           }
-          
+
           if (lf_mutex_unlock(status->mutex)) {
             lf_print_error("Failed to unlock mutex in WebSocketServer.");
           }
-          
+
           break;
-          
+
         // Do we need to handle LWS_CALLBACK_CLOSED?
         // Seems to be handled in the HTTP callback.
 
@@ -382,13 +381,13 @@ reactor WebSocketServer(
     };
     // To get callbacks to be passed a pointer to the status struct:
     info.user = &self->status;
-    
+
     // Callbacks will need to acquire a mutex to modify the status struct pending_messages field.
     self->status.mutex = (lf_mutex_t*)calloc(1, sizeof(lf_mutex_t));
     if (lf_mutex_init(self->status.mutex)) {
       lf_print_error_and_exit("Failed to initialize mutex in WebSocketServer.");
     }
-    
+
     self->status.context = lws_create_context(&info);
     if (!self->status.context) {
       lf_print_error_and_exit("Failed to create server for web sockets.");
@@ -452,10 +451,10 @@ reactor WebSocketServer(
     // 2. It is not safe to write until the socket is ready for a write.
     // Hence, we append the message to list of pending messages and wait for a callback that
     // the socket is ready for a write.
-    
+
     // Copy the message and append to the context list.
     web_socket_message_t* copy = (web_socket_message_t*)web_socket_message_copy_constructor(to_send);
-    
+
     // Acquire the status mutex before putting on the pending messages list.
     if (lf_mutex_lock(self->status.mutex)) {
       lf_print_error("Failed to lock WebSocketServer mutex.");
@@ -471,7 +470,7 @@ reactor WebSocketServer(
 
     // Interrupt lws_service().
     lws_cancel_service(self->status.context);
-    
+
     if (lf_mutex_unlock(self->status.mutex)) {
       lf_print_error("Failed to unlock WebSocketServer mutex.");
       return -1;

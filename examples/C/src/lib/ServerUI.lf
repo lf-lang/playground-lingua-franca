@@ -96,7 +96,7 @@ reactor ServerUI(initial_file: string = "page.html", hostport: uint16_t = 8080) 
           lf_print_warning("Error %d reading socket: %s", errno, strerror(errno));
           continue;
         }
-        
+
         lf_print("Received: '%s'", buffer);
 
         // The response depends on the path part of the request.
