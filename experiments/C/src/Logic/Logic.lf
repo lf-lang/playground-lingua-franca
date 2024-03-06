@@ -2,10 +2,10 @@ target C {timeout: 200 msec};
 
 // Test illustrating that the current implementation of lf_schedule leads to unexpected behavior.
 
-reactor Source(name:string("source"), even:bool(true)) {
+reactor Source(name:string="source", even:bool=true) {
   output out:bool;
-  state on:bool(false);
-  state count:int(0);
+  state on:bool=false;
+  state count:int=0;
   logical action next;
   
   reaction(startup) -> out {=

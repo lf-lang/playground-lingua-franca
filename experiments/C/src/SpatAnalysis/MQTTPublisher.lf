@@ -34,10 +34,10 @@ target C;
  * @see MQTTSubscriber.
  */
 reactor MQTTPublisher (
-  topic:string("DefaultTopic"),
-  address:string("tcp://localhost:1883"),
-  clientID:string("DefaultPublisher"),
-  include_physical_timestamp:int(0)
+  topic:string="DefaultTopic",
+  address:string="tcp://localhost:1883",
+  clientID:string="DefaultPublisher",
+  include_physical_timestamp:int=0
 ) {
   preamble {=
     #include "MQTTClient.h"
@@ -77,13 +77,13 @@ reactor MQTTPublisher (
   input in:char*;
   
   /** State variable that keeps track of a message in flight. */
-  state inflight:inflight_t({={false, 0, NULL}=});
+  state inflight:inflight_t0={={false, 0, NULL}=};
   
   /** The client object. */
-  state client:MQTTClient({=NULL=});
+  state client:MQTTClient={=NULL=};
   
   /** The message object. */
-  state mqtt_msg:MQTTClient_message({=MQTTClient_message_initializer=});
+  state mqtt_msg:MQTTClient_message={=MQTTClient_message_initializer=};
   
   /** Connect to the broker. Exit if this fails. */
   reaction(startup){=

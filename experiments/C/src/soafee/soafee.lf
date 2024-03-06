@@ -2,7 +2,7 @@ target C{
   keepalive: true
 };
 
-reactor Display(width: int(4)){
+reactor Display(width: int=4){
   //Center/HUD/Cluster indicating direction of obstacle
   input[width] obstacleList:int
   output angleOfObstacle:int[]
@@ -35,7 +35,7 @@ reactor Display(width: int(4)){
   =}
 }
 
-reactor Speaker(width: int(4)){
+reactor Speaker(width: int=4){
   //3D sound generation
   input[width] obstacleList:int
   output alert:bool
@@ -55,7 +55,7 @@ reactor Speaker(width: int(4)){
   =}
 }
 
-reactor DistanceSensor(bank_index: int(0)){
+reactor DistanceSensor(bank_index: int=0){
   timer t(0, 10 ms);
   physical action pa;
   output range:int; //in meters
@@ -86,7 +86,7 @@ reactor Monitor{
   =}
 }
 
-reactor ProcessSignals(width: int(4)){
+reactor ProcessSignals(width: int=4){
   input[width] rangeList:int
   output[width] obstacles:int
   

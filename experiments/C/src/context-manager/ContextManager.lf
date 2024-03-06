@@ -24,9 +24,8 @@
 target C {
   timeout: 1s
 }
-import Random from "../../lib/Random.lf"
-preamble {=   
-  #include <math.h>  // FIXME: should not be needed. Should get from Random.lf.
+import Random from "../../../../examples/C/src/lib/Random.lf"
+preamble {=
    
   // Pair of numbers to be added.
   typedef struct pair_t {

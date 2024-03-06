@@ -7,19 +7,19 @@
  * @author Alexander Schulz-Rosengarten
  */
 target Python{
-  threads: 0
+  single-threaded: false
 };
 
 import Plotter, Sinewave from "./sine_max_avg.lf"
 
-reactor ModalModel(sample_size(10)) {
+reactor ModalModel(sample_size=10) {
   input data;
   output out;
   
-  state sample({=[None] * sample_size=});
-  state count(0);
+  state sample={=[None] * sample_size=};
+  state count=0;
   
-  state _mode(0); # Only present w/o mode support
+  state _mode=0; # Only present w/o mode support
   
   logical action process
   

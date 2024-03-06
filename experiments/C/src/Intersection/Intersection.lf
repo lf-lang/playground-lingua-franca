@@ -47,10 +47,10 @@ preamble {=
 =}
 
 reactor Vehicle (
-  offset:time(0),
-  period:time(1 sec),
-  speed:double(42.0),  // in km per hour. About 11.7 m/sec
-  distance:double(42.0)  // in meters.  About 4 sec to traverse.
+  offset:time=0,
+  period:time=1 sec,
+  speed:double=42.0,  // in km per hour. About 11.7 m/sec
+  distance:double=42.0  // in meters.  About 4 sec to traverse.
 ) {
   input grant:grant_message_t;
   
@@ -88,16 +88,16 @@ reactor Vehicle (
 }
 
 reactor RSU (
-  num_entries:int(4),
-  intersection_width:double(42.0), // in meters.
+  num_entries:int=4,
+  intersection_width:double=42.0, // in meters.
   // If the vehicle is told to slow down, then its target
   // average speed in the intersection should be at least this.
-  nominal_speed_in_intersection:double(10.0) // In km/hr. 2.8 m/sec. 15 sec to traverse.
+  nominal_speed_in_intersection:double=10.0 // In km/hr. 2.8 m/sec. 15 sec to traverse.
 ) {
   input[num_entries] request:request_message_t;
   output[num_entries] grant:grant_message_t;
   
-  state earliest_free:time(0);
+  state earliest_free:time=0;
   
   reaction(request) -> grant {=
     for (int i = 0; i < self->num_entries; i++) {

@@ -7,22 +7,22 @@
  */
 target C { fast: true, Build-Type: Debug }
 
-reactor Count(start: int(2)) {
+reactor Count(start: int=2) {
   timer t(0, 1 sec);
   output out: int;
-  state c: int(start);
+  state c: int=start;
   reaction(t) -> out {=
     lf_set(out, self->c++);
   =}
 }
-
+ 
 reactor Filter0 {
   input n_in: int
   output n_out: int
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -52,7 +52,7 @@ reactor Filter1 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -82,7 +82,7 @@ reactor Filter2 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -112,7 +112,7 @@ reactor Filter3 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -142,7 +142,7 @@ reactor Filter4 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -172,7 +172,7 @@ reactor Filter5 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -202,7 +202,7 @@ reactor Filter6 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -232,7 +232,7 @@ reactor Filter7 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -262,7 +262,7 @@ reactor Filter8 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -292,7 +292,7 @@ reactor Filter9 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -322,7 +322,7 @@ reactor Filter10 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int=0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -346,9 +346,9 @@ reactor Filter10 {
   }
 }
 
-reactor Print(stop_after:int(10000)) {
+reactor Print(stop_after:int=10000) {
   input in:int;
-  state count:int(1);
+  state count:int=1;
   reaction(in) {=
     printf("Prime %d: %d\n", self->count++, in->value);
     if (self->count > self->stop_after) lf_request_stop();

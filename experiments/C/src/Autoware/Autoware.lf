@@ -31,7 +31,7 @@ target C {
 };
 
 // Send a periodic image out
-reactor Camera(offset:time(0), period:time(1 sec)) {
+reactor Camera(offset:time=0, period:time=1 sec) {
   output image:string;
   timer t(offset, period);
 
@@ -41,7 +41,7 @@ reactor Camera(offset:time(0), period:time(1 sec)) {
 }
 
 // Send a periodic LIDAR pointcloud out
-reactor LIDAR(offset:time(0), period:time(1 sec)) {
+reactor LIDAR(offset:time=0, period:time=1 sec) {
   output pointcloud:string;
   timer t(offset, period);
 
@@ -56,7 +56,7 @@ reactor ImageObjectDetection {
   output object:string;
 
   
-  state thread_id:pthread_t(0);
+  state thread_id:pthread_t=0;
   
   preamble {=
   #include <pthread.h>
@@ -109,7 +109,7 @@ reactor LIDARObjectDetection {
   output object:string;
 
      
-  state thread_id:pthread_t(0);
+  state thread_id:pthread_t=0;
   
   preamble {=
   #include <pthread.h>
@@ -160,16 +160,16 @@ reactor LIDARObjectDetection {
 
 
 // Fuse LIDAR and Camera detected objects
-reactor DataFusion(threshold:time(20 msec)) {
+reactor DataFusion(threshold:time=20 msec) {
   input imageobject:string;
   input LIDARobject:string;
   output object:string;
   logical action both_ports_are_present(0);
 
-  state tmpImageobject:string("");
-  state tmpImageobjectTag:time(0);
-  state tmpLIDARobject:string("");
-  state tmpLIDARobjectTag:time(0);
+  state tmpImageobject:string="";
+  state tmpImageobjectTag:time=0;
+  state tmpLIDARobject:string="";
+  state tmpLIDARobjectTag:time=0;
 
 
   // Handle two ports
@@ -255,7 +255,7 @@ reactor Semantics {
   =}
 }
 
-reactor Actuator(threshold:time(33 msec)){
+reactor Actuator(threshold:time=33 msec){
   input actuation:int;
 
   reaction(actuation) {=

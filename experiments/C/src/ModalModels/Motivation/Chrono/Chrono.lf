@@ -12,7 +12,7 @@
  * @author Reinhard von Hanxleden
  */
 target C {
-  threads: 1,
+  single-threaded: true,
   keepalive: true
 };
 
@@ -56,12 +56,12 @@ reactor ChronoLogic {
   output d:int;
   
   // time state
-  state dState:int(0);
-  state sState:int(0);
-  state mState:int(0);
+  state dState:int=0;
+  state sState:int=0;
+  state mState:int=0;
   
   // active state
-  state ststState:int(0); // 0 = STOP, 1 = START
+  state ststState:int=0; // 0 = STOP, 1 = START
   
   // provide base time
   timer dTimer(10 msec, 10 msec);

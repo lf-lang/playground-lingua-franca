@@ -8,8 +8,8 @@
  */
 
 target C {
-  threads: 1, // Must use threaded implementation so lf_schedule is thread safe.
-  flags: "-I/usr/local/include -L/usr/local/lib -g -lpaho-mqtt3c src-gen/core/util.c ",
+  single-threaded: true, // Must use single-threaded implementation so lf_schedule is thread safe.
+  compiler-flags: "-I/usr/local/include -L/usr/local/lib -g -lpaho-mqtt3c src-gen/core/util.c ",
   timeout: 60 secs,
   keepalive: true
 };
@@ -43,8 +43,8 @@ reactor recvSpatMessage {
 
 reactor recvSpatMessage2 {
   input message:char*;
-  state signal_phase:int(0);
-  state residual:time(0 nsec);
+  state signal_phase:int=0;
+  state residual:time=0 nsec;
   
   reaction(message) {=
     /*printf("PrintMessage: At (elapsed) time %lld, subscriber receives: %s\n",

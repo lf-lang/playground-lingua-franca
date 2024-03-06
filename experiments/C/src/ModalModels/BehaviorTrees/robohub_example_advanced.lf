@@ -13,7 +13,7 @@ target C {
 //  logging: debug
 }
 
-reactor GenericTask(name:string("")) {
+reactor GenericTask(name:string="") {
   output success:bool
   output failure:bool
   
@@ -53,7 +53,7 @@ reactor NominalBehavior {
     
     MoveToObjTask.failure -> failure
     
-    reaction(MoveToObjTask.success) -> CloseGrip {=
+    reaction(MoveToObjTask.success) -> reset(CloseGrip) {=
       lf_set_mode(CloseGrip);
     =}
   }
@@ -63,7 +63,7 @@ reactor NominalBehavior {
     
     CloseGripTask.failure -> failure
     
-    reaction(CloseGripTask.success) -> MoveHome {=
+    reaction(CloseGripTask.success) -> reset(MoveHome) {=
       lf_set_mode(MoveHome);
     =}
   }
@@ -91,7 +91,7 @@ reactor Robot {
     NominalBehavior.success -> success
     NominalBehavior.failure -> failure
     
-    reaction(BatteryOK) -> Charging {=
+    reaction(BatteryOK) -> reset(Charging) {=
       if (!BatteryOK->value) {
         lf_set_mode(Charging);
         printf("Battery empty\n");
@@ -104,7 +104,7 @@ reactor Robot {
     
     GoCharge.failure -> failure
     
-    reaction(BatteryOK, GoCharge.success) -> Nominal {=
+    reaction(BatteryOK, GoCharge.success) -> reset(Nominal) {=
       // Assumes simultaneous presence
       if (BatteryOK->value && GoCharge.success->value) {
         lf_set_mode(Nominal);
@@ -116,7 +116,7 @@ reactor Robot {
 
 main reactor {
   timer Battery(1sec, 1sec)
-  state battery_state:int(1)
+  state battery_state:int=1
   
   robot = new Robot()
   

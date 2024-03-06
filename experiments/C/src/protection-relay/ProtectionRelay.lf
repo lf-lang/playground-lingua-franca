@@ -78,7 +78,7 @@ reactor AgCrete {
   =}
 }
 @label("Average")
-reactor AgMoy(num_values:int(3)) {
+reactor AgMoy(num_values:int=3) {
   input currents:double[4]
   output V_TRS_Cumu1Filtree:double[4]
   reaction(currents) -> V_TRS_Cumu1Filtree {=
@@ -86,11 +86,11 @@ reactor AgMoy(num_values:int(3)) {
   =}
 }
 @label("Magnitude of fundamental and harmonics")
-reactor AgTRS(num_values:int(12)) {
+reactor AgTRS(num_values:int=12) {
   timer t(0, 13320us)     // Computes an output every 24 periods of 555us.
   input average:double[4]
   input crest:double[4]
-  state avghistory:double[12]({= [0] =})
+  state avghistory:double[12]={= [0] =}
   output V_mod2Imax:double[4]
   output VS_Mod2:double[4]
   reaction(average) {=

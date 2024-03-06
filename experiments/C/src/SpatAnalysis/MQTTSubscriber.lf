@@ -57,10 +57,10 @@ target C;
  */
  
 reactor MQTTSubscriber (
-  address:string("tcp://localhost:1883"),
-  clientID:string("DefaultSubscriber"),
-  topic:string("DefaultTopic"),
-  offset:time(0 msec)
+  address:string="tcp://localhost:1883",
+  clientID:string="DefaultSubscriber",
+  topic:string="DefaultTopic",
+  offset:time=0 msec
 ) {
   preamble {=
     #include "MQTTClient.h"
@@ -165,22 +165,22 @@ reactor MQTTSubscriber (
   /**
    * State variable storing the MQTT client created for each instance of this reactor.
    */
-  state client:MQTTClient({=NULL=});
+  state client:MQTTClient={=NULL=};
   
   /**
    * Maximum observed latency from the originator of the message to here.
    */
-  state max_latency:time(0);
+  state max_latency:time=0;
   
   /**
    * Sum of all observed latencies.
    */
-  state latencies:time(0);
+  state latencies:time=0;
   
   /**
    * Count of messages.
    */
-  state count:int(0);
+  state count:int=0;
   
   reaction(startup) -> incoming_message {=
     MQTTClient_create(&self->client, self->address, self->clientID, MQTTCLIENT_PERSISTENCE_NONE, NULL);

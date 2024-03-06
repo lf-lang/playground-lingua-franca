@@ -23,14 +23,14 @@ reactor Count {
   timer t(0, 1 sec);
   output out:int;
   // Start at 3 because 1 and 2 are taken care of.
-  state c:int(3);
+  state c:int=3;
   reaction(t) -> out {=
     lf_set(out, self->c);
     // printf("Count sent %d\n", self->c);
     self->c++;
   =}
 }
-reactor Filter(prime:int(2)) {
+reactor Filter(prime:int=2) {
   input in:int;
   output out:int;
   
@@ -120,9 +120,9 @@ reactor Sieve {
     }
   =}
 }
-reactor Print(stop_after:int(10000)) {
+reactor Print(stop_after:int=10000) {
   input in:int;
-  state count:int(1);
+  state count:int=1;
   reaction(in) {=
     printf("Prime %d: %d\n", self->count++, in->value);
     if (self->count > self->stop_after) lf_request_stop();

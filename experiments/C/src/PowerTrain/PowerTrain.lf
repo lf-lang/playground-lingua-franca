@@ -1,4 +1,4 @@
-target C {threads: 1, keepalive: true, flags: "-lncurses"};
+target C {single-threaded: true, keepalive: true, compiler-flags: "-lncurses"};
 
 /**
  * FIXME: there are still two problems with this implementation:
@@ -118,7 +118,7 @@ reactor MotorControl {
   input brkOn:bool;
   input angle:int;
   output torque:int;
-  state braking:bool(true);
+  state braking:bool=true;
   
   //@label Set torque to zero if car is braking
   reaction(brkOn) -> torque {=
@@ -141,7 +141,7 @@ reactor BrakePedal {
   output applied:bool;
   
   physical action a(0, 1 msec, "replace"):int;
-  state last:int(1);
+  state last:int=1;
   
   // @label Setup callback
      reaction(startup) -> a {=
@@ -167,10 +167,10 @@ reactor BrakePedal {
 
 reactor Accelerator {
      
-  state pedal:int(-1);
+  state pedal:int=-1;
   physical action a(0, 2 msec, "replace"):int;
   output angle:int;
-  state last:int(0);
+  state last:int=0;
   
   // @label Setup callback
   reaction(startup) -> a {=

@@ -15,7 +15,8 @@
  * be abstracted out into an API.
  */
 target C { 
-  threads: 4
+  single-threaded: false,
+  workers: 4
 };
 reactor Source {
   output out:int[];
@@ -26,7 +27,7 @@ reactor Source {
     }
   =}
 }
-reactor Worker(id:int(2)) {
+reactor Worker(id:int=2) {
   input worker_in:int;
   output worker_out:int;
   reaction(worker_in) -> worker_out {=
@@ -46,12 +47,12 @@ reactor ScatterGather2 {
   // of pointers to the self struct of the worker.
   // The type of a self struct is the reactor class name, converted to
   // lower case, followed by _self_t.
-  state workers:worker_self_t**({=NULL=});
+  state workers:worker_self_t**={=NULL=};
   
   // The data type of the upstream source does not match the
   // data type of the workers' inputs, so we have to create an
   // array of places to store the input data.
-  state worker_inputs:worker_worker_in_t*({=NULL=});
+  state worker_inputs:worker_worker_in_t*={=NULL=};
   
   // Create a template worker, which ensures that downstream
   // levels are correct. The template worker could have any

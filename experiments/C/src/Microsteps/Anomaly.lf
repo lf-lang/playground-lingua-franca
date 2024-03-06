@@ -13,7 +13,7 @@ reactor Source {
   output out1:int;
   output out2:int;
   logical action redo;
-  state count:int(0);
+  state count:int=0;
   reaction(startup, redo) -> out1, out2, redo {=
     if (self->count++ < 4) {
       if (self->count % 2 == 0) {
@@ -31,7 +31,7 @@ reactor Source {
     }
   =}
 }
-reactor Destination(name:string("dest")) {
+reactor Destination(name:string="dest") {
   input in1:int;
   input in2:int;
   reaction (in1, in2) {=

@@ -39,7 +39,7 @@ target C {
  */
 
 // Sensing reactors
-reactor IMUSensor (period:time(20ms)){
+reactor IMUSensor (period:time=20ms){
   timer t(0, period)
   output imuOutput: int // struct 9 values double (64bits)
 
@@ -48,7 +48,7 @@ reactor IMUSensor (period:time(20ms)){
   =}
 }
 
-reactor GPSSensor (period:time(50ms)){
+reactor GPSSensor (period:time=50ms){
   timer t(0, period)
   output gpsOutput : int 
   

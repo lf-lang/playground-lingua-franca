@@ -25,9 +25,9 @@ reactor PhysicalPlant {
   =}
   input control:double;
   output sensor:double;
-  state last_sensor_time:time(0);
-  state previous_sensor_time:time(0);
-  state thread_id:lf_thread_t(0);
+  state last_sensor_time:time=0;
+  state previous_sensor_time:time=0;
+  state thread_id:lf_thread_t=0;
   physical action a:int;
   reaction(startup) -> a {=
     lf_thread_create(&self->thread_id, &my_thread, a);
@@ -50,9 +50,9 @@ reactor Controller {
   input sensor:double;
   output control:double;
   
-  state latest_control:double(0.0);
-  state first:bool(true);
-  state in_progress:bool(false);
+  state latest_control:double=0.0;
+  state first:bool=true;
+  state in_progress:bool=false;
   
   output request_for_planning:double;
   input planning:double;

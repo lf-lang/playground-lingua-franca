@@ -25,7 +25,7 @@ target C {
  * @param min_time The minimum time between outputs.
  * @param max_time The maximum time between outputs.
  */
-reactor RandomSource(min_time:time(2 sec), max_time:time(8 sec)) {
+reactor RandomSource(min_time:time=2 sec, max_time:time=8 sec) {
   preamble {=
     // Generate a random additional delay over the minimum. 
     // Assume millisecond precision is enough.
@@ -37,7 +37,7 @@ reactor RandomSource(min_time:time(2 sec), max_time:time(8 sec)) {
   input another:int;
   output out:int;
   logical action prompt(min_time);
-  state count:int(0);
+  state count:int=0;
   
   reaction(startup) -> prompt {=
     printf("***********************************************\n");
@@ -86,9 +86,9 @@ reactor GetUserInput {
   =}
 
   physical action user_response:char;
-  state prompt_time:time(0);
-  state total_time_in_ms:int(0);
-  state count:int(0);
+  state prompt_time:time=0;
+  state total_time_in_ms:int=0;
+  state count:int=0;
   
   input prompt:int;
   output another:int;

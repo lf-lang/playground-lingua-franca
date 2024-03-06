@@ -11,7 +11,7 @@
  */
 target C;
 
-reactor GenericTask(name:string("")) {
+reactor GenericTask(name:string="") {
   input start:bool
   output success:bool
   output failure:bool
@@ -57,7 +57,7 @@ reactor Robot {
 //      lf_set(MoveToObj.start, true);
 //    =}
     
-    reaction(BatteryOK) -> Charging {=
+    reaction(BatteryOK) -> reset(Charging) {=
       if (!BatteryOK->value) {
         lf_set_mode(Charging);
         printf("Battery empty\n");
@@ -75,7 +75,7 @@ reactor Robot {
 //      lf_set(GoCharge.start, true);
 //    =}
     
-    reaction(BatteryOK, GoCharge.success) -> Nominal {=
+    reaction(BatteryOK, GoCharge.success) -> reset(Nominal) {=
       // Assumes simultaneous presence
       if (BatteryOK->value && GoCharge.success->value) {
         lf_set_mode(Nominal);
@@ -87,7 +87,7 @@ reactor Robot {
 
 main reactor {
   timer Battery(1sec, 1sec)
-  state battery_state:int(1)
+  state battery_state:int=1
   
   robot = new Robot()
   
