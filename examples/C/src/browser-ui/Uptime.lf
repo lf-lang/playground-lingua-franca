@@ -39,7 +39,8 @@ main reactor {
     // Truncate to the nearest second.
     uptime = (uptime / SEC(1)) * SEC(1);
     char* message = (char*)malloc(LF_TIME_BUFFER_LENGTH * sizeof(char));
-    size_t length = lf_readable_time(message, uptime);
+    size_t length = lf_readable_time(message, uptime) + 1; // +1 to add a null character.
+    message[length] = '\0';
 
     // Broadcast to all connected sockets.  This is accomplished by providing a NULL wsi.
     web_socket_message_t* to_send = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));

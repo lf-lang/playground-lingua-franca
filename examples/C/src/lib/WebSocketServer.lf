@@ -288,12 +288,18 @@ reactor WebSocketServer(
             int length = to_send->length;
             // The buffer needs LWS_PRE bytes _before_ the message.
             // Do not include the null terminator, because this makes JSON unable to parse it.
-            unsigned char buffer[LWS_PRE + length];            
+            unsigned char buffer[LWS_PRE + length + 1];  // +1 for possible null terminator.
             memcpy(&buffer[LWS_PRE], to_send->message, length);
             int result;
             if (to_send->binary) {
               result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_BINARY);
             } else {
+              // Check for null terminator.
+              if (buffer[LWS_PRE + length - 1] != '\0') {
+                // Null terminator is missing.
+                buffer[LWS_PRE + length] = '\0';
+                length += 1;
+              }
               result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_TEXT);
             }
             if (result < length) {
