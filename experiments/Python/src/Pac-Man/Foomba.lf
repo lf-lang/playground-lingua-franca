@@ -1,33 +1,35 @@
 /**
- * A simple Pacman game.
- * Source: https://github.com/hbokmann/Pacman
+ * A simple Pacman game. Source:
+ *
+ * https://github.com/hbokmann/Pacman
+ *
  * LICENSE: N/A
  *
  * To run:
- * 1- lfc src/PacMan.lf
- * 2- Follow the instructions on the terminal.
- * S  
- * TODOs
- * 1- Add more comments.
- * 2- Show a win/lose screen instead of exiting.
- * 3- Add the ability to restart the game after win/lose.
- * 4- Make the game logic more efficient if possible.
- * 5- Add personalities for each ghost instead of following pre-determined
- *  directions.
- * 6- Add modes for ghosts (exploring, chasing, running away).
- * 7- Replace the player with an AI.
- * 8- Enable federated execution if possible.
- * 9- Explore:
- *  - What to do in the case of communication failure?
- *  - What are other possible fault scenarios?
- *  - What should the AI and the ghosts see? Should they be able to see all the
- *    walls or just walls close to them?
- *  - Add an external observer that is responsible for veryfing safety
- *    properties.
- *  - Explore consistency vs. availability tradeoffs in the game design.
- *    See https://arxiv.org/abs/2109.07771 .
  *
-**/
+ * -1- lfc src/PacMan.lf
+ * -2- Follow the instructions on the terminal.
+ *
+ * TODOs
+ *
+ * -1- Add more comments.
+ * -2- Show a win/lose screen instead of exiting.
+ * -3- Add the ability to restart the game after win/lose.
+ * -4- Make the game logic more efficient if possible.
+ * -5- Add personalities for each ghost instead of following pre-determined directions.
+ * -6- Add modes for ghosts (exploring, chasing, running away).
+ * -7- Replace the player with an AI.
+ * -8- Enable federated execution if possible.
+ * -9- Explore:
+ * --> What to do in the case of communication failure?
+ * --> What are other possible fault scenarios?
+ * --> What should the AI and the ghosts see? Should they be able to see all the walls or just walls
+ * close to them?
+ * --> Add an external observer that is responsible for veryfing safety properties.
+ * --> Explore consistency vs. availability tradeoffs in the game design.
+ *
+ * See https://arxiv.org/abs/2109.07771
+ */
 target Python {
   files: ["include/hbpacman.py", "include/images", "include/AIPacSupport.py"]
 }
