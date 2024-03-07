@@ -16,7 +16,6 @@
 target C {
   timeout: 3 secs,
   fast: true,
-  compiler-flags: "-lm",
   build: "./build_run_plot.sh FurutaPendulum"
 }
 
