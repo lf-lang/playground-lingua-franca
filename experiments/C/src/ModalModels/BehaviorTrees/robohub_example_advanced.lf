@@ -1,32 +1,26 @@
-/*
- * Implements a modal LF version of the hierarchical statemachine 
- * for the behavior tree in presented in this article:
- * https://robohub.org/introduction-to-behavior-trees/
- * 
- * Compared to the simple variant this uses modes more extensively, which 
- * results in the correct behavior.
- * Moreover, modeling the sequence in Nominal as modal enables the potential 
- * use of a history transition that could allow modeling the continuation
- * of the task sequence at the point where it was left when the battery ran out.
+/**
+ * Implements a modal LF version of the hierarchical statemachine for the behavior tree in presented
+ * in this article: https://robohub.org/introduction-to-behavior-trees/
+ *
+ * Compared to the simple variant this uses modes more extensively, which results in the correct
+ * behavior. Moreover, modeling the sequence in Nominal as modal enables the potential use of a
+ * history transition that could allow modeling the continuation of the task sequence at the point
+ * where it was left when the battery ran out.
  */
-target C {
-//  logging: debug
-}
+target C
 
-reactor GenericTask(name:string="") {
-  output success:bool
-  output failure:bool
-  
+reactor GenericTask(name: string = "") {
+  output success: bool
+  output failure: bool
+
   initial mode Running {
-    // Just for testing
-    timer work(0, 250msec)
-    timer finish(1sec, 1sec)
-    
+    timer work(0, 250 msec)  // Just for testing
+    timer finish(1 sec, 1 sec)
     reaction(work) {=
       printf("%s\n", self->name);
     =}
-    
-    reaction(finish) -> success, Succeeded, failure, Failed {=
+
+    reaction(finish) -> success, reset(Succeeded), failure, reset(Failed) {=
       int r = rand() % 6;
       if (r == 0) {
         lf_set(failure, true);
@@ -37,42 +31,42 @@ reactor GenericTask(name:string="") {
       }
     =}
   }
-  
-  mode Succeeded {}
-  mode Failed {}
+
+  mode Succeeded {
+  }
+
+  mode Failed {
+  }
 }
 
 reactor NominalBehavior {
-  input BatteryOK:bool
-  
-  output success:bool
-  output failure:bool
-  
+  input BatteryOK: bool
+
+  output success: bool
+  output failure: bool
+
   initial mode MoveToObj {
     MoveToObjTask = new GenericTask(name="MoveToObj")
-    
+
     MoveToObjTask.failure -> failure
-    
     reaction(MoveToObjTask.success) -> reset(CloseGrip) {=
       lf_set_mode(CloseGrip);
     =}
   }
-  
+
   mode CloseGrip {
     CloseGripTask = new GenericTask(name="CloseGrip")
-    
+
     CloseGripTask.failure -> failure
-    
     reaction(CloseGripTask.success) -> reset(MoveHome) {=
       lf_set_mode(MoveHome);
     =}
   }
-  
+
   mode MoveHome {
     MoveHomeTask = new GenericTask(name="MoveHome")
-    
+
     MoveHomeTask.failure -> failure
-    
     reaction(MoveHomeTask.success) -> success {=
       lf_set(success, true);
     =}
@@ -80,17 +74,16 @@ reactor NominalBehavior {
 }
 
 reactor Robot {
-  input BatteryOK:bool
-  
-  output success:bool
-  output failure:bool
-  
+  input BatteryOK: bool
+
+  output success: bool
+  output failure: bool
+
   initial mode Nominal {
     NominalBehavior = new NominalBehavior()
-    
+
     NominalBehavior.success -> success
     NominalBehavior.failure -> failure
-    
     reaction(BatteryOK) -> reset(Charging) {=
       if (!BatteryOK->value) {
         lf_set_mode(Charging);
@@ -98,12 +91,11 @@ reactor Robot {
       }
     =}
   }
-  
+
   mode Charging {
     GoCharge = new GenericTask(name="GoCharge")
-    
+
     GoCharge.failure -> failure
-    
     reaction(BatteryOK, GoCharge.success) -> reset(Nominal) {=
       // Assumes simultaneous presence
       if (BatteryOK->value && GoCharge.success->value) {
@@ -115,11 +107,11 @@ reactor Robot {
 }
 
 main reactor {
-  timer Battery(1sec, 1sec)
-  state battery_state:int=1
-  
+  timer Battery(1 sec, 1 sec)
+  state battery_state: int = 1
+
   robot = new Robot()
-  
+
   reaction(Battery) -> robot.BatteryOK {=
     self->battery_state--;
     lf_set(robot.BatteryOK, self->battery_state > 0);
@@ -127,15 +119,14 @@ main reactor {
       self->battery_state = 5;
     }
   =}
-  
+
   reaction(robot.success) {=
     printf("Total success\n");
     lf_request_stop();
   =}
-  
+
   reaction(robot.failure) {=
     printf("Utter failure\n");
     lf_request_stop();
   =}
-
 }
