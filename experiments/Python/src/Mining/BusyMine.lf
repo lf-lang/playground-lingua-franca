@@ -1,49 +1,43 @@
 /**
  * A simple mining demo.
+ *
  * Sources: https://github.com/hbokmann/Pacman
+ *
  * LICENSE: N/A
  *
  * @author Soroush Bateni
  * @author Benjamin Asch
  *
  * To run:
- * 1- lfc src/BusyMine.lf
- * 2- Follow the instructions on the terminal.
+ * -1- lfc src/BusyMine.lf
+ * -2- Follow the instructions on the terminal.
  *
  * General info:
- * 1 - The different blocks represent different stations and
- *    tasks for the 'autonomous ground vehicle' to complete.
- *    Burgundy block- mining station
- *    Blue block- washing station
- *    Orange/yellow block- filtering station
- *    Gray block- storing station
- *    Green block- charging station
- * 2 - The AGV must complete the tasks in the order specified in the reactor's 
- *    list, while simultaneously avoiding people and battery drainage.
- * 3 - A version of PhosphateMine.lf where the stations become busy. The agv
- *   must decide what to do in the meantime. Stations become red when busy.
- *
+ * -1- The different blocks represent different stations and tasks for the 'autonomous ground
+ * vehicle' to complete. Burgundy block- mining station Blue block- washing station Orange/yellow
+ * block- filtering station Gray block- storing station Green block- charging station
+ * -2- The AGV must complete the tasks in the order specified in the reactor's list, while
+ * simultaneously avoiding people and battery drainage.
+ * -3- A version of PhosphateMine.lf where the stations become busy. The AGV must decide what to do
+ * in the meantime. Stations become red when busy.
  *
  * TODOs
- * 1- Add more comments.
- * 2- Make the demo logic more efficient if possible.
- * 3- Debug A-star search function instead of using euclidean distance.
- * 4- Add personalities for each person instead of following pre-determined
- *  directions.
- * 5- Add modes for people (exploring, chasing, running away).
- * 6- Enable federated execution if possible.
- * 7- Explore:
- *  - What to do in the case of communication failure?
- *  - What are other possible fault scenarios?
- *  - What should the AI and the people see? Should they be able to see all the
- *    walls or just walls close to them?
- *  - Add an external observer that is responsible for veryfing safety
- *    properties.
- *  - Explore consistency vs. availability tradeoffs in the game design.
- *    See https://arxiv.org/abs/2109.07771 .
+ * -1- Add more comments.
+ * -2- Make the demo logic more efficient if possible.
+ * -3- Debug A-star search function instead of using euclidean distance.
+ * -4- Add personalities for each person instead of following pre-determined directions.
+ * -5- Add modes for people (exploring, chasing, running away).
+ * -6- Enable federated execution if possible.
+ * -7- Explore:
+ * --> What to do in the case of communication failure?
+ * --> What are other possible fault scenarios?
+ * --> What should the AI and the people see? Should they be able to see all the walls or just walls
+ * close to them?
+ * --> Add an external observer that is responsible for veryfing safety properties.
+ * --> Explore consistency vs. availability tradeoffs in the game design.
  *
-**/
-
+ * See https://arxiv.org/abs/2109.07771
+ */
 target Python {
   files: ["include/hbphosphate.py", "include/images", "include/AIPhosphate.py"]
 }
