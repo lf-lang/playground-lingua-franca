@@ -1,11 +1,22 @@
 /**
  * A web socket server enabling a user interface realized in the browser. This creates a web server
- * that listens on a port (default 8000) for web socket connections. The intended usage is that you
+ * that listens on a port (default 8080) for web socket connections. The intended usage is that you
  * create a client in an HTML/JavaScript file that connects to this server and provides a
  * browser-based user interface.
  *
  * This version is simpler to use than WebSocketServer. It is limited to a single connection at a
  * time and to string-valued messages.
+ * 
+ * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified path to
+ * a file that this server will serve upon receiving an HTTP request. This can be used to provide
+ * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
+ * the running LF program. To specify a file located in the same directory as your source LF file,
+ * you can use a syntax like this:
+ * ```
+ * s = new WebSocketServer(
+ *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
+ * )  
+ * ```
  *
  * When a connection is established with a client, an output with value `true` is produced on the
  * `connected` port. A value `false` is produced when the client disconnects.
@@ -36,7 +47,10 @@ target C
 
 import WebSocketServer from "WebSocketServer.lf"
 
-reactor WebSocketServerString(hostport: int = 8000) {
+reactor WebSocketServerString(
+    hostport: int = 8000,
+    initial_file: string = {= NULL =}
+) {
   input in_dynamic: char*
   input in_static: string
 
@@ -46,7 +60,7 @@ reactor WebSocketServerString(hostport: int = 8000) {
   state ws: web_socket_instance_t
 
   // Limit the number of clients to one.
-  server = new WebSocketServer(hostport=hostport, max_clients=1)
+  server = new WebSocketServer(hostport=hostport, max_clients=1, initial_file = initial_file)
 
   reaction(startup) {=
     self->ws.connected = false;
