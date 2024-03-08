@@ -14,7 +14,6 @@
  *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
  * )  
  * ```
-
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
