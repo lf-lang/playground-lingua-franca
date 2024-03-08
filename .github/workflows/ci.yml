@@ -32,7 +32,7 @@ jobs:
           check_mode: "compile"
           no_compile_flag: false
           exclude_dirs: '["failing", "experiments"]'
-          compiler_ref: ${{ needs.find-latest-release.outputs.ref }}
+          compiler_ref: "master" # ${{ needs.find-latest-release.outputs.ref }}
 
   check-format:
     runs-on: ubuntu-latest

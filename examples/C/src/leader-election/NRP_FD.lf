@@ -128,7 +128,6 @@ reactor Node(
     =}
   }
 
-  // mode Waiting
   mode Primary {
     timer heartbeat(0, heartbeat_period)
     timer ping_NRP_timer(routine_ping_offset, heartbeat_period)
