@@ -9,7 +9,7 @@
  */
 target Python {
   files: [gui.py, keys.png, soundfont.sf2],
-  threading: true,
+  single-threaded: false,
   keepalive: true
 }
 
@@ -39,7 +39,9 @@ reactor GetUserInput {
     t.start()
   =}
 
-  reaction(user_response) -> user_input {= user_input.set(user_response.value) =}
+  reaction(user_response) -> user_input {=
+    user_input.set(user_response.value)
+  =}
 }
 
 /** Sends graphics updates to the pygame piano process */
@@ -49,7 +51,9 @@ reactor UpdateGraphics {
   state update_graphics = {= None =}  # multiprocessing.connection.PipeConnection
   state pressed_keys = {= set() =}
 
-  reaction(update_graphics_pipe_init) {= self.update_graphics = update_graphics_pipe_init.value =}
+  reaction(update_graphics_pipe_init) {=
+    self.update_graphics = update_graphics_pipe_init.value
+  =}
 
   reaction(note) {=
     key_down, note_t = note.value
@@ -71,7 +75,9 @@ reactor PlaySound {
   input note
   input play_sound_init
 
-  reaction(play_sound_init) {= self.fluidsynth, self.Note = play_sound_init.value =}
+  reaction(play_sound_init) {=
+    self.fluidsynth, self.Note = play_sound_init.value
+  =}
 
   reaction(note) {=
     # upon receiving a note, play or stop the note depending on if its a key down or key up.
@@ -119,7 +125,9 @@ reactor TranslateKeyToNote {
   output note
   output gui_init
 
-  reaction(translate_init) -> gui_init {= gui_init.set(self.piano_keys) =}
+  reaction(translate_init) -> gui_init {=
+    gui_init.set(self.piano_keys)
+  =}
 
   reaction(user_input) -> note {=
     key_down, c = user_input.value
@@ -183,7 +191,9 @@ reactor StartFluidSynth {
 
 /** Starts the GUI and triggers initialization of UpdateGraphics and GetUserInput reactors. */
 reactor StartGui {
-  preamble {= import gui =}
+  preamble {=
+    import gui
+  =}
   input gui_init
   output user_input_pipe
   output update_graphics_pipe

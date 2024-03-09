@@ -24,5 +24,7 @@ reactor Receiver {
     self->subscriber_node->topic_callback(in->value);
   =}
 
-  reaction(shutdown) {= rclcpp::shutdown(); =}
+  reaction(shutdown) {=
+    rclcpp::shutdown();
+  =}
 }

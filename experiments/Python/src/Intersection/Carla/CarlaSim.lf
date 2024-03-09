@@ -1,85 +1,79 @@
 /**
- * This Lingua Franca program facilitates the simulation of a vehicle, specifically
- * a Tesla Model 3, within the CARLA simulator environment. It utilizes a Python
- * interface to interact with the simulator and manage the vehicle's state. Upon
- * startup, the program initiates a connection to CARLA, sets up the world
- * parameters, and spawns the vehicle at a specified location with an initial
- * velocity. Once the world is initialized and the vehicle is spawned, the program
- * continuously updates the vehicle's state at a specified interval. It also
- * accepts external control commands for the vehicle's throttle and brake and
- * applies them to the vehicle in the simulation. The program provides the
- * vehicle's velocity and position as output, which can be used for further
- * processing or analysis. 
+ * This Lingua Franca program facilitates the simulation of a vehicle, specifically a Tesla Model 3,
+ * within the CARLA simulator environment. It utilizes a Python interface to interact with the
+ * simulator and manage the vehicle's state. Upon startup, the program initiates a connection to
+ * CARLA, sets up the world parameters, and spawns the vehicle at a specified location with an
+ * initial velocity. Once the world is initialized and the vehicle is spawned, the program
+ * continuously updates the vehicle's state at a specified interval. It also accepts external
+ * control commands for the vehicle's throttle and brake and applies them to the vehicle in the
+ * simulation. The program provides the vehicle's velocity and position as output, which can be used
+ * for further processing or analysis.
  */
 target Python {
-    files: [
-        "ROS/carla_intersection/src/carla_sim.py",
-        "ROS/carla_intersection/src/utils.py"
-    ]
-};
+  files: ["ROS/carla_intersection/src/carla_sim.py", "ROS/carla_intersection/src/utils.py"]
+}
 
 preamble {=
-    from utils import make_coordinate, make_spawn_point
-    from carla_sim import CarlaSim
+  from utils import make_coordinate, make_spawn_point
+  from carla_sim import CarlaSim
 =}
 
 # TODO: Figure out why this warning persists |
-#                                            v
+# v
 # WARNING: World::ApplySettings: After 30  attemps, the settings were not correctly set. Please check that everything is consistent.
 #
-# as well as why the velocity of the vehicle shoots through the roof... which causes CARLA to crash. 
+# as well as why the velocity of the vehicle shoots through the roof... which causes CARLA to crash.
 reactor CarlaSim(
-    interval(16 msec),
-    bank_index(0),
-    initial_velocities({=None=}),
-    vehicle_type("vehicle.tesla.model3"),
-    spawn_points({=None=})
-) {
-    input command;
-    output velocity;
-    output position;
-    logical action world_is_ready;
-    state carla_sim;
-    timer timer_(10 msec, interval);
+    interval = 16 msec,
+    bank_index=0,
+    initial_velocities = {= None =},
+    vehicle_type="vehicle.tesla.model3",
+    spawn_points = {= None =}) {
+  input command
+  output velocity
+  output position
+  logical action world_is_ready
+  state carla_sim
+  timer timer_(10 msec, interval)
 
-    preamble {=
-        class Logger:
-            def __init__(self, vehicle_id):
-                self.vehicle_id = vehicle_id
+  preamble {=
+    class Logger:
+        def __init__(self, vehicle_id):
+            self.vehicle_id = vehicle_id
 
-            def info(self, *args):
-                print(f"{lf.time.logical()} - carla_sim_{self.vehicle_id}: ", args)
-    =}
+        def info(self, *args):
+            print(f"{lf.time.logical()} - carla_sim_{self.vehicle_id}: ", args)
+  =}
 
-    reaction(startup) -> world_is_ready {=
-        print("initial velocity: ", self.initial_velocities[self.bank_index])
-        self.carla_sim = CarlaSim(interval=self.interval, 
-                                  vehicle_type=self.vehicle_type, 
-                                  initial_velocity=make_coordinate(self.initial_velocities[self.bank_index]), 
-                                  spawn_point=make_spawn_point(self.spawn_points[self.bank_index]),
-                                  logger=self.Logger(self.bank_index))
-        self.carla_sim.connect_to_carla()
-        if self.bank_index == 0:
-            self.carla_sim.initialize_world(self.interval / SEC(1))
-        world_is_ready.schedule(MSEC(5))
-    =}
+  reaction(startup) -> world_is_ready {=
+    print("initial velocity: ", self.initial_velocities[self.bank_index])
+    self.carla_sim = CarlaSim(interval=self.interval,
+                              vehicle_type=self.vehicle_type,
+                              initial_velocity=make_coordinate(self.initial_velocities[self.bank_index]),
+                              spawn_point=make_spawn_point(self.spawn_points[self.bank_index]),
+                              logger=self.Logger(self.bank_index))
+    self.carla_sim.connect_to_carla()
+    if self.bank_index == 0:
+        self.carla_sim.initialize_world(self.interval / SEC(1))
+    world_is_ready.schedule(MSEC(5))
+  =}
 
-    reaction(world_is_ready) {=
-        self.carla_sim.get_world()
-        self.carla_sim.initialize_vehicle()
-    =}
+  reaction(world_is_ready) {=
+    self.carla_sim.get_world()
+    self.carla_sim.initialize_vehicle()
+  =}
 
-    reaction(timer_) -> velocity, position {=
-        self.carla_sim.tick()
-        print("setting velocity to ", self.carla_sim.get_vehicle_velocity())
-        velocity.set(self.carla_sim.get_vehicle_velocity())
-        p = self.carla_sim.get_vehicle_position()
-        coordinate = make_coordinate([p.latitude, p.longitude, p.altitude])
-        position.set(coordinate)
-    =}
+  reaction(timer_) -> velocity, position {=
+    self.carla_sim.tick()
+    print("setting velocity to ", self.carla_sim.get_vehicle_velocity())
+    velocity.set(self.carla_sim.get_vehicle_velocity())
+    p = self.carla_sim.get_vehicle_position()
+    coordinate = make_coordinate([p.latitude, p.longitude, p.altitude])
+    position.set(coordinate)
+  =}
 
-    reaction(command) {=
-        cmd = command.value
-        self.carla_sim.apply_control(cmd.throttle, cmd.brake)
-    =}
+  reaction(command) {=
+    cmd = command.value
+    self.carla_sim.apply_control(cmd.throttle, cmd.brake)
+  =}
 }

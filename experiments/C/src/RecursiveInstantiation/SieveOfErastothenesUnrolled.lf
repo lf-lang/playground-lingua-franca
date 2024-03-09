@@ -1,16 +1,19 @@
 /**
- * This is an expanded version of SieveOfErastothenes.lf. It duplicates
- * code to prevent recursive instantiation, which is currently forbidden.
- * However, it would be better to implement this using recursive
- * instantiation, as attempted in SieveOfErastothenes.lf.
+ * This is an expanded version of SieveOfErastothenes.lf. It duplicates code to prevent recursive
+ * instantiation, which is currently forbidden. However, it would be better to implement this using
+ * recursive instantiation, as attempted in SieveOfErastothenes.lf.
  * @author Peter Donovan
  */
-target C { fast: true, Build-Type: Debug }
+target C {
+  fast: true,
+  Build-Type: Debug
+}
 
-reactor Count(start: int(2)) {
-  timer t(0, 1 sec);
-  output out: int;
-  state c: int(start);
+reactor Count(start: int = 2) {
+  timer t(0, 1 sec)
+  output out: int
+  state c: int = start
+
   reaction(t) -> out {=
     lf_set(out, self->c++);
   =}
@@ -22,7 +25,7 @@ reactor Filter0 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -37,7 +40,6 @@ reactor Filter0 {
     end = new Filter1()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -52,7 +54,7 @@ reactor Filter1 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -67,7 +69,6 @@ reactor Filter1 {
     end = new Filter2()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -82,7 +83,7 @@ reactor Filter2 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -97,7 +98,6 @@ reactor Filter2 {
     end = new Filter3()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -112,7 +112,7 @@ reactor Filter3 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -127,7 +127,6 @@ reactor Filter3 {
     end = new Filter4()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -142,7 +141,7 @@ reactor Filter4 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -157,7 +156,6 @@ reactor Filter4 {
     end = new Filter5()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -172,7 +170,7 @@ reactor Filter5 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -187,7 +185,6 @@ reactor Filter5 {
     end = new Filter6()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -202,7 +199,7 @@ reactor Filter6 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -217,7 +214,6 @@ reactor Filter6 {
     end = new Filter7()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -232,7 +228,7 @@ reactor Filter7 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -247,7 +243,6 @@ reactor Filter7 {
     end = new Filter8()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -262,7 +257,7 @@ reactor Filter8 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -277,7 +272,6 @@ reactor Filter8 {
     end = new Filter9()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -292,7 +286,7 @@ reactor Filter9 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -307,7 +301,6 @@ reactor Filter9 {
     end = new Filter10()
 
     end.result -> result
-
     reaction(n_in) -> end.n_in {=
       if (n_in->value % self->p != 0) {
         lf_set(end.n_in, n_in->value);
@@ -322,7 +315,7 @@ reactor Filter10 {
   output result: int
   input initialize: int
 
-  reset state p: int(0)
+  reset state p: int = 0
 
   initial mode End {
     reaction(n_in) -> result, reset(Filter) {=
@@ -333,22 +326,21 @@ reactor Filter10 {
     =}
   }
 
+  // end = new Filter11()
+  // end.result -> result
+  // reaction(n_in) -> end.n_in {=
+  // if (n_in->value % self->p != 0) {
+  // lf_set(end.n_in, n_in->value);
+  //   }
+  // =}
   mode Filter {
-    // end = new Filter11()
-
-    // end.result -> result
-
-    // reaction(n_in) -> end.n_in {=
-    //   if (n_in->value % self->p != 0) {
-    //     lf_set(end.n_in, n_in->value);
-    //   }
-    // =}
   }
 }
 
-reactor Print(stop_after:int(10000)) {
-  input in:int;
-  state count:int(1);
+reactor Print(stop_after: int = 10000) {
+  input in: int
+  state count: int = 1
+
   reaction(in) {=
     printf("Prime %d: %d\n", self->count++, in->value);
     if (self->count > self->stop_after) lf_request_stop();

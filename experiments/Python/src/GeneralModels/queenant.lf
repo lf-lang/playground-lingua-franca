@@ -1,50 +1,48 @@
-/* Model of reactors with one lead */
+/** Model of reactors with one lead */
+target Python
 
-target Python;
-
-preamble {==}
+preamble {=  =}
 
 ### Ant
 reactor Ant {
-  timer t(0, 100msec)
-  state _standing(0)
-  
+  timer t(0, 100 msec)
+  state _standing = 0
+
   input in0
-  
+
   output out0
-  
+
   reaction(startup) -> out0 {=
     if self._standing == 0:
       out0.set(self._standing)
     self._standing += 1
   =}
-  
+
   reaction(t) -> out0 {=
     out0.set("Replace")
   =}
-  
+
   reaction(in0) {=
     if in0.is_present:
       print("Input 0 is present.")
   =}
 }
 
-reactor QueenAnt {
-  
+reactor Queen {
   state _holding
-  
+
   input in0
   input in1
   input in2
   input in3
   input in4
-  
+
   output out0
   output out1
   output out2
   output out3
   output out4
-  
+
   reaction(in0, in1, in2, in3, in4) -> out0, out1, out2, out3, out4 {=
     if in0.is_present:
       print("Input 0 is present")
@@ -65,16 +63,10 @@ reactor QueenAnt {
 }
 
 main reactor {
-  
   ants = new[5] Ant()
-  queen = new QueenAnt()
-  
-  queen.out0, queen.out1, queen.out2, queen.out3, queen.out4 ->
-    ants.in0
-  
+  queen = new Queen()
+
+  queen.out0, queen.out1, queen.out2, queen.out3, queen.out4 -> ants.in0
+
   ants.out0 -> queen.in0, queen.in1, queen.in2, queen.in3, queen.in4
 }
-
-
-
-

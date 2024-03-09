@@ -8,7 +8,6 @@
  */
 target Cpp {
   ros2: true,
-  keepalive: true,
   ros2-dependencies: ["std_msgs"]
 }
 

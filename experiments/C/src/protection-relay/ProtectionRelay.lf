@@ -1,128 +1,135 @@
 /**
- * This models is a sketch (with no functionality currently)
- * with the structure of a protection relay design from:
- * 
- * > Mathieu Jan, Vincent David, Jimmy Lalande, Maurice Pitel,
- *   "Usage of the safety-oriented real-time OASIS approach to
- *   build deterministic protection relays," 
- *   Symposium on Industrial Embedded System (SIES),
- *   July 7-9, 2010, Trento, Italy, DOI: 10.1109/SIES.2010.5551378
- * 
+ * This models is a sketch (with no functionality currently) with the structure of a protection
+ * relay design from:
+ *
+ * > Mathieu Jan, Vincent David, Jimmy Lalande, Maurice Pitel, "Usage of the safety-oriented
+ * real-time OASIS approach to build deterministic protection relays," Symposium on Industrial
+ * Embedded System (SIES), July 7-9, 2010, Trento, Italy, DOI: 10.1109/SIES.2010.5551378
+ *
  * The authors are from CEA-LIST and Schneider Electric.
- * 
- * In section V.B, the paper explains that the AgTRS, Ag50, and Ag51
- * components have to be invoked at 6660us intervals (12x555) rather
- * than 13320us (24x555), alternating each other's computation in order
- * to meet the 26640us deadline requirement for detecting a fault.
- * This is because, apparently, OASIS uses a LET model, where each
- * component reads the inputs provided by its upstream component in
- * the previous cycle.  Hence, the cascade of two components triggered
- * at 13320us would already introduce a delay of 13320us (the second
- * component will automatically see data that is 13320us old).
- * That second component is allowed an execution time of 13320us,
- * which puts us right at the deadline boundary. The additional delay
- * caused by the LET of AgMoy puts us over the deadline.
- * 
- * This problem does not occur with LF because the components are
- * triggered logically simultaneously but in sequence, so as long
- * as the total computation time along the path from AgARGA to
- * Ag50 and Ag51 is less than 26640us, the deadline will be met.
- * This requirement is expressed as deadlines.
- * 
- * The AdRMS component, which runs at a much slower rate (once per
- * second), is apparently not used by the protection relay.
- * Since it has no deadline, an EDF scheduler will give it lower
- * priority. To avoid interfering with the protection relay, however,
- * it will require a LET or scheduling enclave method to be able
- * to run in parallel, allowing time to advance at the fine grain
- * level without having to complete its computation.
+ *
+ * In section V.B, the paper explains that the AgTRS, Ag50, and Ag51 components have to be invoked
+ * at 6660us intervals (12x555) rather than 13320us (24x555), alternating each other's computation
+ * in order to meet the 26640us deadline requirement for detecting a fault. This is because,
+ * apparently, OASIS uses a LET model, where each component reads the inputs provided by its
+ * upstream component in the previous cycle. Hence, the cascade of two components triggered at
+ * 13320us would already introduce a delay of 13320us (the second component will automatically see
+ * data that is 13320us old). That second component is allowed an execution time of 13320us, which
+ * puts us right at the deadline boundary. The additional delay caused by the LET of AgMoy puts us
+ * over the deadline.
+ *
+ * This problem does not occur with LF because the components are triggered logically simultaneously
+ * but in sequence, so as long as the total computation time along the path from AgARGA to Ag50 and
+ * Ag51 is less than 26640us, the deadline will be met. This requirement is expressed as deadlines.
+ *
+ * The AdRMS component, which runs at a much slower rate (once per second), is apparently not used
+ * by the protection relay. Since it has no deadline, an EDF scheduler will give it lower priority.
+ * To avoid interfering with the protection relay, however, it will require a LET or scheduling
+ * enclave method to be able to run in parallel, allowing time to advance at the fine grain level
+ * without having to complete its computation.
  */
-
 target C
+
 @label("Acquisition stage")
 reactor AgARGA {
-  output DataBufferI:double[4]
+  output DataBufferI: double[4]
   timer t(0, 555 us)
+
   reaction(t) -> DataBufferI {=
     // Output something.
   =}
 }
+
 @label("Accumulate")
 reactor AgCumulRMS {
-  input currents:double[4]
-  output VS_TRS_Cumu1:double[4]
-  output VS_TRS_Cumu2:double[4]
+  input currents: double[4]
+  output VS_TRS_Cumu1: double[4]
+  output VS_TRS_Cumu2: double[4]
+
   reaction(currents) -> VS_TRS_Cumu1, VS_TRS_Cumu2 {=
     // Calculate sum and the square sum of num_items data items.
     // Outputs updated every time, but only used every 1800 times.
   =}
 }
+
 // The AgRMS component does not seem to be used in protection.
 // Is this just for UI displays?
 @label("RMS")
 reactor AgRMS {
-  timer t(0, 999ms)  // Activate periodically every 1800 samples (1800*555us)
-  input sum:double[4]
-  input squared_sum:double[4]
-  input VS_Mod2:double // FIXME: Is this an input or an output?
+  timer t(0, 999 ms)     // Activate periodically every 1800 samples (1800*555us)
+  input sum: double[4]
+  input squared_sum: double[4]
+  input VS_Mod2: double  // FIXME: Is this an input or an output?
+
   reaction(t) sum, squared_sum, VS_Mod2 {=
     // Calculate root mean square of the four currents
   =}
 }
+
 @label("Crest value")
 reactor AgCrete {
-  input currents:double[4]
-  output V_DETC:double[4]
+  input currents: double[4]
+  output V_DETC: double[4]
+
   reaction(currents) -> V_DETC {=
     // Compute crest values. Update output on each input.
   =}
 }
+
 @label("Average")
-reactor AgMoy(num_values:int = 3) {
-  input currents:double[4]
-  output V_TRS_Cumu1Filtree:double[4]
+reactor AgMoy(num_values: int = 3) {
+  input currents: double[4]
+  output V_TRS_Cumu1Filtree: double[4]
+
   reaction(currents) -> V_TRS_Cumu1Filtree {=
     // Average num_values
   =}
 }
+
 @label("Magnitude of fundamental and harmonics")
-reactor AgTRS(num_values:int = 12) {
-  timer t(0, 13320us)     // Computes an output every 24 periods of 555us.
-  input average:double[4]
-  input crest:double[4]
-  state avghistory:double[12] = {= {0} =}
-  output V_mod2Imax:double[4]
-  output VS_Mod2:double[4]
+
+reactor AgTRS(num_values: int = 12) {
+  timer t(0, 13320 us)  // Computes an output every 24 periods of 555us.
+  input average: double[4]
+  input crest: double[4]
+  state avghistory: double[12] = {= [0] =}
+  output V_mod2Imax: double[4]
+  output VS_Mod2: double[4]
+
   reaction(average) {=
     // Record the input, update avghistory
   =}
-  reaction(t) crest -> V_mod2Imax {= 
+
+  reaction(t) crest -> V_mod2Imax {=
     // Use last avghistory inputs and the most
-    // recent value of crest to calculate,
-    // but activate every 2*num_values inputs.
-    // ??? "Nevertheless, its clock ticks every num_values inputs.
+        // recent value of crest to calculate,
+        // but activate every 2*num_values inputs.
+        // ??? "Nevertheless, its clock ticks every num_values inputs.
   =}
 }
+
 reactor Ag50 {
-  timer t(0, 13320us)     // Computes an output every 24 periods of 555us.
-                // Or should this be 666us (12 times 555)?
-  input in:double[4]
+  timer t(0, 13320 us)  // Computes an output every 24 periods of 555us.
+  input in: double[4]   // Or should this be 666us (12 times 555)?
+
   reaction(t) in {=
     // Calculate whether to open the relay.
-  =} deadline(26640us) {=
+  =} deadline(26640 us) {=
     // Deadline missed!
   =}
 }
+
 reactor Ag51 {
-  timer t(0, 13320us)     // Computes an output every 24 periods of 555us.
-                // Or should this be 666us (12 times 555)?
-  input in:double[4]
+  timer t(0, 13320 us)  // Computes an output every 24 periods of 555us.
+  input in: double[4]   // Or should this be 666us (12 times 555)?
+
   reaction(t) in {=
     // Calculate whether to open the relay.
-  =} deadline(26640us) {=
+  =} deadline(26640 us) {=
     // Deadline missed!
   =}
 }
+
 main reactor {
   acquisition = new AgARGA()
   accumulate = new AgCumulRMS()
@@ -132,7 +139,7 @@ main reactor {
   magnitude = new AgTRS()
   protection1 = new Ag50()
   protection2 = new Ag51()
-  
+
   acquisition.DataBufferI -> accumulate.currents
   accumulate.VS_TRS_Cumu1 -> rms.sum
   accumulate.VS_TRS_Cumu2 -> rms.squared_sum
