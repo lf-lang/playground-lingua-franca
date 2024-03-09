@@ -1,0 +1,108 @@
+/**
+ * A web socket server enabling a user interface realized in the browser. This creates a web server
+ * that listens on a port (default 8080) for web socket connections. The intended usage is that you
+ * create a client in an HTML/JavaScript file that connects to this server and provides a
+ * browser-based user interface.
+ *
+ * This version is simpler to use than WebSocketServer. It is limited to a single connection at a
+ * time and to string-valued messages.
+ * 
+ * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified path to
+ * a file that this server will serve upon receiving an HTTP request. This can be used to provide
+ * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
+ * the running LF program. To specify a file located in the same directory as your source LF file,
+ * you can use a syntax like this:
+ * ```
+ * s = new WebSocketServer(
+ *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
+ * )  
+ * ```
+ *
+ * When a connection is established with a client, an output with value `true` is produced on the
+ * `connected` port. A value `false` is produced when the client disconnects.
+ *
+ * To send messages to a client, simply provide a string on one of the `in_dynamic` or `in_static`
+ * input ports. The former is used for dynamically-allocated strings (type `char*`) and the latter
+ * for statically allocated strings (type `string`). If both are provided at the same tag, then only
+ * the `in_dynamic` message will be sent.
+ *
+ * When a message is received from a client, a string will be produced on the `received` output
+ * port. The type of this port is `char*`, indicating a dynamically-allocated string.
+ *
+ * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
+ * instructions</a>). To install on MacOS, we recommending using brew:
+ * <pre> brew install libwebsockets
+ * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
+ * linked to providing the {@code -lwebsockets} compile option.
+ *
+ * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
+ *
+ * @param hostport The host port number, which defaults to 8000.
+ *
+ * @author Edward A. Lee
+ */
+target C
+
+import WebSocketServer from "WebSocketServer.lf"
+
+reactor WebSocketServerString(
+    hostport: int = 8000,
+    initial_file: string = {= NULL =}
+) {
+  input in_dynamic: char*
+  input in_static: string
+
+  output connected: bool
+  output received: char*
+
+  state ws: web_socket_instance_t
+
+  // Limit the number of clients to one.
+  server = new WebSocketServer(hostport=hostport, max_clients=1, initial_file = initial_file)
+
+  reaction(startup) {=
+    self->ws.connected = false;
+  =}
+
+  reaction(in_dynamic, in_static) -> server.send {=
+    if (self->ws.connected) {
+      web_socket_message_t* to_send = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+      char* message_copy;
+      if (in_dynamic->is_present) {
+        message_copy = (char*)malloc(strlen(in_dynamic->value));
+        strcpy(message_copy, in_dynamic->value);
+      } else {
+        message_copy = (char*)malloc(strlen(in_static->value));
+        strcpy(message_copy, in_static->value);
+      }
+      to_send->message = message_copy;
+      to_send->length = strlen(in_dynamic->value) + 1;
+      to_send->wsi = self->ws.wsi;
+
+      lf_set(server.send, to_send);
+    } else {
+      // Web socket is not connected.
+      lf_print_warning("Web socket is not connected. Dropping message to send.");
+    }
+  =}
+
+  reaction(server.connected) -> connected {=
+    if (server.connected->value.connected) {
+      self->ws = server.connected->value;
+    }
+    // Do not produce an output if the connected message is due to a denied connection.
+    if (self->ws.wsi == server.connected->value.wsi) {
+      lf_set(connected, server.connected->value.connected);
+    }
+  =}
+
+  reaction(server.received) -> received {=
+    // NOTE: WebSocketServer ensures that the message is null terminated.
+    size_t len = strlen(server.received->value->message) + 1;
+    char* message = (char*)malloc(len * sizeof(char));
+    strcpy(message, server.received->value->message);
+    lf_set_array(received, message, len);
+  =}
+}

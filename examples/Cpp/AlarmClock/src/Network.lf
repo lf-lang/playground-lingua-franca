@@ -1,11 +1,14 @@
 /**
- * This is a minimal example of an alarmclock implemeted using the features lingua franca supplies.
+ * This is a minimal example of an alarm clock implemeted using the features Lingua Franca supplies.
  *
  * This is just an extract and simplification from the main project which you can find here:
  * https://github.com/revol-xut/lf-alarm-clock
  *
  * This file contains the networking implementation it is really just an simple socket application
- * which parses simple http headers and respondes in text/plain
+ * which parses simple HTTP headers and responds in text/plain.
+ *
+ * This requires [installing Crow](https://crowcpp.org/master/getting_started/setup), which provides
+ * the HTTP server implementation.
  *
  * @author Tassilo Tanneberer <tassilo.tanneberger@tu-dresden.de>
  */

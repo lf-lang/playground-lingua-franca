@@ -1,37 +1,12 @@
 Lingua Franca Alarm Clock
 ----------------------------
 
-**Contact:** <revol-xut@protonmail.com>
+**Author:** <revol-xut@protonmail.com>
 
-**Main Repository:** [](https://github.com/revol-xut/lf-alarm-clock)
-
-A small and tiny alarmclock which is written using the scheduling and time features from lingua franca. 
-
-## What you will learn
-
-- sharing state between reactors
-- stopping scheduled events
-
-## Project
+A small alarm clock which is written using the scheduling and time features from Lingua Franca.
+This requires [installing Crow](https://crowcpp.org/master/getting_started/setup), which provides the HTTP server implementation.
 
 ![Programm Structure](./images/entire_program.png)
-
-
-## Building
-
-**Dependencies:** jdk11, boost, mpg321, Crow
-
-
-```bash
-    $ lfc ./AlarmClock.lf
-```
-
-**Building with nix**
-
-This cross compiles for aarch64.
-```
-    nix build .#packages.aarch64-linux.lf-alarm-clock
-```
 
 ## Installation
 
@@ -39,25 +14,16 @@ By default the AlarmClock expects the sound files to be placed in `~/music/Alarm
 path by editing the `shared_header.cpp` file. Furthermore is it possible to configure paths to other binaries
 in this file e.g. kill, mpg321 -commands. 
 
-### Installing Crow from source
+This program requires that you first [install Crow](https://crowcpp.org/master/getting_started/setup).
+If you have installed Crow in a location where CMake does not automatically find it, then you can manually specify the location when compiling the LF program as follows:
 
-On most distros, Crow needs to be build and installed from source:
-
-```bash
-    $ git clone git@github.com:CrowCpp/Crow.git
-    $ mkdir Crow/build
-    $ cd Crow/build
-    $ cmake -DCMAKE_INSTALL_PREFIX=<install-location>
-    $ make install
-```
-Note that you can adjust the preferred install location by replacing `<install-location>`.
-
-To build the alarm clock using this manually installed version of Crow, simply run:
 ```bash
     $ CMAKE_PREFIX_PATH=<install-location> lfc ./AlarmClock.lf
 ```
 
-## Endpoints & Usage
+## Usage
+
+Running the program starts a web server on localhost at port 8680. The commands it understands are:
 
 ### /list **GET**
 Returns a list of upcoming events.
@@ -90,7 +56,7 @@ Stops the currently playing alarm sound.
 $ curl http://0.0.0.0:8680/stop 
 ```
 
-### /add_event_timestamp **POST**
+### /add\_event\_timestamp **POST**
 Will schedule your alarmclock for the given timestamp
 
 Request:
@@ -115,7 +81,7 @@ $ curl http://0.0.0.0:8680/add_event_timestamp -X POST -H "Content-Type: text/js
 
 Schedules event for given timestamp.
 
-### /add_event_relative **POST**
+### /add\_event\_relative **POST**
 Will schedule a event relative to the current time.
 
 Request
