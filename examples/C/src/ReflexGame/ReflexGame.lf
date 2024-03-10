@@ -13,10 +13,6 @@ target C {
   keepalive: true
 }
 
-preamble {=
-  #include "include/core/platform.h"
-=}
-
 /**
  * Produce a counting sequence at random times with a minimum and maximum time between outputs
  * specified as parameters.
