@@ -46,4 +46,4 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(PahoMqttC
 ########
 
 include_directories(${PAHO_MQTT_C_INCLUDE_DIRS})
-target_link_libraries(${LF_MAIN_TARGET} ${PAHO_MQTT_C_LIBRARIES})
+target_link_libraries(${LF_MAIN_TARGET} PRIVATE ${PAHO_MQTT_C_LIBRARIES})
