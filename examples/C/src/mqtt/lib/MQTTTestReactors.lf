@@ -28,11 +28,12 @@ reactor MessageGenerator(root: string = "", period: time = 1 sec) {
   reaction(t) -> message {=
     // With NULL, 0 arguments, snprintf tells us how many bytes are needed.
     // Add one for the null terminator.
-    int length = snprintf(NULL, 0, "%s %d", self->root, self->count) + 1;
+    size_t length = snprintf(NULL, 0, "%s %d", self->root, self->count) + 1;
     // Dynamically allocate memory for the output.
-    SET_NEW_ARRAY(message, length);
+    char* buffer = (char*)malloc(length);
     // Populate the output string and increment the count.
-    snprintf(message->value, length, "%s %d", self->root, self->count++);
+    snprintf(buffer, length, "%s %d", self->root, self->count++);
+    lf_set_array(message, buffer, length);
     tag_t tag = lf_tag();
     lf_print("MessageGenerator: At (elapsed) tag " PRINTF_TAG ", publish message: %s",
       tag.time - lf_time_start(), tag.microstep,
