@@ -53,7 +53,7 @@ reactor Clock(offset: time = 0, period: time = 1 sec) {
 
     static rclcpp::Serialization<std_msgs::msg::Int32> serializer_obj;
     serializer_obj.serialize_message(msg.get(), self->serialized_msg);
-    
+
     lf_set_array(y, self->serialized_msg->get_rcl_serialized_message().buffer, self->serialized_msg->size());
   =}
 }
