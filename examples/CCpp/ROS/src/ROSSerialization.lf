@@ -45,13 +45,16 @@ reactor Clock(offset: time = 0, period: time = 1 sec) {
 
     auto message_header_length = 8u;
     auto message_payload_length = 10u;
+    // The following allocates memory for serialization. The memory will later be
+    // freed by the LF token management scheme.
+    // TODO: Should this also call release_rcl_serialized_message()??
+    // Otherwise, there is risk of a double free?
     self->serialized_msg->reserve(message_header_length + message_payload_length);
 
     static rclcpp::Serialization<std_msgs::msg::Int32> serializer_obj;
     serializer_obj.serialize_message(msg.get(), self->serialized_msg);
-
-    SET_NEW_ARRAY(y, self->serialized_msg->size());
-    y->value = self->serialized_msg->get_rcl_serialized_message().buffer;
+    
+    lf_set_array(y, self->serialized_msg->get_rcl_serialized_message().buffer, self->serialized_msg->size());
   =}
 }
 
