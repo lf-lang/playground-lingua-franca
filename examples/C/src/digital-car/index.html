@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Remote Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            margin: 100px;
+            padding: 30px;
+
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .outer_container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .inner_container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #status {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        *.icon-blue {
+            color: #38546c;
+        }
+
+        *.icon-unlocked {
+            color: #f7941e;
+        }
+
+        *.icon-locked {
+            color: #00b0da;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="outer_container">
+        <h1>Car Remote Control</h1>
+        <div class="inner_container">
+            <div id="status">
+                <span id="statusText" class="locked">
+                    <i class="fas fa-car fa-10x icon-blue"></i>
+                    <i class="fas fa-lock-open fa-6x icon-unlocked"></i>
+                </span>
+            </div>
+            <button id="lockButton"><i class="fas fa-lock"></i> Lock Car</button>
+            <button id="unlockButton"><i class="fas fa-lock-open"></i> Unlock Car</button>
+        </div>
+        <div id="ws_status"></div>
+    </div>
+
+
+    <script>
+
+        window.onload = function () {
+            // Get references to elements on the page.  
+            var socketStatus = document.getElementById('ws_status');
+            var lockBtn = document.getElementById('lockButton');
+            var unlockBtn = document.getElementById('unlockButton');
+
+            const statusText = document.getElementById('statusText');
+
+
+
+            const socket = new WebSocket('ws://localhost:8000', 'ws');
+
+
+
+            socket.addEventListener('open', (event) => {
+                console.log('WebSocket connection established');
+                socketStatus.innerHTML = 'Connected to: ' + event.currentTarget.url;
+                socketStatus.className = 'open';
+            });
+
+            socket.onerror = function (error) {
+                socketStatus.innerHTML += '<br />WebSocket Error: ';
+            };
+
+            socket.addEventListener('message', (event) => {
+                console.log(`WebSocket message received: ${event.data}`);
+            });
+
+            
+
+
+
+            // Handle messages sent by the server.
+            socket.onmessage = function (event) {
+                var message = event.data;
+                cosole.log(message)
+                messagesList.innerHTML = '<li class="received"><span>Received:</span>' +
+                    message + '</li>';
+            };
+
+            // Show a disconnected message when the WebSocket is closed.
+            socket.onclose = function (event) {
+                event.preventDefault();
+                socketStatus.innerHTML = 'Disconnected from WebSocket.';
+                socketStatus.className = 'closed';
+                console.log('WebSocket connection closed');
+            };
+
+            lockBtn.onclick = function (e) {
+                // Simulate sending a request to the server to lock the car
+                // Replace this with your actual backend logic
+                socketStatus.innerHTML += '<br />Locking the car...';
+                //statusText.innerHTML = '<i class="fas fa-lock"></i> Locked';
+                statusText.innerHTML = '<i class="fas fa-car fa-10x icon-blue"></i> <i class="fas fa-lock fa-6x icon-locked""></i>';
+                // Send the message through the WebSocket.
+                if (socket.readyState == WebSocket.OPEN) {
+                    socket.send("locked");
+                }
+                return true;
+            }
+
+            unlockBtn.onclick = function (e) {
+                // Simulate sending a request to the server to unlock the car
+                // Replace this with your actual backend logic
+                socketStatus.innerHTML += '<br />Unlocking the car...';
+                //statusText.innerHTML = '<i class="fas fa-lock-open"></i> Unlocked';
+                statusText.innerHTML = '<i class="fas fa-car fa-10x icon-blue"></i> <i class="fas fa-lock-open fa-6x icon-unlocked"></i>';
+                if (socket.readyState == WebSocket.OPEN) {
+                    socket.send("unlocked");
+                }
+                return true;
+            }
+
+
+        };
+
+    </script>
+</body>
+
+</html>
