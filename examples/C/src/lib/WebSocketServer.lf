@@ -1,8 +1,6 @@
 /**
  * A web socket server enabling a user interface realized in the browser. This creates a web server
- * that listens on a port (default 8000) for web socket connections. The intended usage is that you
- * create a client in an HTML/JavaScript file that connects to this server and provides a
- * browser-based user interface.
+ * that listens on a port (default 8000) for web socket connections.
  *
  * When a connection is established with a client, an output is produced on the connected port that
  * is a struct with a unique wsi (web socket interface) for the client and a boolean indicating
@@ -40,7 +38,7 @@
  *
  * @author Edward A. Lee
  */
-target C {
+ target C {
   keepalive: true,
   cmake-include: ["WebSocketCmake.txt"]
 }
@@ -214,10 +212,8 @@ reactor WebSocketServer(hostport: int = 8000, max_clients: int = 0) {
     }
 
     void web_socket_message_destructor(void* message) {
-      // Commented because it's causing a "double free detected in tcache 2" error.
-      //free(((web_socket_message_t*)message)->message);
+      free(((web_socket_message_t*)message)->message);
       free(message);
-
     }
 
     void* web_socket_message_copy_constructor(void* message) {

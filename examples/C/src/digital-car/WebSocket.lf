@@ -1,22 +1,27 @@
 target C
-import WebSocketServer from "../lib/WebSocketServer.lf"
-import Car from "Car.lf"
-
-reactor PortAdapter{
-  input in: char*
-  output out: char*
-  ws = new WebSocketServer()
-
-  reaction(ws.received)->out{=
-    lf_set(out, ws.received->value->message);
-  =} 
-
- 
+{
+  // logging: LOG,
+  keepalive: true,
 }
 
+import WebSocketServerString from "../lib/WebSocketServerString.lf"
+import DigiCar from "DigitalCar.lf"
+import PhyCar from "PhysicalCar.lf"
+
 main reactor {
-    car = new Car()
-    ws = new PortAdapter()
-  
-    ws.out -> car.from_websocket
-  }
+    digicar = new DigiCar()
+    phycar = new PhyCar()
+
+
+
+    ws = new WebSocketServerString(max_clients=3)
+
+    // ws.received -> digicar.from_websocket
+    //digicar.to_websocket -> ws.in_static
+    
+    //phycar.to_websocket -> ws.in_static
+    // ws.received -> phycar.from_websocket
+
+    
+    
+  } 

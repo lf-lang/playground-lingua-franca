@@ -26,7 +26,8 @@
 reactor Car {
   state lock: char* = "locked"
 
-  output to_websocket: char*
+  //output to_websocket: char*
+  logical action  to_websocket
 
 
   reaction(startup) {=
