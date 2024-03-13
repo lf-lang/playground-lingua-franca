@@ -1,6 +1,5 @@
 /**
- * This example is based on the block diagram shown in the Mars Helicopter Talk
- * at FSW 2022.
+ * This example is based on the block diagram shown in the Mars Helicopter Talk at FSW 2022.
  * https://www.youtube.com/watch?v=D-Y6H0GMtbM&t=465s
  *
  * @author Shaokai Lin
@@ -10,104 +9,114 @@ target C
 // Sony IMX214 13MP Color
 // https://www.supertekmodule.com/product-item/13mp-camera-module-imx214/
 reactor CameraColor {
-    output out:{=camera_color_t=}
-    timer t(0, 33 ms) // ~30 FPS
-    reaction(t) -> out {==}
+  output out: {= camera_color_t =}
+  timer t(0, 33 ms)  // ~30 FPS
+
+  reaction(t) -> out {=  =}
 }
 
 // Omnivision OV7251 B&W
 // https://www.ovt.com/products/ov7251/
 reactor CameraBW {
-    output out:{=camera_bw_t=}
-    timer t(0, 8 ms) // ~120 FPS
-    reaction(t) -> out {==}
+  output out: {= camera_bw_t =}
+  timer t(0, 8 ms)  // ~120 FPS
+
+  reaction(t) -> out {=  =}
 }
 
 // Zigbee Radio
 // https://development.libelium.com/zigbee-networking-guide/code-examples-and-extended-information
 reactor ZigbeeRadio {
-    output out:{=radio_t=}
-    physical action receivePacket
-    timer t(0, 5 sec)
-    reaction(receivePacket) -> out {==}
-    reaction(t) {==}
+  output out: {= radio_t =}
+  physical action receivePacket
+  timer t(0, 5 sec)
+
+  reaction(receivePacket) -> out {=  =}
+
+  reaction(t) {=  =}
 }
 
 // Processor for fusing images
 reactor ImageProcessor {
-    input fromRadio:{=radio_t=}
-    input fromCameraColor:{=camera_color_t=}
-    input fromCameraBW:{=camera_bw_t=}
-    output objectsDetected:{=object_t=}
-    logical action infer(10 msec)
-    state opMode:int = 0
-    // Perhaps incoming packets can change opMode, the mode of operation?
-    reaction(fromRadio) {==}
-    // Sensor fusion
-    reaction(fromCameraColor, fromCameraBW) -> infer {==}
-    // Run neural network inference, output objectsDetected.
-    // FIXME: Not sure if this is a reasonable design. Is Ingenuity actually
-    // doing object detection when flying?
-    reaction(infer) -> objectsDetected {==}
+  input fromRadio: {= radio_t =}
+  input fromCameraColor: {= camera_color_t =}
+  input fromCameraBW: {= camera_bw_t =}
+  output objectsDetected: {= object_t =}
+  logical action infer(10 msec)
+  state opMode: int = 0
+
+  reaction(fromRadio) {=  =}  // Perhaps incoming packets can change opMode, the mode of operation?
+
+  reaction(fromCameraColor, fromCameraBW) -> infer {=  =}  // Sensor fusion
+
+  // Run neural network inference, output objectsDetected.
+  // FIXME: Not sure if this is a reasonable design. Is Ingenuity actually
+  // doing object detection when flying?
+  reaction(infer) -> objectsDetected {=  =}
 }
 
 // Motors
 reactor Motors {
-    input in:{=motor_command_t=}
-    reaction(in) {==}
+  input in: {= motor_command_t =}
+
+  reaction(in) {=  =}
 }
 
 // Garmin Lidar Lite LRF
 // https://www.garmin.com/en-US/p/557294#specs
 reactor Lidar {
-    output out:{=lidar_t=}
-    timer t(0, 2 ms) // 500 HZ
-    reaction(t) -> out {==}
+  output out: {= lidar_t =}
+  timer t(0, 2 ms)  // 500 HZ
+
+  reaction(t) -> out {=  =}
 }
 
 // Bosch BMI-160 IMU
 // https://www.mouser.com/datasheet/2/783/BST_BMI160_DS000-1509569.pdf
 reactor IMU {
-    output out:{=imu_t=}
-    timer t(0, 10 ms) // 100 HZ Output Data Rate (ODR)
-    reaction(t) -> out {==}
+  output out: {= imu_t =}
+  timer t(0, 10 ms)  // 100 HZ Output Data Rate (ODR)
+
+  reaction(t) -> out {=  =}
 }
 
 // muRata SCA100T inclinometer
 // https://www.murata.com/en-us/api/pdfdownloadapi?cate=cgsubAccelerometers&partno=SCA100T-D07
 reactor Inclinometer {
-    output out:{=inclinometer_t=}
-    timer t(0, 2500 us) // 400 HZ
-    reaction(t) -> out {==}
+  output out: {= inclinometer_t =}
+  timer t(0, 2500 us)  // 400 HZ
+
+  reaction(t) -> out {=  =}
 }
 
 // A central controller for generating output commands
 reactor Controller {
-    input fromImageProcessor:{=object_t=}
-    input fromLidar:{=lidar_t=}
-    input fromIMU:{=imu_t=}
-    input fromInclinometer:{=inclinometer_t=}
-    output toMotor:{=motor_command_t=}
-    reaction(fromImageProcessor, fromLidar, fromIMU, fromInclinometer) -> toMotor {==}
+  input fromImageProcessor: {= object_t =}
+  input fromLidar: {= lidar_t =}
+  input fromIMU: {= imu_t =}
+  input fromInclinometer: {= inclinometer_t =}
+  output toMotor: {= motor_command_t =}
+
+  reaction(fromImageProcessor, fromLidar, fromIMU, fromInclinometer) -> toMotor {=  =}
 }
 
 main reactor {
-    cameraColor = new CameraColor()
-    cameraBW = new CameraBW()
-    radio = new ZigbeeRadio()
-    imageProcessor = new ImageProcessor()
-    motors = new Motors()
-    lidar = new Lidar()
-    imu = new IMU()
-    inclinometer = new Inclinometer()
-    controller = new Controller()
+  cameraColor = new CameraColor()
+  cameraBW = new CameraBW()
+  radio = new ZigbeeRadio()
+  imageProcessor = new ImageProcessor()
+  motors = new Motors()
+  lidar = new Lidar()
+  imu = new IMU()
+  inclinometer = new Inclinometer()
+  controller = new Controller()
 
-    cameraColor.out -> imageProcessor.fromCameraColor
-    cameraBW.out -> imageProcessor.fromCameraBW
-    radio.out -> imageProcessor.fromRadio
-    imageProcessor.objectsDetected -> controller.fromImageProcessor
-    lidar.out -> controller.fromLidar
-    imu.out -> controller.fromIMU
-    inclinometer.out -> controller.fromInclinometer
-    controller.toMotor -> motors.in
+  cameraColor.out -> imageProcessor.fromCameraColor
+  cameraBW.out -> imageProcessor.fromCameraBW
+  radio.out -> imageProcessor.fromRadio
+  imageProcessor.objectsDetected -> controller.fromImageProcessor
+  lidar.out -> controller.fromLidar
+  imu.out -> controller.fromIMU
+  inclinometer.out -> controller.fromInclinometer
+  controller.toMotor -> motors.in
 }

@@ -1,0 +1,53 @@
+/**
+ * This example combines `ServerUI` with `WebSocketServer`. The former starts a web server that
+ * listens for HTTP requests on port 8080 and serves the web page defined in `uptime.html`. That web
+ * page includes JavaScript that connects to a web socket on port 8080 that is provided by the
+ * `WebSocketServer` reactor. The resulting web page simply reports the total time that this program
+ * has been running. That time is updated on the web page once per second.
+ *
+ * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
+ * instructions</a>). To install on MacOS, we recommending using brew:
+ * <pre> brew install libwebsockets
+ * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
+ * linked to using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake
+ * include file.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  build-type: debug,
+  keepalive: true
+}
+
+import WebSocketServer from "../lib/WebSocketServer.lf"
+
+main reactor {
+  timer seconds(0, 1 s)
+
+  w = new WebSocketServer(
+      hostport=8080,
+      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Uptime.html" =})
+
+  reaction(startup) {=
+    lf_print("Point your browser to http://localhost:8080");
+  =}
+
+  reaction(seconds) -> w.send {=
+    instant_t uptime = lf_time_logical_elapsed();
+    // Truncate to the nearest second.
+    uptime = (uptime / SEC(1)) * SEC(1);
+    char* message = (char*)malloc(LF_TIME_BUFFER_LENGTH * sizeof(char));
+    size_t length = lf_readable_time(message, uptime) + 1; // +1 to add a null character.
+    message[length] = '\0';
+
+    // Broadcast to all connected sockets.  This is accomplished by providing a NULL wsi.
+    web_socket_message_t* to_send = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+    to_send->wsi = NULL;
+    to_send->length = length;
+    to_send->message = message;
+    to_send->binary = false;
+    lf_set(w.send, to_send);
+  =}
+}

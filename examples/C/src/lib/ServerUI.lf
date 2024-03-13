@@ -8,7 +8,7 @@
  *
  * @param initial_file Path to the initial HTML file to serve, relative to the source directory of
  * the main reactor. Defaults to "page.html".
- * @param hostport The host port number, which defults to 8080.
+ * @param hostport The host port number, which defaults to 8080.
  *
  * @author Edward A. Lee
  */
@@ -17,13 +17,15 @@ target C {
 }
 
 preamble {=
-  #ifndef BROWSERUI_H
-  #define BROWSERUI_H
+  #ifndef SERVERUI_H
+  #define SERVERUI_H
   #include "util.h"     // Defines lf_print()
   #include "platform.h"   // Defines lf_thread_t, etc.
 
   #include <sys/socket.h>
   #include <arpa/inet.h>
+  #include <errno.h>    // Defines errno
+  #include <string.h>   // Defines strerror()
   #include <unistd.h>   // Defines read(), close()
   #include <string.h>   // Defines strchr()
   #include <libgen.h>   // Defines dirname()
@@ -35,7 +37,7 @@ preamble {=
     uint16_t hostport;  // The port to use for HTTP access.
     char* initial_page; // Initial web page contents.
   } browser_ui_t;
-  #endif // BROWSERUI_H
+  #endif // SERVERUI_H
 =}
 
 reactor ServerUI(initial_file: string = "page.html", hostport: uint16_t = 8080) {
@@ -87,18 +89,27 @@ reactor ServerUI(initial_file: string = "page.html", hostport: uint16_t = 8080) 
           lf_print_error_and_exit("Error accepting connection.");
         }
 
-        char buffer[1024] = {0};
-        read(browser_ui->client_socket, buffer, 1024);
+        char buffer[2048] = {0};
+        ssize_t bytes_read = read(browser_ui->client_socket, buffer, 2047); // Ensure null terminator.
+        if (bytes_read == 0) continue;
+        if (bytes_read < 0) {
+          lf_print_warning("Error %d reading socket: %s", errno, strerror(errno));
+          continue;
+        }
+
+        lf_print("Received: '%s'", buffer);
 
         // The response depends on the path part of the request.
-        const char *start_of_path = strchr(buffer, ' ') + 1;
-        if (start_of_path != NULL && strncmp("/ ", start_of_path, 2) != 0) {
-          const char *end_of_path = strchr(start_of_path, ' ') + 1;
-          size_t length = end_of_path - start_of_path;
-          char* path = (char*)malloc(length + 1);
-          strncpy(path, start_of_path, length);
-          path[length] = '\0';
-          lf_schedule_value(browser_ui->req_action, 0, path, length + 1);
+        const char *start_of_path = strchr(buffer, ' ');
+        if (start_of_path != NULL && strncmp("/ ", start_of_path + 1, 2) != 0) {
+          const char *end_of_path = strchr(start_of_path + 1, ' ') + 1;
+          if (end_of_path != NULL  && end_of_path - start_of_path > 1) {
+            size_t length = end_of_path - start_of_path - 1;
+            char* path = (char*)malloc(length + 1);
+            strncpy(path, start_of_path + 1, length);
+            path[length] = '\0';
+            lf_schedule_value(browser_ui->req_action, 0, path, length + 1);
+          }
         } else {
           // Default is to write initial page.
           write(browser_ui->client_socket, html_header, strlen(html_header));

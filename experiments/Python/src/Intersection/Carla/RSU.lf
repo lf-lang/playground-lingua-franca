@@ -1,66 +1,60 @@
 /**
- * This Lingua Franca program simulates a Road Side Unit (RSU), a component
- * critical in Intelligent Transportation Systems for managing vehicle interactions
- * at an intersection. Upon startup, the RSU is initialized with specific
- * parameters such as intersection width, nominal speed in the intersection, and
- * the intersection position. The RSU then listens for incoming requests from
- * vehicles. These requests, which include information about the vehicle's current
- * state and its intentions, are processed, and the RSU determines if the vehicle
- * is granted access to the intersection. If access is granted, a grant message is
- * sent back to the vehicle with key information such as the intersection position,
- * target speed, and arrival time. The RSU can handle multiple vehicle requests and
- * issue corresponding grants simultaneously. 
+ * This Lingua Franca program simulates a Road Side Unit (RSU), a component critical in Intelligent
+ * Transportation Systems for managing vehicle interactions at an intersection. Upon startup, the
+ * RSU is initialized with specific parameters such as intersection width, nominal speed in the
+ * intersection, and the intersection position. The RSU then listens for incoming requests from
+ * vehicles. These requests, which include information about the vehicle's current state and its
+ * intentions, are processed, and the RSU determines if the vehicle is granted access to the
+ * intersection. If access is granted, a grant message is sent back to the vehicle with key
+ * information such as the intersection position, target speed, and arrival time. The RSU can handle
+ * multiple vehicle requests and issue corresponding grants simultaneously.
  */
 target Python {
-    files: [
-        "ROS/carla_intersection/src/rsu.py",
-        "ROS/carla_intersection/src/utils.py"
-    ]
-};
+  files: ["ROS/carla_intersection/src/rsu.py", "ROS/carla_intersection/src/utils.py"]
+}
 
 preamble {=
-    from rsu import RSU
-    from utils import GenericClock, dotdict, make_coordinate
+  from rsu import RSU
+  from utils import GenericClock, dotdict, make_coordinate
 =}
 
 reactor RSU(
-    num_entries(0),
-    intersection_width(0),
-    nominal_speed_in_intersection(0.0),
-    intersection_position(0, 0, 0)
-) {
-    input[num_entries] request;
-    output[num_entries] grant;
+    num_entries=0,
+    intersection_width=0,
+    nominal_speed_in_intersection=0.0,
+    intersection_position(0, 0, 0)) {
+  input[num_entries] request
+  output[num_entries] grant
 
-    preamble {=
-        class Logger:
-            def info(self, *args):
-                print(f"{lf.time.logical()} - rsu: ", args)
+  preamble {=
+    class Logger:
+        def info(self, *args):
+            print(f"{lf.time.logical()} - rsu: ", args)
 
-        class LFClock(GenericClock):
-            def get_current_time_in_ns(self):
-                return lf.time.logical()
-    =}
+    class LFClock(GenericClock):
+        def get_current_time_in_ns(self):
+            return lf.time.logical()
+  =}
 
-    reaction(startup) {=
-        self.rsu = RSU(intersection_width = self.intersection_width,
-                       nominal_speed_in_intersection = self.nominal_speed_in_intersection,
-                       intersection_position = make_coordinate(self.intersection_position),
-                       clock = self.LFClock(),
-                       logger = self.Logger())
-    =}
+  reaction(startup) {=
+    self.rsu = RSU(intersection_width = self.intersection_width,
+                   nominal_speed_in_intersection = self.nominal_speed_in_intersection,
+                   intersection_position = make_coordinate(self.intersection_position),
+                   clock = self.LFClock(),
+                   logger = self.Logger())
+  =}
 
-    reaction(request) -> grant {=
-        for i in range(self.num_entries):
-            if not request[i].is_present:
-                continue
-            request_ = request[i].value
-            pub_packets = self.rsu.receive_request(request_)
-            if pub_packets.grant != None:
-                grant_ = dotdict()
-                grant_.intersection_position = pub_packets.grant.intersection_position
-                grant_.target_speed = pub_packets.grant.target_speed
-                grant_.arrival_time = pub_packets.grant.arrival_time
-                grant[i].set(grant_)
-    =}
+  reaction(request) -> grant {=
+    for i in range(self.num_entries):
+        if not request[i].is_present:
+            continue
+        request_ = request[i].value
+        pub_packets = self.rsu.receive_request(request_)
+        if pub_packets.grant != None:
+            grant_ = dotdict()
+            grant_.intersection_position = pub_packets.grant.intersection_position
+            grant_.target_speed = pub_packets.grant.target_speed
+            grant_.arrival_time = pub_packets.grant.arrival_time
+            grant[i].set(grant_)
+  =}
 }

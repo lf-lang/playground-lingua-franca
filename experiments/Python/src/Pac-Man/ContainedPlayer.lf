@@ -1,10 +1,7 @@
-/* Reactors used for contained version of 
- * player AI in PacManWFSM.lf
- */
-
+/** Reactors used for contained version of player AI in PacManWFSM.lf */
 target Python {
   files: ["include/AIPacSupport.py", "include/hbpacman.py"]
-};
+}
 
 preamble {=
   # must import some file for setup functions
@@ -13,11 +10,15 @@ preamble {=
 =}
 
 ### Ticker Reactor
-reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
-  timer ticker(0, 100msec)
-  
-  input wall_list # Receive updated wall list
-  input gate_list # Receive updated gate list
+reactor Ticker(
+    width=0,
+    height=0,
+    image="images/Trollman.png",
+    character_class = {= pacman.Player =}) {
+  timer ticker(0, 100 msec)
+
+  input wall_list  # Receive updated wall list
+  input gate_list  # Receive updated gate list
   input[4] ghost_sprites
   input icon
   input eat_result
@@ -25,22 +26,22 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
   input chase_result
   input game_over
   input character
-  
+
   state character_instance
   state _wall_list
   state _gate_list
-  state _ghosts({=[]=})
-  state _pause(False)
-  state _active(True)
-  state _ai_control(True)
-  state _layout({=pacman.walls=})
+  state _ghosts = {= [] =}
+  state _pause = False
+  state _active = True
+  state _ai_control = True
+  state _layout = {= pacman.walls =}
 
   output[7] result
   output sprite
   output icon_name
   output playerpause
   output restart
-  
+
   reaction(startup) -> icon_name {=
     dirname = os.path.dirname(__file__)
     icon_name.set(os.path.join(dirname, self.image))
@@ -55,13 +56,13 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
     self._wall_list = wall_list.value
     self._gate_list = gate_list.value
   =}
-  
+
   reaction(ticker) -> playerpause, restart, sprite, result {=
     keyboard_events = pacman.pygame.event.get()
     for event in keyboard_events:
       if event.type == pacman.pygame.QUIT:
         request_stop()
-        
+
       if event.type == pacman.pygame.KEYDOWN:
         if event.key == pacman.pygame.K_ESCAPE:
           request_stop()
@@ -71,7 +72,7 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
           self._pause = False
           self._active = True
           print(self.character_instance.rect.left)
-          
+
         if event.key == pacman.pygame.K_SPACE:
           if self._pause is False:
             self._pause = True
@@ -90,8 +91,8 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
             self.character_instance.changespeed(0, -30)
           if event.key == pacman.pygame.K_DOWN or event.key == pacman.pygame.K_s:
             self.character_instance.changespeed(0, 30)
-      
-      if event.type == pacman.pygame.KEYUP and not self._ai_control and not self._pause and self._active: 
+
+      if event.type == pacman.pygame.KEYUP and not self._ai_control and not self._pause and self._active:
         if event.key == pacman.pygame.K_LEFT or event.key == pacman.pygame.K_a:
           self.character_instance.changespeed(30, 0)
         if event.key == pacman.pygame.K_RIGHT or event.key == pacman.pygame.K_d:
@@ -118,9 +119,8 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
           port.set(self._layout)
         elif (i - 3) < len(self._ghosts):
           port.set(self._ghosts[i - 3])
-
   =}
-  
+
   reaction(ghost_sprites) {=
     self._ghosts = []
     for ghost in ghost_sprites:
@@ -137,7 +137,7 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
       elif eat_result.is_present:
         self.character_instance = eat_result.value
   =}
-  
+
   reaction(game_over) {=
     self._active = False
     self._pause = True
@@ -149,7 +149,7 @@ reactor Ticker(width(0), height(0), image("images/Trollman.png"), character_clas
 reactor Close {
   input[7] tick
   output[7] result
-  
+
   reaction(tick) -> result {=
     all_present = True
     #result_bool = True
@@ -176,16 +176,15 @@ reactor Close {
           port.set(tick[i].value)
         #result.set(tick)
   =}
-
 }
 
 ### Ghost Scared? Condition Reactor
 reactor Scared {
   input[7] tick
   input frenzy
-  state _frenzy(False)
+  state _frenzy = False
   output[7] result
-  
+
   reaction(tick) -> result {=
     all_present = True
     for i, port in enumerate(tick):
@@ -212,7 +211,6 @@ reactor Scared {
   reaction(frenzy) {=
     self._frenzy = frenzy.value
   =}
-
 }
 
 ### Chase Ghost Action Reactor
@@ -220,7 +218,7 @@ reactor Chase {
   input[7] tick
   state character_instance
   output result
-  
+
   reaction(tick) -> result {=
     if tick[0].is_present and tick[0].value:
       all_present = True
@@ -240,12 +238,11 @@ reactor Chase {
 }
 
 ### Avoid Ghost Action Reactor
-
 reactor Avoid {
   input[7] tick
   state character_instance
   output result
-  
+
   reaction(tick) -> result {=
     print("avoid got tick")
     if tick[0].is_present and not tick[0].value:
@@ -267,7 +264,6 @@ reactor Avoid {
 }
 
 ### Eat Pills Action Reactor
-
 reactor Eat {
   input[7] tick
   input block_list
@@ -275,14 +271,14 @@ reactor Eat {
   input sprite
   state _wall_list
   state _block_list
-  state _eat_moves(0)
-  state character_instance  
+  state _eat_moves = 0
+  state character_instance
   output result
 
   reaction(wall_list) {=
     self._wall_list = wall_list.value
   =}
-  
+
   reaction(tick) block_list -> result {=
     if tick[0].is_present and not tick[0].value:
       all_present = True
@@ -306,7 +302,6 @@ reactor Eat {
         result.set(self.character_instance)
   =}
 
-
   reaction(sprite) {=
     #print("received sprite")
     self.character_instance = sprite.value
@@ -315,7 +310,4 @@ reactor Eat {
   reaction(block_list) {=
     self._block_list = block_list.value
   =}
-  
 }
-
-

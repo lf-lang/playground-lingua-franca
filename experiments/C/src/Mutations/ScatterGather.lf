@@ -1,24 +1,23 @@
 /**
- * This program is a concept demonstration showing how higher-order
- * combinators could be defined in the C target. This example has
- * a ScatterGather reactor that, upon receiving an input array,
- * creates as many instances of a Worker reactor as there are elements
- * in the array, distributes the elements of the array to those workers,
- * and puts onto the reaction queue all reactions in the workers that are
- * sensitive to those inputs.  When the workers are finished executing,
- * a second reaction in ScatterGather will execute. That second reaction
- * collects all the results of the workers into an array and sends the
- * result to the output.
- * 
- * This program should not be used as a model for creating designs.
- * It uses internal, implementation-specific details that will eventually
- * be abstracted out into an API.
+ * This program is a concept demonstration showing how higher-order combinators could be defined in
+ * the C target. This example has a ScatterGather reactor that, upon receiving an input array,
+ * creates as many instances of a Worker reactor as there are elements in the array, distributes the
+ * elements of the array to those workers, and puts onto the reaction queue all reactions in the
+ * workers that are sensitive to those inputs. When the workers are finished executing, a second
+ * reaction in ScatterGather will execute. That second reaction collects all the results of the
+ * workers into an array and sends the result to the output.
+ *
+ * This program should not be used as a model for creating designs. It uses internal,
+ * implementation-specific details that will eventually be abstracted out into an API.
  */
-target C { 
-  threads: 4
-};
+target C {
+  single-threaded: false,
+  workers: 4
+}
+
 reactor Source {
-  output out:int[];
+  output out: int[]
+
   reaction(startup) -> out {=
     SET_NEW_ARRAY(out, 8);
     for (int i=0; i < 8; i++) {
@@ -26,37 +25,42 @@ reactor Source {
     }
   =}
 }
-reactor Worker(id:int(2)) {
-  input worker_in:int;
-  output worker_out:int;
+
+reactor Worker(id: int = 2) {
+  input worker_in: int
+  output worker_out: int
+
   reaction(worker_in) -> worker_out {=
     printf("Worker received in first reaction%d\n", worker_in->value);
     lf_set(worker_out, worker_in->value * self->id);
   =}
+
   reaction(worker_in) {=
     printf("Worker received second %d\n", worker_in->value);
   =}
 }
+
 reactor ScatterGather2 {
-  input in:int[];
-  output out:int[];
-  
+  input in: int[]
+  output out: int[]
+
   // Create a state variable to pass the workers created in
   // the first reaction to the second reaction. This is an array
   // of pointers to the self struct of the worker.
   // The type of a self struct is the reactor class name, converted to
   // lower case, followed by _self_t.
-  state workers:worker_self_t**({=NULL=});
-  
+  state workers: worker_self_t** = {= NULL =}
+
   // The data type of the upstream source does not match the
   // data type of the workers' inputs, so we have to create an
   // array of places to store the input data.
-  state worker_inputs:worker_worker_in_t*({=NULL=});
-  
+  state worker_inputs: worker_worker_in_t* = {= NULL =}
+
   // Create a template worker, which ensures that downstream
   // levels are correct. The template worker could have any
   // number of reactions sensitive to the input we will provide.
-  template_worker = new Worker();
+  template_worker = new Worker()
+
   reaction(in) -> template_worker.worker_in {=
     lf_set(template_worker.worker_in, in->value[0]);
     // SCATTER(in, worker_in, Worker, self->workers, id);
@@ -93,6 +97,7 @@ reactor ScatterGather2 {
     pthread_cond_broadcast(&reaction_q_changed);
     pthread_mutex_unlock(&mutex);
   =}
+
   reaction(in, template_worker.worker_out) -> out {=
     SET_NEW_ARRAY(out, in->length);
     // FIXME: We should be checking template_worker.worker_out_is_present.
@@ -106,8 +111,10 @@ reactor ScatterGather2 {
     // they have a destructor.
   =}
 }
+
 reactor Print {
-  input in:int[];
+  input in: int[]
+
   reaction(in) {=
     printf("[");
     for(int i = 0; i < in->length; i++) {
@@ -119,10 +126,11 @@ reactor Print {
     printf("]\n");
   =}
 }
+
 main reactor {
-  s = new Source();
-  g = new ScatterGather2();
-  p = new Print();
-  s.out -> g.in;
-  g.out -> p.in;
+  s = new Source()
+  g = new ScatterGather2()
+  p = new Print()
+  s.out -> g.in
+  g.out -> p.in
 }
