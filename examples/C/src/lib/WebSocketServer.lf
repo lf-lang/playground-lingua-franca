@@ -9,12 +9,12 @@
  * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
  * the running LF program. To specify a file located in the same directory as your source LF file,
  * you can use a syntax like this:
+ * 
  * ```
  * s = new WebSocketServer(
  *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
  * )  
  * ```
-
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
@@ -23,8 +23,9 @@
  *
  * To send messages to a client, construct a dynamically allocated struct of type
  * `web_socket_message_t`, set its `wsi` field to the value provided by the connected output, and
- * set its `message` and `length`. The sending data type is an array of `char`, so any byte array
- * can be sent. If you sending and receiving strings, consider using the simpler wrapper
+ * set its `message` and `length`. The sending data type is `void*`, so any byte array
+ * can be sent. The `binary` field of the `web_socket_message_t` should be set to true if the
+ * data being sent is not a string. If you sending and receiving strings, consider using the simpler wrapper
  * `WebSocketServerString`.
  *
  * When a message is received from a client, a struct of type `web_socket_message_t` will be
@@ -53,7 +54,8 @@
  * as reported by the incoming message. If the `binary` parameter is set to true, then JavaScript at
  * the receiving end will get a Blob. Otherwise, it gets text.
  *
- * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
+ * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL,
+ * but it does not currently.
  *
  * @param hostport The host port number, which defaults to 8080.
  * @param initial_file If non-NULL and non-empty, a file name to serve to HTTP requests.
@@ -98,6 +100,7 @@ preamble {=
     web_socket_message_t* pending_messages; // Head of a list of pending messages to send.
     lf_mutex_t* mutex;          // Mutex for modifying this struct.
     string initial_file;        // File to serve in response to HTTP requests.
+    hashset_t connected_instances; // Set of instances with active web socket connections.
   } server_status_t;
 
   /**
@@ -133,7 +136,6 @@ reactor WebSocketServer(
 
   state status: server_status_t
   state client_count: int = 0
-  state connected_instances: hashset_t = {= NULL =}
 
   preamble {=
     // Thread handling incoming messages.
@@ -150,7 +152,7 @@ reactor WebSocketServer(
       lws_context_destroy(status->context);
       return NULL;
     };
-
+    
     // Callback handling HTTP requests.
     static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
       bool result;
@@ -162,6 +164,7 @@ reactor WebSocketServer(
       web_socket_instance_t ws_instance;
       switch(reason) {
         case LWS_CALLBACK_HTTP:
+          lf_print("New client HTTP request.");
           // HTTP request that is not asking for an upgrade.
           // If the initial_file parameter is non-empty, serve that file.
           if (status->initial_file != NULL && strlen(status->initial_file) > 0) {
@@ -201,6 +204,12 @@ reactor WebSocketServer(
           // the application may try to send a message to the socket before
           // opening has completed.
           lf_schedule_copy(status->connected_action, MSEC(500), &ws_instance, 1);
+          
+          LF_MUTEX_LOCK(status->mutex);
+          // Add the wsi to the set of connected web socket instances.
+          hashset_add(status->connected_instances, wsi);
+          LF_MUTEX_UNLOCK(status->mutex);
+          
           break;
         case LWS_CALLBACK_WSI_DESTROY:
           LF_PRINT_LOG("**** Connection closed.");
@@ -211,6 +220,12 @@ reactor WebSocketServer(
           ws_instance.connected = false;
 
           lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
+
+          // Remove the wsi from the set of connected web socket instances.
+          LF_MUTEX_LOCK(status->mutex);
+          hashset_remove(status->connected_instances, wsi);
+          LF_MUTEX_UNLOCK(status->mutex);
+
           break;
         case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
@@ -222,6 +237,12 @@ reactor WebSocketServer(
           ws_instance.connected = false;
 
           lf_schedule_copy(status->connected_action, 0, &ws_instance, 1);
+
+          // Remove the wsi from the set of connected web socket instances.
+          LF_MUTEX_LOCK(status->mutex);
+          hashset_remove(status->connected_instances, wsi);
+          LF_MUTEX_UNLOCK(status->mutex);
+
           break;
         default:
           LF_PRINT_LOG("*** Unhandled callback with lws_callback_reasons %d.", reason);
@@ -234,31 +255,31 @@ reactor WebSocketServer(
     static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
       LF_PRINT_LOG("WS callback invoked with reason: %d", reason);
       server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
+      web_socket_message_t* to_send;
+      web_socket_message_t** previous_pointer;
+      
       switch(reason) {
         case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
           // lws_service() blocking call interrupted. Check for messages to send.
-          if (lf_mutex_lock(status->mutex)) {
-            lf_print_error("Failed to lock mutex in WebSocketServer.");
-            return 0;
-          }
-
+          // Need a lock because we are accessing pending_messages.
+          LF_MUTEX_LOCK(status->mutex);
           if (status->pending_messages) {
             lws_callback_on_writable(status->pending_messages->wsi);
           }
-
-          if (lf_mutex_unlock(status->mutex)) {
-            lf_print_error("Failed to unlock mutex in WebSocketServer.");
-          }
+          LF_MUTEX_UNLOCK(status->mutex);
           break;
+          
         case LWS_CALLBACK_RECEIVE:
           if (len > 0) {
             LF_PRINT_LOG("**** Server received WS message.");
 
             web_socket_message_t* received = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+            LF_ASSERT_NON_NULL(received);
             received->wsi = wsi;
 
             // To protect against non-null-terminated strings, add a null character beyond the length.
             void* payload = malloc((len + 1) * sizeof(char));
+            LF_ASSERT_NON_NULL(payload);
             memcpy(payload, in, len);
             ((char*)payload)[len] = '\0';
             received->length = len;
@@ -272,55 +293,83 @@ reactor WebSocketServer(
 
         case LWS_CALLBACK_SERVER_WRITEABLE:
           // Websocket has become writable.  See whether there are pending
-          // messages to send.  This requires locking the status mutex.
-          if (lf_mutex_lock(status->mutex)) {
-            lf_print_error("Failed to lock mutex in WebSocketServer.");
-            return 0;
-          }
+          // messages to send to this wsi.  This requires locking the status mutex
+          // because we are accessing the pending_messages list.
+          LF_MUTEX_LOCK(status->mutex);
 
-          web_socket_message_t* to_send = status->pending_messages;
-          if (to_send) {
-            // There is a message to send. Remove it from the list.
-            status->pending_messages = to_send->next;
-
-            // Send it.
-            int length = to_send->length;
-            // The buffer needs LWS_PRE bytes _before_ the message.
-            // Do not include the null terminator, because this makes JSON unable to parse it.
-            unsigned char buffer[LWS_PRE + length + 1];  // +1 for possible null terminator.
-            memcpy(&buffer[LWS_PRE], to_send->message, length);
-            int result;
-            if (to_send->binary) {
-              result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_BINARY);
-            } else {
-              // Check for null terminator.
-              if (buffer[LWS_PRE + length - 1] != '\0') {
-                // Null terminator is missing.
-                buffer[LWS_PRE + length] = '\0';
-                length += 1;
+          to_send = status->pending_messages;
+          previous_pointer = &status->pending_messages;
+          while (to_send) {
+            // There is a message to send.
+            // Send it if the wsi matches.
+            if (to_send->wsi == wsi) {
+              // Remove it from the list.
+              *previous_pointer = to_send->next;
+  
+              int length = to_send->length;
+              // The buffer needs LWS_PRE bytes _before_ the message.
+              // Do not include the null terminator, because this makes JSON unable to parse it.
+              unsigned char buffer[LWS_PRE + length + 1];  // +1 for possible null terminator.
+              memcpy(&buffer[LWS_PRE], to_send->message, length);
+              int result;
+              if (to_send->binary) {
+                result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_BINARY);
+              } else {
+                // Check for null terminator.
+                if (buffer[LWS_PRE + length - 1] != '\0') {
+                  // Null terminator is missing.
+                  buffer[LWS_PRE + length] = '\0';
+                  length += 1;
+                }
+                result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_TEXT);
               }
-              result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_TEXT);
+              if (result < length) {
+                lf_print_warning("Send on web socket failed. Message send is incomplete.");
+              }
+              // Free the memory for the pending send.
+              web_socket_message_destructor(to_send);
+            } else {
+              // If the message is destined to a no-longer connected wsi, delete it.
+              if (!hashset_is_member(status->connected_instances, to_send->wsi)) {
+                // Remove it from the list.
+                *previous_pointer = to_send->next;
+                // Free the memory for the pending send.
+                web_socket_message_destructor(to_send);
+              } else {
+                // Keep the message on the list. It is destined to another wsi.
+                previous_pointer = &to_send->next;
+              }
             }
-            if (result < length) {
-              lf_print_warning("Send on web socket failed. Message send is incomplete.");
-            }
-            // Free the memory for the pending send.
-            web_socket_message_destructor(to_send);
-
-            // If there is another message, request another callback.
-            if (status->pending_messages) {
-              lws_callback_on_writable(status->pending_messages->wsi);
-            }
+            to_send = to_send->next;
+          }
+          // If there is another message, request another callback.
+          if (status->pending_messages) {
+            lws_callback_on_writable(status->pending_messages->wsi);
           }
 
-          if (lf_mutex_unlock(status->mutex)) {
-            lf_print_error("Failed to unlock mutex in WebSocketServer.");
-          }
+          LF_MUTEX_UNLOCK(status->mutex);
 
           break;
 
-        // Do we need to handle LWS_CALLBACK_CLOSED?
-        // Seems to be handled in the HTTP callback.
+        case LWS_CALLBACK_CLOSED:
+          // Remove any pending message destined to this wsi from the list to send.
+          LF_MUTEX_LOCK(status->mutex);
+          to_send = status->pending_messages;
+          previous_pointer = &status->pending_messages;
+          while (to_send) {
+            if (to_send->wsi == wsi) {
+              // Remove it from the list.
+              *previous_pointer = to_send->next;
+              // Free the memory for the pending send.
+              web_socket_message_destructor(to_send);
+            } else {
+              // Keep the message on the list.
+              previous_pointer = &to_send->next;
+            }
+            to_send = to_send->next;
+          }
+          LF_MUTEX_UNLOCK(status->mutex);
+          break;
 
         default:
           LF_PRINT_LOG("*** Unhandled callback with lws_callback_reasons %d.", reason);
@@ -348,6 +397,50 @@ reactor WebSocketServer(
       result->next = NULL;
       return result;
     }
+    
+    // Append a message to the list of messages to be sent.
+    // This assumes the mutex is held.
+    static void append_message_to_send(server_status_t* status, web_socket_message_t* copy) {
+      // Scroll to the end of the list of pending messages.
+      web_socket_message_t** existing = &(status->pending_messages);
+      while (*existing != NULL) {
+        existing = &((*existing)->next);
+      }
+      *existing = copy;
+      // Have to call lws_cancel_service to unblock the lws thread.
+      lws_cancel_service(status->context);
+    }
+    
+    // Queue a message to be sent.  If the specified wsi is NULL, then broadcast
+    // to all open web sockets.
+    static void send_message(server_status_t* status, web_socket_message_t* message) {
+      if(message->message == NULL) {
+        lf_print_error("Cannot send NULL message.");
+      } else if (message->wsi == NULL) {
+        // Broadcast requested.
+        // There does not appear to be a way to iterate over hashset contents.
+        // So we iterate over the entire hashset storage and skip empty slots.
+        // Need to lock the mutex.
+        LF_MUTEX_LOCK(status->mutex);
+        for (int i = 0; i < status->connected_instances->capacity; i++) {
+          struct lws* instance = (struct lws*) status->connected_instances->items[i];
+          if (instance == NULL || instance == (struct lws*)1) continue; // Empty or deleted items.
+          web_socket_message_t* copy = (web_socket_message_t*)web_socket_message_copy_constructor(message);
+          copy->wsi = instance;
+          // Append to the pending list.
+          append_message_to_send(status, copy);
+        }
+        LF_MUTEX_UNLOCK(status->mutex);
+      } else if (hashset_is_member(status->connected_instances, message->wsi)) {
+        LF_MUTEX_LOCK(status->mutex);
+        // Copy the message and append to the context list.
+        web_socket_message_t* copy = (web_socket_message_t*)web_socket_message_copy_constructor(message);
+        append_message_to_send(status, copy);
+        LF_MUTEX_UNLOCK(status->mutex);
+      } else {
+        lf_print_warning("Web socket no longer connected. Dropping message.");
+      }
+    }
   =}
 
   reaction(startup) send -> connected_action, received_action {=
@@ -359,8 +452,6 @@ reactor WebSocketServer(
     // Assume the input is dynamically allocated, including its message field.
     lf_set_destructor(send, web_socket_message_destructor);
     lf_set_copy_constructor(send, web_socket_message_copy_constructor);
-
-    self->connected_instances = hashset_create(8); // Default capacity for eight instances.
 
     struct lws_context_creation_info info;
     memset(&info, 0, sizeof(info));
@@ -400,6 +491,7 @@ reactor WebSocketServer(
     self->status.client_count = &self->client_count;
     self->status.initial_file = self->initial_file;
     self->status.running = true;
+    self->status.connected_instances = hashset_create(8); // Default capacity for eight instances.
 
     lf_thread_t listener;
     lf_thread_create(&listener, &websocket_thread, &self->status);
@@ -411,77 +503,18 @@ reactor WebSocketServer(
 
   reaction(connected_action) -> connected {=
     lf_set(connected, connected_action->value);
-    if (connected_action->value.connected) {
-      hashset_add(self->connected_instances, connected_action->value.wsi);
-    } else {
-      hashset_remove(self->connected_instances, connected_action->value.wsi);
-    }
   =}
 
   reaction(send) {=
     // NOTE: This send cannot be before the reaction to connected_action
     // because we will get a causality loop.
-    if(send->value->message == NULL) {
-      lf_print_error("Cannot send NULL message.");
-    } else if (send->value->wsi == NULL) {
-      // Broadcast requested.
-      // There does not appear to be a way to iterate over hashset contents.
-      // So we iterate over the entire hashset storage and skip empty slots.
-      for (int i = 0; i < self->connected_instances->capacity; i++) {
-        struct lws* instance = (struct lws*) self->connected_instances->items[i];
-        if (instance == NULL || instance == (struct lws*)1) continue; // Empty or deleted items.
-        web_socket_message_t to_send;
-        to_send.wsi = instance;
-        to_send.length = send->value->length;
-        to_send.message = send->value->message;
-        to_send.binary = send->value->binary;
-        to_send.next = NULL;
-        send_message(&to_send);
-      }
-    } else if (hashset_is_member(self->connected_instances, send->value->wsi)) {
-      send_message(send->value);
-    } else {
-      lf_print_warning("Web socket no longer connected. Dropping message.");
-    }
-  =}
-
-  method send_message(to_send: web_socket_message_t*): int {=
-    // Cannot actually send the message here for two reasons:
-    // 1. websocketlib is not thread safe, so the write needs to occur in the one thread making calls.
-    // 2. It is not safe to write until the socket is ready for a write.
-    // Hence, we append the message to list of pending messages and wait for a callback that
-    // the socket is ready for a write.
-
-    // Copy the message and append to the context list.
-    web_socket_message_t* copy = (web_socket_message_t*)web_socket_message_copy_constructor(to_send);
-
-    // Acquire the status mutex before putting on the pending messages list.
-    if (lf_mutex_lock(self->status.mutex)) {
-      lf_print_error("Failed to lock WebSocketServer mutex.");
-      return -1;
-    }
-
-    // Scroll to the end of the list of pending messages.
-    web_socket_message_t** existing = &(self->status.pending_messages);
-    while (*existing != NULL) {
-      existing = &((*existing)->next);
-    }
-    *existing = copy;
-
-    // Interrupt lws_service().
-    lws_cancel_service(self->status.context);
-
-    if (lf_mutex_unlock(self->status.mutex)) {
-      lf_print_error("Failed to unlock WebSocketServer mutex.");
-      return -1;
-    }
-    return 0;
+    send_message(&self->status, send->value);
   =}
 
   reaction(shutdown) {=
     self->status.running = false;
-    if (self->connected_instances != NULL) {
-      hashset_destroy(self->connected_instances);
+    if (self->status.connected_instances != NULL) {
+      hashset_destroy(self->status.connected_instances);
     }
   =}
 }
