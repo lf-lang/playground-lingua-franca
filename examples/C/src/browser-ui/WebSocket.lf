@@ -1,8 +1,8 @@
 /**
  * Demo of a use of WebSocketServer enabling a user interface realized in the browser. Compile and
  * run this program, then open WebSocket.html in your favorite browser. This example program sends
- * to all connected web pages a counting sequence. The count starts when the first web page connects.
- * This also accepts text messages from the web page and prints them on standard output.
+ * to all connected web pages a counting sequence. The count starts when the first web page
+ * connects. This also accepts text messages from the web page and prints them on standard output.
  *
  * This example also shows how to limit the number of connections to just two. If you try to open
  * the WebSocket.html web page more than twice, only the first two attempts will succeed in

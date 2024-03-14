@@ -9,12 +9,12 @@
  * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
  * the running LF program. To specify a file located in the same directory as your source LF file,
  * you can use a syntax like this:
- * 
  * ```
  * s = new WebSocketServer(
  *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
  * )  
  * ```
+
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
@@ -23,9 +23,9 @@
  *
  * To send messages to a client, construct a dynamically allocated struct of type
  * `web_socket_message_t`, set its `wsi` field to the value provided by the connected output, and
- * set its `message` and `length`. The sending data type is `void*`, so any byte array
- * can be sent. The `binary` field of the `web_socket_message_t` should be set to true if the
- * data being sent is not a string. If you sending and receiving strings, consider using the simpler wrapper
+ * set its `message` and `length`. The sending data type is `void*`, so any byte array can be sent.
+ * The `binary` field of the `web_socket_message_t` should be set to true if the data being sent is
+ * not a string. If you sending and receiving strings, consider using the simpler wrapper
  * `WebSocketServerString`.
  *
  * When a message is received from a client, a struct of type `web_socket_message_t` will be
@@ -54,8 +54,8 @@
  * as reported by the incoming message. If the `binary` parameter is set to true, then JavaScript at
  * the receiving end will get a Blob. Otherwise, it gets text.
  *
- * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL,
- * but it does not currently.
+ * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL, but
+ * it does not currently.
  *
  * @param hostport The host port number, which defaults to 8080.
  * @param initial_file If non-NULL and non-empty, a file name to serve to HTTP requests.
@@ -152,7 +152,7 @@ reactor WebSocketServer(
       lws_context_destroy(status->context);
       return NULL;
     };
-    
+
     // Callback handling HTTP requests.
     static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
       bool result;
@@ -204,12 +204,12 @@ reactor WebSocketServer(
           // the application may try to send a message to the socket before
           // opening has completed.
           lf_schedule_copy(status->connected_action, MSEC(500), &ws_instance, 1);
-          
+
           LF_MUTEX_LOCK(status->mutex);
           // Add the wsi to the set of connected web socket instances.
           hashset_add(status->connected_instances, wsi);
           LF_MUTEX_UNLOCK(status->mutex);
-          
+
           break;
         case LWS_CALLBACK_WSI_DESTROY:
           LF_PRINT_LOG("**** Connection closed.");
@@ -257,7 +257,7 @@ reactor WebSocketServer(
       server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
       web_socket_message_t* to_send;
       web_socket_message_t** previous_pointer;
-      
+
       switch(reason) {
         case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
           // lws_service() blocking call interrupted. Check for messages to send.
@@ -268,7 +268,7 @@ reactor WebSocketServer(
           }
           LF_MUTEX_UNLOCK(status->mutex);
           break;
-          
+
         case LWS_CALLBACK_RECEIVE:
           if (len > 0) {
             LF_PRINT_LOG("**** Server received WS message.");
@@ -305,7 +305,7 @@ reactor WebSocketServer(
             if (to_send->wsi == wsi) {
               // Remove it from the list.
               *previous_pointer = to_send->next;
-  
+
               int length = to_send->length;
               // The buffer needs LWS_PRE bytes _before_ the message.
               // Do not include the null terminator, because this makes JSON unable to parse it.
@@ -397,7 +397,7 @@ reactor WebSocketServer(
       result->next = NULL;
       return result;
     }
-    
+
     // Append a message to the list of messages to be sent.
     // This assumes the mutex is held.
     static void append_message_to_send(server_status_t* status, web_socket_message_t* copy) {
@@ -410,7 +410,7 @@ reactor WebSocketServer(
       // Have to call lws_cancel_service to unblock the lws thread.
       lws_cancel_service(status->context);
     }
-    
+
     // Queue a message to be sent.  If the specified wsi is NULL, then broadcast
     // to all open web sockets.
     static void send_message(server_status_t* status, web_socket_message_t* message) {
