@@ -1,0 +1,44 @@
+/**
+ * Demo of a use of WebSocketServer enabling to connect a `DigitalCar` reactor, a `PhysicalCar` reactor,
+ * and a Webpage. Compile and run this program, then open index.html in your favorite browser. 
+ * Each time the web page, the `DigitalCar`, or the `PhysicalCar` sends a text message to the WebSocketServer,
+ * it broadcasts the recieved message to all connected clients.
+ * @author Moez Ben Hajhmida
+ */
+
+target C
+
+import WebSocketServer from "../lib/WebSocketServer.lf"
+import DigiCar from "DigitalCar.lf"
+import PhyCar from "PhysicalCar.lf"
+
+main reactor {
+  logical action broadcast_action
+  state message_to_broadcast: string
+
+  ws = new WebSocketServer(hostport=8000, max_clients=5)
+
+  digicar = new DigiCar()
+  phycar = new PhyCar()
+
+  reaction(broadcast_action) -> ws.send {=
+    // Broadcast to all connected sockets.  This is accomplished by providing a NULL wsi.
+    web_socket_message_t* to_send = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
+    to_send->wsi = NULL;
+    to_send->length = strlen(self->message_to_broadcast);
+    to_send->message = self->message_to_broadcast;
+    to_send->binary = false;
+    lf_set(ws.send, to_send);
+  =}
+
+  /**
+  * This reaction is used to avois the `Causality Loop` error that rises when
+  * we define the above reaction as:
+  * reaction(ws.received) -> ws.send {= ... =}
+  */
+  reaction(ws.received) -> broadcast_action {=
+    self->message_to_broadcast = (char*)malloc(strlen(ws.received->value));
+    strcpy(self->message_to_broadcast, ws.received->value->message);
+    lf_schedule(broadcast_action, SEC(0));
+  =}
+}
