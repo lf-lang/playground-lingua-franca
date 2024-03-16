@@ -39,6 +39,6 @@ main reactor {
   reaction(ws.received) -> broadcast_action {=
     self->message_to_broadcast = (char*)malloc(strlen(ws.received->value));
     strcpy(self->message_to_broadcast, ws.received->value->message);
-    lf_schedule(broadcast_action, SEC(0));
+    lf_schedule(broadcast_action, SEC(1));
   =}
 }
