@@ -1,16 +1,12 @@
 /**
  * Demo of a use of WebSocketServer enabling a user interface realized in the browser. Compile and
  * run this program, then open WebSocket.html in your favorite browser. This example program sends
- * to the web page a counting sequence. It also accepts text messages from the web page and prints
- * them on standard output.
+ * to all connected web pages a counting sequence. The count starts when the first web page
+ * connects. This also accepts text messages from the web page and prints them on standard output.
  *
  * This example also shows how to limit the number of connections to just two. If you try to open
  * the WebSocket.html web page more than twice, only the first two attempts will succeed in
  * connecting. By default, WebSocketServer imposes no such limit.
- *
- * In this example, if you connect two clients, one will receive even numbered counts, and the other
- * will receive odd numbered counts. This is because the count state variable is shared across all
- * clients.
  *
  * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
@@ -31,6 +27,7 @@ import WebSocketServer from "../lib/WebSocketServer.lf"
 
 main reactor {
   state count: int = 0
+  state running: bool = false
   logical action send_action: web_socket_instance_t*
 
   s = new WebSocketServer(
@@ -49,7 +46,7 @@ main reactor {
     web_socket_message_t* container = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
     container->message = message;
     container->length = strlen(message) + 1;
-    container->wsi = send_action->value->wsi;
+    container->wsi = NULL; // Broadcast to all connected clients.
     container->binary = false; // Sending text.
 
     lf_set(s.send, container);
@@ -61,8 +58,11 @@ main reactor {
     if (s.connected->value.connected) {
       lf_print("======== Connected a new client");
 
-      // Start sending.
-      lf_schedule_copy(send_action, 0, &s.connected->value, 1);
+      // Start sending if not already started.
+      if (!self->running) {
+        lf_schedule_copy(send_action, 0, &s.connected->value, 1);
+        self->running = true;
+      }
     } else {
       lf_print("======== Disconnected client");
     }
