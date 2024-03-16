@@ -156,9 +156,9 @@ reactor WebSocketServer(
       bool result;
       server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
       if (status == NULL) {
-        lf_print_error_and_exit("User struct NULL in callback!");
+        lf_print_error_and_exit("*** User struct NULL in callback!");
       }
-      LF_PRINT_LOG("HTTP callback invoked with reason: %d", reason);
+      LF_PRINT_LOG("*** HTTP callback invoked with reason: %d", reason);
       web_socket_instance_t ws_instance;
       switch(reason) {
         case LWS_CALLBACK_HTTP:
@@ -232,13 +232,13 @@ reactor WebSocketServer(
 
     // Callback handling web socket requests.
     static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
-      LF_PRINT_LOG("WS callback invoked with reason: %d", reason);
+      LF_PRINT_LOG("*** WS callback invoked with reason: %d", reason);
       server_status_t* status = (server_status_t*)lws_context_user(lws_get_context(wsi));
       switch(reason) {
         case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
           // lws_service() blocking call interrupted. Check for messages to send.
           if (lf_mutex_lock(status->mutex)) {
-            lf_print_error("Failed to lock mutex in WebSocketServer.");
+            lf_print_error("*** Failed to lock mutex in WebSocketServer.");
             return 0;
           }
 
@@ -351,11 +351,12 @@ reactor WebSocketServer(
   =}
 
   reaction(startup) send -> connected_action, received_action {=
+  lf_print("WS server startup");
     // The receiving thread dynamically allocates memory for messages.
     // Set the destructor and copy constructor.
     lf_set_destructor(received_action, web_socket_message_destructor);
     lf_set_copy_constructor(received_action, web_socket_message_copy_constructor);
-
+    
     // Assume the input is dynamically allocated, including its message field.
     lf_set_destructor(send, web_socket_message_destructor);
     lf_set_copy_constructor(send, web_socket_message_copy_constructor);

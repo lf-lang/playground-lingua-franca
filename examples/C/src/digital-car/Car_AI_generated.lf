@@ -1,34 +1,29 @@
 /**
- * This code is generated using OpenAI gpt-3.5-turbo model for text generation 
- * and text-embedding-ada-002 for retrieval and embeddings. 
- * 
+ * This code is generated using OpenAI gpt-3.5-turbo model for text generation and
+ * text-embedding-ada-002 for retrieval and embeddings.
+ *
  * @author Moez Ben Hajhmida
  */
-
-
- target C
-
-
- /**
-   * User prompt:
-   *
- * For the C language as a target, write a code for:
- *       - a reactor 'Car' that declares a state variable 'lock'. The state variable 'lock' value is 'locked' or 'open'. 
- *       - At the start of the program, the reactor 'Car' initiates its state as 'locked'. Then connects to the the WebSocket server.
- *       - When the reactor 'Car' receives a message from the WebSocket server, the reactor waits for 3 seconds, then the message value is assigned to the lock state.
- *       - Each time the state 'lock' is updated the reactors sends the new state value to the the WebSocket server.
-**/
-
+target C
 
 /**
-   * Automatically generated code:
-**/
+ * User prompt:
+ *
+ * For the C language as a target, write a code for:
+ * - a reactor 'Car' that declares a state variable 'lock'. The state variable 'lock' value is
+ * 'locked' or 'open'.
+ * - At the start of the program, the reactor 'Car' initiates its state as 'locked'. Then connects
+ * to the the WebSocket server.
+ * - When the reactor 'Car' receives a message from the WebSocket server, the reactor waits for 3
+ * seconds, then the message value is assigned to the lock state.
+ * - Each time the state 'lock' is updated the reactors sends the new state value to the the
+ * WebSocket server.
+ */
+/** Automatically generated code: */
 reactor Car {
   state lock: char* = "locked"
 
-  //output to_websocket: char*
-  logical action  to_websocket
-
+  logical action to_websocket  // output to_websocket: char*
 
   reaction(startup) {=
     // Initialize state as 'locked'.
@@ -42,4 +37,3 @@ reactor Car {
     lf_schedule_token(to_websocket, SEC(3), self->lock);
   =}
 }
-

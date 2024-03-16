@@ -1,61 +1,52 @@
 /**
- * This code is generated using OpenAI gpt-3.5-turbo model for text generation 
- * and text-embedding-ada-002 for retrieval and embeddings. 
- * 
+ * Demo of a reactor that instanciates a WebsocketClient and use it to exchange messages with
+ * a WebSocketServer.
  * @author Moez Ben Hajhmida
  */
+target C {
+  keepalive: true
+}
 
-
- target C
- {
-  keepalive: true,
- }
-
-import WebSocketClient from "../lib/WebSocketClient.lf" 
+import WebSocketClient from "../lib/WebSocketClient.lf"
 
 reactor DigiCar {
-  state lock: char* = "locked"  //replace the state by a number
+  state lock: char* = "locked"  // replace the state by a number
   input from_websocket: string
-  output to_websocket: string //char*
+  output to_websocket: string   // char*
   logical action state_change
   logical action unlock
 
   client = new WebSocketClient()
 
-  
-
-  reaction(startup)->unlock {=  
-    // Initialize state as 'locked'.    
-    self->lock = "locked";
-    lf_print("------ Digital Car door is %s.", self->lock);
-    // lf_schedule(unlock, SEC(3));
+  reaction(startup) -> unlock {=
+    // Initialize state as 'locked'.
+        self->lock = "locked";
+        lf_print("------ Digital Car door is %s at startup.", self->lock);
+        // lf_schedule(unlock, SEC(3));
   =}
 
-  reaction(from_websocket){=
+  reaction(from_websocket) {=
     self->lock = from_websocket->value;
     lf_print("------ Digital Car door is now %s.", self->lock);
   =}
 
 
-  // reaction(state_change)->to_websocket{=    
-  //   to_websocket->value = self->lock;
-  //   lf_print("Digital Sending %s.", self->lock);
-  // =}
-
-  reaction(state_change)->client.in_static{= 
+  reaction(state_change) -> client.in_static {=
     lf_set(client.in_static, self->lock);
-    lf_print("------ Digital Sending %s.", self->lock);
+        lf_print("------ Digital Sending %s.", self->lock);
   =}
 
-  reaction(unlock)->client.in_static{=
+  /**
+  * Each 2 seconds switch thw state between locked and unlocked.
+  */
+  reaction(unlock) -> client.in_static {=
     if (self->lock == "locked"){
       self->lock = "unlocked";
     }else{
       self->lock = "locked";
-    }      
+    }
     lf_set(client.in_static, self->lock);
     lf_print("++++++ Digital Car Sending %s.", self->lock);
     lf_schedule(unlock, SEC(3));
   =}
 }
-

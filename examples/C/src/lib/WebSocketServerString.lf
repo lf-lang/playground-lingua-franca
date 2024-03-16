@@ -48,7 +48,7 @@ target C
 
 import WebSocketServer from "WebSocketServer.lf"
 
-reactor WebSocketServerString(hostport: int = 8000, initial_file: string = {= NULL =}) {
+reactor WebSocketServerString(hostport: int = 8000, max_clients: int = 1, initial_file: string = {= NULL =}) {
   input in_dynamic: char*
   input in_static: string
 
@@ -58,7 +58,7 @@ reactor WebSocketServerString(hostport: int = 8000, initial_file: string = {= NU
   state ws: web_socket_instance_t
 
   // Limit the number of clients to one.
-  server = new WebSocketServer(hostport=hostport, max_clients=1, initial_file=initial_file)
+  server = new WebSocketServer(hostport=hostport, max_clients=max_clients, initial_file=initial_file)
 
   reaction(startup) {=
     self->ws.connected = false;

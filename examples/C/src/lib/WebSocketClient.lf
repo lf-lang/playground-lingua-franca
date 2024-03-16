@@ -1,9 +1,30 @@
+/**
+ * A web socket client enabling a user interface realized in an LF program to interact with a web
+ * socket server. This creates a web socket client that connects to a server port (default 8000) for
+ * web socket connections. The intended usage is that you create an LF Reactor that utilizes this
+ * client to connect to a web socket server defined in `./lib/WebSocketServer.lf`.
+ *
+ * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
+ * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
+ * instructions</a>). To install on MacOS, we recommending using brew:
+ * <pre> brew install libwebsockets
+ * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
+ * linked to using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake
+ * include file.
+ *
+ * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
+ *
+ * @param servername The server name, which defaults to "localhost".
+ * @param serverport The server port number, which defaults to 8000.
+ * @param servicepath The path to the service, which defaults to "/".
+ *
+ * @author Moez Ben Hajhmida
+ */
 target C {
   keepalive: true,
   cmake-include: ["WebSocketCmake.txt"]
 }
-
-// import WebSocketServer from "../lib/WebSocketServer.lf"
 
 preamble {=
   #ifndef WEBSOCKET_CLT_H
@@ -30,7 +51,7 @@ preamble {=
     void* connected_action;     // Action to notify of changes in connected status.
     void* received_action;    // Action to notify of messages received.
     struct lws_context* context;  // The context.
-    bool connected; 
+    bool connected;
   } client_status_t;
 
     /**
@@ -43,26 +64,22 @@ preamble {=
     //bool connected;
   } web_socket_instance_clt_t;
   #endif //WEBSOCKET_CLT_H
-  
 =}
 
-reactor WebSocketClient(servername: string = "localhost", serverport: int = 8000, servicepath: string = "/") {
+reactor WebSocketClient(
+  servername: string = "localhost",
+  serverport: int = 8000,
+  servicepath: string = "/") {
   output connected: web_socket_instance_clt_t
-  //output received: web_socket_message_clt_t*
-  input send: char*
 
   physical action connected_action: web_socket_instance_clt_t
-  // physical action received_action: web_socket_message_clt_t*
 
-  state status: client_status_t
-  
+  state status: client_status_t  // physical action received_action: web_socket_message_clt_t*
 
   input in_dynamic: char*
   input in_static: string
   output received: char*
 
-
-  
   preamble {=
       struct lws_context_creation_info info;
       struct lws_client_connect_info ccinfo;
@@ -87,7 +104,7 @@ reactor WebSocketClient(servername: string = "localhost", serverport: int = 8000
     			/* Handle incomming messages here. */
           message_copy = (char*)malloc(len);
           strcpy(message_copy, in);
-		      lf_print("******  ws client received %ld from server '%s'\n", (long)len, message_copy);
+          lf_print("******  ws client received %ld from server '%s'\n", (long)len, message_copy);
     			break;
 
     		case LWS_CALLBACK_CLIENT_WRITEABLE:
@@ -133,85 +150,79 @@ reactor WebSocketClient(servername: string = "localhost", serverport: int = 8000
   =}
 
   reaction(startup) -> connected_action, connected {=
-    //self->status = false;
+        //self->status = false;
 
-    memset(&info, 0, sizeof(info));
-    
-
-    info.port = CONTEXT_PORT_NO_LISTEN;
-    info.protocols = protocols;
-    info.gid = -1;
-    info.uid = -1;
-    // To get callbacks to be passed a pointer to the status struct:
-    info.user = &self->status;
-  
+        memset(&info, 0, sizeof(info));
 
 
-    self->status.context = lws_create_context(&info);
-    if (!self->status.context) {
-        fprintf(stderr, "Error creating libwebsocket context\n");
-        return -1;
-    }
+        info.port = CONTEXT_PORT_NO_LISTEN;
+        info.protocols = protocols;
+        info.gid = -1;
+        info.uid = -1;
+        // To get callbacks to be passed a pointer to the status struct:
+        info.user = &self->status;
 
-    
-    
-/* Connect if we are not connected to the server. */
-if( !connected->value.wsi )
-		{
-    memset(&ccinfo, 0, sizeof(ccinfo));
 
-		ccinfo.context = self->status.context;
-    ccinfo.address = self->servername;
-    ccinfo.port = self->serverport;
-    ccinfo.path = self->servicepath;
-    ccinfo.host = ccinfo.address;
-    ccinfo.origin = ccinfo.address;
-    ccinfo.protocol = "ws";
 
-    self->status.connected_action = connected_action;
-   
+        self->status.context = lws_create_context(&info);
+        if (!self->status.context) {
+            fprintf(stderr, "Error creating libwebsocket context\n");
+            return -1;
+        }
 
-    connected->value.wsi = lws_client_connect_via_info(&ccinfo);
-    while (!lws_service(self->status.context, 50) && !client_connected) {
-					// Wait for the connection to complete
-					LF_PRINT_LOG("Wait for the connection to complete ...\n");
-				}
-		}
-    return 0;
+
+    /* Connect if we are not connected to the server. */
+    if( !connected->value.wsi )
+    		{
+        memset(&ccinfo, 0, sizeof(ccinfo));
+
+    		ccinfo.context = self->status.context;
+        ccinfo.address = self->servername;
+        ccinfo.port = self->serverport;
+        ccinfo.path = self->servicepath;
+        ccinfo.host = ccinfo.address;
+        ccinfo.origin = ccinfo.address;
+        ccinfo.protocol = "ws";
+
+        self->status.connected_action = connected_action;
+
+
+        connected->value.wsi = lws_client_connect_via_info(&ccinfo);
+
+        while (!lws_service(self->status.context, 50) && !client_connected) {
+    					// Wait for the connection to complete
+    					LF_PRINT_LOG("Wait for the connection to complete ...\n");
+              lf_sleep(MSEC(10));
+    				}
+    		}
+        return 0;
   =}
 
-reaction(in_dynamic, in_static) ->connected{=
-  if (client_connected) {
-    char* message_copy;
-    if (in_dynamic->is_present) {
-      message_copy = (char*)malloc(strlen(in_dynamic->value));
-      strcpy(message_copy, in_dynamic->value);
+  reaction(in_dynamic, in_static) -> connected {=
+    if (client_connected) {
+      char* message_copy;
+      if (in_dynamic->is_present) {
+        message_copy = (char*)malloc(strlen(in_dynamic->value));
+        strcpy(message_copy, in_dynamic->value);
+      } else {
+        message_copy = (char*)malloc(strlen(in_static->value));
+        strcpy(message_copy, in_static->value);
+      }
+
+      to_send = message_copy;
+
+
+      LF_PRINT_LOG("******> ws client sending: %s", message_copy);
+
+      lws_callback_on_writable(connected->value.wsi );
+      lws_service( self->status.context, /* timeout_ms = */ 250 );
     } else {
-      message_copy = (char*)malloc(strlen(in_static->value));
-      strcpy(message_copy, in_static->value);
+      // Web socket is not connected.
+      lf_print_warning("******  Web socket client is not connected. Dropping message to send.");
     }
+  =}
 
-    to_send = message_copy;
-
-
-    LF_PRINT_LOG("******> ws client sending: %s", message_copy);
-    
-    lws_callback_on_writable(connected->value.wsi ); 
-    lws_service( self->status.context, /* timeout_ms = */ 250 );
-  } else {
-    // Web socket is not connected.
-    lf_print_warning("******  Client Web socket is not connected. Dropping message to send.");
-  }
-=}
-
-
-   
-// lws_callback_on_writable( connected->value.wsi );   
-// lws_service( self->status.context, /* timeout_ms = */ 250 );
-
-reaction(shutdown) {=
-  lws_context_destroy(self->status.context);
-=}
-
+  reaction(shutdown) {=
+    lws_context_destroy(self->status.context);
+  =}
 }
-
