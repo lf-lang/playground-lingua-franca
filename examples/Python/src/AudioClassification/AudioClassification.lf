@@ -1,165 +1,152 @@
 /**
- * This example illustrates the capabilities of an Emergency Sirens Classifier, which can 
- * classify three distinct categories: Ambulance, Firetruck, and Traffic
+ * This example illustrates the capabilities of an Emergency Sirens Classifier, which can classify
+ * three distinct categories: Ambulance, Firetruck, and Traffic
  *
  * @author Vincenzo Barbuto
  */
-
 target Python
 
 reactor Microphone {
+  physical action send_audio_data
+  output audio_data
 
-    physical action send_audio_data
-    output audio_data
+  state audio_capture_thread  # Thread variables
+  state thread_should_be_running
 
-    # Thread variables
-    state audio_capture_thread
-    state thread_should_be_running
+  state buffer_size           # Audio variables
+  state sample_rate
+  state num_channels
+  state overlapping_factor
+  state input_length_in_samples
+  state interval_between_inference
 
-    # Audio variables
-    state buffer_size
-    state sample_rate
-    state num_channels
-    state overlapping_factor
-    state input_length_in_samples
-    state interval_between_inference
+  preamble {=
+    import time as tm
+    import sounddevice as sd
+    import numpy as np
+    import threading
 
-    preamble {=
-        import time as tm
-        import sounddevice as sd
-        import numpy as np
-        import threading
+    def audio_capture(self, audio_action, running):
 
-        def audio_capture(self, audio_action, running):
+        def callback(indata, frames, time, status):
+            if status:
+                print(status)
+            input_data = self.np.array(indata, dtype=self.np.float32).reshape((1, self.buffer_size))
+            audio_action.schedule(0, input_data)
 
-            def callback(indata, frames, time, status):
-                if status:
-                    print(status)
-                input_data = self.np.array(indata, dtype=self.np.float32).reshape((1, self.buffer_size))
-                audio_action.schedule(0, input_data)
+        with self.sd.InputStream(channels=self.num_channels, samplerate=self.sample_rate, callback=callback, blocksize=self.buffer_size):
+            print("#" * 50)
+            print("Recording started. Press Ctrl+C to stop")
+            print("#" * 50)
+            try:
+                while True & running.is_set():
+                    self.tm.sleep(self.interval_between_inference)
+            except KeyboardInterrupt:
+                print("\nRecording stopped")
+  =}
 
-            with self.sd.InputStream(channels=self.num_channels, samplerate=self.sample_rate, callback=callback, blocksize=self.buffer_size):
-                print("#" * 50)
-                print("Recording started. Press Ctrl+C to stop")
-                print("#" * 50)
-                try:
-                    while True & running.is_set():
-                        self.tm.sleep(self.interval_between_inference)
-                except KeyboardInterrupt:
-                    print("\nRecording stopped")
-    =}
+  reaction(startup) -> send_audio_data {=
+    # Setup Audio recorders
+    self.buffer_size, self.sample_rate, self.num_channels, self.overlapping_factor = 15600, 16000, 1, 0.5
+    self.input_length_in_samples =self. buffer_size
+    self.interval_between_inference = self.input_length_in_samples * (1 - self.overlapping_factor)
 
-    reaction(startup) -> send_audio_data {=
-        # Setup Audio recorders
-        self.buffer_size, self.sample_rate, self.num_channels, self.overlapping_factor = 15600, 16000, 1, 0.5
-        self.input_length_in_samples =self. buffer_size
-        self.interval_between_inference = self.input_length_in_samples * (1 - self.overlapping_factor)
+    # Launch Audio Capture Thread
+    self.thread_should_be_running = self.threading.Event()
+    self.thread_should_be_running.set()
 
-        # Launch Audio Capture Thread
-        self.thread_should_be_running = self.threading.Event()
-        self.thread_should_be_running.set()
- 
-        self.audio_capture_thread = self.threading.Thread(target=self.audio_capture, args=(send_audio_data, self.thread_should_be_running))
-        self.audio_capture_thread.start()
+    self.audio_capture_thread = self.threading.Thread(target=self.audio_capture, args=(send_audio_data, self.thread_should_be_running))
+    self.audio_capture_thread.start()
+  =}
 
-    =}
+  reaction(send_audio_data) -> audio_data {=
+    audio_data.set(send_audio_data.value)
+  =}
 
-    reaction(send_audio_data) -> audio_data {=
-        audio_data.set(send_audio_data.value)
-    =}
-
-    reaction(shutdown) {=
-        self.thread_should_be_running.clear()
-        self.audio_capture_thread.join()
-    =}
-
+  reaction(shutdown) {=
+    self.thread_should_be_running.clear()
+    self.audio_capture_thread.join()
+  =}
 }
 
-reactor Classifier(model = "audio_model_9917.tflite") {
+reactor Classifier(model="audio_model_9917.tflite") {
+  state interpreter
+  state input_details
+  state output_details
 
-    state interpreter
-    state input_details
-    state output_details
+  input input_data
+  output output_data
+  output inference_time
 
-    input input_data
-    output output_data
-    output inference_time
+  preamble {=
+    import tensorflow as tf
+  =}
 
-    preamble{=
-        import tensorflow as tf
-    =}
+  reaction(startup) {=
+    # Specify the full path
+    model_path = f"./{self.model}"
+    self.interpreter = self.tf.lite.Interpreter(model_path)
+    self.interpreter.allocate_tensors()
+    self.input_details = self.interpreter.get_input_details()
+    self.output_details = self.interpreter.get_output_details()
+  =}
 
-    reaction(startup) {=
-        # Specify the full path
-        model_path = f"./{self.model}"
-        self.interpreter = self.tf.lite.Interpreter(model_path)
-        self.interpreter.allocate_tensors()
-        self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
-    =}
-
-    reaction(input_data) -> output_data, inference_time {=
-        # Run inference
-        self.interpreter.set_tensor(self.input_details[0]["index"], input_data.value)
-        start = lf.time.physical()
-        self.interpreter.invoke()
-        inference_tm = lf.time.physical() - start
-        # Get output results
-        results = self.interpreter.get_tensor(self.output_details[1]["index"])
-        output_data.set(results)
-        inference_time.set(inference_tm)
-    =}
-
+  reaction(input_data) -> output_data, inference_time {=
+    # Run inference
+    self.interpreter.set_tensor(self.input_details[0]["index"], input_data.value)
+    start = lf.time.physical()
+    self.interpreter.invoke()
+    inference_tm = lf.time.physical() - start
+    # Get output results
+    results = self.interpreter.get_tensor(self.output_details[1]["index"])
+    output_data.set(results)
+    inference_time.set(inference_tm)
+  =}
 }
 
-reactor Actuator(labels = {= ["Ambulance", "Firetruck", "Traffic"] =}, window = 3) {
-    
-    state results_window
-    state times
-    state count
-    
-    input results
-    input inference_time
+reactor Actuator(labels = {= ["Ambulance", "Firetruck", "Traffic"] =}, window=3) {
+  state results_window
+  state times
+  state count
 
-    preamble {= 
-        import numpy as np
-    =}
+  input results
+  input inference_time
 
-    reaction(startup){=
-        self.results_window = []
-        self.times = []
-        self.count = 0
-    =}
+  preamble {=
+    import numpy as np
+  =}
 
-    reaction(results, inference_time){=
-        self.results_window.append(results.value)
-        self.times.append(inference_time.value)
+  reaction(startup) {=
+    self.results_window = []
+    self.times = []
+    self.count = 0
+  =}
 
-        # Compute the mean results for the inferences for each window
-        if(((self.count + 1 )%self.window == 0)):
-            results_np = self.np.array(self.results_window)
-            mean_results = results_np.mean(axis=0)
-            result_index = mean_results.argmax()
-            times_ms = self.np.mean(self.times) / 1000000
-            print("-" * 25 + f"Mean Results for {self.window} Inferences" + "-" * 25)
-            print(f"Classification: {self.labels[result_index]} -> {format(mean_results[0][result_index]*100, '.2f')}%")
-            print(f"Inference (physical) time: {format(times_ms, '.2f')}ms")
-            print("-" * 79)
-            self.results_window.clear()
-            self.times.clear()
-        self.count+=1
-    =}
+  reaction(results, inference_time) {=
+    self.results_window.append(results.value)
+    self.times.append(inference_time.value)
 
-
+    # Compute the mean results for the inferences for each window
+    if(((self.count + 1 )%self.window == 0)):
+        results_np = self.np.array(self.results_window)
+        mean_results = results_np.mean(axis=0)
+        result_index = mean_results.argmax()
+        times_ms = self.np.mean(self.times) / 1000000
+        print("-" * 25 + f"Mean Results for {self.window} Inferences" + "-" * 25)
+        print(f"Classification: {self.labels[result_index]} -> {format(mean_results[0][result_index]*100, '.2f')}%")
+        print(f"Inference (physical) time: {format(times_ms, '.2f')}ms")
+        print("-" * 79)
+        self.results_window.clear()
+        self.times.clear()
+    self.count+=1
+  =}
 }
-
 
 main reactor {
-    mic = new Microphone()
-    classifier = new Classifier()
-    actuator = new Actuator()
+  mic = new Microphone()
+  classifier = new Classifier()
+  actuator = new Actuator()
 
-    mic.audio_data -> classifier.input_data
-    classifier.output_data, classifier.inference_time -> actuator.results, actuator.inference_time
-
+  mic.audio_data -> classifier.input_data
+  classifier.output_data, classifier.inference_time -> actuator.results, actuator.inference_time
 }
