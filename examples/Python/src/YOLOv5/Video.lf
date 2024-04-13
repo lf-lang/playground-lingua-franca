@@ -1,9 +1,6 @@
-/**
- * Video capture and playback example using OpenCV.
- * Please see README.md for instructions.
- */
+/** Video capture and playback example using OpenCV. Please see README.md for instructions. */
 target Python {
-  single-threaded: true  // OpenCV crashes if we use the multithreaded version.
+  single-threaded: true  # OpenCV crashes if we use the multithreaded version.
 }
 
 preamble {=
@@ -16,13 +13,9 @@ preamble {=
  * @param offset Time until frames start to be captured.
  * @param period The period with which frames will be read.
  */
-reactor WebCam(
-  webcam_id = 0,
-  offset = 0s,
-  period = 100ms
-) {
+reactor WebCam(webcam_id=0, offset = 0 s, period = 100 ms) {
   output camera_frame
-  
+
   state stream
   timer camera_tick(offset, period)
 
@@ -53,9 +46,11 @@ reactor WebCam(
 /** Display video frames. */
 reactor Display {
   input frame
+
   reaction(startup) {=
-      print("\n******* Press 'q' in the video window to exit *******\n")
+    print("\n******* Press 'q' in the video window to exit *******\n")
   =}
+
   reaction(frame) {=
     cv2.imshow("frame", frame.value)
     # press 'Q' if you want to exit

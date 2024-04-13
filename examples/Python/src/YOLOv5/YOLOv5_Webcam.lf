@@ -1,12 +1,12 @@
 /**
  * @brief Example of a Deep Neural Network (YOLOv5) in LF.
- * 
+ *
  * Please see README.md for instructions. This uses ultralytics/yolov5. Adapted from:
  * https://towardsdatascience.com/implementing-real-time-object-detection-system-using-pytorch-and-opencv-70bac41148f7
  */
 target Python {
   keepalive: true,
-  single-threaded: true  // OpenCV crashes if we use the multithreaded version.
+  single-threaded: true  # OpenCV crashes if we use the multithreaded version.
 }
 
 import WebCamAsync from "VideoAsync.lf"
@@ -64,9 +64,9 @@ reactor Plotter(label_deadline = 100 msec) {
   input labels
   input label_coordinates
   input model
-  
+
   output result
-  
+
   state _model  # Keep the model
   state _prev_time = 0
 
@@ -83,8 +83,8 @@ reactor Plotter(label_deadline = 100 msec) {
   =}
 
   /**
-   * Given a frame, object labels, and the corresponding object label coordinates, draw
-   * on the frame and produce an output.
+   * Given a frame, object labels, and the corresponding object label coordinates, draw on the frame
+   * and produce an output.
    */
   reaction(frame, labels, label_coordinates) -> result {=
     if  (not frame.is_present or
@@ -127,7 +127,8 @@ reactor Plotter(label_deadline = 100 msec) {
 }
 
 main reactor {
-  webcam = new WebCamAsync(offset = 2s)  // Offset allows time for the model to load.
+  # Offset allows time for the model to load.
+  webcam = new WebCamAsync(offset = 2 s)
   dnn = new DNN()
   plotter = new Plotter()
   display = new Display()
@@ -142,6 +143,6 @@ main reactor {
   dnn.model -> plotter.model
 
   webcam.camera_frame ~> webcam.trigger
-  
+
   plotter.result -> display.frame
 }

@@ -1,9 +1,8 @@
 /**
- * Example of a Deep Neural Network (YOLOv5) in LF.
- * This example is similar to YOLOv5_Webcam but uses a timer to get camera frames
- * instead of physical actions.
- * Try setting the webcam_id to 1 to use your phone camera.
- * 
+ * Example of a Deep Neural Network (YOLOv5) in LF. This example is similar to YOLOv5_Webcam but
+ * uses a timer to get camera frames instead of physical actions. Try setting the webcam_id to 1 to
+ * use your phone camera.
+ *
  * Please see README.md for instructions. This uses ultralytics/yolov5. Adapted from:
  * https://towardsdatascience.com/implementing-real-time-object-detection-system-using-pytorch-and-opencv-70bac41148f7
  */
@@ -15,7 +14,8 @@ import DNN, Plotter from "YOLOv5_Webcam.lf"
 import WebCam, Display from "Video.lf"
 
 main reactor {
-  webcam = new WebCam(webcam_id = 0, offset = 2s)  // Offset prevents deadline violations during startup.
+  # Offset prevents deadline violations during startup.
+  webcam = new WebCam(webcam_id=0, offset = 2 s)
   dnn = new DNN()
   plotter = new Plotter(label_deadline = 100 msec)
   display = new Display()

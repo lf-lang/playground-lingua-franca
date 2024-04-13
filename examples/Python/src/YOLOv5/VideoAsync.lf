@@ -1,10 +1,10 @@
 /**
- * Video capture and playback example using OpenCV with the camera driving the timing.
- * Please see README.md for instructions.
+ * Video capture and playback example using OpenCV with the camera driving the timing. Please see
+ * README.md for instructions.
  */
 target Python {
   keepalive: true,
-  single-threaded: true  // OpenCV crashes if we use the multithreaded version.
+  single-threaded: true  # OpenCV crashes if we use the multithreaded version.
 }
 
 import Display from "Video.lf"
@@ -14,25 +14,19 @@ preamble {=
 =}
 
 /**
- * Produce a sequence of frames as they are delivered by the camera.
- * This version uses blocking reads to read a video frame and starts
- * the read shortly after completing the previous read.
- * This version should only be used in programs where the camera frames
- * drive everything because the WebCamAsync will block until it gets
- * a camera frame.
- * 
+ * Produce a sequence of frames as they are delivered by the camera. This version uses blocking
+ * reads to read a video frame and starts the read shortly after completing the previous read. This
+ * version should only be used in programs where the camera frames drive everything because the
+ * WebCamAsync will block until it gets a camera frame.
+ *
  * @param webcam_id The ID of the camera (default 0).
  * @param offset Time until frames start to be captured.
  * @param frames_per_second The number of frames per second to set the camera to.
  */
-reactor WebCamAsync(
-  webcam_id = 0,
-  offset = 0s,
-  frames_per_second = 30
-) {
+reactor WebCamAsync(webcam_id=0, offset = 0 s, frames_per_second=30) {
   input trigger
   output camera_frame
-  
+
   timer start(offset)
   state stream
 
