@@ -15,7 +15,7 @@ import WebCam, Display from "Video.lf"
 
 main reactor {
   # Offset prevents deadline violations during startup.
-  webcam = new WebCam(webcam_id=0, offset = 2 s)
+  webcam = new WebCam(webcam_id=0, offset = 3 s)
   dnn = new DNN()
   plotter = new Plotter(label_deadline = 100 msec)
   display = new Display()
