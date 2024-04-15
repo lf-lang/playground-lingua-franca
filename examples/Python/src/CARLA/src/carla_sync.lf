@@ -1,5 +1,5 @@
 target Python {
-  files: include/carla_client.py
+  files: carla_client.py
 }
 
 preamble {=
