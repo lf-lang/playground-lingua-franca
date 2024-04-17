@@ -1,10 +1,12 @@
 /**
  * This example illustrates the capabilities of an Emergency Sirens Classifier, which can classify
- * three distinct categories: Ambulance, Firetruck, and Traffic
+ * two distinct categories: Emergency, and Other
  *
  * @author Vincenzo Barbuto
  */
-target Python
+target Python {
+  timeout: 100 sec
+}
 
 reactor Microphone {
   physical action send_audio_data
@@ -31,18 +33,17 @@ reactor Microphone {
         def callback(indata, frames, time, status):
             if status:
                 print(status)
-            input_data = self.np.array(indata, dtype=self.np.float32).reshape((1, self.buffer_size))
+
+            input_data = self.np.array(indata, dtype=self.np.float32)[:self.buffer_size].reshape((1, self.buffer_size))
             audio_action.schedule(0, input_data)
 
         with self.sd.InputStream(channels=self.num_channels, samplerate=self.sample_rate, callback=callback, blocksize=self.buffer_size):
+            # Press Enter when the shutdown procedure starts to close the audio capturing thread
             print("#" * 50)
-            print("Recording started. Press Ctrl+C to stop")
+            print("Recording started. Press Enter to stop")
             print("#" * 50)
-            try:
-                while True & running.is_set():
-                    self.tm.sleep(self.interval_between_inference)
-            except KeyboardInterrupt:
-                print("\nRecording stopped")
+            input()
+            print("\nRecording stopped")
   =}
 
   reaction(startup) -> send_audio_data {=
@@ -64,12 +65,13 @@ reactor Microphone {
   =}
 
   reaction(shutdown) {=
+    print("*"*10 + " Shutting Down " + "*"*10)
     self.thread_should_be_running.clear()
-    self.audio_capture_thread.join()
+    # self.audio_capture_thread.join()
   =}
 }
 
-reactor Classifier(model="audio_model_9917.tflite") {
+reactor Classifier(model="evds_bin.tflite") {
   state interpreter
   state input_details
   state output_details
@@ -83,8 +85,8 @@ reactor Classifier(model="audio_model_9917.tflite") {
   =}
 
   reaction(startup) {=
-    # Specify the full path
     model_path = f"./{self.model}"
+    print(f"Loading the model: {self.model}")
     self.interpreter = self.tf.lite.Interpreter(model_path)
     self.interpreter.allocate_tensors()
     self.input_details = self.interpreter.get_input_details()
@@ -104,10 +106,11 @@ reactor Classifier(model="audio_model_9917.tflite") {
   =}
 }
 
-reactor Actuator(labels = {= ["Ambulance", "Firetruck", "Traffic"] =}, window=3) {
+reactor Actuator(labels = {= ["Emergency", "Other"] =}, window=3) {
   state results_window
   state times
   state count
+  state total_times
 
   input results
   input inference_time
@@ -119,14 +122,14 @@ reactor Actuator(labels = {= ["Ambulance", "Firetruck", "Traffic"] =}, window=3)
   reaction(startup) {=
     self.results_window = []
     self.times = []
+    self.total_times = []
     self.count = 0
   =}
 
   reaction(results, inference_time) {=
     self.results_window.append(results.value)
     self.times.append(inference_time.value)
-
-    # Compute the mean results for the inferences for each window
+    self.total_times.append(inference_time.value)
     if(((self.count + 1 )%self.window == 0)):
         results_np = self.np.array(self.results_window)
         mean_results = results_np.mean(axis=0)
@@ -139,6 +142,17 @@ reactor Actuator(labels = {= ["Ambulance", "Firetruck", "Traffic"] =}, window=3)
         self.results_window.clear()
         self.times.clear()
     self.count+=1
+  =}
+
+  reaction(shutdown) {=
+    avg_time = self.np.mean(self.total_times) / 1000000
+    max_time = self.np.max(self.total_times) / 1000000
+    min_time = self.np.min(self.total_times) / 1000000
+    print("-"*36 + "Summary" + "-"*36)
+    print(f"Mean Inference Time: {format(avg_time, '.2f')}ms")
+    print(f"Slowest Inference: {format(max_time, '.2f')}ms")
+    print(f"Fastes Inference: {format(min_time, '.2f')}ms")
+    print("-" * 79)
   =}
 }
 
