@@ -1,34 +1,31 @@
 /**
- * This Lingua Franca (LF) program is designed to interact with an InfluxDB
- * database and process event trace data. Upon startup, the program checks if the
- * specified database exists and creates it if necessary. Then, it reads a trace
- * file line by line, processing and extracting event information. The program
- * writes the processed data as points to the InfluxDB database. Upon shutdown, the
- * program queries the database for the last 10 records, sorted by descending
- * timestamp, and prints the results to the console. This LF program demonstrates
- * how to work with time-series data and interact with InfluxDB using the Influx
- * package in TypeScript. 
+ * This Lingua Franca (LF) program is designed to interact with an InfluxDB database and process
+ * event trace data. Upon startup, the program checks if the specified database exists and creates
+ * it if necessary. Then, it reads a trace file line by line, processing and extracting event
+ * information. The program writes the processed data as points to the InfluxDB database. Upon
+ * shutdown, the program queries the database for the last 10 records, sorted by descending
+ * timestamp, and prints the results to the console. This LF program demonstrates how to work with
+ * time-series data and interact with InfluxDB using the Influx package in TypeScript.
  */
-target TypeScript;
+target TypeScript
 
-/*
- * Uses another package @ https://github.com/node-influx/node-influx/tree/master/examples/express_response_times
+/**
+ * Uses another package @
+ * https://github.com/node-influx/node-influx/tree/master/examples/express_response_times
  */
-
 main reactor {
-   
-  preamble{=
+  preamble {=
     // @ts-ignore
     import * as Influx from "influx";
     import * as os from "os";
 
     import * as fs from "fs";
     import * as path from "path";
-    
+
     const databaseName = "LF_EVENTS";
     const measurementName = "event_times";
     const traceFilePath = "../../my_trace";
-    
+
 
     const influx = new Influx.InfluxDB({
       host: "localhost",
@@ -53,8 +50,10 @@ main reactor {
       ],
     });
   =}
-  
-  reaction(startup){=
+
+  timer t(0, 0 msec)
+
+  reaction(startup) {=
     influx
       .getDatabaseNames()
       // @ts-ignore
@@ -72,21 +71,17 @@ main reactor {
       console.error(`Error creating Influx database!`);
       });
   =}
-  
-  timer t(0, 0 msec);
-  
+
   reaction(t) {=
-        
-    
     let fieldRecord: {[key:string] : number} = {};
-        
+
     var lines;
     try {
-        
+
         const data = fs.readFileSync(path.resolve(__dirname, traceFilePath), "utf8")
         lines = data.split(/\r?\n/);
-        
-            
+
+
       lines.forEach((line) => {
         if(line.indexOf("EVENT") < 0){
           return;
@@ -118,8 +113,8 @@ main reactor {
         console.error(err)
     }
   =}
-  
-  reaction(shutdown){=
+
+  reaction(shutdown) {=
     influx
       .query(
         `

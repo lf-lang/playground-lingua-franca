@@ -30,15 +30,15 @@ reactor XYPlotter {
 
   reaction(shutdown) {=
     # make data
-        x1 = np.array(self.x1_list)
-        y1 = np.array(self.y1_list)
-        x2 = np.array(self.x2_list)
-        y2 = np.array(self.y2_list)
+    x1 = np.array(self.x1_list)
+    y1 = np.array(self.y1_list)
+    x2 = np.array(self.x2_list)
+    y2 = np.array(self.y2_list)
 
-        # plot
-        plt.plot(x1, y1, "b")
-        plt.plot(x2, y2, "r")
+    # plot
+    plt.plot(x1, y1, "b")
+    plt.plot(x2, y2, "r")
 
-        plt.show()
+    plt.show()
   =}
 }

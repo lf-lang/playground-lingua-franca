@@ -28,5 +28,7 @@ reactor Sender {
     lf_set(out, message);
   =}
 
-  reaction(shutdown) {= rclcpp::shutdown(); =}
+  reaction(shutdown) {=
+    rclcpp::shutdown();
+  =}
 }
