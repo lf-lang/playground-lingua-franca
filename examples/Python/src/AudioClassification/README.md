@@ -11,17 +11,43 @@ The example comprises three reactors:
 
 ![Diagram of the Lingua Franca Program](./AudioClassification.svg "Diagram of the Lingua Franca Program")
 
-## Install Dependencies
+## Running Locally
 
-The example utilizes several libraries, including `sounddevice`, `numpy`, and `tensorflow`. You can install them effortlessly by executing the command: 
+Before cloning this repository, you need to install and configure [Git LFS](https://git-lfs.github.com/) to handle large files. Follow the [installation instructions](https://docs.github.com/en/github/managing-large-files/installing-git-large-file-storage) to set up Git LFS on your system. 
+
+Once Git LFS is installed, you can clone the repository:
 
 ```bash
-python3 -m pip install -r requirements.txt
+git clone https://github.com/lf-lang/playground-lingua-franca.git
 ```
+
+### Install Dependencies
+
+The example requires several Python packages, including:
+
+- `sounddevice`
+- `numpy`
+- `tensorflow`
+
+To install the dependencies:
+
+1. Navigate to the example directory:
+
+    ```bash
+    cd examples/Python/src/AudioClassification
+    ```
+
+2. Install the required packages:
+
+    ```bash 
+    python3 -m pip install -r requirements.txt
+    ```
+
+This will install all the packages listed in `requirements.txt`.
 > [!WARNING] 
 > Be sure that you are using the same Python version as Lingua Franca for building the program.
 
-### Installing Tensorflow for Apple Silicon
+#### Installing Tensorflow for Apple Silicon
 
 Installing TensorFlow for Apple Silicon can be a bit challenging. Therefore, it's important to follow this guide closely. First, ensure you update your **Xcode Command Line Tools**. Open your terminal and execute the following command:
 

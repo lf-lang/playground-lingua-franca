@@ -65,7 +65,7 @@ reactor Microphone {
   =}
 
   reaction(shutdown) {=
-    print("*"*10 + " Shutting Down " + "*"*10)
+    print("*"*32 + " SHUTTING DOWN " + "*"*32)
     self.thread_should_be_running.clear()
     # self.audio_capture_thread.join()
   =}
