@@ -2,103 +2,97 @@
  * This example illustrates the use of logical and physical actions, asynchronous external inputs,
  * the use of startup and shutdown reactions, and the use of actions with values.
  *
+ * @author Christian Menard
  * @author Felix Wittwer
  * @author Edward A. Lee
  * @author Marten Lohstroh
  */
-target Cpp {
-  cmake-include: "ReflexGame.cmake"
-}
+target Cpp
 
-/**
- * Produce a counting sequence at random times with a minimum and maximum time between outputs
- * specified as parameters.
- *
- * @param min_time The minimum time between outputs.
- * @param max_time The maximum time between outputs.
- */
-reactor RandomSource(min_time: time(2 sec), max_time: time(8 sec)) {
-  private preamble {=
-    // Generate a random additional delay over the minimum.
-    // Assume millisecond precision is enough.
-    reactor::Duration additional_time(reactor::Duration min_time, reactor::Duration max_time) {
-      int interval_in_msec = (max_time - min_time) / std::chrono::milliseconds(1);
-      return (std::rand() % interval_in_msec) * std::chrono::milliseconds(1);
-    }
+reactor RandomDelay(min_delay: time(2 sec), max_delay: time(8 sec)) {
+  public preamble {=
+    #include <random>
   =}
-  input another: void
+
+  input in: void
   output out: void
-  logical action prompt(min_time)
-  state count: int(0)
+  logical action delay(min_delay): void
 
-  reaction(startup) -> prompt {=
-    std::cout << "***********************************************" << std::endl;
-    std::cout << "Watch for the prompt, then hit Return or Enter." << std::endl;
-    std::cout << "Type Control-D (EOF) to quit." << std::endl << std::endl;
+  // a random number generator seeded with the current physical time
+  state rand: std::mt19937({= get_physical_time().time_since_epoch().count() =})
+  // a uniform random distribution with a range from 1 to (max_delay - min_delay) milliseconds
+  state dist: std::uniform_int_distribution<int>(
+      1,
+      {= (max_delay - min_delay) / std::chrono::milliseconds(1) =})
 
-    // TODO: Manual inclusion of header necessary?
-    // Set a seed for random number generation based on the current time.
-    std::srand(std::time(nullptr));
-
-    // Schedule the first event.
-    prompt.schedule(additional_time(0ms, max_time - min_time));
-  =}
-
-  reaction(prompt) -> out {=
-    count++;
-    std::cout << count << ". Hit Return or Enter!" << std::endl << std::flush;
+  reaction(delay) -> out {=
     out.set();
   =}
 
-  reaction(another) -> prompt {=
-    // Schedule the next event.
-    prompt.schedule(additional_time(0ms, max_time - min_time));
+  reaction(in) -> delay {=
+    delay.schedule(dist(rand) * std::chrono::milliseconds(1));
   =}
 }
 
-/**
- * Upon receiving a prompt, record the time of the prompt, then listen for user input. When the user
- * hits return, then schedule a physical action that records the time of this event and then report
- * the response time.
- */
-reactor GetUserInput {
-  public preamble {=
-    #include <thread>
-  =}
+reactor KeyboardInput {
+  state thread: std::thread
+  state terminate: std::atomic<bool> = false
+  physical action keyboard_input: char
 
-  physical action user_response: char
-  state prompt_time: {= reactor::TimePoint =}({= reactor::TimePoint::min() =})
-  state total_time: time(0)
-  state count: int(0)
-  state thread: {= std::thread =}
+  output enter: void
+  output quit: void
 
-  input prompt: void
-  output another: void
-
-  reaction(startup) -> user_response {=
-    // Start the thread that listens for Enter or Return.
+  reaction(startup) -> keyboard_input {=
+    // Start the thread that listens for keyboard input.
     thread = std::thread([&] () {
-      int c;
-      while(1) {
-        while((c = getchar()) != '\n') {
-          if (c == EOF) break;
-        }
-        user_response.schedule(c, 0ms);
-        if (c == EOF) break;
+      int c{0};
+      while(!terminate.load()) {
+        c = getchar();
+        keyboard_input.schedule(c);
       }
     });
   =}
 
-  reaction(prompt) {=
-    prompt_time = get_physical_time();
+  reaction(keyboard_input) -> enter, quit {=
+    char key = *keyboard_input.get();
+    if(key  == '\n') {
+      enter.set();
+    } else if (key == EOF) {
+      quit.set();
+    }
   =}
 
-  reaction(user_response) -> another {=
-     auto c = user_response.get();
-    if (*c == EOF) {
-      environment()->sync_shutdown();
-      return;
-    }
+  reaction(shutdown) {=
+    terminate.store(true);
+    thread.join();
+  =}
+}
+
+reactor GameLogic {
+  output request_prompt: void
+  input prompt: void
+  input enter: void
+  input quit: void
+
+  state prompt_time: {= reactor::TimePoint =} = {= reactor::TimePoint::min() =}
+  state count: unsigned = 0
+  state total_time: time(0)
+
+  reaction(startup) -> request_prompt {=
+    std::cout << "***********************************************" << std::endl;
+    std::cout << "Watch for the prompt, then hit Return or Enter." << std::endl;
+    std::cout << "Type Control-D (EOF) to quit." << std::endl << std::endl;
+
+    // request the first prompt
+    request_prompt.set();
+  =}
+
+  reaction(prompt) {=
+    prompt_time = get_physical_time();
+    std::cout << std::endl << "Hit Return or Enter!" << std::endl;
+  =}
+
+  reaction(enter) -> request_prompt {=
     // If the prompt_time is 0, then the user is cheating and
     // hitting return before being prompted.
     if (prompt_time == reactor::TimePoint::min()) {
@@ -113,13 +107,16 @@ reactor GetUserInput {
       total_time += time_in_ms;
       // Reset the prompt_time to indicate that there is no new prompt.
       prompt_time = reactor::TimePoint::min();
-      // Trigger another prompt.
-      another.set();
+      // Request another prompt.
+      request_prompt.set();
     }
   =}
 
+  reaction(quit) {=
+    environment()->sync_shutdown();
+  =}
+
   reaction(shutdown) {=
-    thread.join();
     if (count > 0) {
       std::cout << std::endl << "**** Average response time: " << std::chrono::duration_cast<std::chrono::milliseconds>(total_time/count) << std::endl;
     } else {
@@ -128,9 +125,13 @@ reactor GetUserInput {
   =}
 }
 
-main reactor ReflexGame {
-  p = new RandomSource()
-  g = new GetUserInput()
-  p.out -> g.prompt
-  g.another -> p.another
+main reactor {
+  delay = new RandomDelay()
+  keyboard = new KeyboardInput()
+  logic = new GameLogic()
+
+  logic.request_prompt -> delay.in
+  delay.out -> logic.prompt
+  keyboard.enter -> logic.enter
+  keyboard.quit -> logic.quit
 }
