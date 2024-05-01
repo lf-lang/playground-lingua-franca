@@ -1,0 +1,77 @@
+/** Video capture and playback example using OpenCV. Please see README.md for instructions. */
+target Python {
+  single-threaded: true  # OpenCV crashes if we use the multithreaded version.
+}
+
+preamble {=
+  import cv2
+=}
+
+/**
+ * Produce a sequence of frames with the specified offset and period.
+ * @param webcam_id The ID of the camera (default 0).
+ * @param offset Time until frames start to be captured.
+ * @param period The period with which frames will be read.
+ */
+reactor WebCam(webcam_id=0, offset = 0 s, period = 100 ms) {
+  output camera_frame
+
+  state stream
+  timer camera_tick(offset, period)
+
+  reaction(startup) {=
+    self.stream = cv2.VideoCapture(self.webcam_id, cv2.CAP_ANY) # or CAP_DSHOW
+    if not self.stream.isOpened():
+      sys.stderr.write("Error: Failed to capture from the webcam.\n")
+      exit(1)
+
+    # Here, LF is in charge of the timing, so do not set the frame rate.
+    # self.stream.set(cv2.CAP_PROP_FPS, 30) # Set the camera's FPS to 30
+  =}
+
+  reaction(camera_tick) -> camera_frame {=
+    # read() is a combination of grab() and retrieve().
+    ret, frame = self.stream.read()
+    if ret:
+      camera_frame.set(frame)
+    else:
+      print("WARNING: Camera frame missing.")
+  =}
+
+  reaction(shutdown) {=
+    self.stream.release()
+  =}
+}
+
+/** Display video frames. */
+reactor Display {
+  input frame
+  state frame_count = 0
+
+  reaction(startup) {=
+    print("\n******* Press 'q' in the video window to exit *******\n")
+  =}
+
+  reaction(frame) {=
+    self.frame_count += 1
+    # Every hundred or so frames, report the frame rate.
+    if (self.frame_count % 100 == 0):
+      print(f"** Average frame rate: {self.frame_count * SEC(1) / lf.time.physical_elapsed()} f/s")
+
+    cv2.imshow("frame", frame.value)
+    # press 'Q' if you want to exit
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+      request_stop()
+  =}
+
+  reaction(shutdown) {=
+    # Destroy the all windows now
+    cv2.destroyAllWindows()
+  =}
+}
+
+main reactor {
+  webcam = new WebCam()
+  display = new Display()
+  webcam.camera_frame -> display.frame
+}
