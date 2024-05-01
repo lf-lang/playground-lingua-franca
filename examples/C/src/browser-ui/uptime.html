@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Uptime Lingua Franca</title></head>
+  <body>
+    <h1>The Uptime Lingua Franca program has been running for:</h1>
+    <h1 id="uptime">No data yet</h1>
+    This page connects to a Lingua Franca program that feeds it time data through a web socket.
+    <p id="status">Not connected</p>
+    <script>
+window.onload = function() {
+
+  // Change the address here to that of the hosting machine.
+  const socket = new WebSocket('ws://localhost:8080', 'ws');
+  
+  // Get references to elements on the page.
+  var uptime = document.getElementById('uptime');
+  var status = document.getElementById('status');
+
+  socket.addEventListener('open', (event) => {
+    console.log('WebSocket connection established');
+    status.innerHTML = 'Connected to: ' + event.currentTarget.url;
+  });
+
+  socket.onerror = function(error) {
+    console.log('WebSocket Error: ' + error);
+    status.innerHTML = 'Not connected';
+  };
+  
+  // Handle messages sent by the server.
+  socket.onmessage = function(event) {
+    uptime.innerHTML = event.data;
+  };
+  
+  // Show a disconnected message when the WebSocket is closed.
+  socket.onclose = function(event) {
+    event.preventDefault();
+    status.innerHTML = 'Not connected';
+  };
+};
+    </script>
+  </body>
+</html>

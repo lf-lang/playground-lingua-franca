@@ -3,29 +3,32 @@
 # the stabilize-mode control law.
 #
 # Need to install matplotlib library:
-#  pip install matplotlib
-# 
+# `pip install matplotlib`
+#
 # @author Edward A. Lee
 target Python {
   timeout: 8 secs,
   fast: true
 }
+
 import PendulumSimulation from "PendulumSimulationRK4.lf"
 
 # Alternatively, change the ODE solver to forward-Euler by calling:
 # import PendulumSimulation from "PendulumSimulationEuler.lf"
-
 preamble {=
   import matplotlib.pyplot as plt
 =}
+
 reactor Plotter {
   input data
-  state times({=[]=})
-  state values({=[]=})
+  state times = {= [] =}
+  state values = {= [] =}
+
   reaction(data) {=
     self.times.append(lf.time.logical_elapsed()/1e9)
     self.values.append(data.value)
   =}
+
   reaction(shutdown) {=
     fig, axs = plt.subplots()
     axs.set_title("Pendulum Angle")
@@ -35,12 +38,8 @@ reactor Plotter {
     plt.show()
   =}
 }
-reactor PendulumController(
-  g1(1.7),
-  g2(0.3),
-  g3(0.03),
-  g4(0.06)
-) {
+
+reactor PendulumController(g1=1.7, g2=0.3, g3=0.03, g4=0.06) {
   input theta
   input d_theta
   input phi
@@ -59,13 +58,12 @@ reactor PendulumController(
 }
 
 main reactor {
-  timer d(3 sec);  // One-shot disturbance at 3 seconds.
+  timer d(3 sec)  # One-shot disturbance at 3 seconds.
 
-  p = new PendulumSimulation(initial_theta = 0.1)
+  p = new PendulumSimulation(initial_theta=0.1)
   c = new PendulumController()
   plt = new Plotter()
-  p.theta, p.d_theta, p.phi, p.d_phi
-    -> c.theta, c.d_theta, c.phi, c.d_phi
+  p.theta, p.d_theta, p.phi, p.d_phi -> c.theta, c.d_theta, c.phi, c.d_phi
   c.control -> p.u
   p.theta -> plt.data
 

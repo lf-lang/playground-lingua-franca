@@ -1,0 +1,111 @@
+target C
+
+preamble {=
+  #include <string.h>
+  #include <string.h>
+=}
+
+reactor TugOfWarGame {
+  input[4] force: int  // Each player will exert a force
+
+  timer t(0, 1 s)      // Timer to compute the total status and send the display request
+
+  state agent_force: int[4] = {0, 0, 0, 0}  // States
+  state rope_mark: int = 20
+  state updated: bool = false
+
+  reaction(startup) {=
+    // Construct the data to send
+    char curl_cmd[1024];
+    sprintf(curl_cmd,
+      "curl -X POST http://127.0.0.1:5004/update_force -H \"Content-Type: application/json\" -d '[ \
+          {\"players\": [\"Team_A_Player_0\", \"Team_A_Player_1\", \"Team_B_Player_0\", \"Team_B_Player_1\"], \
+          \"forces\": [0, 0, 0, 0], \
+          \"score\": \"Advantage: None\", \
+          \"rope_mark\": 20 \
+          }\
+        ]' \
+      "
+    );
+    int status = system(curl_cmd);
+    if (status == 0) {
+      lf_print("Updates successfully sent.");
+    } else {
+      lf_print("Unable to send update.");
+    }
+  =}
+
+  reaction(force) {=
+    int sum = 0;
+    for (int i = 0; i < 4; i++) {
+        if (force[i]->is_present) {
+            self->agent_force[i] = force[i]->value;
+            self->updated = true;
+        }
+    }
+  =}
+
+  reaction(t) {=
+    if (self->updated) {
+      // Compute the new rope mark position
+      self->rope_mark = self->rope_mark - self->agent_force[0]
+                - self->agent_force[1]
+                + self->agent_force[2]
+                + self->agent_force[3];
+
+      // Derive the new score
+      char score[25];
+      if (self->rope_mark <= 5) {
+        sprintf(score, "Winner: Team A");
+      } else if (self->rope_mark >= 35) {
+        sprintf(score, "Winner: Team B");
+      } else if (self->rope_mark == 20) {
+        sprintf(score, "Advantage: None");
+      } else if (self->rope_mark < 20) {
+        sprintf(score, "Advantage: Team A");
+      } else {
+        sprintf(score, "Advantage: Team B");
+      }
+
+
+      // Construct the data to send
+      char curl_cmd[1024];
+
+      sprintf(curl_cmd,
+        "curl -X POST http://127.0.0.1:5004/update_force -H \"Content-Type: application/json\" -d '[ \
+            {\"players\": [\"Team_A_Player_0\", \"Team_A_Player_1\", \"Team_B_Player_0\", \"Team_B_Player_1\"], \
+            \"forces\": [%d, %d, %d, %d], \
+            \"score\": \"%s\", \
+            \"rope_mark\": %d \
+            }\
+          ]' \
+        ",
+        self->agent_force[0],
+        self->agent_force[1],
+        self->agent_force[2],
+        self->agent_force[3],
+        score,
+        self->rope_mark
+      );
+
+      int status = system(curl_cmd);
+      if (status == 0) {
+        lf_print("Updates successfully sent.");
+      } else {
+        lf_print("Unable to send update.");
+      }
+
+      self->updated = false;
+
+      // Reset all forces
+      for (int i = 0; i < 4; i++) {
+        self->agent_force[i] = 0;
+      }
+
+      // If one of team won, stop the game
+      if (self->rope_mark<= 5 || self->rope_mark >= 35) {
+        lf_request_stop();
+      }
+    }
+  =}
+}

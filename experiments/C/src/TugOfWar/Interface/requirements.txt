@@ -1,0 +1,8 @@
+flask==2.2.0
+dash==2.11.1
+Werkzeug==2.2.0
+pandas
+plotly_express
+dash_bootstrap_components
+dash_daq
+setuptools

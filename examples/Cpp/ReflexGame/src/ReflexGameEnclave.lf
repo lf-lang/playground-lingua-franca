@@ -1,0 +1,52 @@
+/**
+ * This example illustrates the use of enclaves to avoid spawning an extra thread for handling user
+ * input.
+ *
+ * The thread that is created in the startup reaction of KeyboardInput in eflexgame.lf uses a while
+ * loop. This loop is replaced by a enclave with a reaction that schedules using a physical action.
+ * A physical action was chosen here, because it alligns the progress of logical time in the enclave
+ * with the progress of physical time. Also it avoids the need for specifying or calculating a
+ * delay.
+ *
+ * The outputs that the EnclaveKeybardInput reactor produce are forwarded to the other reactors via
+ * physical actions. This fully decouples the input from the rest of the system, and time stamps of
+ * keyboard events are assigned based on the current physical time.
+ *
+ * @author Christian Menard
+ */
+target Cpp
+
+import GameLogic from "ReflexGame.lf"
+import RandomDelay from "ReflexGame.lf"
+
+reactor EnclaveKeyboardInput {
+  physical action get_next
+
+  output enter: void
+  output quit: void
+
+  reaction(startup, get_next) -> get_next, enter, quit {=
+    int key = getchar();
+    if(key  == '\n') {
+      enter.set();
+      get_next.schedule();
+    } else if (key == EOF) {
+      quit.set();
+      environment()->sync_shutdown();
+    } else {
+      get_next.schedule();
+    }
+  =}
+}
+
+main reactor {
+  @enclave
+  keyboard = new EnclaveKeyboardInput()
+  delay = new RandomDelay()
+  logic = new GameLogic()
+
+  logic.request_prompt -> delay.in
+  delay.out -> logic.prompt
+  keyboard.enter ~> logic.enter
+  keyboard.quit ~> logic.quit
+}
