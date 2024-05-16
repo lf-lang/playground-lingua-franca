@@ -1,6 +1,8 @@
 /**
- * Demo of a reactor that instanciates a WebsocketClient and use it to exchange messages with
- * a WebSocketServer.
+ * Demo of a reactor simulating a digital car. 
+ * The digital car reactor has a state variable describing the car lock. The lock state can be assigned three different integer values:
+ * 0 if the state is locked, 1 if unlocked, and -1 if unknown.
+ * 
  * @author Moez Ben Hajhmida
  */
 target C {
@@ -9,44 +11,50 @@ target C {
 
 import WebSocketClient from "../lib/WebSocketClient.lf"
 
+preamble {=
+  #include <stdlib.h>
+
+  #define LOCKED   0
+  #define UNLOCKED 1
+  #define UNKNOWN  -1
+=}
+
+
+
 reactor DigiCar {
-  state lock: char* = "locked"  // replace the state by a number
-  input from_websocket: string
-  output to_websocket: string   // char*
-  logical action state_change
-  logical action unlock
+  output received: int  
+  physical action unlock
+  state lock: int 
 
   client = new WebSocketClient()
 
-  reaction(startup) -> unlock {=
-    // Initialize state as 'locked'.
-        self->lock = "locked";
-        lf_print("------ Digital Car door is %s at startup.", self->lock);
-        // lf_schedule(unlock, SEC(3));
+  reaction(startup)-> unlock, client.in_static {=
+    // Initialize state as 'unknown'.
+    self->lock = UNKNOWN;
+    lf_print("door is '%d' at startup.", self->lock);
+    lf_schedule(unlock, SEC(2));
   =}
 
-  reaction(from_websocket) {=
-    self->lock = from_websocket->value;
-    lf_print("------ Digital Car door is now %s.", self->lock);
-  =}
-
-
-  reaction(state_change) -> client.in_static {=
-    lf_set(client.in_static, self->lock);
-        lf_print("------ Digital Sending %s.", self->lock);
-  =}
-
-  /**
-  * Each 2 seconds switch thw state between locked and unlocked.
+    /**
+  * Each 4 seconds switch thw state between locked and unlocked.
   */
   reaction(unlock) -> client.in_static {=
-    if (self->lock == "locked"){
-      self->lock = "unlocked";
+    char* buffer = (char*)malloc(10 * sizeof(char));
+
+    if (self->lock == LOCKED){
+      self->lock = UNLOCKED;
     }else{
-      self->lock = "locked";
+      self->lock = LOCKED;
     }
-    lf_set(client.in_static, self->lock);
-    lf_print("++++++ Digital Car Sending %s.", self->lock);
-    lf_schedule(unlock, SEC(3));
+    snprintf (buffer, sizeof(buffer), "%d",self->lock);
+    
+    lf_set(client.in_static, buffer);
+    lf_print("sending %d.", self->lock);
+    
+  =}
+
+
+  reaction(client.received) -> received {=
+    lf_set(received, true);
   =}
 }

@@ -182,7 +182,7 @@ reactor WebSocketServer(
           // Check against maximum number of connections.
           if (status->max_clients > 0 && *status->client_count >= status->max_clients) {
             // Deny the connection.
-            lf_print_warning("**** Maximum number of clients reached. Denying connection.");
+            lf_print_warning("**** Maximum number of clients reached (%d). Denying connection.", status->max_clients);
             // Increment the client count past the maximum because it will be
             // decremented when this closes and the browser will retry.
             *status->client_count = *status->client_count + 1;
@@ -196,6 +196,8 @@ reactor WebSocketServer(
 
           ws_instance.wsi = wsi;
           ws_instance.connected = true;
+
+          
 
           // NOTE: Seem to need a delay in this action because otherwise
           // the application may try to send a message to the socket before
@@ -253,7 +255,7 @@ reactor WebSocketServer(
         case LWS_CALLBACK_RECEIVE:
           if (len > 0) {
             LF_PRINT_LOG("**** Server received WS message.");
-
+            
             web_socket_message_t* received = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
             received->wsi = wsi;
 
@@ -351,7 +353,6 @@ reactor WebSocketServer(
   =}
 
   reaction(startup) send -> connected_action, received_action {=
-  lf_print("WS server startup");
     // The receiving thread dynamically allocates memory for messages.
     // Set the destructor and copy constructor.
     lf_set_destructor(received_action, web_socket_message_destructor);

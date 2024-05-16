@@ -9,44 +9,45 @@ target C {
 
 import WebSocketClient from "../lib/WebSocketClient.lf"
 
+preamble {=
+  #define LOCKED   0
+  #define UNLOCKED 1
+  #define UNKNOWN  -1
+ 
+=}
+
+
+
 reactor PhyCar {
-  state lock: string = "locked"
-  input from_websocket: char*
-  output to_websocket: char*
-  logical action state_change
-  logical action unlock
+  state lock: int 
+  physical action unlock
 
   client = new WebSocketClient()
 
-  reaction(startup) -> unlock {=
+  reaction(startup) -> unlock, client.in_static {=
     // Initialize state as 'locked'.
-    lf_print("++++++ Physical Car door is locked at startup.");
-    self->lock = "locked";
-    lf_schedule(unlock, SEC(2));
-  =}
-
-  reaction(from_websocket) {=
-    self->lock = from_websocket->value;
-    lf_print("++++++ Physical Car door is now %s.", self->lock);
-  =}
-
-
-  reaction(state_change) -> client.in_static {=
-    lf_set(client.in_static, self->lock);
-        lf_print("++++++ Physical Car Sending %s at state_change.", self->lock);
+    self->lock = LOCKED;
+    lf_print("door is '%d' at startup.", self->lock);
+    
+    lf_schedule(unlock, SEC(3));
   =}
 
   /**
-  * Each 2 seconds switch thw state between locked and unlocked.
+  * Each 4 seconds switch thw state between locked and unlocked.
   */
   reaction(unlock) -> client.in_static {=
-    if (self->lock == "locked"){
-      self->lock = "unlocked";
+    char* buffer = (char*)malloc(10 * sizeof(char));
+
+    if (self->lock == LOCKED){
+      self->lock = UNLOCKED;
     }else{
-      self->lock = "locked";
+      self->lock = LOCKED;
     }
-    lf_set(client.in_static, self->lock);
-    lf_print("++++++ Physical Car Sending %s.", self->lock);
-    lf_schedule(unlock, SEC(2));
+    snprintf (buffer, sizeof(buffer), "%d",self->lock);
+    
+
+    lf_set(client.in_static, buffer);
+    lf_print("sending %d.", self->lock);
+    lf_schedule(unlock, SEC(6));
   =}
 }

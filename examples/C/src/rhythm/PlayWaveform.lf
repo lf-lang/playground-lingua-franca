@@ -44,7 +44,7 @@ reactor PlayWaveform(
 
         // wav files giving the waveforms.
         // These have to also be included in the files target directive.
-        #define NUM_WAVEFORMS 9  // Number of waveforms.
+        #define NUM_WAVEFORMS 12  // Number of waveforms.
         #define SOUNDS LF_TARGET_FILES_DIRECTORY "/sounds/"
         char* waveform_files[] = {
           SOUNDS "Bass-Drum-1.wav",
@@ -55,7 +55,10 @@ reactor PlayWaveform(
           SOUNDS "Cuica-1.wav",
           SOUNDS "Guiro.wav",
           SOUNDS "Ensoniq-ESQ-1-Snare.wav",
-          SOUNDS "Floor-Tom-1.wav"
+          SOUNDS "Floor-Tom-1.wav",
+          SOUNDS "Bip-1.wav",
+          SOUNDS "Bip-2.wav",
+          SOUNDS "Bip-3.wav"
         };
 
         // The waveforms themselves.

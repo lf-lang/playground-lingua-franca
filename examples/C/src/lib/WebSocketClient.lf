@@ -63,6 +63,13 @@ preamble {=
     struct lws* wsi;     // Web socket instance.
     //bool connected;
   } web_socket_instance_clt_t;
+
+  /** Destructor for an instance of web_socket_message_t. */
+  void web_socket_message_destructor(void* message);
+
+  /** Copy constructor for an instance of web_socket_message_t. */
+  void* web_socket_message_copy_constructor(void* message);
+
   #endif //WEBSOCKET_CLT_H
 =}
 
@@ -71,15 +78,17 @@ reactor WebSocketClient(
   serverport: int = 8000,
   servicepath: string = "/") {
   output connected: web_socket_instance_clt_t
-
-  physical action connected_action: web_socket_instance_clt_t
-
-  state status: client_status_t  // physical action received_action: web_socket_message_clt_t*
+  output received: web_socket_message_clt_t*
 
   input in_dynamic: char*
   input in_static: string
-  output received: char*
 
+  physical action connected_action: web_socket_instance_clt_t
+  physical action received_action: web_socket_message_clt_t*
+
+  state status: client_status_t
+
+  // output received: char*
   preamble {=
       struct lws_context_creation_info info;
       struct lws_client_connect_info ccinfo;
@@ -91,7 +100,7 @@ reactor WebSocketClient(
 
     static int callback_ws( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
     {
-      char* message_copy;
+      client_status_t* status = (client_status_t*)lws_context_user(lws_get_context(wsi));
 
     	switch( reason )
     	{
@@ -101,10 +110,23 @@ reactor WebSocketClient(
     			break;
 
     		case LWS_CALLBACK_CLIENT_RECEIVE:
-    			/* Handle incomming messages here. */
-          message_copy = (char*)malloc(len);
-          strcpy(message_copy, in);
-          lf_print("******  ws client received %ld from server '%s'\n", (long)len, message_copy);
+          if (len > 0) {
+            LF_PRINT_LOG("******  ws client received '%s'\n", in);
+            lf_print("******  ws client received '%s'\n", in);
+
+            web_socket_message_clt_t* received = (web_socket_message_clt_t*)malloc(sizeof(web_socket_message_clt_t));
+            received->wsi = wsi;
+
+            // To protect against non-null-terminated strings, add a null character beyond the length.
+            void* payload = malloc((len + 1) * sizeof(char));
+            memcpy(payload, in, len);
+            ((char*)payload)[len] = '\0';
+            received->length = len;
+            received->message = payload;
+            //received->binary = true; // Treat all received data as binary.
+            // Carry the null terminator in the action payload, just in case.
+            lf_schedule_value(status->received_action, 0, received, len + 1);
+          }
     			break;
 
     		case LWS_CALLBACK_CLIENT_WRITEABLE:
@@ -133,6 +155,22 @@ reactor WebSocketClient(
     	return 0;
     }
 
+    // Thread handling incoming messages.    
+    void* websocket_thread(void* args) {
+      client_status_t* status = (client_status_t*)args;
+      
+      while(status->context) {
+        // Invoke any pending callbacks.
+        // According to the docs, the timeout argument is ignored.
+        // Nevertheless, set to 100ms.
+        lws_service(status->context, 100);
+        
+      }
+      lws_context_destroy(status->context);
+      return NULL;
+    };
+
+
     enum protocols
     {
       PROTOCOL_EXAMPLE = 0,
@@ -147,13 +185,33 @@ reactor WebSocketClient(
         {"wss", callback_ws, 0, 0},
         {NULL, NULL, 0, 0}
     };
+
+    void web_socket_message_destructor(void* message) {
+      free(((web_socket_message_clt_t*)message)->message);
+      free(message);
+      // Do not free the wsi.
+    }
+
+    // Argument and return type is web_socket_message_t*.
+    void* web_socket_message_copy_constructor(void* message) {
+      web_socket_message_clt_t* cast = (web_socket_message_clt_t*)message;
+      web_socket_message_clt_t* result = (web_socket_message_clt_t*)malloc(sizeof(web_socket_message_clt_t));
+      size_t length = cast->length;
+      void* copy = malloc(length * sizeof(char));
+      result->message = memcpy(copy, cast->message, length);
+      result->wsi = cast->wsi;
+      result->length = length;
+      return result;
+    }
   =}
 
-  reaction(startup) -> connected_action, connected {=
-        //self->status = false;
+  reaction(startup) -> connected_action, received_action, connected {=
+    // The receiving thread dynamically allocates memory for messages.
+    // Set the destructor and copy constructor.
+    lf_set_destructor(received_action, web_socket_message_destructor);
+    lf_set_copy_constructor(received_action, web_socket_message_copy_constructor);
 
         memset(&info, 0, sizeof(info));
-
 
         info.port = CONTEXT_PORT_NO_LISTEN;
         info.protocols = protocols;
@@ -161,8 +219,6 @@ reactor WebSocketClient(
         info.uid = -1;
         // To get callbacks to be passed a pointer to the status struct:
         info.user = &self->status;
-
-
 
         self->status.context = lws_create_context(&info);
         if (!self->status.context) {
@@ -185,9 +241,11 @@ reactor WebSocketClient(
         ccinfo.protocol = "ws";
 
         self->status.connected_action = connected_action;
+        self->status.received_action = received_action;
 
 
         connected->value.wsi = lws_client_connect_via_info(&ccinfo);
+
 
         while (!lws_service(self->status.context, 50) && !client_connected) {
     					// Wait for the connection to complete
@@ -195,7 +253,10 @@ reactor WebSocketClient(
               lf_sleep(MSEC(10));
     				}
     		}
-        return 0;
+
+        lf_thread_t listener;
+        lf_thread_create(&listener, &websocket_thread, &self->status);
+
   =}
 
   reaction(in_dynamic, in_static) -> connected {=
@@ -215,11 +276,19 @@ reactor WebSocketClient(
       LF_PRINT_LOG("******> ws client sending: %s", message_copy);
 
       lws_callback_on_writable(connected->value.wsi );
-      lws_service( self->status.context, /* timeout_ms = */ 250 );
+
     } else {
       // Web socket is not connected.
       lf_print_warning("******  Web socket client is not connected. Dropping message to send.");
     }
+  =}
+
+  reaction(received_action) -> received {=
+    lf_set_token(received, received_action->token);
+  =}
+
+  reaction(connected_action) -> connected {=
+    lf_set(connected, connected_action->value);
   =}
 
   reaction(shutdown) {=

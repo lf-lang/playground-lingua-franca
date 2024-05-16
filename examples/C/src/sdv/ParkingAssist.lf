@@ -18,7 +18,7 @@
  * There are a number of FIXMEs:
  * <ul>
  * <li> The sound files are from the rhythm example and are not really appropriate for this use.
- * They should be replaced with suitable sound files, which will require parameterizing the
+ * They should be replaced with suita\e sound files, which will require parameterizing the
  * PlayWaveform reactor.
  * <li> The graphics are primitive. E.g., the vehicle icon could be replaced by a gif. The speed
  * should be displayed.
@@ -64,7 +64,8 @@ reactor Sensors(
 
   timer t(0, sample_interval)
 
-  s = new WebSocketServer(hostport=240, max_clients=1)  // Allow only one client
+  // Port update to 8240 instead of 240 to work properly on Linux.
+  s = new WebSocketServer(hostport=8240, max_clients=1)  // Allow only one client
 
   /**
    * Given JSON of the form {..., "key":"value", ... }, if the value is an int, put that int value
@@ -128,7 +129,7 @@ reactor Dashboard {
 
   state connection: web_socket_instance_t = {= {0} =}
 
-  s = new WebSocketServer(hostport=241, max_clients=1)  // Allow only one client
+  s = new WebSocketServer(hostport=8241, max_clients=1)  // Allow only one client
 
   reaction(speed, front_distance) -> s.send {=
     // Ignore the inputs if we are not connected.
@@ -142,6 +143,7 @@ reactor Dashboard {
       response->length = strlen(message);  // Do not include the null terminator.
       response->wsi = self->connection.wsi;
       response->message = message;
+
 
       lf_set(s.send, response);
     }
@@ -168,19 +170,19 @@ reactor SoundAlert {
       lf_set(p.waveform, 0);
     } else if (front_distance->value > 50) {
       self->ding_interval = MSEC(2000);
-      lf_set(p.waveform, 3);
+      lf_set(p.waveform, 10);
     } else if (front_distance->value > 25) {
       self->ding_interval = MSEC(1000);
-      lf_set(p.waveform, 3);
+      lf_set(p.waveform, 10);
     } else if (front_distance->value > 15) {
       self->ding_interval = MSEC(500);
-      lf_set(p.waveform, 9);
+      lf_set(p.waveform, 11);
     } else if (front_distance->value > 5) {
       self->ding_interval = MSEC(200);
-      lf_set(p.waveform, 9);
+      lf_set(p.waveform, 11);
     } else {
       self->ding_interval = MSEC(100);
-      lf_set(p.waveform, 8);
+      lf_set(p.waveform, 12);
     }
     // If no sound is playing, start it playing.
     if (self->ding_interval > MSEC(0) && previous_interval == MSEC(0)) {

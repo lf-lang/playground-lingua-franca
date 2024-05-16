@@ -35,6 +35,13 @@
             text-align: center;
         }
 
+        .table-container {
+            margin: 0 auto;
+            /* Center the container horizontally */
+            width: 35%;
+            /* Adjust the width as needed */
+        }
+
         h1 {
             color: #333;
         }
@@ -81,11 +88,15 @@
     <div class="outer_container">
         <h1>Car Remote Control</h1>
         <div class="inner_container">
-            <div id="status">
-                <span id="statusText" class="locked">
-                    <i class="fas fa-car fa-10x icon-blue"></i>
-                    <i class="fas fa-lock-open fa-6x icon-unlocked"></i>
-                </span>
+
+            <div id="status" class="table-container">
+                <table>
+                    <tr>
+                        <td><i class="fas fa-car fa-10x icon-blue"></i></td>
+                        <td> &nbsp;&nbsp;&nbsp;</td>
+                        <td id="statusText"><i class="fas fa-lock-open fa-6x icon-unlocked"></i></td>
+                    </tr>
+                </table>
             </div>
             <button id="lockButton"><i class="fas fa-lock"></i> Lock Car</button>
             <button id="unlockButton"><i class="fas fa-lock-open"></i> Unlock Car</button>
@@ -97,18 +108,17 @@
     <script>
 
         window.onload = function () {
+            const LOCKED = 0;
+            const UNLOCKED = 1;
+            const UNKNOWN = -1;
+
             // Get references to elements on the page.  
             var socketStatus = document.getElementById('ws_status');
             var lockBtn = document.getElementById('lockButton');
             var unlockBtn = document.getElementById('unlockButton');
 
             const statusText = document.getElementById('statusText');
-
-
-
             const socket = new WebSocket('ws://localhost:8000', 'ws');
-
-
 
             socket.addEventListener('open', (event) => {
                 console.log('WebSocket connection established');
@@ -121,10 +131,19 @@
             };
 
             socket.addEventListener('message', (event) => {
-                console.log(`WebSocket message received: ${event.data}`);
+
+                // assign the received state to the variable `window.lock`
+                window.lock.state = parseInt(event.data);
+                if (window.lock.state == LOCKED) {
+                    statusText.innerHTML = '<i class="fas fa-lock fa-6x icon-locked""></i>';
+                } else {
+                    statusText.innerHTML = '<i class="fas fa-lock-open fa-6x icon-unlocked"></i>';
+                }
+
+                console.log(`WebSocket message received: ${window.lock.state}`);
             });
 
-            
+
 
 
 
@@ -144,16 +163,34 @@
                 console.log('WebSocket connection closed');
             };
 
+
+            // establish state variable to monitor lock status
+            window.lock = { "state": UNKNOWN };
+
+            // set up Proxy listener:
+            var targetProxy = new Proxy(window.lock, {
+                set: function (target, key, value) {
+                    console.log(`${key} set to ${value}`);
+                    target[key] = value;
+                    // change occured, thus 3rd party set values
+                    // ... add more code here ...
+                    return true;
+                }
+            });
+
             lockBtn.onclick = function (e) {
                 // Simulate sending a request to the server to lock the car
                 // Replace this with your actual backend logic
                 socketStatus.innerHTML += '<li class="received">Locking the car...</li>';
-                //statusText.innerHTML = '<i class="fas fa-lock"></i> Locked';
-                statusText.innerHTML = '<i class="fas fa-car fa-10x icon-blue"></i> <i class="fas fa-lock fa-6x icon-locked""></i>';
+
+
                 // Send the message through the WebSocket.
                 if (socket.readyState == WebSocket.OPEN) {
-                    socket.send("locked");
+                    socket.send(LOCKED);
                 }
+
+
+
                 return true;
             }
 
@@ -161,10 +198,10 @@
                 // Simulate sending a request to the server to unlock the car
                 // Replace this with your actual backend logic
                 socketStatus.innerHTML += '<li class="received">Unlocking the car...</li>';
-                //statusText.innerHTML = '<i class="fas fa-lock-open"></i> Unlocked';
-                statusText.innerHTML = '<i class="fas fa-car fa-10x icon-blue"></i> <i class="fas fa-lock-open fa-6x icon-unlocked"></i>';
+
+
                 if (socket.readyState == WebSocket.OPEN) {
-                    socket.send("unlocked");
+                    socket.send(UNLOCKED);
                 }
                 return true;
             }
