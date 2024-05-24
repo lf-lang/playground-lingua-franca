@@ -1,0 +1,31 @@
+target C
+
+preamble {=
+  #include <stdlib.h>
+  #include <time.h>
+  #include <stdio.h>
+  #include <math.h>
+  #define MIN_VALUE -1.0
+  #define MAX_VALUE 1.0
+=}
+
+reactor Accelerometer {
+  input trigger: bool
+  output x: float
+  output y: float
+  output z: float
+
+  reaction(trigger) -> x, y, z {=
+      if (trigger) {
+          // Generate random float values between -1 and 1
+          float x_val = MIN_VALUE + ((float)rand() / RAND_MAX) * (MAX_VALUE - MIN_VALUE);
+          float y_val = MIN_VALUE + ((float)rand() / RAND_MAX) * (MAX_VALUE - MIN_VALUE);
+          float z_val = MIN_VALUE + ((float)rand() / RAND_MAX) * (MAX_VALUE - MIN_VALUE);
+
+          // Set the random values as output
+          lf_set(x, x_val);
+          lf_set(y, y_val);
+          lf_set(z, z_val);
+      }
+  =}
+}

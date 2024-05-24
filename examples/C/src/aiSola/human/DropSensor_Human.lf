@@ -1,0 +1,29 @@
+target C
+
+
+import Accelerometer from "./Accelerometer_Human.lf"
+
+main reactor (threshold: float = 0.3){
+  accelerometer = new Accelerometer()
+  
+
+  timer check(0, 250 ms)
+
+  reaction(check)-> accelerometer.trigger {=
+    lf_set(accelerometer.trigger, true);
+  =}
+
+
+  reaction(accelerometer.x, accelerometer.y, accelerometer.z) {=    
+    if (
+        fabs(accelerometer.x->value) < self->threshold && 
+        fabs(accelerometer.y->value) < self->threshold && 
+        fabs(accelerometer.z->value) < self->threshold
+        ) {
+      lf_print("%+.2f %+.2f %+.2f", 
+                accelerometer.x->value, 
+                accelerometer.y->value, 
+                accelerometer.z->value);
+    }
+  =}
+}

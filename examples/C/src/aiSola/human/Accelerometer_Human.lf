@@ -1,0 +1,26 @@
+target C
+
+reactor Accelerometer {
+  input trigger: bool
+  output x: float
+  output y: float
+  output z: float
+
+  reaction(trigger) -> x, y, z {=
+    if (trigger->value) {
+      lf_set(x , generateRandomFloat(-100, 100));
+      lf_set(y , generateRandomFloat(-100, 100));
+      lf_set(z , generateRandomFloat(-100, 100));
+    }    
+  =}
+
+  preamble {=
+    #include <stdlib.h>
+    #include <time.h>
+
+    float generateRandomFloatx(int min, int max) {
+      return ( rand() % (max - min + 1) + min)/100.0;
+    }
+  =}
+}
+

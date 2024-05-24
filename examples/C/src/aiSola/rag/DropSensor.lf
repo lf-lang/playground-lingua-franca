@@ -1,0 +1,23 @@
+target C {
+  keepalive: true,
+  timeout: 10 s
+}
+
+import Accelerometer from "./Accelerometer.lf"
+
+main reactor (threshold: double = 0.3){
+    acc = new Accelerometer()
+  
+    timer trigger_acc(250 ms)
+
+    reaction(trigger_acc) -> acc.trigger {=
+      lf_set(acc.trigger, true);
+    =}
+
+    reaction(acc.x, acc.y, acc.z) {=
+      if (abs(acc.x->value) < self->threshold && abs(acc.y->value) < self->threshold && abs(acc.z->value) < self->threshold) {
+        lf_print("Accelerometer values below threshold - x: %f, y: %f, z: %f", acc.x->value, acc.y->value, acc.z->value);
+      }
+    =}
+ 
+}
