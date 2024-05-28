@@ -1,0 +1,80 @@
+/**
+ * @file
+ * @author Edward A. Lee
+ * @author Vincenzo Barbuto
+ * @brief Basic audio library for Lingua Franca Python target.
+ */
+target Python
+
+/**
+ * @brief A reactor that produces audio data captured from a microphone.
+ *
+ * The output will be a numpy array of arrays of audio samples, where entry
+ * in the outer array is the audio samples, one per channel.
+ * Currently, only one channel is supported.
+ *
+ * The logical time of the output is calculated based on the block_size, block_count, and sample_rate.
+ * This design assumes that the physical clock is synchronized to the microphone clock, otherwise
+ * it may block accessing the microphone, possibly leading to increasing lag.
+ */
+reactor Microphone(block_size=16000, sample_rate=16000, channels=1) {
+
+  output audio_data
+
+  # Use a logical action to get deterministic timestamps on audio output.
+  logical action get_audio_data
+
+  # Input audio stream.
+  state audio_stream
+  # Count of blocks.
+  state blocks_count = 1
+
+  preamble {=
+    import sounddevice as sd
+    import numpy as np
+  =}
+
+  reaction(startup) -> get_audio_data {=
+    self.audio_stream = self.sd.InputStream(
+        channels=self.channels, samplerate=self.sample_rate, blocksize=self.block_size)
+    self.audio_stream.start() # FIXME: Perhaps start in reaction to an input.
+    # Schedule the first output.
+    # The logical time of the output is calculated based on the block_size, block_count, and sample_rate.
+    t = self.block_size * SEC(1) // self.sample_rate  # Sample interval.
+    get_audio_data.schedule(t)
+  =}
+
+  reaction(get_audio_data) -> audio_data {=
+    try:
+      data, overflowed = self.audio_stream.read(self.block_size)
+      if overflowed:
+          print("Audio data lost between blocks.")
+    
+      if (len(data)):
+        audio_data.set(data)
+    except Exception as error:
+      print("Error reading audio data: ", type(error).__name__, " - ", error)
+      return
+
+    # Schedule the next output.
+    # Because the sample interval may not be an exact multiple of one nanosecond,
+    # we calculate the next output time based on the number of blocks, the block size, and the sample rate.
+    # This relies on the fact that integers do not overflow in Python.
+    self.blocks_count += 1
+    time_since_start = self.blocks_count * self.block_size * SEC(1) // self.sample_rate
+    t = time_since_start - lf.time.logical_elapsed()  # Offset from current logical time.
+    get_audio_data.schedule(t)
+  =}
+
+  reaction(shutdown) {=
+    self.audio_stream.close()
+    print("Shutting down Microphone reactor")
+  =}
+}
+
+main reactor {
+  m = new Microphone()
+  reaction(m.audio_data) {=
+    print(m.audio_data.value, " at time ", lf.time.logical_elapsed())
+  =}
+}
