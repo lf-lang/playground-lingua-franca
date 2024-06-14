@@ -24,8 +24,6 @@
  * should be displayed.
  * <li> There is only one distance sensor and no mechanism for setting up a test environment where
  * obstacles are placed.
- * <li> The web server works by being polled. It should instead accept a web socket connection so
- * that the program can push data to the display.
  * <li> The web server has no security.
  * </ul>
  *
@@ -36,9 +34,8 @@ target C {
   keepalive: true
 }
 
-import WebSocketServer from "../lib/WebSocketServer.lf"
+import WebSocketServerString from "../lib/WebSocketServerString.lf"
 import PlayWaveform from "../rhythm/PlayWaveform.lf"
-import ServerUI from "../lib/ServerUI.lf"
 
 /**
  * Emulator for automotive sensors. It outputs sensor data periodically with the specified sample
@@ -64,7 +61,7 @@ reactor Sensors(
 
   timer t(0, sample_interval)
 
-  s = new WebSocketServer(hostport=240, max_clients=1)  // Allow only one client
+  s = new WebSocketServerString(hostport=8081)
 
   /**
    * Given JSON of the form {..., "key":"value", ... }, if the value is an int, put that int value
@@ -88,7 +85,7 @@ reactor Sensors(
   =}
 
   reaction(s.received) {=
-    char* json = s.received->value->message;
+    char* json = s.received->value;
     lf_print("Received control: %s", json);
     int accelerator;
     if (json_to_int(json, "accelerator", &accelerator) == 0) {
@@ -126,24 +123,20 @@ reactor Dashboard {
   input speed: int
   input front_distance: int
 
-  state connection: web_socket_instance_t = {= {0} =}
+  state connection: bool = false
 
-  s = new WebSocketServer(hostport=241, max_clients=1)  // Allow only one client
+  s = new WebSocketServerString(
+    hostport=8080,
+    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "ParkingAssist.html" =}
+  )
 
-  reaction(speed, front_distance) -> s.send {=
+  reaction(speed, front_distance) -> s.in_dynamic {=
     // Ignore the inputs if we are not connected.
-    if (self->connection.connected) {
+    if (self->connection) {
       // Construct payload.
       char* message;
       asprintf(&message, "{\"front_distance\": %d, \"speed\": %d}", front_distance->value, speed->value);
-
-      // Construct struct to send.
-      web_socket_message_t* response = (web_socket_message_t*)malloc(sizeof(web_socket_message_t));
-      response->length = strlen(message);  // Do not include the null terminator.
-      response->wsi = self->connection.wsi;
-      response->message = message;
-
-      lf_set(s.send, response);
+      lf_set(s.in_dynamic, message);
     }
   =}
 
@@ -200,7 +193,6 @@ main reactor {
   s = new Sensors()
   d = new Dashboard()
   a = new SoundAlert()
-  p = new ServerUI(initial_file="ParkingAssist.html")
   s.speed -> d.speed
   s.front_distance -> d.front_distance
   s.front_distance -> a.front_distance
