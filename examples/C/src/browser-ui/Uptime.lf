@@ -1,18 +1,20 @@
 /**
- * This example combines `ServerUI` with `WebSocketServer`. The former starts a web server that
- * listens for HTTP requests on port 8080 and serves the web page defined in `uptime.html`. That web
- * page includes JavaScript that connects to a web socket on port 8080 that is provided by the
- * `WebSocketServer` reactor. The resulting web page simply reports the total time that this program
- * has been running. That time is updated on the web page once per second.
+ * This example uses `WebSocketServer` to start a web server that listens for HTTP requests on port
+ * 8080 and serves the web page defined in `uptime.html`. That web page includes JavaScript that
+ * connects to a web socket on port 8080 that is provided by the `WebSocketServer` reactor. The
+ * resulting web page simply reports the total time that this program has been running. That time is
+ * updated on the web page once per second.
  *
  * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
  * instructions</a>). To install on MacOS, we recommending using brew:
- * <pre> brew install libwebsockets
- * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
- * linked to using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake
- * include file.
+ * ```
+ * brew install libwebsockets
+ * ```
+ * This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be linked to
+ * using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake include
+ * file.
  *
  * @author Edward A. Lee
  */
