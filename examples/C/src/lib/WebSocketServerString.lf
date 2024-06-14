@@ -40,7 +40,7 @@
  *
  * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
  *
- * @param hostport The host port number, which defaults to 8000.
+ * @param hostport The host port number, which defaults to 8080.
  *
  * @author Edward A. Lee
  */
@@ -48,7 +48,7 @@ target C
 
 import WebSocketServer from "WebSocketServer.lf"
 
-reactor WebSocketServerString(hostport: int = 8000, initial_file: string = {= NULL =}) {
+reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NULL =}) {
   input in_dynamic: char*
   input in_static: string
 
