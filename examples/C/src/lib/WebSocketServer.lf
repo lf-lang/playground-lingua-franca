@@ -14,7 +14,6 @@
  *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
  * )  
  * ```
-
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
@@ -315,12 +314,6 @@ reactor WebSocketServer(
               if (to_send->binary) {
                 result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_BINARY);
               } else {
-                // Check for null terminator.
-                if (buffer[LWS_PRE + length - 1] != '\0') {
-                  // Null terminator is missing.
-                  buffer[LWS_PRE + length] = '\0';
-                  length += 1;
-                }
                 result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_TEXT);
               }
               if (result < length) {
@@ -497,7 +490,7 @@ reactor WebSocketServer(
     lf_thread_create(&listener, &websocket_thread, &self->status);
 
     if (self->initial_file != NULL) {
-      lf_print("**** Point your browser to https://localhost:%d", self->hostport);
+      lf_print("**** Point your browser to http://localhost:%d", self->hostport);
     }
   =}
 
