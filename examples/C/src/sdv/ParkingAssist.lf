@@ -126,9 +126,8 @@ reactor Dashboard {
   state connection: bool = false
 
   s = new WebSocketServerString(
-    hostport=8080,
-    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "ParkingAssist.html" =}
-  )
+      hostport=8080,
+      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "ParkingAssist.html" =})
 
   reaction(speed, front_distance) -> s.in_dynamic {=
     // Ignore the inputs if we are not connected.
