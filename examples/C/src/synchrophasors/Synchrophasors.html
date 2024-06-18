@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Synchrophasors</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h1>Synchrophasors</h1>
+    
+    <div width="400">
+      <canvas id="plot"></canvas>
+    </div>
+    <p id="message"></p>
+
+    <script>
+      // Number of points to plot.
+      const n = 50;
+      const ctx = document.getElementById('plot');
+    
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [...Array(n).keys()],
+          datasets: [{
+            label: 'real part',
+            data: new Array(n).fill(0),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          animation: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              min: -100,
+              max: 100
+            }
+          }
+        }
+      });
+
+      window.onload = function() {
+          
+        // Create the web socket connection for the data source.
+        const socket = new WebSocket('ws://localhost:8080', 'ws');
+    
+        socket.addEventListener('open', (event) => {
+          console.log('WebSocket connection established for synchrophasor display');
+        });
+    
+        socket.onerror = function(error) {
+          console.log('Synchrophasor WebSocket Error: ' + error);
+        };
+        
+        socket.addEventListener('message', (event) => {
+          var message = event.data;
+          console.log(`WebSocket message received: ${message}`);
+          
+          try {
+            console.log('"' + message + '"');
+            var data = JSON.parse(message);
+            chart.data.datasets[0] = {
+              label: 'real part',
+              data: data,
+              borderWidth: 1
+            };
+            chart.update();
+          } catch(error) {
+            console.error(error);
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

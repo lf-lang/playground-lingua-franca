@@ -1,0 +1,77 @@
+target C {
+  keepalive: true
+}
+import WebSocketServerString from "../lib/WebSocketServerString.lf"
+import Random from "../lib/Random.lf"
+
+preamble {=
+  #include <math.h>
+  typedef struct complex_t {
+    double real;
+    double imaginary;
+  } complex_t;
+  typedef struct timestamped_complex_t {
+    complex_t phasor;
+    instant_t timestamp;
+  } timestamped_complex_t;
+=}
+
+reactor PhaseMeasurementUnit(
+    period:time = 100ms,
+    bank_index:int = 0,         // identifier
+    initial_phase:double = 0.0,
+    drift:double = 0.0          // radians per second
+) {
+  output phasor:timestamped_complex_t
+  timer t(0, period)
+  state phase:double = initial_phase
+  reaction(startup) {=
+    // Give each instance a unique starting phase.
+    self->phase = 0.1 * self->bank_index;
+  =}
+  reaction(t) -> phasor {=
+    complex_t reading;
+    reading.real = cos(self->phase);
+    reading.imaginary = sin(self->phase);
+    timestamped_complex_t tc;
+    tc.phasor = reading;
+    tc.timestamp = lf_time_logical();
+    lf_set(phasor, tc);
+    self->phase += (self->drift * self->period) / SEC(1);
+  =}
+}
+reactor Observer(n:int = 2) {
+  input[n] phasors:timestamped_complex_t
+  state connected:bool = false
+
+  w = new WebSocketServerString(initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =})
+
+  reaction(phasors) -> w.in_dynamic {=
+    char* json = (char*)malloc(sizeof(char) * (2 + (7 * self->n)));
+    char* p = json; // pointer to next position to write.
+    *p++ = '[';
+    for (int n = 0; n < self->n; n++) {
+      if (n != 0) {
+        *p++ = ',';
+        *p++ = ' ';
+      }
+      long int height = lround(phasors[n]->value.phasor.real * 100);
+      int len = snprintf(p, 5, "%3ld", height);
+      if (len > 0) p += len; // Excluding trailing null terminator.
+    }
+    *p++ = ']';
+    *p = '\0';
+    if (self->connected) {
+      lf_set(w.in_dynamic, json);
+    }
+    // lf_print("%s", json);
+  =}
+  reaction(w.connected) {=
+    self->connected = w.connected->value;
+  =}
+}
+main reactor(n:int = 50) {
+  s = new[n] PhaseMeasurementUnit(drift = 0.1, period = 100ms)
+  o = new Observer(n = n)
+  s.phasor -> o.phasors
+}
