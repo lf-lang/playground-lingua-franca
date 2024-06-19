@@ -25,6 +25,10 @@
             label: 'real part',
             data: new Array(n).fill(0),
             borderWidth: 1
+          }, {
+            label: 'imaginary part',
+            data: new Array(n).fill(0),
+            borderWidth: 1
           }]
         },
         options: {
@@ -57,11 +61,16 @@
           console.log(`WebSocket message received: ${message}`);
           
           try {
-            console.log('"' + message + '"');
+            // console.log('"' + message + '"');
             var data = JSON.parse(message);
             chart.data.datasets[0] = {
               label: 'real part',
-              data: data,
+              data: data.real,
+              borderWidth: 1
+            };
+            chart.data.datasets[1] = {
+              label: 'imaginary part',
+              data: data.imaginary,
               borderWidth: 1
             };
             chart.update();

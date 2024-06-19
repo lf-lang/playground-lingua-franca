@@ -89,9 +89,10 @@ reactor Observer(
       initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =})
 
   reaction(phasors) -> w.in_dynamic {=
-    char* json = (char*)malloc(sizeof(char) * (2 + (7 * self->n)));
+    char* json = (char*)malloc(sizeof(char) * (26 + 2 * (7 * self->n)));
     char* p = json; // pointer to next position to write.
-    *p++ = '[';
+    snprintf(p, 10, "{\"real\":[");
+    p += 9;
     for (int n = 0; n < self->n; n++) {
       if (n != 0) {
         *p++ = ',';
@@ -101,7 +102,19 @@ reactor Observer(
       int len = snprintf(p, 5, "%3ld", height);
       if (len > 0) p += len; // Excluding trailing null terminator.
     }
+    snprintf(p, 16, "],\"imaginary\":[");
+    p += 15;
+    for (int n = 0; n < self->n; n++) {
+      if (n != 0) {
+        *p++ = ',';
+        *p++ = ' ';
+      }
+      long int height = lround(phasors[n]->value.phasor.imaginary * 100);
+      int len = snprintf(p, 5, "%3ld", height);
+      if (len > 0) p += len; // Excluding trailing null terminator.
+    }
     *p++ = ']';
+    *p++ = '}';
     *p = '\0';
     if (self->connected) {
       lf_set(w.in_dynamic, json);
