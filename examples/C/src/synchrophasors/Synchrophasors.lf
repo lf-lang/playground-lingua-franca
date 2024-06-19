@@ -1,7 +1,7 @@
 /**
- * The RandomDelay reactor simulates a physical connection with a random delay.
- * The timestamp at the receiving end is larger than the sender's timestamp by a random amount given
- * by an exponential random variable with 
+ * The RandomDelay reactor simulates a physical connection with a random delay. The timestamp at the
+ * receiving end is larger than the sender's timestamp by a random amount given by an exponential
+ * random variable with
  */
 target C {
   keepalive: true
@@ -22,10 +22,10 @@ preamble {=
   } timestamped_complex_t;
 =}
 
-main reactor(n:int = 50) {
-  s = new[n] PhaseMeasurementUnit(drift = 0.1, period = 100ms)
-  t = new[n] RandomDelay(average = 1s)
-  o = new Observer(n = n)
+main reactor(n: int = 50) {
+  s = new[n] PhaseMeasurementUnit(drift=0.1, period = 100 ms)
+  t = new[n] RandomDelay(average = 1 s)
+  o = new Observer(n=n)
   s.phasor -> t.in
   t.out -> o.phasors
 }
@@ -53,18 +53,20 @@ reactor RandomDelay(average: time = 1 sec, bank_index: int = 0) extends Random {
 }
 
 reactor PhaseMeasurementUnit(
-    period:time = 100ms,
-    bank_index:int = 0,         // identifier
-    initial_phase:double = 0.0,
-    drift:double = 0.0          // radians per second
-) {
-  output phasor:timestamped_complex_t
+    period: time = 100 ms,
+    bank_index: int = 0,  // identifier
+    initial_phase: double = 0.0,
+    // radians per second
+    drift: double = 0.0) {
+  output phasor: timestamped_complex_t
   timer t(0, period)
-  state phase:double = initial_phase
+  state phase: double = initial_phase
+
   reaction(startup) {=
     // Give each instance a unique starting phase.
     self->phase = 0.1 * self->bank_index;
   =}
+
   reaction(t) -> phasor {=
     complex_t reading;
     reading.real = cos(self->phase);
@@ -78,12 +80,13 @@ reactor PhaseMeasurementUnit(
 }
 
 reactor Observer(
-  n:int = 2  // Number of inputs
-) {
-  input[n] phasors:timestamped_complex_t
-  state connected:bool = false
+    // Number of inputs
+    n: int = 2) {
+  input[n] phasors: timestamped_complex_t
+  state connected: bool = false
 
-  w = new WebSocketServerString(initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =})
+  w = new WebSocketServerString(
+      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =})
 
   reaction(phasors) -> w.in_dynamic {=
     char* json = (char*)malloc(sizeof(char) * (2 + (7 * self->n)));
@@ -105,6 +108,7 @@ reactor Observer(
     }
     // lf_print("%s", json);
   =}
+
   reaction(w.connected) {=
     self->connected = w.connected->value;
   =}
