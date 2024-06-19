@@ -1,6 +1,12 @@
+/**
+ * The RandomDelay reactor simulates a physical connection with a random delay.
+ * The timestamp at the receiving end is larger than the sender's timestamp by a random amount given
+ * by an exponential random variable with 
+ */
 target C {
   keepalive: true
 }
+
 import WebSocketServerString from "../lib/WebSocketServerString.lf"
 import Random from "../lib/Random.lf"
 
@@ -15,6 +21,36 @@ preamble {=
     instant_t timestamp;
   } timestamped_complex_t;
 =}
+
+main reactor(n:int = 50) {
+  s = new[n] PhaseMeasurementUnit(drift = 0.1, period = 100ms)
+  t = new[n] RandomDelay(average = 1s)
+  o = new Observer(n = n)
+  s.phasor -> t.in
+  t.out -> o.phasors
+}
+
+reactor RandomDelay(average: time = 1 sec, bank_index: int = 0) extends Random {
+  input in: timestamped_complex_t
+  output out: timestamped_complex_t
+  logical action a: timestamped_complex_t
+
+  reaction(startup) {=
+    // Make sure each instance has a different seed.
+    self->seed = (unsigned int) self->bank_index;
+  =}
+
+  reaction(a) -> out {=
+    lf_set(out, a->value);
+  =}
+
+  reaction(in) -> a {=
+    double lambda = SEC(1) / ((double)self->average);
+    double exp = exponential(lambda);
+    interval_t delay = (interval_t)llround(exp * (double)SEC(1));
+    lf_schedule_copy(a, delay, &in->value, 1);
+  =}
+}
 
 reactor PhaseMeasurementUnit(
     period:time = 100ms,
@@ -40,7 +76,10 @@ reactor PhaseMeasurementUnit(
     self->phase += (self->drift * self->period) / SEC(1);
   =}
 }
-reactor Observer(n:int = 2) {
+
+reactor Observer(
+  n:int = 2  // Number of inputs
+) {
   input[n] phasors:timestamped_complex_t
   state connected:bool = false
 
@@ -69,9 +108,4 @@ reactor Observer(n:int = 2) {
   reaction(w.connected) {=
     self->connected = w.connected->value;
   =}
-}
-main reactor(n:int = 50) {
-  s = new[n] PhaseMeasurementUnit(drift = 0.1, period = 100ms)
-  o = new Observer(n = n)
-  s.phasor -> o.phasors
 }
