@@ -315,12 +315,6 @@ reactor WebSocketServer(
               if (to_send->binary) {
                 result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_BINARY);
               } else {
-                // Check for null terminator.
-                if (buffer[LWS_PRE + length - 1] != '\0') {
-                  // Null terminator is missing.
-                  buffer[LWS_PRE + length] = '\0';
-                  length += 1;
-                }
                 result = lws_write(to_send->wsi, &buffer[LWS_PRE], length, LWS_WRITE_TEXT);
               }
               if (result < length) {
@@ -495,6 +489,10 @@ reactor WebSocketServer(
 
     lf_thread_t listener;
     lf_thread_create(&listener, &websocket_thread, &self->status);
+
+    if (self->initial_file != NULL) {
+      lf_print("**** Point your browser to http://localhost:%d", self->hostport);
+    }
   =}
 
   reaction(received_action) -> received {=

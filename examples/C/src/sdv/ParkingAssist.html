@@ -59,7 +59,7 @@
     window.onload = function() {
         
         // Create the web socket connection for the dashboard display.
-        const socket = new WebSocket('ws://localhost:241', 'ws');
+        const socket = new WebSocket('ws://localhost:8080', 'ws');
     
         socket.addEventListener('open', (event) => {
             console.log('WebSocket connection established for dashboard display');
@@ -97,7 +97,7 @@
         });
         
         // Create the web socket connection for the controls.
-        const socket2 = new WebSocket('ws://localhost:240', 'ws');
+        const socket2 = new WebSocket('ws://localhost:8081', 'ws');
     
         socket2.addEventListener('open', (event) => {
             console.log('WebSocket connection established for the controls.');
