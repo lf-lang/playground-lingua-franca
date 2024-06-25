@@ -13,7 +13,7 @@
  * the running LF program. To specify a file located in the same directory as your source LF file,
  * you can use a syntax like this:
  * ```
- * s = new WebSocketServer(
+ * s = new WebSocketServerString(
  *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
  * )  
  * ```
@@ -40,7 +40,7 @@
  *
  * A key limitation is that this should use the secure sockets API in libwebsockets to get SSL.
  *
- * @param hostport The host port number, which defaults to 8000.
+ * @param hostport The host port number, which defaults to 8080.
  *
  * @author Edward A. Lee
  */
@@ -48,7 +48,7 @@ target C
 
 import WebSocketServer from "WebSocketServer.lf"
 
-reactor WebSocketServerString(hostport: int = 8000, initial_file: string = {= NULL =}) {
+reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NULL =}) {
   input in_dynamic: char*
   input in_static: string
 
@@ -62,6 +62,9 @@ reactor WebSocketServerString(hostport: int = 8000, initial_file: string = {= NU
 
   reaction(startup) {=
     self->ws.connected = false;
+    if (self->initial_file != NULL) {
+      lf_print("**** Point your browser to http://localhost:%d", self->hostport);
+    }
   =}
 
   reaction(in_dynamic, in_static) -> server.send {=
@@ -76,7 +79,7 @@ reactor WebSocketServerString(hostport: int = 8000, initial_file: string = {= NU
         strcpy(message_copy, in_static->value);
       }
       to_send->message = message_copy;
-      to_send->length = strlen(in_dynamic->value) + 1;
+      to_send->length = strlen(in_dynamic->value);
       to_send->wsi = self->ws.wsi;
 
       lf_set(server.send, to_send);
