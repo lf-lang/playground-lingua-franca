@@ -1,0 +1,129 @@
+/**
+ * ROSACE case study, from:
+ *
+ * Claire Pagetti , David Saussié, Romain Gratia , Eric Noulard , Pierre Siron, "The ROSACE Case
+ * Study: From Simulink Specification to Multi/Many-Core Execution," RTAS (2014).
+ *
+ * This implementation is based on code from:
+ *
+ * https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/.
+ *
+ * Since that original code bears an LGPL license, so does this program:
+ *
+ * (c) 2023 Regents of the University of California, LGPL-v3
+ * (https://www.gnu.org/licenses/lgpl-3.0.html)
+ *
+ * This program uses a forward Euler simulation of aircraft dynamics and implements throttle and
+ * elevator control. The parameters specified execute an elevation climb from an initial 10,000 feet
+ * to a target 11,000 feet.
+ *
+ * The style of execution is that each component has a `period` parameter that determines the
+ * frequency at which it runs. The program relies on persistence of inputs in the C target and on
+ * the dependency analysis of the *uses* field of reactor signature.
+ *
+ * To run this, it should be sufficient to just run `lfc` to compile it. The "build" parameter of
+ * the target provides a script that compiles the generated code, runs it, runs gnuplot to generate
+ * the plots, and then opens the resulting PDF files. If this script fails for any reason, comment
+ * the `build` attribute of the target declaration and do this by hand:
+ * ```
+ * cd examples-lingua-franca/C
+ * lfc src/rosace/Rosace.lf
+ * bin/Rosace
+ * gnuplot src/rosace/rosace.gnuplot
+ * open rosace.pdf
+ * ```
+
+ *
+ * You should see a smooth climb from 10,000 feet to 11,000 feet. You can experiment, for example,
+ * with the period with which the filters sample the sensor outputs from the aircraft model. If you
+ * change the `filter_period` parameter of the `RosaceController` from its default 10 ms to 100 ms,
+ * for example, you will far worse behavior from the aircraft.
+ *
+ * @author Edward A. Lee
+ * @author David Saussie
+ * @author Claire Pagetti
+ * @author Benjamin Asch
+ */
+target C {
+  keepalive: true,
+  timeout: 10 min
+}
+
+import Aircraft from "AircraftSimulatorWithWatchdog.lf"
+import RosaceController from "RosaceController.lf"
+import ServerUI from "../lib/ServerUI.lf"
+
+preamble {=
+  // Shared constants.
+  // Trimming parameters
+  #define Va_eq (230.0)   // Nominal airspeed?
+  #define h_eq (10000.0)
+
+  #define delta_th_eq (1.5868660794926)
+  #define delta_e_eq (0.012009615652468)
+  #define acceptable_delay (1000) // in msec
+
+  #include <stdlib.h>  // Define strtol()
+=}
+
+reactor UserInterface(
+    period: time = 100 ms,
+    altitude_target: double = 10000,
+    // From nominal Va_eq (230)
+    airspeed_delta: double = 0.0) {
+  timer command(0, period)  // Frequency with which to issue commands.
+  output altitude: double
+  output airspeed: double
+
+  input Va: double
+  input h: double
+
+  s = new ServerUI()
+
+  reaction(command) -> altitude, airspeed {=
+    lf_set(altitude, self->altitude_target);
+    lf_set(airspeed, self->airspeed_delta);
+  =}
+
+  reaction(s.request) Va, h -> s.response {=
+    char* response;
+    if(strncmp("/data", s.request->value, 5) == 0) {
+      // Construct JSON response.
+      asprintf(&response, "{\"Va\": %f, \"h\": %f}", Va->value, h->value);
+    } else if (strncmp("/?altitude=", s.request->value, 11) == 0) {
+      printf("-------- '%s'\n", s.request->value);
+      long result = strtol(s.request->value + 11, NULL, 10);
+      // Send back the request as a response.
+      asprintf(&response, "%ld", result);
+      self->altitude_target = (int)result;
+    } else {
+      printf("ERROR '%s'\n", s.request->value);
+      asprintf(&response, "Unrecognized request: %s", s.request->value);
+    }
+    lf_set_array(s.response, response, strlen(response) + 1);
+  =}
+}
+
+main reactor(filter_period: time = 10 ms) {
+  a = new Aircraft()
+  c = new RosaceController(filter_period=filter_period)
+  bc = new RosaceController(filter_period=filter_period)
+  ui = new UserInterface()
+
+  a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
+  ui.altitude -> c.c
+  ui.airspeed -> c.s
+
+  a.h, a.az, a.Vz, a.q, a.Va -> bc.h, bc.az, bc.Vz, bc.q, bc.Va
+  ui.altitude -> bc.c
+  ui.airspeed -> bc.s
+
+  c.delta_ec -> a.delta_ec
+  c.delta_thc -> a.delta_thc
+
+  bc.delta_ec -> a.delta_ec_backup
+  bc.delta_thc -> a.delta_thc_backup
+
+  a.h -> ui.h  // Print connections.
+  a.Va -> ui.Va
+}
