@@ -18,6 +18,6 @@ The UI runs in the browser and connects to the program via either HTTP or via a 
 </tr>
 <tr>
 <td> <img src="img/Uptime.png" alt="Uptime" width="400">
-<td> <a href="Uptime.lf"> Uptime.lf</a>: This version combines ServerUI with WebSocketServer to serve a web page and then feed it data continuously through a web socket. The application displays the total time that application has been running and updates this time once per second.</td>
+<td> <a href="Uptime.lf"> Uptime.lf</a>: This version uses WebSocketServer to serve a web page and then feed it data continuously through a web socket. The application displays the total time that application has been running and updates this time once per second.</td>
 </tr>
 </table>
