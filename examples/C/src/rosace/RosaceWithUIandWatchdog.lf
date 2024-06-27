@@ -78,7 +78,7 @@ reactor UserInterface(
   input Va: double
   input h: double
 
-  s = new ServerUI()
+  s = new ServerUI(hostport = 8082)
 
   reaction(command) -> altitude, airspeed {=
     lf_set(altitude, self->altitude_target);
