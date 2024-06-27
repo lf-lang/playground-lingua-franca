@@ -1,6 +1,6 @@
 /**
  * @brief This is a variant of the ROSACE case study with a redundant controller.
- * 
+ *
  * It is drawn from the following paper:
  *
  * Deschamps, Henrick and Cappello, Gerlando and Cardoso, Janette and Siron, Pierre Coincidence
@@ -8,13 +8,13 @@
  * Real Time Software and Systems ERTS2 2018, 31 January 2018 - 2 February 2018 (Toulouse, France).
  * https://www.erts2018.org/authors_detail_inverted_Cappello%20Gerlando.html
  *
- * The Arbitrator in this program assumes it will receive logically simulatenous inputs from two controllers.
- * If it receives any one input from a controller, it checks for the presence first of an input from the first
- * controller, then the second controller. If it receives an input from both controllers, it will choose the
- * input from the first controller.
+ * The Arbitrator in this program assumes it will receive logically simulatenous inputs from two
+ * controllers. If it receives any one input from a controller, it checks for the presence first of
+ * an input from the first controller, then the second controller. If it receives an input from both
+ * controllers, it will choose the input from the first controller.
  *
- * FailSilent reactors are inserted to emulate failures of the controllers.
- * At a specified logical time, these simply drop the input.
+ * FailSilent reactors are inserted to emulate failures of the controllers. At a specified logical
+ * time, these simply drop the input.
  *
  * @author Edward A. Lee
  */
@@ -47,7 +47,7 @@ reactor Arbitrator {
 
   output delta_thc: double  // Engine control
   output delta_ec: double   // Elevator control
-  
+
   reaction(delta_thc1, delta_ec1, delta_thc2, delta_ec2) -> delta_thc, delta_ec {=
     if (delta_thc1->is_present) {
       lf_set(delta_thc, delta_thc1->value);
@@ -71,6 +71,7 @@ reactor Arbitrator {
 reactor FailSilent(fail_time: time = 0) {
   input in: double
   output out: double
+
   reaction(in) -> out {=
     if (self->fail_time > 0 && lf_time_logical() < self->fail_time) {
       lf_set(out, in->value);
@@ -91,14 +92,13 @@ main reactor(filter_period: time = 10 ms) {
   altitude.c -> c.c
   speed.c -> c.s
 
-  // Backup controller.
-  c2 = new RosaceController(filter_period=filter_period)
+  c2 = new RosaceController(filter_period=filter_period)  // Backup controller.
   a.h, a.az, a.Vz, a.q, a.Va -> c2.h, c2.az, c2.Vz, c2.q, c2.Va
   altitude.c -> c2.c
   speed.c -> c2.s
 
-  f1 = new FailSilent(fail_time=100 s)
-  
+  f1 = new FailSilent(fail_time = 100 s)
+
   ar = new Arbitrator()
 
   c.delta_thc -> f1.in
@@ -107,7 +107,7 @@ main reactor(filter_period: time = 10 ms) {
 
   c2.delta_ec -> ar.delta_ec2
   c2.delta_thc -> ar.delta_thc2
-  
+
   ar.delta_ec -> a.delta_ec
   ar.delta_thc -> a.delta_thc
 
