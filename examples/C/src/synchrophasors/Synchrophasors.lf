@@ -4,7 +4,8 @@
  * random variable with
  */
 target C {
-  keepalive: true
+  keepalive: true,
+  build-type: debug
 }
 
 import WebSocketServerString from "../lib/WebSocketServerString.lf"
@@ -23,7 +24,7 @@ preamble {=
 =}
 
 main reactor(n: int = 50) {
-  s = new[n] PhaseMeasurementUnit(drift=0.1, period = 100 ms)
+  s = new[n] PhaseMeasurementUnit(drift=0.1, period = 100 ms, faulty_index = 42)
   t = new[n] RandomDelay(average = 1 s)
   o = new Observer(n=n)
   s.phasor -> t.in
@@ -55,6 +56,7 @@ reactor RandomDelay(average: time = 1 sec, bank_index: int = 0) extends Random {
 reactor PhaseMeasurementUnit(
     period: time = 100 ms,
     bank_index: int = 0,  // identifier
+    faulty_index: int = -1,
     initial_phase: double = 0.0,
     // radians per second
     drift: double = 0.0) {
@@ -65,6 +67,7 @@ reactor PhaseMeasurementUnit(
   reaction(startup) {=
     // Give each instance a unique starting phase.
     self->phase = 0.1 * self->bank_index;
+    if (self->bank_index == self->faulty_index) self->phase += 0.2;
   =}
 
   reaction(t) -> phasor {=
@@ -89,7 +92,7 @@ reactor Observer(
       initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =})
 
   reaction(phasors) -> w.in_dynamic {=
-    char* json = (char*)malloc(sizeof(char) * (26 + 2 * (7 * self->n)));
+    char* json = (char*)malloc(sizeof(char) * (30 * (10 * self->n)));
     char* p = json; // pointer to next position to write.
     snprintf(p, 10, "{\"real\":[");
     p += 9;
