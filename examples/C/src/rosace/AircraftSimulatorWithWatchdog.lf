@@ -83,7 +83,7 @@ reactor AircraftDynamics(
   state h: double = 0.0
 
   state counter: int = 0
-  logical action slower;
+  logical action slower
 
   reaction(startup) {=
     self->u   = Va_eq * cos(self->theta_eq);  // Horizontal speed.
@@ -150,9 +150,7 @@ reactor Engine(period: time = 5 ms, scale: double = 26350.0, tau: double = 0.75)
   output T: double         // Thrust
 
   timer t(0, period)       // 200 Hz Forward Euler simulation rate
-  watchdog engine_watch(7 ms) {=
-    printf("Called watchdog engine_watch\n");
-  =}
+  watchdog engine_watch(7 ms) {= printf("Called watchdog engine_watch\n"); =}
 
   state x1: double = {= delta_th_eq =}
 
@@ -172,10 +170,12 @@ reactor Engine(period: time = 5 ms, scale: double = 26350.0, tau: double = 0.75)
       self->x1 += dt * x1_dot;
     =}
 
-    reaction(engine_watch) -> backup_controller {=
+    reaction(engine_watch) -> reset(backup_controller) {=
       lf_set_mode(backup_controller);
     =}
-  } mode backup_controller {
+  }
+
+  mode backup_controller {
     reaction(t) delta_thc_backup -> engine_watch {=
       lf_watchdog_start(engine_watch, 0);
 
@@ -187,7 +187,7 @@ reactor Engine(period: time = 5 ms, scale: double = 26350.0, tau: double = 0.75)
       self->x1 += dt * x1_dot;
     =}
 
-    reaction(engine_watch) -> primary_controller {=
+    reaction(engine_watch) -> reset(primary_controller) {=
       lf_set_mode(primary_controller);
     =}
   }
@@ -199,9 +199,7 @@ reactor Elevator(period: time = 5 ms, omega: double = 25.0, xi: double = 0.85) {
   output delta_e: double
 
   timer t(0, period)      // 200 Hz Forward Euler simulation rate
-  watchdog elevator_watch(7 ms){=
-    printf("Called watchdog elevator_watch");
-  =}
+  watchdog elevator_watch(7 ms) {= printf("Called watchdog elevator_watch"); =}
 
   state x1: double = {= delta_e_eq =}
   state x2: double = 0.0
@@ -209,45 +207,47 @@ reactor Elevator(period: time = 5 ms, omega: double = 25.0, xi: double = 0.85) {
   reaction(t) -> delta_e {=
     lf_set(delta_e, self->x1);
   =}
-  
+
   initial mode primary_controller {
-  reaction(t) delta_ec -> elevator_watch {=
-    lf_watchdog_start(elevator_watch, 0);
-
-    const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
-
-    // State Equation
-    double x1_dot = self->x2;
-    double x2_dot = -self->omega * self->omega * self->x1
-        - 2.0 * self->xi * self->omega * self->x2
-        + self->omega * self->omega * delta_ec->value;
-
-    // Update State
-    self->x1 += dt * x1_dot;
-    self->x2 += dt * x2_dot;
-  =}
-
-  reaction(elevator_watch) -> backup_controller {=
-    lf_set_mode(backup_controller);
-  =}
-  } mode backup_controller {
-    reaction(t) delta_ec_backup -> elevator_watch {=
+    reaction(t) delta_ec -> elevator_watch {=
       lf_watchdog_start(elevator_watch, 0);
-  
+
       const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
-  
+
       // State Equation
       double x1_dot = self->x2;
       double x2_dot = -self->omega * self->omega * self->x1
           - 2.0 * self->xi * self->omega * self->x2
-          + self->omega * self->omega * delta_ec_backup->value;
-  
+          + self->omega * self->omega * delta_ec->value;
+
       // Update State
       self->x1 += dt * x1_dot;
       self->x2 += dt * x2_dot;
     =}
 
-    reaction(elevator_watch) -> primary_controller {=
+    reaction(elevator_watch) -> reset(backup_controller) {=
+      lf_set_mode(backup_controller);
+    =}
+  }
+
+  mode backup_controller {
+    reaction(t) delta_ec_backup -> elevator_watch {=
+      lf_watchdog_start(elevator_watch, 0);
+
+      const double dt = ((double)self->period)/1e9; // Period in seconds. (1.0/200.0)
+
+      // State Equation
+      double x1_dot = self->x2;
+      double x2_dot = -self->omega * self->omega * self->x1
+          - 2.0 * self->xi * self->omega * self->x2
+          + self->omega * self->omega * delta_ec_backup->value;
+
+      // Update State
+      self->x1 += dt * x1_dot;
+      self->x2 += dt * x2_dot;
+    =}
+
+    reaction(elevator_watch) -> reset(primary_controller) {=
       lf_set_mode(primary_controller);
     =}
   }
