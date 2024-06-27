@@ -29,4 +29,8 @@ Note that these files have a difference [LICENSE](LICENSE.md) than the standard 
 <td> <img src="RosaceController.png" alt="Rosace controller" width="400">
 <td> <a href="RosaceController.lf">RosaceController.lf</a>: A controller for an aircraft (from the ROSACE case study).</td>
 </tr>
+<tr>
+<td> <img src="RedundantRosace.png" alt="Redundant Rosace controller" width="400">
+<td> <a href="RedundantRosace.lf">RedundantRosace.lf</a>: A redundant version of the ROSACE controller.</td>
+</tr>
 </table>
