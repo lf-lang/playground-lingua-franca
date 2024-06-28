@@ -79,19 +79,20 @@ reactor UserInterface(
 
   input Va: double
   input h: double
+  input status: int // 0: Primary, 1: Backup, 2: Panic
 
-  s = new ServerUI(hostport=8080)
+  s = new ServerUI(hostport=8080, initial_file="RosaceWithUIandWatchdog.html")
 
   reaction(command) -> altitude, airspeed {=
     lf_set(altitude, self->altitude_target);
     lf_set(airspeed, self->airspeed_delta);
   =}
 
-  reaction(s.request) Va, h -> s.response {=
+  reaction(s.request) Va, h, status -> s.response {=
     char* response;
     if(strncmp("/data", s.request->value, 5) == 0) {
       // Construct JSON response.
-      asprintf(&response, "{\"Va\": %f, \"h\": %f}", Va->value, h->value);
+      asprintf(&response, "{\"Va\": %f, \"h\": %f, \"status\": %d}", Va->value, h->value, status->value);
     } else if (strncmp("/?altitude=", s.request->value, 11) == 0) {
       printf("-------- '%s'\n", s.request->value);
       long result = strtol(s.request->value + 11, NULL, 10);
@@ -106,7 +107,7 @@ reactor UserInterface(
   =}
 }
 
-reactor Arbitrator(timeout: time = 100 ms) {
+reactor Arbitrator(timeout: time = 250 ms) {
   input delta_thc1: double  // Engine control
   input delta_ec1: double   // Elevator control
   input delta_thc2: double  // Engine control
@@ -114,8 +115,11 @@ reactor Arbitrator(timeout: time = 100 ms) {
 
   output delta_thc: double  // Engine control
   output delta_ec: double   // Elevator control
+  output status: int        // 0: Primary, 1: Backup, 2: Panic
 
   watchdog watcher(timeout) {= lf_print_warning("Primary controller watchdog timeout."); =}
+
+  reaction(startup) -> status {= lf_set(status, 0); =}
 
   initial mode Primary {
     reaction(delta_thc1, delta_ec1) -> delta_thc, delta_ec, watcher {=
@@ -126,8 +130,10 @@ reactor Arbitrator(timeout: time = 100 ms) {
       }
     =}
 
-    reaction(watcher) -> reset(Backup) {=
-      lf_print_warning("Switching to backup controller.");
+    reaction(watcher) -> reset(Backup), status, watcher {=
+      lf_print_warning("********* Switching to backup controller.");
+      lf_set(status, 1);
+      lf_watchdog_start(watcher, 0);
       lf_set_mode(Backup);
     =}
   }
@@ -141,8 +147,9 @@ reactor Arbitrator(timeout: time = 100 ms) {
       }
     =}
 
-    reaction(watcher) -> reset(Panic) {=
-      lf_print_error("PANIC: Both controllers failed.");
+    reaction(watcher) -> reset(Panic), status {=
+      lf_print_error("********* PANIC: Both controllers failed.");
+      lf_set(status, 2);
       lf_set_mode(Panic);
     =}
   }
@@ -164,6 +171,7 @@ main reactor(filter_period: time = 10 ms) {
   ui = new UserInterface()
   ar = new Arbitrator()
   f = new FailSilent(fail_time = 5 s)
+  f2 = new FailSilent(fail_time = 20 s)
 
   a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
   ui.altitude -> c.c
@@ -178,9 +186,11 @@ main reactor(filter_period: time = 10 ms) {
   f.out -> ar.delta_thc1
 
   bc.delta_ec -> ar.delta_ec2
-  bc.delta_thc -> ar.delta_thc2
+  bc.delta_thc -> f2.in
+  f2.out -> ar.delta_thc2
 
   ar.delta_ec, ar.delta_thc -> a.delta_ec, a.delta_thc
+  ar.status -> ui.status
 
   a.h -> ui.h  // Print connections.
   a.Va -> ui.Va
