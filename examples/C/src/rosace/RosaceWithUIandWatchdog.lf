@@ -79,7 +79,7 @@ reactor UserInterface(
 
   input Va: double
   input h: double
-  input status: int // 0: Primary, 1: Backup, 2: Panic
+  input status: int         // 0: Primary, 1: Backup, 2: Panic
 
   s = new ServerUI(hostport=8080, initial_file="RosaceWithUIandWatchdog.html")
 
@@ -119,7 +119,9 @@ reactor Arbitrator(timeout: time = 250 ms) {
 
   watchdog watcher(timeout) {= lf_print_warning("Primary controller watchdog timeout."); =}
 
-  reaction(startup) -> status {= lf_set(status, 0); =}
+  reaction(startup) -> status {=
+    lf_set(status, 0);
+  =}
 
   initial mode Primary {
     reaction(delta_thc1, delta_ec1) -> delta_thc, delta_ec, watcher {=
