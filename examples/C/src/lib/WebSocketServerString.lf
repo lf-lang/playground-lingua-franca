@@ -74,14 +74,14 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
       if (in_dynamic->is_present) {
         message_copy = (char*)malloc(strlen(in_dynamic->value));
         strcpy(message_copy, in_dynamic->value);
+        to_send->length = strlen(in_dynamic->value);
       } else {
         message_copy = (char*)malloc(strlen(in_static->value));
         strcpy(message_copy, in_static->value);
+        to_send->length = strlen(in_static->value);
       }
       to_send->message = message_copy;
-      to_send->length = strlen(in_dynamic->value);
       to_send->wsi = self->ws.wsi;
-
       lf_set(server.send, to_send);
     } else {
       // Web socket is not connected.
