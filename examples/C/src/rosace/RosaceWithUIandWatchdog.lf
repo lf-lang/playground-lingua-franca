@@ -46,12 +46,14 @@
  */
 target C {
   keepalive: true,
-  timeout: 10 min
+  timeout: 10 min,
+  coordination: decentralized
 }
 
-import Aircraft from "AircraftSimulatorWithWatchdog.lf"
+import Aircraft from "AircraftSimulator.lf"
 import RosaceController from "RosaceController.lf"
 import ServerUI from "../lib/ServerUI.lf"
+import FailSilent from "RedundantRosace.lf"
 
 preamble {=
   // Shared constants.
@@ -78,7 +80,7 @@ reactor UserInterface(
   input Va: double
   input h: double
 
-  s = new ServerUI(hostport = 8082)
+  s = new ServerUI(hostport=8080)
 
   reaction(command) -> altitude, airspeed {=
     lf_set(altitude, self->altitude_target);
@@ -104,11 +106,64 @@ reactor UserInterface(
   =}
 }
 
+reactor Arbitrator(timeout: time = 100 ms) {
+  input delta_thc1: double  // Engine control
+  input delta_ec1: double   // Elevator control
+  input delta_thc2: double  // Engine control
+  input delta_ec2: double   // Elevator control
+
+  output delta_thc: double  // Engine control
+  output delta_ec: double   // Elevator control
+
+  watchdog watcher(timeout) {= lf_print_warning("Primary controller watchdog timeout."); =}
+
+  initial mode Primary {
+    reaction(delta_thc1, delta_ec1) -> delta_thc, delta_ec, watcher {=
+      if (delta_thc1->is_present && delta_ec1->is_present) {
+        lf_set(delta_thc, delta_thc1->value);
+        lf_set(delta_ec, delta_ec1->value);
+        lf_watchdog_start(watcher, 0);
+      }
+    =}
+
+    reaction(watcher) -> reset(Backup) {=
+      lf_print_warning("Switching to backup controller.");
+      lf_set_mode(Backup);
+    =}
+  }
+
+  mode Backup {
+    reaction(delta_thc2, delta_ec2) -> delta_thc, delta_ec, watcher {=
+      if (delta_thc2->is_present && delta_ec2->is_present) {
+        lf_set(delta_thc, delta_thc2->value);
+        lf_set(delta_ec, delta_ec2->value);
+        lf_watchdog_start(watcher, 0);
+      }
+    =}
+
+    reaction(watcher) -> reset(Panic) {=
+      lf_print_error("PANIC: Both controllers failed.");
+      lf_set_mode(Panic);
+    =}
+  }
+
+  mode Panic {
+    timer t(0, 5 ms)
+    reaction(t) -> delta_thc, delta_ec {=
+      // No controller is present. Set failsafe outputs.
+      lf_set(delta_thc, 0.0);
+      lf_set(delta_ec, 0.0);
+    =}
+  }
+}
+
 main reactor(filter_period: time = 10 ms) {
   a = new Aircraft()
   c = new RosaceController(filter_period=filter_period)
   bc = new RosaceController(filter_period=filter_period)
   ui = new UserInterface()
+  ar = new Arbitrator()
+  f = new FailSilent(fail_time = 5 s)
 
   a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
   ui.altitude -> c.c
@@ -118,11 +173,14 @@ main reactor(filter_period: time = 10 ms) {
   ui.altitude -> bc.c
   ui.airspeed -> bc.s
 
-  c.delta_ec -> a.delta_ec
-  c.delta_thc -> a.delta_thc
+  c.delta_ec -> ar.delta_ec1
+  c.delta_thc -> f.in
+  f.out -> ar.delta_thc1
 
-  bc.delta_ec -> a.delta_ec_backup
-  bc.delta_thc -> a.delta_thc_backup
+  bc.delta_ec -> ar.delta_ec2
+  bc.delta_thc -> ar.delta_thc2
+
+  ar.delta_ec, ar.delta_thc -> a.delta_ec, a.delta_thc
 
   a.h -> ui.h  // Print connections.
   a.Va -> ui.Va
