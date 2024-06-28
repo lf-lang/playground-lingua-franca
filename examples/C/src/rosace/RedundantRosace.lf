@@ -73,7 +73,7 @@ reactor FailSilent(fail_time: time = 0) {
   output out: double
 
   reaction(in) -> out {=
-    if (self->fail_time > 0 && lf_time_logical() < self->fail_time) {
+    if (self->fail_time > 0 && lf_time_logical_elapsed() < self->fail_time) {
       lf_set(out, in->value);
     }
   =}
