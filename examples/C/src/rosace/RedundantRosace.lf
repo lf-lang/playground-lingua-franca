@@ -52,10 +52,10 @@ reactor Arbitrator {
     if (delta_thc1->is_present) {
       lf_set(delta_thc, delta_thc1->value);
     } else if (delta_thc2->is_present) {
-      lf_print_warning("First controller delta_thc input is missing.");
+      // lf_print_warning("First controller delta_thc input is missing.");
       lf_set(delta_thc, delta_thc2->value);
     } else {
-      lf_print_error("Both controllers' delta_thc inputs are missing!");
+      // lf_print_error("Both controllers' delta_thc inputs are missing!");
     }
     if (delta_ec1->is_present) {
       lf_set(delta_ec, delta_ec1->value);
