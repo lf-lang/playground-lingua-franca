@@ -1,0 +1,34 @@
+target Python {
+  keepalive: true  # Needed because of the physical action in the Microphone reactor.
+}
+
+import Microphone from "../lib/Audio.lf"
+import VectorPlot from "../lib/Plotters.lf"
+
+preamble {=
+  import numpy as np
+=}
+
+reactor FFT {
+  input x
+  output y
+
+  reaction(x) -> y {=
+    s = np.fft.rfft(x.value)
+    y.set(np.abs(s))
+  =}
+}
+
+main reactor {
+  m = new Microphone(block_size=1024)
+  f = new FFT()
+  p = new VectorPlot(
+      size = [10, 5],
+      title="Spectrum",
+      xlabel = "Frequency (Hz)",
+      ylabel="Magnitude",
+      ylim = [0, 10],
+      xrange = {= [0, 16000/2 + 1, 16000/1024] =})
+  m.audio_data -> f.x
+  f.y -> p.y
+}
