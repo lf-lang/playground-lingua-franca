@@ -81,7 +81,7 @@ reactor UserInterface(
   input h: double
   input status: int         // 0: Primary, 1: Backup, 2: Panic
 
-  s = new ServerUI(hostport=8080, initial_file="RosaceWithUIandWatchdog.html")
+  s = new ServerUI(hostport=8080, initial_file="RedundantRosaceWithWatchdog.html")
 
   reaction(command) -> altitude, airspeed {=
     lf_set(altitude, self->altitude_target);

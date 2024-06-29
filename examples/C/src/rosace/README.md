@@ -37,4 +37,8 @@ Note that these files have a difference [LICENSE](LICENSE.md) than the standard 
 <td> <img src="RosaceWithUI.png" alt="Rosace controller with web interface" width="400">
 <td> <a href="RosaceWithUI.lf">RosaceWithUI.lf</a>: A version of the ROSACE controller with a simple web interface.</td>
 </tr>
+<tr>
+<td> <img src="RedundantRosaceWithWatchdog.png" alt="Rosace controller with web interface and watchdog" width="400">
+<td> <a href="RedundantRosaceWithWatchdog.lf"> RedundantRosaceWithWatchdog.lf</a>: A version of the ROSACE controller with a web interface and a watchdog.</td>
+</tr>
 </table>
