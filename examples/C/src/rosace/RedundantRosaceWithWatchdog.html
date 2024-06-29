@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Rosace Aircraft Controller</title></head>
+  <body>
+    <h1>Rosace Aircraft Controller</h1>
+    <p>
+        <b>Desired Altitude:</b>
+        <input type="text" id="altitude" value="10000" onchange="setAltitude(this.value)">
+        <input type="submit" value="Submit">
+    </p>
+    <p id="requested">No request.</p>
+    <p id="data">No data.</p>
+    <script>
+  function setAltitude(altitude) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onload = function() {
+      if (this.status == 200) {
+        document.getElementById('requested').innerHTML = "Requested altitude: " + this.responseText;
+      } else {
+        document.getElementById('requested').innerHTML = "Error: " + this.statusText;
+      }
+    }
+    xhttp.open('GET', '?altitude=' + altitude, true);
+    xhttp.send(null);
+  }
+  setInterval(function() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onload = function() {
+      if (this.status == 200) {
+        var parsed = JSON.parse(this.responseText);
+        document.getElementById('data').innerHTML
+                = "<b>Airspeed:</b> " + parsed.Va
+                + "<br><b>Altitude:</b> " + parsed.h
+                + "<br><b>Status:</b> " + parsed.status;
+      } else {
+        document.getElementById('data').innerHTML = "Error: " + this.statusText;
+      }
+    };
+    xhttp.open('GET', '/data', true);
+    xhttp.send(null);
+  }, 1000); 
+    </script>
+  </body>
+</html>
