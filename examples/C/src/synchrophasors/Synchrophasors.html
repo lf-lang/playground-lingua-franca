@@ -63,16 +63,12 @@
           try {
             // console.log('"' + message + '"');
             var data = JSON.parse(message);
-            chart.data.datasets[0] = {
-              label: 'real part',
-              data: data.real,
-              borderWidth: 1
-            };
-            chart.data.datasets[1] = {
-              label: 'imaginary part',
-              data: data.imaginary,
-              borderWidth: 1
-            };
+            for (let i = 0; i < data.length; i++) {
+              if (data[i][0] < chart.data.datasets[0].data.length) { // Safety check.
+                chart.data.datasets[0].data[data[i][0]] = data[i][1][0] // Real part.
+                chart.data.datasets[1].data[data[i][0]] = data[i][1][1] // Imaginary part.
+              }
+            }
             chart.update();
           } catch(error) {
             console.error(error);
