@@ -6,18 +6,60 @@
   </head>
   <body>
     <h1>Synchrophasors</h1>
-    
-    <div width="400">
-      <canvas id="plot"></canvas>
+    <p>
+      Phase measurement units (PMUs) periodically emit a phasor measurement.
+      In a normally functioning power grid, the phases in nearby PMUs are correlated and vary smoothly.
+    </p>
+    <h2>Ideal Readings</h2>
+    <p>
+      In the plot below, there are 50 PMUs, one of which is exhibiting a fault (number 42):
+    </p>
+    <div style="position: relative; height:400px; width:600px">
+      <canvas id="cleanPlot" width="400"></canvas>
+    </div>
+    <h2>Noisy Readings</h2>
+    <p>
+      In the plot below, phasor data experiences random network delays and the plot is updated as data arrives.
+      This results in the simultaneous display of inconsistent data (data from different times), which masks the fault at PMU 42.
+    </p>
+    <div style="height:400px; width:600px">
+      <canvas id="noisyPlot" width="400"></canvas>
     </div>
     <p id="message"></p>
 
     <script>
       // Number of points to plot.
       const n = 50;
-      const ctx = document.getElementById('plot');
+      const ctx = document.getElementById('cleanPlot');
     
-      chart = new Chart(ctx, {
+      cleanChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [...Array(n).keys()],
+          datasets: [{
+            label: 'real part',
+            data: new Array(n).fill(0),
+            borderWidth: 1
+          }, {
+            label: 'imaginary part',
+            data: new Array(n).fill(0),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          animation: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              min: -100,
+              max: 100
+            }
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById('noisyPlot');
+      noisyChart = new Chart(ctx2, {
         type: 'bar',
         data: {
           labels: [...Array(n).keys()],
@@ -46,30 +88,60 @@
       window.onload = function() {
           
         // Create the web socket connection for the data source.
-        const socket = new WebSocket('ws://localhost:8080', 'ws');
+        const cleanSocket = new WebSocket('ws://localhost:8080', 'ws');
     
-        socket.addEventListener('open', (event) => {
+        cleanSocket.addEventListener('open', (event) => {
           console.log('WebSocket connection established for synchrophasor display');
         });
     
-        socket.onerror = function(error) {
+        cleanSocket.onerror = function(error) {
           console.log('Synchrophasor WebSocket Error: ' + error);
         };
         
-        socket.addEventListener('message', (event) => {
+        cleanSocket.addEventListener('message', (event) => {
           var message = event.data;
-          console.log(`WebSocket message received: ${message}`);
+          // console.log(`WebSocket message received: ${message}`);
           
           try {
             // console.log('"' + message + '"');
             var data = JSON.parse(message);
             for (let i = 0; i < data.length; i++) {
-              if (data[i][0] < chart.data.datasets[0].data.length) { // Safety check.
-                chart.data.datasets[0].data[data[i][0]] = data[i][1][0] // Real part.
-                chart.data.datasets[1].data[data[i][0]] = data[i][1][1] // Imaginary part.
+              if (data[i][0] < cleanChart.data.datasets[0].data.length) { // Safety check.
+                cleanChart.data.datasets[0].data[data[i][0]] = data[i][1][0] // Real part.
+                cleanChart.data.datasets[1].data[data[i][0]] = data[i][1][1] // Imaginary part.
               }
             }
-            chart.update();
+            cleanChart.update();
+          } catch(error) {
+            console.error(error);
+          }
+        });
+
+        // Create the web socket connection for the data source.
+        const noisySocket = new WebSocket('ws://localhost:8081', 'ws');
+      
+        noisySocket.addEventListener('open', (event) => {
+          console.log('WebSocket connection established for noisy synchrophasor display');
+        });
+
+        noisySocket.onerror = function(error) {
+          console.log('Synchrophasor WebSocket Error: ' + error);
+        };
+        
+        noisySocket.addEventListener('message', (event) => {
+          var message = event.data;
+          // console.log(`WebSocket message received: ${message}`);
+          
+          try {
+            // console.log('"' + message + '"');
+            var data = JSON.parse(message);
+            for (let i = 0; i < data.length; i++) {
+              if (data[i][0] < noisyChart.data.datasets[0].data.length) { // Safety check.
+                noisyChart.data.datasets[0].data[data[i][0]] = data[i][1][0] // Real part.
+                noisyChart.data.datasets[1].data[data[i][0]] = data[i][1][1] // Imaginary part.
+              }
+            }
+            noisyChart.update();
           } catch(error) {
             console.error(error);
           }
