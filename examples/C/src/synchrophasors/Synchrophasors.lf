@@ -24,14 +24,13 @@ preamble {=
 =}
 
 main reactor(n: int = 50) {
-  s = new[n] PhaseMeasurementUnit(drift=0.1, period = 100 ms, faulty_index = 42)
+  s = new[n] PhaseMeasurementUnit(drift=0.1, period = 100 ms, faulty_index=42)
   t = new[n] RandomDelay(average = 1 s)
   clean = new Observer(
-    n=n,
-    hostport = 8080,
-    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =}
-  )
-  noisy = new Observer(n=n, hostport = 8081)
+      n=n,
+      hostport=8080,
+      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "Synchrophasors.html" =})
+  noisy = new Observer(n=n, hostport=8081)
   s.phasor -> clean.phasors
   s.phasor -> t.in
   t.out -> noisy.phasors
@@ -89,32 +88,29 @@ reactor PhaseMeasurementUnit(
 }
 
 /**
- * Upon receiving inputs on the `phasors` port, construct a JSON string to
- * convey the update via a web socket to the observing web page, if one is connected.
- * The array has the form `[[channel, [real, imag]], ...]`, where `channel` is the index of the
- * multiport input providing new data, and `real` and `imag` are the real and imaginary
- * parts of the data.  The size of the array is the number of present inputs.
+ * Upon receiving inputs on the `phasors` port, construct a JSON string to convey the update via a
+ * web socket to the observing web page, if one is connected. The array has the form `[[channel,
+ * [real, imag]], ...]`, where `channel` is the index of the multiport input providing new data, and
+ * `real` and `imag` are the real and imaginary parts of the data. The size of the array is the
+ * number of present inputs.
  *
- * To avoid overwhelming the web socket communication, this reactor accumulates all inputs
- * that arrive during a period of physical time given by the `period` parameter before sending
- * any data out over the web socket. This can result in some data points being updated more than
- * once in a single message.  It will also send out data whenever the local buffer fills up.
+ * To avoid overwhelming the web socket communication, this reactor accumulates all inputs that
+ * arrive during a period of physical time given by the `period` parameter before sending any data
+ * out over the web socket. This can result in some data points being updated more than once in a
+ * single message. It will also send out data whenever the local buffer fills up.
  */
 reactor Observer(
     n: int = 2,  // Number of inputs
     period: time = 100 ms,
     hostport: int = 8080,
-    initial_file: string = {= NULL =}
-) {
+    initial_file: string = {= NULL =}) {
   input[n] phasors: timestamped_complex_t
   state connected: bool = false
   state json: char* = {= NULL =}
   state p: char* = {= NULL =}
   state last_sent: time = 0
 
-  w = new WebSocketServerString(
-      hostport = hostport,
-      initial_file = initial_file)
+  w = new WebSocketServerString(hostport=hostport, initial_file=initial_file)
 
   reaction(phasors) -> w.in_dynamic {=
     if (self->connected) {
