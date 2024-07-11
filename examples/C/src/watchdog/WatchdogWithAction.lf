@@ -1,0 +1,125 @@
+/**
+ * @brief Demonstration of watchdogs in LF.
+ *
+ * This program has a periodic source that sends events every 500 ms, but where every fourth event
+ * is delayed 300ms in physical time before being delivered to the downstream Watcher. This delay
+ * models either communication or computation time.
+ *
+ * The Watcher has a deadline of 250 ms. It wants to see events within 250 ms of their logical time,
+ * but, because of the delay every fourth event, the deadline will be violated by those events. The
+ * deadline violation handler is invoked in this case, but it is only invoked after the event
+ * arrives, which is more than 800 ms in physical time after the previous input. What if this input
+ * never arrives or we need to react to the deadline violation sooner, e.g. in order to drive an
+ * actuator? This program ensures that the Watcher will produce an output no later than about 750 ms
+ * in physical time after the previous output. The logical time of the output will be offset by 250
+ * ms.
+ *
+ * To handle this, the Watcher includes watchdog named `dog` that triggers if 750 ms have elapsed in
+ * physical time since the last input. When the watchdog triggers, it prints a message and produces
+ * an output immediately, which is 750 ms in logical time (and roughly the same in physical time)
+ * after the previous output.
+ *
+ * @author Benjamin Asch
+ * @author Edward A. Lee
+ */
+target C {
+  timeout: 5 s
+}
+
+reactor SometimesSlowSource {
+  output out: int
+  timer t(500 ms, 500 ms)  // Offset ameliorates startup time.
+  state count: int = 1
+
+  reaction(t) -> out {=
+    if (self->count % 4 == 0) {
+      // Be slow.
+      lf_sleep(MSEC(300));
+    }
+    lf_set(out, self->count++);
+  =}
+}
+
+reactor Watcher {
+  input in: int
+  output out: int
+  state count: int = 1
+  logical action a
+
+  watchdog dog(0 ms) -> a {=
+    instant_t p = lf_time_physical_elapsed();
+    lf_print("******** Watchdog timed out at elapsed physical time: " PRINTF_TIME, p);
+    lf_schedule(a, 0);
+  =}
+
+  reaction(a) {=
+    tag_t now = lf_tag();
+    lf_print(">>>>> Earliest possible reaction to watchdog timeout: " PRINTF_TAG,
+        now.time - lf_time_start(), now.microstep);
+  =}
+
+  reaction(in) -> dog, out {=
+    // Reset the watchdog.  The next event is expected in 500 ms.
+    // This watchdog will trigger if the event does not arrive within 750 ms from now,
+    // (is more than 250 ms late).
+    lf_watchdog_start(dog, MSEC(750));
+    lf_print("Watcher received input %d. Count: %d. Logical time: " PRINTF_TIME,
+        in->value, self->count, lf_time_logical_elapsed());
+    lf_print("Watchdog started at physical time " PRINTF_TIME, lf_time_physical_elapsed());
+    lf_print("Will expire at physical time " PRINTF_TIME, lf_time_logical_elapsed() + MSEC(750));
+    lf_set(out, in->value);
+    self->count++;
+  =} deadline(250 ms) {=
+    // This input is more than 250 ms late. It must have been from the slow cycles.
+    lf_print("Watcher received late input %d. Ignoring it.", in->value);
+  =}
+
+  reaction(dog) -> out, dog {=
+    // Note that this reaction will trigger at the earliest available tag, which
+    // will be one microstep later than the most recent input.
+    tag_t tag = lf_tag();
+    instant_t start = lf_time_start();
+    lf_print("******** Watchdog triggered reaction at " PRINTF_TAG ". Producing backup output %d." PRINTF_TIME,
+        tag.time - start, tag.microstep, self->count);
+    lf_set(out, self->count++);
+    // Start another watchdog cycle in case the very next input is also delayed.
+    lf_watchdog_start(dog, MSEC(500));
+    lf_print("Watchdog started at physical time " PRINTF_TIME, lf_time_physical_elapsed());
+    lf_print("Will expire at physical time " PRINTF_TIME, lf_time_logical_elapsed() + MSEC(500));
+  =}
+
+  reaction(shutdown) -> dog {=
+    lf_watchdog_stop(dog);
+  =}
+}
+
+reactor Checker {
+  input in: int
+  state count: int = 1
+
+  reaction(in) {=
+    lf_print("Checker received %d at logical time " PRINTF_TIME
+        " and physical time " PRINTF_TIME, in->value,
+        lf_time_logical_elapsed(),
+        lf_time_physical_elapsed());
+    if (in->value != self->count) {
+      lf_print_error_and_exit("Expected %d", self->count);
+    }
+    self->count++;
+  =}
+
+  reaction(shutdown) {=
+    if (self->count < 10) {
+      lf_print_error_and_exit("Received %d inputs. Expected at least 10.", self->count);
+    }
+  =}
+}
+
+federated reactor {
+  s = new SometimesSlowSource()
+  w = new Watcher()
+  c = new Checker()
+
+  s.out -> w.in
+  w.out -> c.in
+}
