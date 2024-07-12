@@ -28,7 +28,7 @@ target C {
 
 reactor SometimesSlowSource {
   output out: int
-  timer t(500 ms, 500 ms)  // Offset ameliorates startup time.
+  timer t(0, 500 ms)
   state count: int = 1
 
   reaction(t) -> out {=
@@ -51,6 +51,10 @@ reactor Watcher {
     lf_print("******** Watchdog timed out at elapsed physical time: " PRINTF_TIME, p);
     lf_schedule(a, 0);
   =}
+
+reaction(startup) -> dog {=
+  lf_watchdog_start(dog, MSEC(250));
+=}
 
   reaction(a) {=
     tag_t now = lf_tag();
