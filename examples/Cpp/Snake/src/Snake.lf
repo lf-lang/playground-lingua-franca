@@ -1,0 +1,42 @@
+target Cpp {
+  cmake-include: "snake.cmake"
+}
+
+import AppleModel from "Model.lf"
+import SnakeModel from "Model.lf"
+import AppleController from "Controller.lf"
+import SnakeController from "Controller.lf"
+import KeyController from "Controller.lf"
+import ScoreController from "Controller.lf"
+import NcursesThreadView from "View.lf"
+
+main reactor(size: unsigned = 20, initial_interval: time = 300 ms) {
+  snake_model = new SnakeModel()
+  apple_model = new AppleModel(size=size)
+
+  snake_controller = new SnakeController(size=size, initial_interval=initial_interval)
+  apple_controller = new AppleController()
+  score_controller = new ScoreController()
+  key_controller = new KeyController()
+
+  view = new NcursesThreadView(size=size)
+
+  snake_controller.move_snake -> snake_model.move
+  apple_controller.add_apple -> apple_model.add_apple
+  key_controller.update_direction -> snake_model.set_direction
+
+  snake_model.updated_board -> snake_controller.updated_board_from_snake
+  snake_model.invalid_move -> score_controller.game_over
+  (snake_model.ate_apple)+
+    -> apple_controller.ate_apple, score_controller.increment_score, snake_controller.ate_apple
+  snake_model.updated_board -> apple_controller.board_from_snake
+  apple_model.updated_board -> snake_controller.updated_board_from_apple
+
+  snake_controller.draw_board -> view.draw_board
+  score_controller.print_final_score -> view.print_final_score
+  score_controller.draw_score -> view.draw_score
+
+  view.key_pressed -> key_controller.key_pressed
+
+  key_controller.quit -> score_controller.quit
+}
