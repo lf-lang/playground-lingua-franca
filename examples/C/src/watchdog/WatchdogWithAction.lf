@@ -83,7 +83,7 @@ reaction(startup) -> dog {=
     // will be one microstep later than the most recent input.
     tag_t tag = lf_tag();
     instant_t start = lf_time_start();
-    lf_print("******** Watchdog triggered reaction at " PRINTF_TAG ". Producing backup output %d." PRINTF_TIME,
+    lf_print("******** Watchdog triggered reaction at " PRINTF_TAG ". Producing backup output %d.",
         tag.time - start, tag.microstep, self->count);
     lf_set(out, self->count++);
     // Start another watchdog cycle in case the very next input is also delayed.
