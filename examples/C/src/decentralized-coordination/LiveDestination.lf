@@ -1,0 +1,27 @@
+target C {
+  coordination: decentralized,
+  // timeout: 6s
+}
+import Count from "../lib/Count.lf"
+
+reactor Destination(STP_offset: time = 0) {
+  input in: int
+  timer t(1ms, 500ms)
+  reaction(t) {=
+    interval_t lag = lf_time_physical() - lf_time_logical();
+    lf_print("Local reaction lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+        lag/1000, lf_time_logical_elapsed()/1000);
+  =}
+  reaction(in) {=
+    interval_t lag = lf_time_physical() - lf_time_logical();
+    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+        in->value, lag/1000, lf_time_logical_elapsed()/1000);
+  =} STP(0) {=
+    lf_print("**** STP violation at Destination at tag " PRINTF_TAG, lf_tag().time - lf_time_start(), lf_tag().microstep);
+  =}
+}
+federated reactor {
+  c = new Count(period = 3s)
+  p = new Destination()
+  c.out -> p.in after 10ms
+}

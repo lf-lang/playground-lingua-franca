@@ -1,0 +1,75 @@
+/**
+ * Monte Carlo Pi
+ * https://en.wikipedia.org/wiki/Monte_Carlo_integration
+ */
+target C {
+  coordination: decentralized,
+}
+import Random from "../lib/Random.lf"
+
+// Pi needs an STP_offset because its event queue is usually empty and otherwise it will advance to the stop time.
+reactor Pi(n: int = 100000, bank_index: int = 0, STP_offset: time = 1 day) extends Random {
+  input trigger: bool
+  output out: double
+  method in_circle(x: double, y: double): bool {=
+    return x * x + y * y <= 1.0;
+  =}
+  reaction(startup) {=
+    self->seed = self->bank_index + 1;
+  =}
+  reaction(trigger) -> out {=
+    tag_t now = lf_tag();
+    // lf_print("***** Calculating Pi at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
+    int count = 0;
+    for (int i = 0; i < self->n; i++) {
+      double x = uniform_double(-1.0, 1.0);
+      double y = uniform_double(-1.0, 1.0);
+      if (in_circle(x, y)) count++;
+    }
+    lf_set(out, (4.0 * count) / self->n);
+  =} STP (30 s) {=
+    tag_t now = lf_tag();
+    lf_print_error("STP violation at Pi at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
+  =}
+}
+reactor Gather(parallelism: int = 10, desired_precision: double = 0.000001) {
+  preamble {=
+    #include <math.h>
+  =}
+  // input[parallelism] in: double
+  input[parallelism] in: double
+  output next: bool
+  logical action a
+  state sum: double = 0.0
+  state count: int = 0
+  reaction(startup, a) -> next {=
+    lf_set(next, true);
+    tag_t now = lf_tag();
+    // lf_print("**** Triggering Pi at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
+  =}
+  reaction(in) -> a {=
+    for (size_t i = 0; i < self->parallelism; i++) {
+      self->sum += in[i]->value;
+      self->count++;
+    }
+    double estimate = self->sum / self->count;
+    tag_t now = lf_tag();
+    lf_print("%d: estimated pi is %f at tag " PRINTF_TAG,
+        self->count, estimate, now.time - lf_time_start(), now.microstep);
+    if (fabs(estimate - M_PI) <= self->desired_precision) {
+      lf_request_stop();
+    }
+    // Note: Even if we are requesting stopping, we need to execute at the stop tag because
+    // we are using a dataflow style and the downstream reactor will block until they receive our data.
+    lf_schedule(a, 0);
+  =} STP (1 day) {=
+    tag_t now = lf_tag();
+    lf_print_error("STP violation at Gather at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
+  =}
+}
+federated reactor(parallelism: int = 4) {
+  pi = new[parallelism] Pi(n = 10000000)
+  g = new Gather(parallelism = parallelism)
+  pi.out -> g.in
+  (g.next)+ -> pi.trigger
+}
