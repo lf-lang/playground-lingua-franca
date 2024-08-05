@@ -51,7 +51,7 @@ If more than one STAA is declared for the same input port, the minimum time valu
 
 Choosing suitable STAs and STAAs for a program is challenging and depends on many factors.  Collectively, STA and STAA are both referred to as **STP** (safe to process) offsets, but the distinction between the two is important and subtle.
 
-## Example 1: SimpleFeedForward
+## Example 1: Simple Feedforward System
 
 Consider the [SimpleFeedForward](SimpleFeedforward.lf) example:
 
@@ -188,13 +188,13 @@ The `PrintLag` federate will not exit until one day after you start it!
 The reason is that after it receives an input with tag (6s, 0), it now wishes to advance its tag to the timeout tag, (7s, 0).  However, it is unknown to this federate whether there will be an input between these two tags.
 Since we specified an STA of 1 day, we have told the federate that if it receives no further inputs (which it will not because the `Count` federate will have exited), then it must wait one day before advancing its tag!
 
-## Example 2: LiveDestination
+## Example 2: Federates that are not Purely Reactive
 
 Consider the [LiveDestination](LiveDestination.lf) program:
 
 <img src="figures/LiveDestination.png" width=300 alt="LiveDestination"/>
 
-The `Destination` reactor is similar to `PrintLag` except that it also has a local timer.  It looks like this:
+The `Destination` reactor is similar to `PrintLag` except that it also has a local timer.  It does not just react to inputs from the network, but also has its own activity. It looks like this:
 
 ```
 reactor Destination(STA: time = 1 day) {
@@ -335,22 +335,140 @@ Fed 1 (p): Reaction to network input 3 lag is 1986us at logical time 6010000us.
 
 The logical times at the `Count` federate were 0, 3s, 6s, etc., but here they are larger by 10ms.  This effectively adds a 10ms delay to the processing of network inputs.
 
-### Summary
+## Example 3: Timing and Throttling
 
-There are a few rules of thumb to guide you:
+**Decentralized coordination depends on timing:**
+
+* The physical clocks of the machines running the federates must be synchronized. Clock synchronization error will have the same effect as network latency, according to the [CAL theorem](https://dl.acm.org/doi/10.1145/3609119).
+* If federates fail to keep their lag bounded, then messages between federates can pile up on the event queue and the destination federates will eventually run out of memory.
+
+We illustrate these points with two examples, one that has unbounded lag and one that mitigates the memory risk using feedback.  Deadlines can also be useful to detect unbounded lag, but we do not illustrate that here.
+
+### Destination Fails to Keep Up
+
+The [Unbounded](Unbounded.lf) example shows an extreme case, where a `Source` federate produces outputs separated only by a microstep and the `Sink` federate takes some time to process the messages:
+
+<img src="figures/Unbounded.png" width=800 alt="Unbounded"/>
+
+Because the `Source` does not advance logical time, and because it has no upstream federates, it will produce outputs as fast as possible.  The `Sink`, however, because of the call to `lf_sleep()` in its reaction to the input, cannot keep up.
+If you monitor the execution, you will see that the memory usage of the `Sink` federate will grow without bound as incoming messages pile up, waiting to be processed.
+
+### Using Feedback for Throttling
+
+The [Throttling](Throttling.lf) example modifies the `Source` federate to produce outputs only when receiving a trigger.
+Now, the source is throttled back to match its production rate with the `Sink`:
+
+<img src="figures/Throttling.png" width=300 alt="Throttling"/>
+
+When you run this program, memory usage remains stable. The lag in `Sink` still increases without bound, but if this is not a real-time application, then this will create no problems.
+
+## Example 4: Parallel Execution
+
+Federated execution of LF programs is a good choice for applications that are intrinsically distributed, but it is also useful to achieve parallel execution beyond the automatic multicore execution that you get with unfederated execution. You can put several machines, each with multiple cores, to all work together on a problem.
+When using the Python target, federated execution may even be useful on a single machine because a Python interpreter, by default, does not effectively exploit multiple cores because of its global interpreter lock (GIL). Splitting your Python program into federates recruits multiple independent Python interpreters, which can all run in parallel.
+
+The [MonteCarloPi](MonteCarloPi.lf) example uses federates to get parallel execution of a [Monte Carlo estimation of pi](https://en.wikipedia.org/wiki/Monte_Carlo_integration):
+
+<img src="figures/MonteCarloPi.png" width=300 alt="MonteCarloPi"/>
+
+The `Pi` reactor definition is:
+
+```
+reactor Pi(n: int = 10000000, bank_index: int = 0, STA: time = 1 day) extends Random {
+  input trigger: bool
+  output out: double
+
+  method in_circle(x: double, y: double): bool {=
+    return x * x + y * y <= 1.0;
+  =}
+
+  reaction(startup) {=
+    self->seed = self->bank_index + 1;
+  =}
+
+  reaction(trigger) -> out {=
+    tag_t now = lf_tag();
+    int count = 0;
+    for (int i = 0; i < self->n; i++) {
+      double x = uniform_double(-1.0, 1.0);
+      double y = uniform_double(-1.0, 1.0);
+      if (in_circle(x, y)) count++;
+    }
+    lf_set(out, (4.0 * count) / self->n);
+  =}
+}
+```
+
+This extends the [Random](../lib/Random.lf) base class and sets a distinct seed for each instance so that results are reproducible and distinct in each reactor instance.
+
+Notice that the `Pi` reactor sets a large STA. Even though this reactor is purely reactive, this large STA is needed to prevent the reactor from immediately advancing to the stop time when the `Gather` reactor requests a stop.
+
+The `Gather` reactor looks like this:
+
+```
+reactor Gather(parallelism: int = 4, desired_precision: double = 0.000001) {
+  preamble {=
+    #include <math.h>
+  =}
+  input[parallelism] in: double
+  output next: bool
+  logical action a
+  state sum: double = 0.0
+  state count: int = 0
+
+  reaction(startup, a) -> next {=
+    lf_set(next, true);
+    tag_t now = lf_tag();
+  =}
+
+  reaction(in) -> a {=
+    for (size_t i = 0; i < self->parallelism; i++) {
+      self->sum += in[i]->value;
+      self->count++;
+    }
+    double estimate = self->sum / self->count;
+    tag_t now = lf_tag();
+    lf_print("%d: estimated pi is %f at tag " PRINTF_TAG,
+        self->count, estimate, now.time - lf_time_start(), now.microstep);
+    if (fabs(estimate - M_PI) <= self->desired_precision) {
+      lf_request_stop();
+    }
+    lf_schedule(a, 0);
+  =} STAA(1 day) {=
+    tag_t now = lf_tag();
+    lf_print_error("STP violation at Gather at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
+  =}
+}
+```
+
+This reactor sets a large STAA to ensure that it blocks until it receives a result from each instance of the `Pi` reactor in the bank before gathering the results (it would work equally well to set a large STA, but using the STAA would permit this reactor to have some local activity that does not wait for the results from `Pi`).
+
+The `Gather` reactor has a `desired_precision` result and requests a halt of the federation using `lf_request_stop()` when this precision is reached.
+Note that it is unpredictable at what tag the halt will occur.  This tag is a negotiated consensus among all the federates (mediated by the RTI), and, as we have seen above, it is possible in a federation that some federated have already advanced to (possibly much) larger tag.
+Hence, it is important for the `Gather` reactor to continue producing `next` outputs even after requesting the halt.
+If it fails to produce a `next` output, then `Pi` will block for up to one day before it infers that its `trigger` input is absent.
+The federation, therefore, will fail to halt until the next day.
+
+This program can be used as a rudimentary test of the efficiency of federated execution.
+With the specified `desired_precision` shown above, the final printed output from the `Gather` reactor is:
+
+```
+Fed 4 (g): 216: estimated pi is 3.141590 at tag (0, 53)
+```
+
+This reports the result of
+2.16 billion random trials, which completed in approximately 8.5 seconds on a Macbook Pro.  This is indistinguishable from the performance achieved by an unfederated execution of the same program, but it has the advantage that it can be distributed across multiple machines. In contrast, if you force the program to use only one core by making it unfederated and setting the target property:
+
+```
+  workers: 1
+```
+
+then the program takes 31.3 seconds on the same machine, almost four times as long.
+
+## Summary
+
+There are some rules of thumb to guide you:
 
 * When local event tags always match network input tags, then STA can safely set to zero, and STAA can be used to ensure that the federate keeps processing local events even if the upstream federate or the network fails.
 * When local event tags do not always match network input tags, then you must decide whether to process local events quickly or network input events quickly. To process local events quickly, use an `after` delay. To process network input events quickly, use an STA.
-
-## Example 3: MonteCarloPi
-
-### Feedback
-
-### Dataflow Style
-
-Insights:
-
-// Pi needs an STP_offset because its event queue is usually empty and otherwise it will advance to the stop time.
-
-Need to keep producing outputs after calling lf_request_stop
-
+* A **dataflow** style of federated execution with the decentralized controller uses very large STA and/or STAA offsets.  This works for applications where the federates and the network are assumed to be reliable and all federates are reactive, meaning that they have no work to do until they receive inputs from the network. In this specialized pattern, each federate will block at a tag _g_ until it has received inputs on all network input ports with tags _g_ or greater.  But if this fits your application, it is a particularly easy and efficient way to get parallel and distributed execution.
