@@ -1,0 +1,16 @@
+/**
+ * @brief Output a counting sequence starting at 1.
+ * @param offset The time of the first output relative to the start time (default 0).
+ * @param period The period of the output (default 1 s).
+ */
+target C
+
+reactor Count(offset: time = 0, period: time = 1 s) {
+  state count: int = 1
+  output out: int
+  timer t(offset, period)
+
+  reaction(t) -> out {=
+    lf_set(out, self->count++);
+  =}
+}
