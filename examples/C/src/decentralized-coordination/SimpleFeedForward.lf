@@ -1,11 +1,10 @@
 target C {
-  coordination: decentralized,
-  timeout: 6 s
+  coordination: decentralized
 }
 
 import Count from "../lib/Count.lf"
 
-reactor PrintLag(STA: time = 1 day) {
+reactor PrintLag {
   input in: int
 
   reaction(in) {=

@@ -70,7 +70,7 @@ reactor PrintLag {
 }
 ```
 
-When we execute this program, the output looks like this:
+When we execute this program, the output may look like this:
 
 ```
 Fed 0 (c): Starting timestamp is: 1722799292106089000.
@@ -84,7 +84,7 @@ Fed 1 (p): Reaction to network input 4 lag is 5240us at logical time 9000000us, 
 ...
 ```
 
-Notice that the very first reaction is invoked, incorrectly, at microstep 1. This is because, with STA and STAA both being zero, the runtime system commits to the start tag (0, 0) (elapsed), sees no network input, concludes the input is absent at (0, 0), and completes execution at that tag without invoking any reactions.
+Notice that the very first reaction is invoked, incorrectly, at microstep 1. This may or may not happen, but if it does, it is because, with STA and STAA both being zero, the runtime system commits to the start tag (0, 0) (elapsed), sees no network input, concludes the input is absent at (0, 0), and completes execution at that tag without invoking any reactions.
 When an input subsequently arrives with intended tag (0, 0), that tag cannot be assigned to it because the runtime system has already completed execution at that tag. Hence, the input gets assigned the next available tag, (0, 1), and the reaction is invoked with the stated warning.
 
 Notice that subsequent reactions do not experience an STP violation. In fact, if we were to change the offset on the timer in the program to be bigger than 0, then the entire program would run correctly without any STP violations.  The reason for this is the `PrintLag` reactor has no events of its own except the ubiquitous `startup` event, which all reactors have.  Thus, after concluding tag (0, 0), it does not know what tag to advance to until it receives an input message. By then, there will be no need to assume the input is absent (it isn't), so it can immediately commit to the tag and execute the reactions.
@@ -118,14 +118,14 @@ Fed 1 (p): Reaction to network input 4 lag is 902us at logical time 9000000us, m
 ```
 
 Notice that there are no STP violations and the lag is no worse than before.
-The STAA of 10ms seems reasonable given that the observed latencies are reliably around 5ms. The lag is no worse than before `Count` is reliably sending messages, and hence `PrintLag` never has to actually assume the input is absent.
+The STAA of 10ms seems reasonable given that the observed latencies are reliably around 5ms. The lag is no worse than before because `Count` is reliably sending messages, and hence `PrintLag` never has to actually assume the input is absent.
 
 In fact, for this program, we could set the STAA to a very large time. For example:
 
 ```
   reaction(in) {=
     ...
-  =} STP(1 day) {=
+  =} STAA(100 days) {=
     ...
   =}
 ```
@@ -138,7 +138,7 @@ For this example, it would work equally well to set the STA rather than the STAA
 If we change the `PrintLag` reactor to read like this:
 
 ```
-reactor PrintLag(STA: time = 1 day) {
+reactor PrintLag(STA: time = 100 days) {
   input in: int
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
@@ -148,7 +148,7 @@ reactor PrintLag(STA: time = 1 day) {
 }
 ```
 
-In this case, once again there will be no STP violations and the lag will be no worse than before.
+In this case, once again, there will be no STP violations and the lag will be no worse than before.
 This is because the runtime system does not wait for the STA time to elapse once the network inputs become known to be present or absent.
 
 ### Warning: Timeout
@@ -162,7 +162,7 @@ target C {
 }
 ```
 
-With the STA set to one day, this program will nonetheless terminate correctly after receiving the input at tag (6s, 0):
+With the STA set to 100 days, this program will nonetheless terminate correctly after receiving the input at tag (6s, 0):
 
 ```
 Fed 0 (c): Starting timestamp is: 1722803307426429000.
@@ -184,9 +184,12 @@ All done.
 ```
 
 However, suppose you set the timeout to `7s` instead of `6s`.  What happens?
-The `PrintLag` federate will not exit until one day after you start it!
+The `PrintLag` federate will not exit until 100 days after you start it!
 The reason is that after it receives an input with tag (6s, 0), it now wishes to advance its tag to the timeout tag, (7s, 0).  However, it is unknown to this federate whether there will be an input between these two tags.
-Since we specified an STA of 1 day, we have told the federate that if it receives no further inputs (which it will not because the `Count` federate will have exited), then it must wait one day before advancing its tag!
+Since we specified an STA of 100 days, we have told the federate that if it receives no further inputs (which it will not because the `Count` federate will have exited), then it must wait 100 days before advancing its tag!
+
+The `Count` federate, with its default STA of zero, does not have this problem.
+After producing the output at (6s, 0), it immediately advances to the timeout tag of (7s, 0), concludes its execution, and exits.
 
 ## Example 2: Federates that are not Purely Reactive
 
@@ -197,7 +200,7 @@ Consider the [LiveDestination](LiveDestination.lf) program:
 The `Destination` reactor is similar to `PrintLag` except that it also has a local timer.  It does not just react to inputs from the network, but also has its own activity. It looks like this:
 
 ```
-reactor Destination(STA: time = 1 day) {
+reactor Destination(STA: time = 100 days) {
   input in: int
   timer t(0, 500ms)
   reaction(t) {=
@@ -213,7 +216,7 @@ reactor Destination(STA: time = 1 day) {
 }
 ```
 
-This once again has an STA of 1 day, but because inputs keep arriving, it never has to wait one day to determine that it can safely advance its tag. The output looks like this:
+This once again has an STA of 100 days, but because inputs keep arriving, it never has to wait 100 days to determine that it can safely advance its tag. The output looks like this:
 
 ```
 Fed 1 (p): Local reaction lag is 2344us at logical time 0us.
@@ -236,7 +239,7 @@ Fed 1 (p): Local reaction lag is 2505203us at logical time 6500000us.
 ...
 ```
 
-Notice, however, the large lags of 2.5, 2, 1.5, etc. seconds. In fact, the local events that have tags that do not align with an input tag cannot be processed until the next network input arrives (or one day passes)!
+Notice, however, the large lags of 2.5, 2, 1.5, etc. seconds. In fact, the local events that have tags that do not align with an input tag cannot be processed until the next network input arrives (or 100 days pass)!
 
 ### Using STAA vs. STA
 
@@ -277,15 +280,16 @@ Fed 1 (p): Local reaction lag is 5307us at logical time 6500000us.
 
 ### When can the STA be Zero?
 
-In this case, it is safe to set the STA to zero, but only because we know that every incoming tag from the network will be logically simultaneous with a local event.
+In this case, it is safe to set the STA to zero, but only because we know that every incoming tag from the network will be logically simultaneous with a local event, and the STAA guards against prematurely assuming that the input is absent.
 If we were to change this, for example by offsetting the timer slightly:
 
 ```
-  timer t(1ms, 500ms)
+  c = new Count(offset = 1ms, period = 3 s)
 ```
 
 We will now see STP violations for most network inputs.  The reason is that the `Destination` federate advances its tag to (3001ms, 0) before receiving the network input with tag (3000, 0).
 The STA of zero allows this.
+The STAA provides no protection because, even though the federate will wait for an input, when that input arrives, it will be tagged with a tag that is in the past.
 
 For this variant, a better choice would be to set the STA to 10ms and the STAA to 0.
 However, now the lags on the local events will _always_ be larger than 10ms:
@@ -335,6 +339,9 @@ Fed 1 (p): Reaction to network input 3 lag is 1986us at logical time 6010000us.
 
 The logical times at the `Count` federate were 0, 3s, 6s, etc., but here they are larger by 10ms.  This effectively adds a 10ms delay to the processing of network inputs.
 
+This solution is equivalent to using the [logical execution time (LET)](https://link.springer.com/chapter/10.1007/978-3-031-22337-2_8) principle.
+According to the [CAL theorem](https://dl.acm.org/doi/10.1145/3609119), it sacrifices a measured amount of _consistency_ (10ms) in exchange for improved _availability_.
+
 ## Example 3: Timing and Throttling
 
 **Decentralized coordination depends on timing:**
@@ -374,7 +381,7 @@ The [MonteCarloPi](MonteCarloPi.lf) example uses federates to get parallel execu
 The `Pi` reactor definition is:
 
 ```
-reactor Pi(n: int = 10000000, bank_index: int = 0, STA: time = 1 day) extends Random {
+reactor Pi(n: int = 10000000, bank_index: int = 0, STA: time = 100 days) extends Random {
   input trigger: bool
   output out: double
 
@@ -434,7 +441,7 @@ reactor Gather(parallelism: int = 4, desired_precision: double = 0.000001) {
       lf_request_stop();
     }
     lf_schedule(a, 0);
-  =} STAA(1 day) {=
+  =} STAA(100 days) {=
     tag_t now = lf_tag();
     lf_print_error("STP violation at Gather at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
   =}
@@ -446,8 +453,8 @@ This reactor sets a large STAA to ensure that it blocks until it receives a resu
 The `Gather` reactor has a `desired_precision` result and requests a halt of the federation using `lf_request_stop()` when this precision is reached.
 Note that it is unpredictable at what tag the halt will occur.  This tag is a negotiated consensus among all the federates (mediated by the RTI), and, as we have seen above, it is possible in a federation that some federated have already advanced to (possibly much) larger tag.
 Hence, it is important for the `Gather` reactor to continue producing `next` outputs even after requesting the halt.
-If it fails to produce a `next` output, then `Pi` will block for up to one day before it infers that its `trigger` input is absent.
-The federation, therefore, will fail to halt until the next day.
+If it fails to produce a `next` output, then `Pi` will block for up to 100 days before it infers that its `trigger` input is absent.
+The federation, therefore, will fail to halt until  100 days later.
 
 This program can be used as a rudimentary test of the efficiency of federated execution.
 With the specified `desired_precision` shown above, the final printed output from the `Gather` reactor is:
@@ -470,5 +477,5 @@ then the program takes 31.3 seconds on the same machine, almost four times as lo
 There are some rules of thumb to guide you:
 
 * When local event tags always match network input tags, then STA can safely set to zero, and STAA can be used to ensure that the federate keeps processing local events even if the upstream federate or the network fails.
-* When local event tags do not always match network input tags, then you must decide whether to process local events quickly or network input events quickly. To process local events quickly, use an `after` delay. To process network input events quickly, use an STA.
+* When local event tags do not always match network input tags, then you must decide whether to process local events quickly or network input events quickly. To process local events quickly, use an `after` delay. To process network input events quickly, use an STA. This tradeoff is fundamental and unavoidable, as shown by the [CAL theorem](https://dl.acm.org/doi/10.1145/3609119).
 * A **dataflow** style of federated execution with the decentralized controller uses very large STA and/or STAA offsets.  This works for applications where the federates and the network are assumed to be reliable and all federates are reactive, meaning that they have no work to do until they receive inputs from the network. In this specialized pattern, each federate will block at a tag _g_ until it has received inputs on all network input ports with tags _g_ or greater.  But if this fits your application, it is a particularly easy and efficient way to get parallel and distributed execution.
