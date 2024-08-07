@@ -1,10 +1,11 @@
 target C {
-  coordination: decentralized
+  coordination: decentralized,
+  timeout: 6s
 }
 
 import Count from "../lib/Count.lf"
 
-reactor PrintLag {
+reactor PrintLag(STA: time = 100 weeks) {
   input in: int
 
   reaction(in) {=
@@ -15,7 +16,7 @@ reactor PrintLag {
 }
 
 federated reactor {
-  c = new Count(period = 3 s)
+  c = new Count(offset = 0, period = 3 s)
   p = new PrintLag()
   c.out -> p.in
 }
