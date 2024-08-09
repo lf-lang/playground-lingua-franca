@@ -13,7 +13,7 @@ reactor Source {
   =}
 }
 
-reactor Sink(STA: time = 100 days) {
+reactor Sink(STA: time = 100 weeks) {
   input in: int
 
   reaction(in) {=
