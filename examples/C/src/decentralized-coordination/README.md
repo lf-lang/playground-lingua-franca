@@ -46,7 +46,7 @@ reactor A {
 }
 ```
 
-Any network input port that is a trigger for the reaction that declares an STAA handler will have that STAA applied to it.
+Any network input port will have that STAA applied to it if it is a trigger for or is used by a reaction that declares an STAA handler.
 If more than one STAA is declared for the same input port, the minimum time value will be the one in effect.  The `<fault handler>` is code that will be executed if an input had been previously assumed to be absent at a tag _g_, but then an input event with tag _g_ arrives.
 
 Choosing suitable STAs and STAAs for a program is challenging and depends on many factors.  Collectively, STA and STAA are both referred to as **STP** (safe to process) offsets, but the distinction between the two is important and subtle.
@@ -125,7 +125,7 @@ In fact, for this program, we could set the STAA to a very large time. For examp
 ```
   reaction(in) {=
     ...
-  =} STAA(100 days) {=
+  =} STAA(100 weeks) {=
     ...
   =}
 ```
@@ -138,7 +138,7 @@ For this example, it would work equally well to set the STA rather than the STAA
 If we change the `PrintLag` reactor to read like this:
 
 ```
-reactor PrintLag(STA: time = 100 days) {
+reactor PrintLag(STA: time = 100 weeks) {
   input in: int
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
@@ -162,7 +162,7 @@ target C {
 }
 ```
 
-With the STA set to 100 days, this program will nonetheless terminate correctly after receiving the input at tag (6s, 0):
+With the STA set to 100 weeks, this program will nonetheless terminate correctly after receiving the input at tag (6s, 0):
 
 ```
 Fed 0 (c): Starting timestamp is: 1722803307426429000.
@@ -184,9 +184,9 @@ All done.
 ```
 
 However, suppose you set the timeout to `7s` instead of `6s`.  What happens?
-The `PrintLag` federate will not exit until 100 days after you start it!
+The `PrintLag` federate will not exit until 100 weeks after you start it!
 The reason is that after it receives an input with tag (6s, 0), it now wishes to advance its tag to the timeout tag, (7s, 0).  However, it is unknown to this federate whether there will be an input between these two tags.
-Since we specified an STA of 100 days, we have told the federate that if it receives no further inputs (which it will not because the `Count` federate will have exited), then it must wait 100 days before advancing its tag!
+Since we specified an STA of 100 weeks, we have told the federate that if it receives no further inputs (which it will not because the `Count` federate will have exited), then it must wait 100 weeks before advancing its tag!
 
 The `Count` federate, with its default STA of zero, does not have this problem.
 After producing the output at (6s, 0), it immediately advances to the timeout tag of (7s, 0), concludes its execution, and exits.
@@ -200,7 +200,7 @@ Consider the [LiveDestination](LiveDestination.lf) program:
 The `Destination` reactor is similar to `PrintLag` except that it also has a local timer.  It does not just react to inputs from the network, but also has its own activity. It looks like this:
 
 ```
-reactor Destination(STA: time = 100 days) {
+reactor Destination(STA: time = 100 weeks) {
   input in: int
   timer t(0, 500ms)
   reaction(t) {=
@@ -216,7 +216,7 @@ reactor Destination(STA: time = 100 days) {
 }
 ```
 
-This once again has an STA of 100 days, but because inputs keep arriving, it never has to wait 100 days to determine that it can safely advance its tag. The output looks like this:
+This once again has an STA of 100 weeks, but because inputs keep arriving, it never has to wait 100 weeks to determine that it can safely advance its tag. The output looks like this:
 
 ```
 Fed 1 (p): Local reaction lag is 2344us at logical time 0us.
@@ -239,7 +239,7 @@ Fed 1 (p): Local reaction lag is 2505203us at logical time 6500000us.
 ...
 ```
 
-Notice, however, the large lags of 2.5, 2, 1.5, etc. seconds. In fact, the local events that have tags that do not align with an input tag cannot be processed until the next network input arrives (or 100 days pass)!
+Notice, however, the large lags of 2.5, 2, 1.5, etc. seconds. In fact, the local events that have tags that do not align with an input tag cannot be processed until the next network input arrives (or 100 weeks pass)!
 
 ### Using STAA vs. STA
 
@@ -381,7 +381,7 @@ The [MonteCarloPi](MonteCarloPi.lf) example uses federates to get parallel execu
 The `Pi` reactor definition is:
 
 ```
-reactor Pi(n: int = 10000000, bank_index: int = 0, STA: time = 100 days) extends Random {
+reactor Pi(n: int = 10000000, bank_index: int = 0, STA: time = 100 weeks) extends Random {
   input trigger: bool
   output out: double
 
@@ -441,7 +441,7 @@ reactor Gather(parallelism: int = 4, desired_precision: double = 0.000001) {
       lf_request_stop();
     }
     lf_schedule(a, 0);
-  =} STAA(100 days) {=
+  =} STAA(100 weeks) {=
     tag_t now = lf_tag();
     lf_print_error("STP violation at Gather at tag " PRINTF_TAG, now.time - lf_time_start(), now.microstep);
   =}
@@ -453,8 +453,8 @@ This reactor sets a large STAA to ensure that it blocks until it receives a resu
 The `Gather` reactor has a `desired_precision` result and requests a halt of the federation using `lf_request_stop()` when this precision is reached.
 Note that it is unpredictable at what tag the halt will occur.  This tag is a negotiated consensus among all the federates (mediated by the RTI), and, as we have seen above, it is possible in a federation that some federated have already advanced to (possibly much) larger tag.
 Hence, it is important for the `Gather` reactor to continue producing `next` outputs even after requesting the halt.
-If it fails to produce a `next` output, then `Pi` will block for up to 100 days before it infers that its `trigger` input is absent.
-The federation, therefore, will fail to halt until  100 days later.
+If it fails to produce a `next` output, then `Pi` will block for up to 100 weeks before it infers that its `trigger` input is absent.
+The federation, therefore, will fail to halt until  100 weeks later.
 
 This program can be used as a rudimentary test of the efficiency of federated execution.
 With the specified `desired_precision` shown above, the final printed output from the `Gather` reactor is:
