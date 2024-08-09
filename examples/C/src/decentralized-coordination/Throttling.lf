@@ -18,7 +18,7 @@ reactor Sink {
 
   reaction(in) -> next {=
     tag_t now = lf_tag();
-    lf_print("Received %d at tag " PRINTF_TAG " with lag " PRINTF_TIME,
+    lf_print("**** Received %d at tag " PRINTF_TAG " with lag " PRINTF_TIME,
         in->value, now.time - lf_time_start(), now.microstep,
         lf_time_physical() - now.time);
     lf_sleep(MSEC(100));

@@ -10,13 +10,13 @@ reactor Destination(STA: time = 100 weeks) {
 
   reaction(t) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Local reaction lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+    lf_print("**** Local reaction lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
         lag/1000, lf_time_logical_elapsed()/1000);
   =}
 
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
         in->value, lag/1000, lf_time_logical_elapsed()/1000);
   =}
 }

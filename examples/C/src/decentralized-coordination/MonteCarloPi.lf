@@ -52,7 +52,7 @@ reactor Gather(parallelism: int = 4, desired_precision: double = 0.000001) {
     }
     double estimate = self->sum / self->count;
     tag_t now = lf_tag();
-    lf_print("%d: estimated pi is %f at tag " PRINTF_TAG,
+    lf_print("**** %d: estimated pi is %f at tag " PRINTF_TAG,
         self->count, estimate, now.time - lf_time_start(), now.microstep);
     if (fabs(estimate - M_PI) <= self->desired_precision) {
       lf_request_stop();
