@@ -16,7 +16,7 @@ federated reactor {
 Each top-level reactor instance, such as `a` and `b` above, runs as a separate program called a "federate," possibly on different machines or in separate containers.
 
 ## The Role of the RTI
-Like the (default) centralized coordinator, the RTI orchestrates the startup (and shutdown) of the federation, but unlike the centralized coordinator, the RTI plays little role during the execution of the program. Its function is limited to:
+Like the (default) centralized coordinator, the runtime infrastrcture (RTI) orchestrates the startup (and shutdown) of the federation, but unlike the centralized coordinator, the RTI plays little role during the execution of the program. Its function is limited to:
 
 * handling requests to shut down the federation, via `lf_request_stop()` in C or `request_stop()` in Python; and
 * performing runtime clock synchronization, if this is enabled.
@@ -64,7 +64,7 @@ reactor PrintLag {
   input in: int
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us, microstep %d.",
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us, microstep %d.",
         in->value, lag/1000, lf_time_logical_elapsed()/1000, lf_tag().microstep);
   =}
 }
@@ -73,14 +73,16 @@ reactor PrintLag {
 When we execute this program, the output may look like this:
 
 ```
-Fed 0 (c): Starting timestamp is: 1722799292106089000.
-Fed 1 (p): Starting timestamp is: 1722799292106089000.
+Fed 0 (c): Starting timestamp is: 1723205782147571000.
+Fed 1 (p): Starting timestamp is: 1723205782147571000.
+Fed 1 (p): Environment 0: ---- Spawning 1 workers.
+Fed 0 (c): Environment 0: ---- Spawning 1 workers.
 Fed 1 (p): ERROR: STP violation occurred in a trigger to reaction 1, and there is no handler.
 **** Invoking reaction at the wrong tag!
-Fed 1 (p): Reaction to network input 1 lag is 4892us at logical time 0us, microstep 1.
-Fed 1 (p): Reaction to network input 2 lag is 4857us at logical time 3000000us, microstep 0.
-Fed 1 (p): Reaction to network input 3 lag is 4994us at logical time 6000000us, microstep 0.
-Fed 1 (p): Reaction to network input 4 lag is 5240us at logical time 9000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 1 lag is 4645us at logical time 0us, microstep 1.
+Fed 1 (p): **** Reaction to network input 2 lag is 3664us at logical time 3000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 3 lag is 2567us at logical time 6000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 4 lag is 3194us at logical time 9000000us, microstep 0.
 ...
 ```
 
@@ -100,7 +102,7 @@ reactor PrintLag {
   input in: int
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us, microstep %d.",
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us, microstep %d.",
         in->value, lag/1000, lf_time_logical_elapsed()/1000, lf_tag().microstep);
   =} STAA(10ms) {=
     lf_print("**** STP violation at PrintLag at tag " PRINTF_TAG, lf_tag().time - lf_time_start(), lf_tag().microstep);
@@ -111,10 +113,11 @@ reactor PrintLag {
 The addition of the STAA has two effects. First, it tells the runtime system to wait before assuming the input is absent.  Second, provides a handler to invoke when the wait is insufficient and a message later arrives with a tag that is now in the past.  The output now looks like this:
 
 ```
-Fed 1 (p): Reaction to network input 1 lag is 5161us at logical time 0us, microstep 0.
-Fed 1 (p): Reaction to network input 2 lag is 1808us at logical time 3000000us, microstep 0.
-Fed 1 (p): Reaction to network input 3 lag is 5199us at logical time 6000000us, microstep 0.
-Fed 1 (p): Reaction to network input 4 lag is 902us at logical time 9000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 1 lag is 4530us at logical time 0us, microstep 0.
+Fed 1 (p): **** Reaction to network input 2 lag is 2941us at logical time 3000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 3 lag is 2884us at logical time 6000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 4 lag is 2897us at logical time 9000000us, microstep 0.
+...
 ```
 
 Notice that there are no STP violations and the lag is no worse than before.
@@ -142,7 +145,7 @@ reactor PrintLag(STA: time = 100 weeks) {
   input in: int
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us, microstep %d.",
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us, microstep %d.",
         in->value, lag/1000, lf_time_logical_elapsed()/1000, lf_tag().microstep);
   =}
 }
@@ -150,6 +153,13 @@ reactor PrintLag(STA: time = 100 weeks) {
 
 In this case, once again, there will be no STP violations and the lag will be no worse than before.
 This is because the runtime system does not wait for the STA time to elapse once the network inputs become known to be present or absent.
+
+There is an interesting subtlety with this solution.
+The STA is in fact ignored when deciding whether to advance to the start tag (0, 0).
+This is because all inputs with tags earlier than (0, 0) are known to be absent, so it is always safe to advance to (0, 0).
+So why do we not get an STP violation here?
+The reason is that before reacting to the input `in`, the runtime system waits until either the input becomes known at (0, 0) or its physical clock _T_ hits 0 + STA + STAA.
+The STA is always added to the STAA, so with this setting, if an input never arrives, the `PrintLag` lag reactor will in fact be stuck at (0, 0) for 100 weeks.
 
 ### Warning: Timeout
 
@@ -169,11 +179,11 @@ Fed 0 (c): Starting timestamp is: 1722803307426429000.
 Fed 1 (p): Starting timestamp is: 1722803307426429000.
 Fed 1 (p): Environment 0: ---- Spawning 1 workers.
 Fed 0 (c): Environment 0: ---- Spawning 1 workers.
-Fed 1 (p): Reaction to network input 1 lag is 1439us at logical time 0us, microstep 0.
-Fed 1 (p): Reaction to network input 2 lag is 3589us at logical time 3000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 1 lag is 1439us at logical time 0us, microstep 0.
+Fed 1 (p): **** Reaction to network input 2 lag is 3589us at logical time 3000000us, microstep 0.
 Fed 1 (p): Socket from federate 0 is closed.
 Fed 0 (c): Connection to the RTI closed with an EOF.
-Fed 1 (p): Reaction to network input 3 lag is 1304us at logical time 6000000us, microstep 0.
+Fed 1 (p): **** Reaction to network input 3 lag is 1304us at logical time 6000000us, microstep 0.
 ---- Elapsed logical time (in nsec): 6,000,000,000
 ---- Elapsed physical time (in nsec): 6,001,491,000
 Fed 1 (p): Connection to the RTI closed with an EOF.
@@ -205,12 +215,12 @@ reactor Destination(STA: time = 100 weeks) {
   timer t(0, 500ms)
   reaction(t) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Local reaction lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+    lf_print("**** Local reaction lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
         lag/1000, lf_time_logical_elapsed()/1000);
   =}
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
         in->value, lag/1000, lf_time_logical_elapsed()/1000);
   =}
 }
@@ -219,23 +229,23 @@ reactor Destination(STA: time = 100 weeks) {
 This once again has an STA of 100 weeks, but because inputs keep arriving, it never has to wait 100 weeks to determine that it can safely advance its tag. The output looks like this:
 
 ```
-Fed 1 (p): Local reaction lag is 2344us at logical time 0us.
-Fed 1 (p): Reaction to network input 1 lag is 2369us at logical time 0us.
-Fed 1 (p): Local reaction lag is 2502423us at logical time 500000us.
-Fed 1 (p): Local reaction lag is 2002442us at logical time 1000000us.
-Fed 1 (p): Local reaction lag is 1502445us at logical time 1500000us.
-Fed 1 (p): Local reaction lag is 1002452us at logical time 2000000us.
-Fed 1 (p): Local reaction lag is 502456us at logical time 2500000us.
-Fed 1 (p): Local reaction lag is 2462us at logical time 3000000us.
-Fed 1 (p): Reaction to network input 2 lag is 2465us at logical time 3000000us.
-Fed 1 (p): Local reaction lag is 2501403us at logical time 3500000us.
-Fed 1 (p): Local reaction lag is 2001437us at logical time 4000000us.
-Fed 1 (p): Local reaction lag is 1501446us at logical time 4500000us.
-Fed 1 (p): Local reaction lag is 1001455us at logical time 5000000us.
-Fed 1 (p): Local reaction lag is 501464us at logical time 5500000us.
-Fed 1 (p): Local reaction lag is 1475us at logical time 6000000us.
-Fed 1 (p): Reaction to network input 3 lag is 1482us at logical time 6000000us.
-Fed 1 (p): Local reaction lag is 2505203us at logical time 6500000us.
+Fed 1 (p): **** Local reaction lag is 2344us at logical time 0us.
+Fed 1 (p): **** Reaction to network input 1 lag is 2369us at logical time 0us.
+Fed 1 (p): **** Local reaction lag is 2502423us at logical time 500000us.
+Fed 1 (p): **** Local reaction lag is 2002442us at logical time 1000000us.
+Fed 1 (p): **** Local reaction lag is 1502445us at logical time 1500000us.
+Fed 1 (p): **** Local reaction lag is 1002452us at logical time 2000000us.
+Fed 1 (p): **** Local reaction lag is 502456us at logical time 2500000us.
+Fed 1 (p): **** Local reaction lag is 2462us at logical time 3000000us.
+Fed 1 (p): **** Reaction to network input 2 lag is 2465us at logical time 3000000us.
+Fed 1 (p): **** Local reaction lag is 2501403us at logical time 3500000us.
+Fed 1 (p): **** Local reaction lag is 2001437us at logical time 4000000us.
+Fed 1 (p): **** Local reaction lag is 1501446us at logical time 4500000us.
+Fed 1 (p): **** Local reaction lag is 1001455us at logical time 5000000us.
+Fed 1 (p): **** Local reaction lag is 501464us at logical time 5500000us.
+Fed 1 (p): **** Local reaction lag is 1475us at logical time 6000000us.
+Fed 1 (p): **** Reaction to network input 3 lag is 1482us at logical time 6000000us.
+Fed 1 (p): **** Local reaction lag is 2505203us at logical time 6500000us.
 ...
 ```
 
@@ -249,7 +259,7 @@ Suppose we set the STA to zero (its default) and specify an STAA as follows:
 ```
   reaction(in) {=
     interval_t lag = lf_time_physical() - lf_time_logical();
-    lf_print("Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
         in->value, lag/1000, lf_time_logical_elapsed()/1000);
   =} STAA(10ms) {=
     lf_print("**** STP violation at Destination at tag " PRINTF_TAG, lf_tag().time - lf_time_start(), lf_tag().microstep);
@@ -259,23 +269,23 @@ Suppose we set the STA to zero (its default) and specify an STAA as follows:
 This program will now deliver much more reasonable lags:
 
 ```
-Fed 1 (p): Local reaction lag is 4275us at logical time 0us.
-Fed 1 (p): Reaction to network input 1 lag is 5161us at logical time 0us.
-Fed 1 (p): Local reaction lag is 704us at logical time 500000us.
-Fed 1 (p): Local reaction lag is 5034us at logical time 1000000us.
-Fed 1 (p): Local reaction lag is 2744us at logical time 1500000us.
-Fed 1 (p): Local reaction lag is 5040us at logical time 2000000us.
-Fed 1 (p): Local reaction lag is 85us at logical time 2500000us.
-Fed 1 (p): Local reaction lag is 1876us at logical time 3000000us.
-Fed 1 (p): Reaction to network input 2 lag is 2015us at logical time 3000000us.
-Fed 1 (p): Local reaction lag is 1259us at logical time 3500000us.
-Fed 1 (p): Local reaction lag is 4263us at logical time 4000000us.
-Fed 1 (p): Local reaction lag is 5035us at logical time 4500000us.
-Fed 1 (p): Local reaction lag is 5033us at logical time 5000000us.
-Fed 1 (p): Local reaction lag is 3078us at logical time 5500000us.
-Fed 1 (p): Local reaction lag is 145us at logical time 6000000us.
-Fed 1 (p): Reaction to network input 3 lag is 289us at logical time 6000000us.
-Fed 1 (p): Local reaction lag is 5307us at logical time 6500000us.
+Fed 1 (p): **** Local reaction lag is 4275us at logical time 0us.
+Fed 1 (p): **** Reaction to network input 1 lag is 5161us at logical time 0us.
+Fed 1 (p): **** Local reaction lag is 704us at logical time 500000us.
+Fed 1 (p): **** Local reaction lag is 5034us at logical time 1000000us.
+Fed 1 (p): **** Local reaction lag is 2744us at logical time 1500000us.
+Fed 1 (p): **** Local reaction lag is 5040us at logical time 2000000us.
+Fed 1 (p): **** Local reaction lag is 85us at logical time 2500000us.
+Fed 1 (p): **** Local reaction lag is 1876us at logical time 3000000us.
+Fed 1 (p): **** Reaction to network input 2 lag is 2015us at logical time 3000000us.
+Fed 1 (p): **** Local reaction lag is 1259us at logical time 3500000us.
+Fed 1 (p): **** Local reaction lag is 4263us at logical time 4000000us.
+Fed 1 (p): **** Local reaction lag is 5035us at logical time 4500000us.
+Fed 1 (p): **** Local reaction lag is 5033us at logical time 5000000us.
+Fed 1 (p): **** Local reaction lag is 3078us at logical time 5500000us.
+Fed 1 (p): **** Local reaction lag is 145us at logical time 6000000us.
+Fed 1 (p): **** Reaction to network input 3 lag is 289us at logical time 6000000us.
+Fed 1 (p): **** Local reaction lag is 5307us at logical time 6500000us.
 ```
 
 ### When can the STA be Zero?
@@ -295,16 +305,16 @@ For this variant, a better choice would be to set the STA to 10ms and the STAA t
 However, now the lags on the local events will _always_ be larger than 10ms:
 
 ```
-Fed 1 (p): Reaction to network input 1 lag is 5253us at logical time 0us.
-Fed 1 (p): Local reaction lag is 11458us at logical time 1000us.
-Fed 1 (p): Local reaction lag is 14607us at logical time 501000us.
-Fed 1 (p): Local reaction lag is 12163us at logical time 1001000us.
-Fed 1 (p): Local reaction lag is 14224us at logical time 1501000us.
-Fed 1 (p): Local reaction lag is 15045us at logical time 2001000us.
-Fed 1 (p): Local reaction lag is 12404us at logical time 2501000us.
-Fed 1 (p): Reaction to network input 2 lag is 5172us at logical time 3000000us.
-Fed 1 (p): Local reaction lag is 11467us at logical time 3001000us.
-Fed 1 (p): Local reaction lag is 11882us at logical time 3501000us.
+Fed 1 (p): **** Reaction to network input 1 lag is 5253us at logical time 0us.
+Fed 1 (p): **** Local reaction lag is 11458us at logical time 1000us.
+Fed 1 (p): **** Local reaction lag is 14607us at logical time 501000us.
+Fed 1 (p): **** Local reaction lag is 12163us at logical time 1001000us.
+Fed 1 (p): **** Local reaction lag is 14224us at logical time 1501000us.
+Fed 1 (p): **** Local reaction lag is 15045us at logical time 2001000us.
+Fed 1 (p): **** Local reaction lag is 12404us at logical time 2501000us.
+Fed 1 (p): **** Reaction to network input 2 lag is 5172us at logical time 3000000us.
+Fed 1 (p): **** Local reaction lag is 11467us at logical time 3001000us.
+Fed 1 (p): **** Local reaction lag is 11882us at logical time 3501000us.
 ...
 ```
 
@@ -329,11 +339,11 @@ However, keep in mind that although the _reported_ lag is small for the network 
 The output looks like this for the network inputs:
 
 ```
-Fed 1 (p): Reaction to network input 1 lag is 1265us at logical time 10000us.
+Fed 1 (p): **** Reaction to network input 1 lag is 1265us at logical time 10000us.
 ...
-Fed 1 (p): Reaction to network input 2 lag is 1458us at logical time 3010000us.
+Fed 1 (p): **** Reaction to network input 2 lag is 1458us at logical time 3010000us.
 ...
-Fed 1 (p): Reaction to network input 3 lag is 1986us at logical time 6010000us.
+Fed 1 (p): **** Reaction to network input 3 lag is 1986us at logical time 6010000us.
 ...
 ```
 
@@ -436,7 +446,7 @@ reactor Gather(parallelism: int = 4, desired_precision: double = 0.000001) {
     }
     double estimate = self->sum / self->count;
     tag_t now = lf_tag();
-    lf_print("%d: estimated pi is %f at tag " PRINTF_TAG,
+    lf_print("**** %d: estimated pi is %f at tag " PRINTF_TAG,
         self->count, estimate, now.time - lf_time_start(), now.microstep);
     if (fabs(estimate - M_PI) <= self->desired_precision) {
       lf_request_stop();
