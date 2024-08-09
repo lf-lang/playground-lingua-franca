@@ -357,6 +357,7 @@ The [Unbounded](Unbounded.lf) example shows an extreme case, where a `Source` fe
 
 <img src="figures/Unbounded.png" width=800 alt="Unbounded"/>
 
+Here, the `Sink` reactor has a large STA.
 Because the `Source` does not advance logical time, and because it has no upstream federates, it will produce outputs as fast as possible.  The `Sink`, however, because of the call to `lf_sleep()` in its reaction to the input, cannot keep up.
 If you monitor the execution, you will see that the memory usage of the `Sink` federate will grow without bound as incoming messages pile up, waiting to be processed.
 
