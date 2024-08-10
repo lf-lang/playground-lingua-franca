@@ -161,7 +161,7 @@ So why do we not get an STP violation here?
 The reason is that before reacting to the input `in`, the runtime system waits until either the input becomes known at (0, 0) or its physical clock _T_ hits 0 + STA + STAA.
 The STA is always added to the STAA, so with this setting, if an input never arrives, the `PrintLag` lag reactor will in fact be stuck at (0, 0) for 100 weeks.
 
-### Warning: Timeout
+### Using a Timeout
 
 Suppose that we change the `target` declaration in the above program to add a timeout:
 
@@ -193,13 +193,9 @@ RTI has exited. Wait for federates to exit.
 All done.
 ```
 
-However, suppose you set the timeout to `7s` instead of `6s`.  What happens?
-The `PrintLag` federate will not exit until 100 weeks after you start it!
-The reason is that after it receives an input with tag (6s, 0), it now wishes to advance its tag to the timeout tag, (7s, 0).  However, it is unknown to this federate whether there will be an input between these two tags.
-Since we specified an STA of 100 weeks, we have told the federate that if it receives no further inputs (which it will not because the `Count` federate will have exited), then it must wait 100 weeks before advancing its tag!
-
-The `Count` federate, with its default STA of zero, does not have this problem.
-After producing the output at (6s, 0), it immediately advances to the timeout tag of (7s, 0), concludes its execution, and exits.
+In fact, any timeout will work as expected.
+The reason is that the `Count` federate, when it exits, will close the socket connection to `PrintLag`.
+When this happens, the input port of `PrintLag` becomes known-to-be-absent for all remaining tags.
 
 ## Example 2: Federates that are not Purely Reactive
 
