@@ -1,0 +1,96 @@
+/**
+ * @file
+ * @author Edward A. Lee
+ * @brief Reactors for plotting signals.
+ */
+target Python {
+  timeout: 10 s
+}
+
+/**
+ * @brief A reactor that plots a sequence of vectors, where each vector plot replaces the previous
+ * one.
+ *
+ * The `size` parameter is a tuple of two values: the width and height of the plot in inches.
+ *
+ * The `title` parameter is a string that is displayed above the plot. The `xlabel` and `ylabel`
+ * parameters provide strings to label the x and y axes, respectively.
+ *
+ * The `ylim` parameter is a tuple of two values: the lower limit and the upper limit of the y axis.
+ * If no ylim is specified or it is not a tuple with two value, then the default range is determined
+ * by the limits of the first vector provided.
+ *
+ * The `xrange` parameter is a tuple of three values: the start of the x axis, the end of the x
+ * axis, and the step size. If `xrange` is `None` (the default), the x axis will be set to the
+ * length of the first input vector.
+ *
+ * To use this reactor, you must install the matplotlib and numpy libraries for Python. You can do
+ * this with `pip install matplotlib numpy`. See [matplotlib
+ * documentation](https://matplotlib.org/stable/) for more information.
+ */
+reactor VectorPlot(
+    size = {= None =},
+    title = {= None =},
+    xlabel = {= None =},
+    xrange = {= None =},
+    ylabel = {= None =},
+    ylim = {= None =}) {
+  preamble {=
+    import matplotlib.pyplot as plt
+    import numpy as np
+  =}
+
+  input y
+  state showing = False
+  state figure = {= None =}
+  state axes = {= None =}
+  state line1 = {= None =}
+
+  reaction(y) {=
+    if not self.showing:
+      # First vector to plot. Set up the plot.
+      # to run GUI event loop
+      self.plt.ion()
+      self.figure, self.axes = self.plt.subplots(figsize=self.size)
+      if (self.title):
+        self.axes.set_title(self.title)
+      if (self.xlabel):
+        self.axes.set_xlabel(self.xlabel)
+      if (self.ylabel):
+        self.axes.set_ylabel(self.ylabel)
+      if (self.ylim) and len(self.ylim) == 2:
+        self.axes.set_ylim(self.ylim[0], self.ylim[1])
+
+      # Determine the x axis.
+      xrange = self.xrange
+      if not xrange:
+        xrange = [0, len(y.value), 1]
+      x = self.np.arange(xrange[0], xrange[1], xrange[2])
+
+      # Plot the data.
+      self.line1, = self.axes.plot(x, y.value)
+
+      self.showing = True
+    else:
+      self.line1.set_ydata(y.value)
+
+    self.figure.canvas.draw()
+    self.figure.canvas.flush_events()
+  =}
+}
+
+main reactor {
+  preamble {=
+    import numpy as np
+  =}
+  state count = 1
+  timer t(0, 1 s)
+  v = new VectorPlot(title = "Sine wave", xlabel = "X Axis", ylabel = "Y Axis")
+
+  reaction(t) -> v.y {=
+    x = self.np.linspace(0, 2 * self.np.pi * self.count, 200)
+    y = self.np.sin(x)
+    v.y.set(y)
+    self.count += 1
+  =}
+}
