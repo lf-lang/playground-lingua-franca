@@ -129,7 +129,7 @@ reactor Node(
   }
 
   mode Primary {
-    timer heartbeat(0, heartbeat_period)
+    timer heartbeat(heartbeat_period, heartbeat_period)
     timer ping_NRP_timer(routine_ping_offset, heartbeat_period)
     reaction(reset) {=
       lf_print(PRINTF_TIME ": ---- Node %d becomes primary.", lf_time_logical_elapsed(), self->id);
