@@ -1,3 +1,8 @@
+/**
+ * A federated example where a source produces outputs much faster than a sink can consume them.
+ * This example needs feedback to have stable memory usage. See the README.md file for more details.
+ * @author Edward A. Lee
+ */
 target C {
   coordination: decentralized
 }

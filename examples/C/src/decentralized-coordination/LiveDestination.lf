@@ -1,3 +1,10 @@
+/**
+ * A simple federated example that elaborates SimpleFeedForward so that the destination reactor has
+ * its own timer-driven activity. It has large lags that can be fixed by using STAA instead of STA.
+ * This example also explores the use of after delays vs. STA and STAA. See the README.md file for
+ * more details.
+ * @author Edward A. Lee
+ */
 target C {
   coordination: decentralized
 }
