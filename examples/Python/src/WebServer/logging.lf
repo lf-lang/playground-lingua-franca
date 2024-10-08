@@ -1,134 +1,136 @@
-target Python{
-    coordination: decentralized
+target Python {
+  coordination: decentralized
 }
-preamble{=
-    from fastapi import FastAPI, Request, HTTPException
-    from fastapi.middleware.cors import CORSMiddleware
-    import threading
-    import uvicorn
-    import asyncio
-    import uuid
-    import time
-    import random
+
+preamble {=
+  from fastapi import FastAPI, Request, HTTPException
+  from fastapi.middleware.cors import CORSMiddleware
+  import threading
+  import uvicorn
+  import asyncio
+  import uuid
+  import time
+  import random
 =}
 
-reactor WebServer(bank_index = 0, STA=0){
-    state app
-    state events
-    input sendlogs
-    input sendlogs_consistent
-    output newlog
-    output getlog
-    output getlog_consistent
-    physical action newlog_action
-    physical action getlog_action
-    logical action getlog_consistent_action
-    reaction(startup) -> newlog_action, getlog_action, getlog_consistent_action{=
-        self.events = {}
-        self.app = FastAPI()
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-        @self.app.post("/log")
-        async def receive_log(request: Request):
-            data = await request.json()
-            if "log" in data:
-                log_message = data["log"]
-                newlog_action.schedule(0, log_message)
-                return {"status": "success", "message": "Log stored successfully"}
-            else:
-                return {"status": "error", "message": "No log provided"}, 400
-        @self.app.post("/getlogs")
-        async def get_logs(request: Request):
-            event = asyncio.Event()
-            request_id = str(uuid.uuid4())
-            self.events[request_id] = event
-            getlog_action.schedule(0, request_id)
-            await event.wait()
-            logs = self.events[request_id]
-            del self.events[request_id]
-            return {"status": "success", "logs": logs}
+reactor WebServer(bank_index=0, STA=0) {
+  state app
+  state events
+  input sendlogs
+  input sendlogs_consistent
+  output newlog
+  output getlog
+  output getlog_consistent
+  physical action newlog_action
+  physical action getlog_action
+  logical action getlog_consistent_action
 
-        @self.app.post("/getlogs_consistent")
-        async def getlogs_consistent(request: Request):
-            event = asyncio.Event()
-            request_id = str(uuid.uuid4())
-            self.events[request_id] = event
-            getlog_consistent_action.schedule(0, request_id)
-            await event.wait()
-            logs = self.events[request_id]
-            del self.events[request_id]
-            return {"status": "success", "logs": logs}
+  reaction(startup) -> newlog_action, getlog_action, getlog_consistent_action {=
+    self.events = {}
+    self.app = FastAPI()
+    self.app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    @self.app.post("/log")
+    async def receive_log(request: Request):
+        data = await request.json()
+        if "log" in data:
+            log_message = data["log"]
+            newlog_action.schedule(0, log_message)
+            return {"status": "success", "message": "Log stored successfully"}
+        else:
+            return {"status": "error", "message": "No log provided"}, 400
+    @self.app.post("/getlogs")
+    async def get_logs(request: Request):
+        event = asyncio.Event()
+        request_id = str(uuid.uuid4())
+        self.events[request_id] = event
+        getlog_action.schedule(0, request_id)
+        await event.wait()
+        logs = self.events[request_id]
+        del self.events[request_id]
+        return {"status": "success", "logs": logs}
 
-        def run_fastapi_app():
-            print(f"[WebServer{self.bank_index}] FastAPI server starting")
-            uvicorn.run(self.app, host="127.0.0.1", port=5000+self.bank_index, log_level="warning")
-        fastapi_thread = threading.Thread(target=run_fastapi_app)
-        fastapi_thread.start()
-    =}
+    @self.app.post("/getlogs_consistent")
+    async def getlogs_consistent(request: Request):
+        event = asyncio.Event()
+        request_id = str(uuid.uuid4())
+        self.events[request_id] = event
+        getlog_consistent_action.schedule(0, request_id)
+        await event.wait()
+        logs = self.events[request_id]
+        del self.events[request_id]
+        return {"status": "success", "logs": logs}
 
-    reaction(newlog_action) -> newlog{=
-        newlog.set(newlog_action.value)
-    =}
+    def run_fastapi_app():
+        print(f"[WebServer{self.bank_index}] FastAPI server starting")
+        uvicorn.run(self.app, host="127.0.0.1", port=5000+self.bank_index, log_level="warning")
+    fastapi_thread = threading.Thread(target=run_fastapi_app)
+    fastapi_thread.start()
+  =}
 
-    reaction(getlog_action) -> getlog{=
-        getlog.set(getlog_action.value)
-    =}
+  reaction(newlog_action) -> newlog {=
+    newlog.set(newlog_action.value)
+  =}
 
-    reaction(getlog_consistent_action) -> getlog_consistent{=
-        getlog_consistent.set(getlog_consistent_action.value)
-    =}
-    
-    reaction(sendlogs){=
-        [logs, event_id] = sendlogs.value
-        event = self.events[event_id]
-        self.events[event_id] = logs
-        event.set()
-    =}
+  reaction(getlog_action) -> getlog {=
+    getlog.set(getlog_action.value)
+  =}
 
-    reaction(sendlogs_consistent){=
-        [logs, event_id] = sendlogs_consistent.value
-        event = self.events[event_id]
-        self.events[event_id] = logs
-        event.set()
-    =}
+  reaction(getlog_consistent_action) -> getlog_consistent {=
+    getlog_consistent.set(getlog_consistent_action.value)
+  =}
+
+  reaction(sendlogs) {=
+    [logs, event_id] = sendlogs.value
+    event = self.events[event_id]
+    self.events[event_id] = logs
+    event.set()
+  =}
+
+  reaction(sendlogs_consistent) {=
+    [logs, event_id] = sendlogs_consistent.value
+    event = self.events[event_id]
+    self.events[event_id] = logs
+    event.set()
+  =}
 }
 
-reactor Database(bank_index = 0, portwidth=2, STA = 0s){
-    state logs = []
-    input[portwidth] addlog
-    input getlog
-    output sendlogs
+reactor Database(bank_index=0, portwidth=2, STA = 0 s) {
+  state logs = []
+  input[portwidth] addlog
+  input getlog
+  output sendlogs
 
-    reaction(startup){=
-        self.logs = []
-    =}
+  reaction(startup) {=
+    self.logs = []
+  =}
 
-    reaction(addlog){=
-        for i, port in enumerate(addlog):
-            if port.is_present:
-                log_message = port.value
-                self.logs.append(log_message)
-    =}
+  reaction(addlog) {=
+    for i, port in enumerate(addlog):
+        if port.is_present:
+            log_message = port.value
+            self.logs.append(log_message)
+  =}
 
-    reaction(getlog) -> sendlogs{=
-        sendlogs.set([self.logs, getlog.value])
-    =}
+  reaction(getlog) -> sendlogs {=
+    sendlogs.set([self.logs, getlog.value])
+  =}
 }
 
-federated reactor(ReplicaCount=2){
-    server = new[ReplicaCount] WebServer()
-    db = new[ReplicaCount] Database(portwidth=ReplicaCount)
-    (server.newlog)+ ~> db.addlog
-    server.getlog ~> db.getlog
-    db.sendlogs ~> server.sendlogs
+federated reactor(ReplicaCount=2) {
+  server = new[ReplicaCount] WebServer()
+  db = new[ReplicaCount] Database(portwidth=ReplicaCount)
+  (server.newlog)+ ~> db.addlog
+  server.getlog ~> db.getlog
+  db.sendlogs ~> server.sendlogs
 
-    dbc = new[ReplicaCount] Database(portwidth=ReplicaCount, STA = 3s)
-    (server.newlog)+ -> dbc.addlog
-    server.getlog_consistent -> dbc.getlog
-    dbc.sendlogs ~> server.sendlogs_consistent
+  dbc = new[ReplicaCount] Database(portwidth=ReplicaCount, STA = 3 s)
+  (server.newlog)+ -> dbc.addlog
+  server.getlog_consistent -> dbc.getlog
+  dbc.sendlogs ~> server.sendlogs_consistent
 }
