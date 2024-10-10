@@ -103,9 +103,11 @@ Note that the `request_id` has to be sent to and from the `Handler` reactor so t
 
 ![logging](logging.svg)
 
+To implement our distributed logging application, we need to respond to three distinct operations, but the reusable `WebServer` reactor has only one API endpoint. We can solve this by introducing a new `Router` reactor and [composing reactors](https://www.lf-lang.org/docs/writing-reactors/composing-reactors), as shown in the diagram above. Each HTTP request body now carries an additional `operation` field that allows the router to route the request to different reactions through connections.
+
 Now we can implement a distributed logging system by instantiating several `WebServer` reactors on different network ports and adding two `Database` reactors for each `WebServer`.
 
 * One `Database` reactor has an STA offset of 0 and is connected by physical connections. This will prioritize availability, generating a quick response that is not (necessarily) consistent.
 * Another `Database` reactor has an STA offset of 3s (this can be changed) and is connected by logical connections. This will guarantee that the logs in this `Database` reactor will be consistent as long as out-of-order messages arrive within 3s.
 
-Note that this is implemented with banks and multiports. When sending logs, we want the `WebServer` to send logs to all `Database` reactors, so the `newlog` connection is a multiport; but when getting logs, we want to know the log state of the single corresponding `Database` reactor, which means that there is no multiport for the get log operation.
+Note that this is implemented with banks and multiports. When sending logs, we want the `WebServer` to send logs to all `Database` reactors, so the `newlog` connection is implemented with broadcasts; but when getting logs, we want to know the log state of the single corresponding `Database` reactor, hence there is no broadcast here. In the last line, `db.sendlogs, dbc.sendlogs ~> interleaved(server.response)` uses interleaved connections because each `WebServer` corresponds to two `Database`, one consistent and one not, and we need to avoid having a `WebServer` connecting to two inconsistent databases and another connecting to two consistent databases.
