@@ -43,6 +43,8 @@ async def addone(request: Request):
     return {"status": "success", "num": num}
 ```
 
+`self` here refers to the `WebServer` reactor in which the handler is defined. The `self.app` is an instance of `FastAPI` application instance, defined as a state of the `WebServer` reactor. Import statements are in the `preamble` and not shown here for simplicity. This handler function will be triggered to generate a response to an HTTP `POST` request at the `/addone` endpoint.
+
 And the reaction to the action is
 
 ```python
