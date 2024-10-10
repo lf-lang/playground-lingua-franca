@@ -29,7 +29,7 @@ reactor WebServerRouter(bank_index=0, STA=0) {
   output newlog
   output getlog
   output getlog_consistent
-  webserver = new WebServer(port = {= 5000+self.bank_index =}, endpoint="/")
+  webserver = new WebServer(port = {= 5000+self.bank_index =}, path="/")
   router = new Router()
   webserver.request -> router.request
   router.newlog -> newlog

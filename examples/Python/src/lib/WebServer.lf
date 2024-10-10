@@ -12,7 +12,7 @@ target Python {
  *
  * The `port` parameter is the port number on which the server listens for requests.
  *
- * The `endpoint` parameter is the endpoint at which the server listens for requests.
+ * The `path` parameter is the path at which the server listens for requests.
  *
  * The `request` output is a tuple of two values: the request ID and the request data.
  *
@@ -23,7 +23,7 @@ target Python {
  * To use this reactor, you must install the fastapi and uvicorn libraries for Python. You can do
  * this with `pip install fastapi uvicorn`.
  */
-reactor WebServer(port=5000, endpoint="/") {
+reactor WebServer(port=5000, path="/") {
   state app
   state events
   physical action phy_action
@@ -38,8 +38,8 @@ reactor WebServer(port=5000, endpoint="/") {
     import asyncio
     import uuid
     self.events = {}
-    assert isinstance(self.endpoint, str), "The endpoint is not a string"
-    assert self.endpoint.startswith("/"), "The endpoint must start with a /"
+    assert isinstance(self.path, str), "The path is not a string"
+    assert self.path.startswith("/"), "The path must start with a /"
     self.app = FastAPI()
     self.app.add_middleware(
         CORSMiddleware,
@@ -48,7 +48,7 @@ reactor WebServer(port=5000, endpoint="/") {
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    @self.app.post(self.endpoint)
+    @self.app.post(self.path)
     async def addone(request: Request):
         event = asyncio.Event()
         request_id = str(uuid.uuid4())

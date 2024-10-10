@@ -18,7 +18,7 @@ reactor Handler {
 }
 
 federated reactor {
-  server = new WebServer(endpoint="/addone")
+  server = new WebServer(path="/addone")
   handler = new Handler()
   server.request -> handler.request
   handler.response ~> server.response

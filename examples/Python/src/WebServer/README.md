@@ -43,7 +43,7 @@ async def addone(request: Request):
     return {"status": "success", "num": num}
 ```
 
-`self` here refers to the `WebServer` reactor in which the handler is defined. The `self.app` is an instance of `FastAPI` application instance, defined as a state of the `WebServer` reactor. Import statements are in the `preamble` and not shown here for simplicity. This handler function will be triggered to generate a response to an HTTP `POST` request at the `/addone` endpoint.
+`self` here refers to the `WebServer` reactor in which the handler is defined. The `self.app` is an instance of `FastAPI` application instance, defined as a state of the `WebServer` reactor. Import statements are in the `preamble` and not shown here for simplicity. This handler function will be triggered to generate a response to an HTTP `POST` request at the `/addone` path.
 
 And the reaction to the action is
 
@@ -89,7 +89,7 @@ reactor Handler {
 }
 
 federated reactor {
-  server = new WebServer(endpoint="/addone")
+  server = new WebServer(path="/addone")
   handler = new Handler()
   server.request -> handler.request
   handler.response ~> server.response
@@ -103,7 +103,7 @@ Note that the `request_id` has to be sent to and from the `Handler` reactor so t
 
 ![logging](logging.svg)
 
-To implement our distributed logging application, we need to respond to three distinct operations, but the reusable `WebServer` reactor has only one API endpoint. We can solve this by introducing a new `Router` reactor and [composing reactors](https://www.lf-lang.org/docs/writing-reactors/composing-reactors), as shown in the diagram above. Each HTTP request body now carries an additional `operation` field that allows the router to route the request to different reactions through connections.
+To implement our distributed logging application, we need to respond to three distinct operations, but the reusable `WebServer` reactor has only one API path. We can solve this by introducing a new `Router` reactor and [composing reactors](https://www.lf-lang.org/docs/writing-reactors/composing-reactors), as shown in the diagram above. Each HTTP request body now carries an additional `operation` field that allows the router to route the request to different reactions through connections.
 
 Now we can implement a distributed logging system by instantiating several `WebServer` reactors on different network ports and adding two `Database` reactors for each `WebServer`.
 
