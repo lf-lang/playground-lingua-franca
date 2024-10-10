@@ -9,8 +9,6 @@ preamble {=
   import uvicorn
   import asyncio
   import uuid
-  import time
-  import random
 =}
 
 reactor WebServer(bank_index=0, STA=0) {
