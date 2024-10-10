@@ -64,6 +64,41 @@ When a request is processed by a handler, a response is generated in the followi
 4. When the action has been processed, another reaction unblocks the asyncio event.
 5. The handler can now continue to execute and respond to the web request.
 
+## Minimal +1 Example with WebServer Library
+
+We can also build the +1 example with the prebuilt `WebServer` library at `../lib/WebServer.lf` that modularizes the web server. You only have to implement the following code to accomplish the same functionality, as demonstrated in `minimal_with_lib.lf`:
+
+```python
+target Python {
+  coordination: decentralized
+}
+
+import WebServer from "../lib/WebServer.lf"
+
+reactor Handler {
+  input request
+  output response
+
+  reaction(request) -> response {=
+    request_id, req_data = request.value
+    num = int(req_data["data"])
+    num += 1
+    resp = {"status": "success", "num": num}
+    response.set([request_id, resp])
+  =}
+}
+
+federated reactor {
+  server = new WebServer(endpoint="/addone")
+  handler = new Handler()
+  server.request -> handler.request
+  handler.response ~> server.response
+}
+
+```
+
+Note that the `request_id` has to be sent to and from the `Handler` reactor so that the `WebServer` knows which request to respond to. Also, notice that the response is connected with a physical connection `~>`, this is because these connections carry no timing semantics -- they simply carry the data to be sent back to the frontend as a response and need to be executed as soon as possible. This also prevents an STP violation from being triggered.
+
 ## Distributed Logging
 
 ![logging](logging.svg)
@@ -74,5 +109,3 @@ Now we can implement a distributed logging system by instantiating several `WebS
 * Another `Database` reactor has an STA offset of 3s (this can be changed) and is connected by logical connections. This will guarantee that the logs in this `Database` reactor will be consistent as long as out-of-order messages arrive within 3s.
 
 Note that this is implemented with banks and multiports. When sending logs, we want the `WebServer` to send logs to all `Database` reactors, so the `newlog` connection is a multiport; but when getting logs, we want to know the log state of the single corresponding `Database` reactor, which means that there is no multiport for the get log operation.
-
-The `sendlogs` connections from `Database` to `WebServer` are implemented with physical connections. This is because these connections carry no timing semantics -- they simply carry the data to be sent back to the frontend as a response and need to be executed as soon as possible.
