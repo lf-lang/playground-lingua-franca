@@ -12,7 +12,7 @@ target Python {
  *
  * The `port` parameter is the port number on which the server listens for requests.
  *
- * The `path` parameter is the path at which the server listens for requests.
+ * The `path` parameter is the path at which the server listens for HTTP POST requests.
  *
  * The `request` output is a tuple of two values: the request ID and the request data.
  *
@@ -53,8 +53,10 @@ reactor WebServer(port=5000, path="/") {
         event = asyncio.Event()
         request_id = str(uuid.uuid4())
         self.events[request_id] = event
-        req_data = await request.json()
-
+        if request.headers.get("content-type") == "application/json":
+            req_data = await request.json()
+        else:
+            req_data = await request.body()
         phy_action.schedule(0, [request_id, req_data])
         await event.wait()
         resp_data = self.events[request_id]
