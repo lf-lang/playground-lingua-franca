@@ -1,5 +1,28 @@
-target Python
+/**
+ * @file
+ * @author Shulu Li
+ * @brief Reactor for handling HTTP requests in Python.
+ */
+target Python {
+  keepalive: true
+}
 
+/**
+ * @brief A reactor that starts a FastAPI server to handle HTTP requests.
+ *
+ * The `port` parameter is the port number on which the server listens for requests.
+ *
+ * The `endpoint` parameter is the endpoint at which the server listens for requests.
+ *
+ * The `request` output is a tuple of two values: the request ID and the request data.
+ *
+ * The `response` input is a tuple of two values: the request ID and the response data. Request ID
+ * is required to respond to the correct request. Use a physical connection to connect the
+ * `response` input to avoid STP violations.
+ *
+ * To use this reactor, you must install the fastapi and uvicorn libraries for Python. You can do
+ * this with `pip install fastapi uvicorn`.
+ */
 reactor WebServer(port=5000, endpoint="/") {
   state app
   state events
