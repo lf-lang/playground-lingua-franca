@@ -1,5 +1,5 @@
 target Python {
-  coordination: decentralized
+  keepalive: true
 }
 
 preamble {=
@@ -53,6 +53,6 @@ reactor WebServer(bank_index=0, STA=0) {
   =}
 }
 
-federated reactor {
+main reactor {
   server = new WebServer()
 }

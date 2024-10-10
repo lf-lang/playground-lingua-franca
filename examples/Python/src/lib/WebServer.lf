@@ -14,13 +14,13 @@ target Python {
  *
  * The `path` parameter is the path at which the server listens for HTTP POST requests.
  *
- * The `request` output is a list of two values: the request ID and the request data. If the
- * request header indicates that the body is a JSON object, the request data is parsed into a python
+ * The `request` output is a list of two values: the request ID and the request data. If the request
+ * header indicates that the body is a JSON object, the request data is parsed into a python
  * dictionary. Otherwise, the request body is forwarded as-is.
  *
- * The `response` input is a list of two values: the request ID and the response data. Request ID
- * is required to respond to the correct request. Use a physical connection to connect the
- * `response` input to avoid STP violations.
+ * The `response` input is a list of two values: the request ID and the response data. Request ID is
+ * required to respond to the correct request. Use a physical connection to connect the `response`
+ * input to avoid STP violations.
  *
  * To use this reactor, you must install the fastapi and uvicorn libraries for Python. You can do
  * this with `pip install fastapi uvicorn`.

@@ -1,5 +1,5 @@
 target Python {
-  coordination: decentralized
+  keepalive: true
 }
 
 import WebServer from "../lib/WebServer.lf"
@@ -17,7 +17,7 @@ reactor Handler {
   =}
 }
 
-federated reactor {
+main reactor {
   server = new WebServer(path="/addone")
   handler = new Handler()
   server.request -> handler.request
