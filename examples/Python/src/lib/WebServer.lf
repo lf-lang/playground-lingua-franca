@@ -51,6 +51,9 @@ reactor WebServer(port=5000, endpoint="/") {
 
   reaction(response) {=
     request_id, resp_data = response.value
+    if request_id not in self.events:
+        print("Invalid Request ID")
+        return
     event = self.events[request_id]
     self.events[request_id] = resp_data
     event.set()

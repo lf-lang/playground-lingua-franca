@@ -36,22 +36,18 @@
         const port = document.getElementById("portInput").value || 5000;
         const fullLogMessage = `Log from ${port}: ${logMessage}`;
         const logData = {
+          operation: "newlog",
           log: fullLogMessage,
         };
 
-        fetch(`http://127.0.0.1:${port}/log`, {
+        fetch(`http://127.0.0.1:${port}/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(logData),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Response from server:", data);
-            incrementLogValue();
-          })
-          .catch((error) => console.error("Error:", error));
+        }).catch((error) => console.error("Error:", error));
+        incrementLogValue();
       }
 
       function incrementLogValue() {
@@ -63,11 +59,12 @@
         const port = document.getElementById("portInput").value || 5000;
         const startTime = performance.now();
 
-        fetch(`http://127.0.0.1:${port}/getlogs`, {
+        fetch(`http://127.0.0.1:${port}/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ operation: "getlog" }),
         })
           .then((response) => response.json())
           .then((data) => {
@@ -99,11 +96,12 @@
         const port = document.getElementById("portInput").value || 5000;
         const startTime = performance.now();
 
-        fetch(`http://127.0.0.1:${port}/getlogs_consistent`, {
+        fetch(`http://127.0.0.1:${port}/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ operation: "getlog_consistent" }),
         })
           .then((response) => response.json())
           .then((data) => {
