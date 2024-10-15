@@ -1,0 +1,71 @@
+target Python {
+  files: carla_client.py
+}
+
+preamble {=
+  from carla_client import AsyncClient
+  from carla_client import process_image_data
+=}
+
+reactor Carla {
+  input actions
+  output raw_image
+  output imu
+  state client
+
+  reaction(startup) -> raw_image, imu {=
+    self.client = AsyncClient()
+    self.client.game_start()
+    sensor_data = self.client.game_step()
+    raw_image.set(sensor_data[0])
+    imu.set(sensor_data[1])
+  =}
+
+  reaction(actions) -> raw_image, imu {=
+    sensor_data = self.client.game_step()
+    raw_image.set(sensor_data[0])
+    imu.set(sensor_data[1])
+  =}
+}
+
+reactor Image {
+  input raw_image
+  output processed_image
+
+  reaction(startup) {=  =}
+
+  reaction(raw_image) -> processed_image {=
+    if raw_image.value:
+        array = process_image_data(raw_image.value)
+        processed_image.set(array)
+    else:
+        processed_image.set(None)
+  =}
+}
+
+reactor Fusion {
+  input imu
+  input processed_image
+  output actions
+
+  reaction(startup) {=  =}
+
+  reaction(imu, processed_image) -> actions {=
+    if imu is not None:
+        print("IMU Data: ", imu.value)
+    if processed_image.value is not None:
+        print("Image Data: ", processed_image.value[0][0])
+    actions.set(0)
+  =}
+}
+
+main reactor {
+  carla = new Carla()
+  image = new Image()
+  fusion = new Fusion()
+
+  carla.raw_image -> image.raw_image
+  carla.imu -> fusion.imu
+  image.processed_image -> fusion.processed_image
+  fusion.actions -> carla.actions after 50 ms
+}

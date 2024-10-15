@@ -12,10 +12,6 @@ target C {
   timeout: 5 sec
 }
 
-preamble {=
-  #include "include/core/platform.h"
-=}
-
 main reactor {
   preamble {=
     // Specify a thread that sends all keyboard characters

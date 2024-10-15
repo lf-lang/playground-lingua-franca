@@ -16,7 +16,7 @@
 target C {
   timeout: 3 secs,
   fast: true,
-  flags: "-lm",
+  cmake-include: "furuta.cmake",
   build: "./build_run_plot.sh FurutaPendulum"
 }
 

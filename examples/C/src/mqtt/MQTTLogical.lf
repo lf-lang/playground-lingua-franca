@@ -13,10 +13,6 @@
  * @author Edward A. Lee
  */
 target C {
-  cmake-include: [
-      "include/paho-extension.cmake",  // For #include "MQTTClient.h"
-      // For encode_int64()
-      "include/net_utils.cmake"],
   timeout: 10 secs
 }
 

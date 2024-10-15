@@ -1,0 +1,72 @@
+/**
+ * @file
+ * @author Vincenzo Barbuto
+ * @author Edward A. Lee
+ * @brief Basic audio library for Lingua Franca Python target.
+ */
+target Python {
+  keepalive: true
+}
+
+/**
+ * @brief A reactor that produces audio data captured from a microphone.
+ *
+ * This reactor outputs a series of numpy arrays of audio samples. The size of each array is equal
+ * to the `block_size` parameter. Each array element will be a `float32` value if the number of
+ * channels is 1, or an array of `float32` values if the number of channels is greater than 1.
+ *
+ * The logical time of the output is the physical time at which the audio hardware calls a callback
+ * function, which occurs when a buffer of length block_size has been filled with audio samples.
+ *
+ * If your machine has more than one microphone, you can select one by specifying the device index.
+ * To see what devices are available, run `python3 -m sounddevice`.
+ *
+ * To use this reactor, you must install the sounddevice and numpy libraries for Python. You can do
+ * this with `pip install sounddevice numpy`.
+ */
+reactor Microphone(block_size=16000, sample_rate=16000, channels=1, device = {= None =}) {
+  physical action send_audio_data
+  output audio_data
+
+  preamble {=
+    import sounddevice as sd
+    import numpy as np
+  =}
+
+  reaction(startup) -> send_audio_data {=
+    def callback(indata, frames, time, status):
+      if status:
+        print(status)
+      input_data = indata.astype(self.np.float32)
+      if (len(input_data)):
+        if self.channels == 1:
+          input_data = self.np.array(self.np.transpose(input_data)[0])
+        send_audio_data.schedule(0, input_data)
+
+    self.stream = self.sd.InputStream(
+      channels=self.channels,
+      samplerate=self.sample_rate,
+      callback=callback,
+      blocksize=self.block_size,
+      device=self.device)
+    self.stream.start()
+  =}
+
+  reaction(send_audio_data) -> audio_data {=
+    audio_data.set(send_audio_data.value)
+  =}
+
+  reaction(shutdown) {=
+    if self.stream:
+      self.stream.close()
+  =}
+}
+
+/** @brief A test reactor that prints arrays of audio data captured from a microphone. */
+main reactor {
+  m = new Microphone()
+
+  reaction(m.audio_data) {=
+    print(m.audio_data.value, " at time ", lf.time.logical_elapsed())
+  =}
+}

@@ -1,32 +1,33 @@
  /**
  * A simple Pacman game.
+ * 
  * Source: https://github.com/hbokmann/Pacman
+ * 
  * LICENSE: N/A
  *
  * To run:
- * 1- lfc src/PacMan.lf
- * 2- Follow the instructions on the terminal.
+ * 
+ * -1- lfc src/PacMan.lf
+ * -2- Follow the instructions on the terminal.
  *
  * TODOs
- * 1- Add more comments.
- * 2- Show a win/lose screen instead of exiting.
- * 3- Add the ability to restart the game after win/lose.
- * 4- Make the game logic more efficient if possible.
- * 5- Add personalities for each ghost instead of following pre-determined
- *  directions.
- * 6- Add modes for ghosts (exploring, chasing, running away).
- * 7- Replace the player with an AI.
- * 8- Enable federated execution if possible.
- * 9- Explore:
- *  - What to do in the case of communication failure?
- *  - What are other possible fault scenarios?
- *  - What should the AI and the ghosts see? Should they be able to see all the
- *    walls or just walls close to them?
- *  - Add an external observer that is responsible for veryfing safety
- *    properties.
- *  - Explore consistency vs. availability tradeoffs in the game design.
- *    See https://arxiv.org/abs/2109.07771 .
- *
+ * 
+ * -1- Add more comments.
+ * -2- Show a win/lose screen instead of exiting.
+ * -3- Add the ability to restart the game after win/lose.
+ * -4- Make the game logic more efficient if possible.
+ * -5- Add personalities for each ghost instead of following pre-determined directions.
+ * -6- Add modes for ghosts (exploring, chasing, running away).
+ * -7- Replace the player with an AI.
+ * -8- Enable federated execution if possible.
+ * -9- Explore:
+ *  --> What to do in the case of communication failure?
+ *  --> What are other possible fault scenarios?
+ *  --> What should the AI and the ghosts see? Should they be able to see all the walls or just walls close to them?
+ *  --> Add an external observer that is responsible for veryfing safety properties.
+ *  --> Explore consistency vs. availability tradeoffs in the game design.
+ * 
+ * See https://arxiv.org/abs/2109.07771
 **/
 target Python {
   files: ["include/hbpacman.py", "include/images"]
@@ -74,7 +75,7 @@ preamble {=
 =}
 
 #### View
-reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/pacman.png")) {
+reactor Display(num_moving_sprites=0, num_static_sprites=0, nav_icon="images/pacman.png") {
   input[num_moving_sprites] moving_sprites
   input[num_static_sprites] static_sprites
   input game_over
@@ -88,9 +89,9 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
   state _screen
   state _font
   state _clock
-  state _static_sprites({=pacman.pygame.sprite.RenderPlain()=})
+  state _static_sprites={=pacman.pygame.sprite.RenderPlain()=}
   state _top_corner_text
-  state _active(True)
+  state _active=True
 
   reaction(startup) {=
     dirname = os.path.dirname(__file__)
@@ -194,7 +195,7 @@ reactor Display(num_moving_sprites(0), num_static_sprites(0), nav_icon("images/p
 
 #### Model
 ## Base of every character
-reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), character_class({=pacman.Player=})) {
+reactor BaseCharacter(width=0, height=0, image="images/Trollman.png", character_class={=pacman.Player=}) {
   input wall_list # Receive updated wall list
   input gate_list # Receive updated gate list
   input icon
@@ -207,7 +208,7 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
   state character_instance
   state _wall_list
   state _gate_list
-  state _pause({=False=})
+  state _pause={=False=}
 
   reaction(startup) -> icon_name {=
     dirname = os.path.dirname(__file__)
@@ -239,10 +240,10 @@ reactor BaseCharacter(width(0), height(0), image("images/Trollman.png"), charact
 # Should be replacable with an AI
 reactor Player extends BaseCharacter {
   timer pygame_event(0, 100 msec)
-  state _active(True)
+  state _active=True
   
-  state _speed(30)
-  state _boosted(False)
+  state _speed=30
+  state _boosted=False
   
   reaction(pygame_event) -> sprite {=
     keyboard_events = pacman.pygame.event.get()
@@ -292,12 +293,12 @@ reactor Player extends BaseCharacter {
 
 ## Ghosts
 # FIXME: Different Ghosts should have different personalities
-reactor Ghost (directions({=()=})) extends BaseCharacter {
+reactor Ghost (directions={=()=}) extends BaseCharacter {
   input tick  
   #input pause # pause from player
   
-  state turn(0)
-  state steps(0)
+  state turn=0
+  state steps=0
 
   reaction(tick) -> sprite {=
     if self._pause is False:
@@ -327,7 +328,7 @@ reactor Ghost (directions({=()=})) extends BaseCharacter {
 }
 
 #### Controller
-reactor GameController(number_of_ghosts(4)) {
+reactor GameController(number_of_ghosts=4) {
   output wall_list  # List of walls on the map
   output gate
   output block_list # List of yummy dots for Pac-Man
@@ -342,11 +343,11 @@ reactor GameController(number_of_ghosts(4)) {
   
   state _wall_list
   state _gate
-  state _block_list({=pacman.pygame.sprite.RenderPlain()=})
-  state _score_to_win(2)
-  state _score(0)
+  state _block_list={=pacman.pygame.sprite.RenderPlain()=}
+  state _score_to_win=2
+  state _score=0
   state _pacman_sprite
-  state _pacman_collide({=pacman.pygame.sprite.RenderPlain()=})
+  state _pacman_collide={=pacman.pygame.sprite.RenderPlain()=}
    # state _controllerpause({=False=}) #not necessary
   
   reaction(startup, restart) -> wall_list, gate {=
@@ -447,8 +448,8 @@ reactor GameController(number_of_ghosts(4)) {
 
 reactor Watcher {
   
-  state _pause(False)
-  state _active(True)
+  state _pause=False
+  state _active=True
   
   input game_over
   logical action delay
@@ -486,7 +487,7 @@ main reactor {
     height = {= ghost_specs[bank_index]["height"] =}, 
     image  = {= ghost_specs[bank_index]["image"] =},
     directions = {= ghost_specs[bank_index]["directions"] =},     
-    character_class = ({=pacman.Ghost=})
+    character_class = {=pacman.Ghost=}
   )
   
   observer = new Watcher()

@@ -13,10 +13,6 @@ target C {
   keepalive: true
 }
 
-preamble {=
-  #include "include/core/platform.h"
-=}
-
 /**
  * Produce a counting sequence at random times with a minimum and maximum time between outputs
  * specified as parameters.
@@ -64,12 +60,11 @@ reactor RandomSource(min_time: time = 2 sec, max_time: time = 8 sec) {
   =}
 }
 
-/**
- * Upon receiving a prompt, record the time of the prompt, then listen for user input. When the user
- * hits return, then schedule a physical action that records the time of this event and then report
- * the response time.
- */
-reactor GetUserInput {
+/** Listen for keyboard input and produce it on the output when it arrives. */
+reactor User {
+  output out: char
+  physical action user_response: char
+
   preamble {=
     // Thread to read input characters until an EOF is received.
     // Each time a newline is received, schedule a user_response action.
@@ -86,19 +81,30 @@ reactor GetUserInput {
     }
   =}
 
-  physical action user_response: char
-  state prompt_time: time = 0
-  state total_time_in_ms: int = 0
-  state count: int = 0
-
-  input prompt: int
-  output another: int
-
   reaction(startup) -> user_response {=
     // Start the thread that listens for Enter or Return.
     lf_thread_t thread_id;
     lf_thread_create(&thread_id, &read_input, user_response);
   =}
+
+  reaction(user_response) -> out {=
+    lf_set(out, user_response->value);
+  =}
+}
+
+/**
+ * Upon receiving a prompt, record the time of the prompt. When user input arrives, schedule a
+ * physical action that records the time of this event and then report the response time. Also,
+ * check for cheating.
+ */
+reactor GetUserInput {
+  state prompt_time: time = 0
+  state total_time_in_ms: int = 0
+  state count: int = 0
+
+  input prompt: int
+  input user_response: char
+  output another: int
 
   reaction(prompt) {=
     self->prompt_time = lf_time_logical();
@@ -138,6 +144,8 @@ reactor GetUserInput {
 main reactor ReflexGame {
   p = new RandomSource()
   g = new GetUserInput()
+  u = new User()
   p.out -> g.prompt
   g.another -> p.another
+  u.out -> g.user_response
 }
