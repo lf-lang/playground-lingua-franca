@@ -1,0 +1,45 @@
+property { 
+ 	define {
+ 		node1Waiting  = (node1.mode ==0);
+ 		node1Primary = (node1.mode ==1);
+ 		node1Backup  = (node1.mode ==2);
+ 		node1Failed  = (node1.mode ==3);
+ 		
+ 		node2Waiting  = (node2.mode ==0);
+ 		node2Primary = (node2.mode ==1);
+ 		node2Backup  = (node2.mode ==2);
+ 		node2Failed  = (node2.mode ==3);
+ 		
+ 		switch1Failed  = (switch1.failed);
+ 		switch2Failed  = (switch2.failed);
+ 		switch3Failed  = (switch3.failed);
+ 		switch4Failed  = (switch4.failed);
+ 		
+// 		node1NRP1  = (node1.NRP_switch_id == 1);
+// 		node1NRP2  = (node1.NRP_switch_id == 2);
+// 		node2NRP1  = (node2.NRP_switch_id == 1);
+// 		node2NRP2  = (node2.NRP_switch_id == 2);
+ 		switch1NRP  = (node1.NRP_switch_id==1 && node2.NRP_switch_id==1);
+ 		switch3NRP  = (node1.NRP_switch_id==3 && node2.NRP_switch_id==3);
+ 		switch2NRP  = (node2.NRP_switch_id==2 && node1.NRP_switch_id==2);
+ 		switch4NRP  = (node2.NRP_switch_id==4 && node1.NRP_switch_id==4);
+
+ 		
+ 		
+ 		net1miss1  = (node2.heartbeats_missed_1 == 1);
+ 		net1miss2  = (node2.heartbeats_missed_1 == 2);
+ 		net1miss3  = (node2.heartbeats_missed_1 == 3);
+ 		net1miss4  = (node2.heartbeats_missed_1 == 4);
+ 		net1miss5  = (node2.heartbeats_missed_1 == 5);
+ 		
+ 		net2miss1  = (node2.heartbeats_missed_2 == 1);
+ 		net2miss2  = (node2.heartbeats_missed_2 == 2);
+ 		net2miss3  = (node2.heartbeats_missed_2 == 3);
+ 		net2miss4  = (node2.heartbeats_missed_2 == 4);
+ 		net2miss5  = (node2.heartbeats_missed_2 == 5);
+ 	}
+Assertion{
+  Assertion0:!(node1Primary && node2Primary);  
+  Assertion1:!(node1.primary!=-1 && node2.primary!=-1 && node1.primary!=node2.primary);
+}
+}
