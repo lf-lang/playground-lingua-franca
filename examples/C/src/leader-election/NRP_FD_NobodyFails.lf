@@ -11,6 +11,7 @@ target C {
   coordination: decentralized,
   timeout: 1000 hours
 }
+
 import Switch, Node from "NRP_FD.lf"
 
 federated reactor(heartbeat_period: time = 1 s, delay: time = 10 ms) {
