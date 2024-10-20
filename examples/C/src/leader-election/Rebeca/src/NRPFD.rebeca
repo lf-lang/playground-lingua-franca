@@ -24,7 +24,7 @@
 env int heartbeat_period = 1000;
 env int max_missed_heartbeats = 2;
 env int ping_timeout = 500;  
-env int nrp_timeout = 500;
+env int nrp_timeout = 500; // Timeout for requesting a new NRP.
 // Node Modes
 env byte WAITING = 0;
 env byte PRIMARY = 1;
@@ -85,12 +85,12 @@ reactiveclass Node (20){
         runMe();
     }
    
-    // logical action new_NRP_request_timed_out(nrp_timeout)
-    // FIXME: Never invoked because there is no request_new_NRP message handler.
+    // Check whether a response was received to request_new_NRP() and fail if not.
     msgsrv new_NRP_request_timed_out() {
         if (mode == BACKUP) {
             if (NRP_pending) {
                 NRP_pending = false;
+                mode = FAILED;
             }
         }
     }    
@@ -106,14 +106,17 @@ reactiveclass Node (20){
                 if (become_primary_on_ping_response) {
                     become_primary_on_ping_response = false;
                     mode = FAILED;
+                } else if (NRP_network <= NumberOfNetworks) {
+                    // Request a new NRP should be possible.
+                    NRP_pending = true;
+                    NRP_network++;
+                    NRP_switch_id = NRPCandidates[NRP_network];
+                    if (NRP_network == 0) out1.request_new_NRP(id) after(networkDelay);
+                    else out2.request_new_NRP(id) after(networkDelay);
+                    self.new_NRP_request_timed_out() after(nrp_timeout);
                 } else {
-                    // FIXME: This should request a new NRP, but there is no request_new_NRP message handler.
-                    // That has to be added to the switch and to the primary.  The primary should not fail
-                    // if cannot assign a new NRP, but should just not respond.  Then this backup should timeout
-                    // after the request_new_NRP did not receive a response, and the backup should fail.
-                    // For now, just fail.
-                    mode = FAILED;
-                
+                    NRP_network = NumberOfNetworks;
+                    mode = FAILED; // Operator intervention required.
                 }
             }
         } else if (mode == PRIMARY) {
@@ -161,10 +164,21 @@ reactiveclass Node (20){
     msgsrv new_NRP(int mid, int mNRP_network, int mNRP_switch_id) {
         NRP_network = mNRP_network;
         NRP_switch_id = mNRP_switch_id;
+        NRP_pending = false;
         // There is no need to ping the new NRP because the new_NRP message came in
         // over the network containing the NRP, so the NRP must be accessible.
     }
    
+    msgsrv request_new_NRP(int origin) {
+        if (NRP_network <= NumberOfNetworks) {
+            // Should be possible to respond with a new NRP.
+            NRP_network++;
+            NRP_switch_id = NRPCandidates[NRP_network];
+	        if (NRP_network == 0) out1.new_NRP(id, NRP_network, NRP_switch_id);
+	        else out2.new_NRP(id, NRP_network, NRP_switch_id);
+	    }
+    }
+    
     msgsrv runMe() {
         switch(mode) {
             case 0: //WAITING :
@@ -262,10 +276,10 @@ reactiveclass Node (20){
 }
 
 reactiveclass Switch(10) {
-
+ 
     knownrebecs {
     }
-    
+   
     statevars {
         byte mynetworkId;
         int id;
@@ -287,51 +301,59 @@ reactiveclass Switch(10) {
         nodeTarget1=n1;
         if (myFailTime!=0) switchFail() after(myFailTime);
     }
-    
+   
     msgsrv switchFail() {
         failed = true;
         amINRP=false;
     }
-    
+   
     msgsrv pingNRP_response(int senderNode) {
         if (!failed) {
             if (terminal && senderNode <= 100) {
-                nodeTarget1.pingNRP_response(id)after(1); //Pass back
+                nodeTarget1.pingNRP_response(id) after(networkDelay); //Pass back
             } else if (senderNode>id) {
-                switchTarget1.pingNRP_response(id)after(1);
+                switchTarget1.pingNRP_response(id) after(networkDelay);
             } else {
-                switchTarget2.pingNRP_response(id)after(1);
+                switchTarget2.pingNRP_response(id) after(networkDelay);
             }
         }
     }
-    
+   
+    msgsrv request_new_NRP(int senderNode) {
+        if (!failed) {
+            if (terminal && senderNode < 100) nodeTarget1.request_new_NRP(id) after(networkDelay);
+            else if (senderNode > id) switchTarget1.request_new_NRP(id) after(networkDelay);
+            else switchTarget2.request_new_NRP(id) after(networkDelay);
+        }
+    }
+   
     msgsrv pingNRP(int senderNode, int NRP) {
         if (!failed) {
-            if (NRP==id) {
-                if (senderNode < 100) switchTarget2.pingNRP_response(id)after(1); //Response
-                else nodeTarget1.pingNRP_response(id)after(1);
+            if (NRP == id) {
+                if (senderNode < 100) switchTarget2.pingNRP_response(id) after(networkDelay); //Response
+                else nodeTarget1.pingNRP_response(id) after(networkDelay);
             } else {
                 if(senderNode < 100) {
-                    if(senderNode>id) switchTarget1.pingNRP(id, NRP)after(1);
-                    else switchTarget2.pingNRP(id, NRP) after(1);
+                    if(senderNode>id) switchTarget1.pingNRP(id, NRP) after(networkDelay);
+                    else switchTarget2.pingNRP(id, NRP) after(networkDelay);
                 } else {
-                    switchTarget2.pingNRP(id, NRP) after(1);
+                    switchTarget2.pingNRP(id, NRP) after(networkDelay);
                 }
             }
         }
     }
-
+ 
     msgsrv new_NRP(int senderNode, int mNRP_network, int mNRP_switch_id) {
         if (!failed) {
-            if (id==mNRP_switch_id) amINRP=true; 
+            if (id == mNRP_switch_id) amINRP=true;
             else amINRP=false;
-          
+         
             if (terminal && senderNode < 100) nodeTarget1.new_NRP(id, mNRP_network, mNRP_switch_id); //Pass back
             else if(senderNode>id) switchTarget1.new_NRP(id, mNRP_network, mNRP_switch_id);
             else switchTarget2.new_NRP(id, mNRP_network, mNRP_switch_id);
         }
     }
-    
+   
     msgsrv heartBeat(byte networkId, int senderNode) {
         if (!failed) {
             if (terminal && senderNode < 100) nodeTarget1.heartBeat(networkId,id) after(networkDelay);
