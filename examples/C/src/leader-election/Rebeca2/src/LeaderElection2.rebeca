@@ -1,0 +1,392 @@
+//
+// This program models a redundant fault tolerant system where a primary node, if and when it fails,
+// is replaced by a backup node. This version models network switch failures that are spaced
+// sufficiently far apart in time that dual primaries do not emerge.  To manage the state-space
+// size, the heartbeat period and other time values are reduced.
+//
+// The protocol is described in this paper:
+//
+// Bjarne Johansson; Mats Rågberger; Alessandro V. Papadopoulos; Thomas Nolte, "Consistency Before
+// Availability: Network Reference Point based Failure Detection for Controller Redundancy," paper
+// draft 8/15/23.
+//
+// The key idea in this protocol is that when a backup fails to detect the heartbeats of a primary
+// node, it becomes primary only if it has access to Network Reference Point (NRP), which is a point
+// in the network.
+//
+// The Primary sends heartbeats on two networks,
+// if the Backup receives the heartbeats from both networks then all is fine.
+// If it receives the heartbeat only from one network the Backup pings the NRP, if NRP replies all is fine,
+// if not
+// If Backup misses heartbeats on both networks then it assumes that the Primary failed and pings NRP,
+// if NRP replies, Backup becomes the Primary
+// if not ...
+//
+// The Rebeca code is adopted from the LF code by Edward Lee and Marjan Sirjani
+ 
+ 
+env int heartbeat_period = 20;
+env int max_missed_heartbeats = 2;
+env int ping_timeout = 10; 
+env int nrp_timeout = 10;
+// Node Modes
+env byte WAITING = 0;
+env byte PRIMARY = 1;
+env byte BACKUP = 2;
+env byte FAILED = 3;
+env byte NumberOfNetworks = 2;
+ 
+// for testing
+env int fails_at_time = 0; //zero for no failure
+ 
+env int switchA1failtime = 0;
+env int switchA2failtime = 0;
+env int switchA3failtime = 0;
+env int switchB1failtime = 0;
+env int switchB2failtime = 0;
+env int switchB3failtime = 0;
+ 
+env int node1failtime = 0;
+env int node2failtime = 0;
+ 
+env int networkDelay = 1;
+env int networkDelayForNRPPing = 1;
+
+// Minimum time between switch failures is H + 2N + 1, where H is the heartbeat_period and N is the networkDelay.
+// The +1 is needed because of the nondeterministic ordering of message handlers.
+// If a switch receives a switchFail() message at some time t, it nondeterministically may forward
+// a heartbeat message that happens to arrive at the same time.
+// The +1 ensures that the failure occurs after the message has been forwarded.
+env int min_interval = 23;
+ 
+// Generate switchFailure messages to switches that are nondeterministically chosen.
+// This class ensures a minimum interval of min_interval between any two switch failures.
+reactiveclass FailureController(10) {
+ 
+    knownrebecs {
+        Switch switchA1, switchA2, switchA3, switchB1, switchB2, switchB3;
+    }
+   
+    statevars {
+    }
+   
+    FailureController () {
+        self.chooseFailureTime() after(2*heartbeat_period);  // Let startup phase pass.
+    }
+   
+    msgsrv chooseFailureTime() {
+        // FIXME: Assumes heartbeat_period == 20.
+        int failure_time = ? (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
+        self.maybeFail() after (failure_time);
+    }
+    
+    msgsrv maybeFail() {
+        boolean failure = ? (false, true);
+        // Switch 1 is the NRP.  If we allow it to fail, then we get a counterexample.
+        byte s = ? (1, 2, 3, 4, 5, 6);
+        if (failure) {
+            if (s == 1) {
+                switchA1.switchFail();
+            } else if (s == 2) {
+                switchA2.switchFail();
+            } else if (s == 3) {
+                switchA3.switchFail();
+            } else if (s == 4) {
+                switchB1.switchFail();
+            } else if (s == 5) {
+                switchB2.switchFail();
+            } else if (s == 6) {
+                switchB3.switchFail();
+            }
+            self.chooseFailureTime() after (min_interval);           
+        } else {
+            self.chooseFailureTime() after (1);
+        }
+    }
+}
+
+// FIXME: Node and Switch are copied from NRFFD.rebeca.
+// Can they be imported instead?
+ 
+reactiveclass Node (20){
+ 
+    knownrebecs {
+        Switch out1, out2;
+    }
+  
+    statevars {
+           byte mode;
+           int id;
+           int [2] NRPCandidates;
+           int heartbeats_missed_1;
+           int heartbeats_missed_2;
+           int NRP_network;
+           int attacker;
+           int NRP_switch_id;
+           boolean NRP_pending;
+           boolean become_primary_on_ping_response; 
+           int primary;
+           boolean ping_pending;
+    }
+   
+    Node (int Myid, int Myprimary, int NRPCan1_id, int NRPCan2_id, int myFailTime) {
+        id = Myid;
+        attacker=0;
+        NRPCandidates[0] = NRPCan1_id;
+        NRPCandidates[1] = NRPCan2_id;   
+        heartbeats_missed_1 = 0;
+        heartbeats_missed_2 = 0;
+        NRP_network = -1;
+        NRP_switch_id = -1;
+        NRP_pending = true;
+        become_primary_on_ping_response = false;
+        primary = Myprimary;
+        ping_pending = false;
+        mode = WAITING;
+        if(myFailTime!=0) nodeFail() after(myFailTime);
+        runMe();
+    }
+   
+    // logical action new_NRP_request_timed_out(nrp_timeout) 
+    msgsrv new_NRP_request_timed_out() {
+        if (mode == BACKUP) {
+            if (NRP_pending) {
+                NRP_pending = false;
+                if (become_primary_on_ping_response) {
+                    become_primary_on_ping_response = false;
+                }
+            }
+        }
+    }    
+     
+    // logical action ping_timed_out(ping_timeout)
+    msgsrv ping_timed_out() {
+        if (mode == BACKUP) {
+            if (ping_pending) {
+                ping_pending = false;
+            } else {
+                mode = PRIMARY;
+                heartbeats_missed_1 = 0;
+                heartbeats_missed_2 = 0;
+                primary=id;
+                NRP_pending = true;
+            }
+        } else if (mode == PRIMARY) {
+            if (ping_pending) {
+                mode = PRIMARY;
+                NRP_network++;
+                if (NRP_network < NumberOfNetworks) {
+                    NRP_switch_id = NRPCandidates[NRP_network];
+                    if (NRP_network == 0) out1.new_NRP(id, NRP_network, NRP_switch_id);
+                    else out2.new_NRP(id, NRP_network, NRP_switch_id);
+                } else {
+                    NRP_network = NumberOfNetworks;
+                    mode = FAILED; // Operator intervention required.
+                    NRP_pending = true;
+                }
+            } else if (attacker < 1) {
+               out1.heartBeat(0, id) after(networkDelay);
+               out2.heartBeat(1, id) after(networkDelay);
+            }
+        }
+    }
+    
+    msgsrv pingNRP_response(int mid) {
+        if (mode==WAITING);
+        else if (mode == BACKUP) ping_pending = false;
+        else if (mode == PRIMARY) ping_pending = false;
+    }
+   
+    msgsrv new_NRP(int mid, int mNRP_network, int mNRP_switch_id) {
+        NRP_network = mNRP_network;
+        NRP_switch_id = mNRP_switch_id;
+    }
+   
+    msgsrv runMe() {
+        switch(mode) {
+            case 0: //WAITING :
+                if (id == primary) {
+                    mode = PRIMARY;
+                    NRP_network++;
+                    if (NRP_network<NumberOfNetworks) {
+                        NRP_switch_id = NRPCandidates[NRP_network];
+                        if (NRP_network==0) out1.new_NRP(id, NRP_network, NRP_switch_id);
+                        else out2.new_NRP(id, NRP_network, NRP_switch_id);
+                     } else NRP_network=NumberOfNetworks;
+                 } else mode = BACKUP;
+                 break;
+             case 1: //PRIMARY :
+                 if(NRP_network==0) {   
+                     ping_pending = true;
+                     out1.pingNRP(id, NRP_switch_id) after(5);
+                     ping_timed_out() after(ping_timeout);
+                 } else {
+                     ping_pending = true;
+                     out2.pingNRP(id, NRP_switch_id) after(5);
+                     ping_timed_out() after(ping_timeout);
+                 }
+                 NRP_pending = true;
+                 break;
+             case 2: //BACKUP :
+                 heartbeats_missed_1++;
+                 heartbeats_missed_2++;
+    
+                 if (heartbeats_missed_1 > max_missed_heartbeats && heartbeats_missed_2 > max_missed_heartbeats) {
+                     if (heartbeats_missed_1==heartbeats_missed_2 && heartbeats_missed_2==max_missed_heartbeats+1) {
+                         mode = PRIMARY;
+                         heartbeats_missed_1 = 0;
+                         heartbeats_missed_2 = 0;
+                         primary=id;
+                         NRP_pending = true;
+                     } else {
+                         // Saturate the missed heartbeat counts to prevent state-space explosion.
+                         heartbeats_missed_1 = (heartbeats_missed_1>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_1;
+                         heartbeats_missed_2 = (heartbeats_missed_2>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_2;
+                         if(NRP_network==0){   
+                             ping_pending = true;
+                             NRP_network=-1;
+                             out1.pingNRP(id, NRP_switch_id) after(5);
+                             ping_timed_out() after(ping_timeout);
+                         } else {
+                             ping_pending = true;
+                             NRP_network=-1;                                          
+                             out2.pingNRP(id, NRP_switch_id) after(5);
+                             ping_timed_out() after(ping_timeout);
+                         }
+                         NRP_pending = true;
+                     }
+                 } else if (heartbeats_missed_1 > max_missed_heartbeats || heartbeats_missed_2 > max_missed_heartbeats) {
+                     if (NRP_network==0 && heartbeats_missed_1 > max_missed_heartbeats) {
+                         ping_pending = true;
+                         out1.pingNRP(id, NRP_switch_id) after(5);
+                         ping_timed_out() after(ping_timeout);
+                     } else if (NRP_network ==1  && heartbeats_missed_2 > max_missed_heartbeats) {
+                         ping_pending = true;
+                         out2.pingNRP(id, NRP_switch_id) after(5);
+                         ping_timed_out() after(ping_timeout);
+                     }
+                     // Saturate the missed heartbeat counts to prevent state-space explosion.
+                     heartbeats_missed_1 = (heartbeats_missed_1>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_1;
+                     heartbeats_missed_2 = (heartbeats_missed_2>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_2;
+                 }
+                 break;
+              
+             case 3: //FAILED :
+                 break;
+        }
+        self.runMe() after(heartbeat_period);
+    }
+    
+    msgsrv heartBeat(byte networkId, int senderid) {
+        if (mode==BACKUP) {
+            if (networkId == 0) heartbeats_missed_1 = 0;
+            else heartbeats_missed_2 = 0;
+        }
+    }
+   
+    msgsrv nodeFail() {
+        primary=-1;
+        mode = FAILED;
+        NRP_network=-1;
+        NRP_switch_id=-1;
+       heartbeats_missed_1 = 0;
+        heartbeats_missed_2 = 0;
+        NRP_pending = true;
+        become_primary_on_ping_response = false;
+        ping_pending = false;
+    }
+}
+ 
+reactiveclass Switch(10) {
+ 
+    knownrebecs {
+    }
+   
+    statevars {
+        byte mynetworkId;
+        int id;
+        boolean failed;
+        boolean amINRP;
+        boolean terminal;
+        Node nodeTarget1;
+        Switch switchTarget2;
+        Switch switchTarget1;
+    }
+    Switch (int myid, byte networkId, boolean term, Switch s1, Switch s2, int myFailTime, Node n1) {
+        mynetworkId = networkId;
+        id = myid;
+        amINRP = false;
+        failed = false;
+        switchTarget1 = s1;
+        switchTarget2 = s2;
+        terminal=term;
+        nodeTarget1=n1;
+        if (myFailTime!=0) switchFail() after(myFailTime);
+    }
+   
+    msgsrv switchFail() {
+        failed = true;
+        amINRP=false;
+    }
+   
+    msgsrv pingNRP_response(int senderNode) {
+        if (!failed) {
+            if (terminal && senderNode <= 100) {
+                nodeTarget1.pingNRP_response(id)after(1); //Pass back
+            } else if (senderNode>id) {
+                switchTarget1.pingNRP_response(id)after(1);
+            } else {
+                switchTarget2.pingNRP_response(id)after(1);
+            }
+        }
+    }
+   
+    msgsrv pingNRP(int senderNode, int NRP) {
+        if (!failed) {
+            if (NRP==id) {
+                if (senderNode < 100) switchTarget2.pingNRP_response(id)after(1); //Response
+                else nodeTarget1.pingNRP_response(id)after(1);
+            } else {
+                if(senderNode < 100) {
+                    if(senderNode>id) switchTarget1.pingNRP(id, NRP)after(1);
+                    else switchTarget2.pingNRP(id, NRP) after(1);
+                } else {
+                    switchTarget2.pingNRP(id, NRP) after(1);
+                }
+            }
+        }
+    }
+ 
+    msgsrv new_NRP(int senderNode, int mNRP_network, int mNRP_switch_id) {
+        if (!failed) {
+            if (id==mNRP_switch_id) amINRP=true;
+            else amINRP=false;
+         
+            if (terminal && senderNode < 100) nodeTarget1.new_NRP(id, mNRP_network, mNRP_switch_id); //Pass back
+            else if(senderNode>id) switchTarget1.new_NRP(id, mNRP_network, mNRP_switch_id);
+            else switchTarget2.new_NRP(id, mNRP_network, mNRP_switch_id);
+        }
+    }
+   
+    msgsrv heartBeat(byte networkId, int senderNode) {
+        if (!failed) {
+            if (terminal && senderNode < 100) nodeTarget1.heartBeat(networkId,id) after(networkDelay);
+            else if (senderNode > id) switchTarget1.heartBeat(networkId,id) after(networkDelay);
+            else switchTarget2.heartBeat(networkId,id) after(networkDelay);
+        }
+    }
+}
+ 
+main {
+    @Priority(1) FailureController failureC(switchA1, switchA2, switchA3, switchB1, switchB2, switchB3):();
+   
+    @Priority(1) Switch switchA1():(1, 0, true , switchA2 , switchA2 , switchA1failtime, DCN1);
+    @Priority(1) Switch switchA2():(2 ,0, false , switchA1 , switchA3 , switchA2failtime, null);
+    @Priority(1) Switch switchA3():(3, 0, true , switchA2 , switchA2 , switchA3failtime, DCN2);
+    @Priority(1) Switch switchB1():(4, 1, true , switchB2 , switchB2 , switchB1failtime, DCN1);
+    @Priority(1) Switch switchB2():(5, 1, false , switchB1 , switchB3 , switchB2failtime, null);
+    @Priority(1) Switch switchB3():(6, 1, true , switchB2 , switchB2 , switchB3failtime, DCN2);
+ 
+    @Priority(2) Node DCN1(switchA1, switchB1):(100, 100, 1, 4, node1failtime);
+    @Priority(2) Node DCN2(switchA3, switchB3):(101, 100, 3, 6, node2failtime);
+}

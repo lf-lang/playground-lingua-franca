@@ -35,10 +35,10 @@ env byte NumberOfNetworks = 2;
 // for testing
 env int fails_at_time = 0; //zero for no failure
 
-env int switchA1failtime = 0;
-env int switchA2failtime = 1501;
+env int switchA1failtime = 2004;
+env int switchA2failtime = 0;
 env int switchA3failtime = 0;
-env int switchB1failtime = 1502;
+env int switchB1failtime = 3007;
 env int switchB2failtime = 0;
 env int switchB3failtime = 0;
 
