@@ -1,6 +1,7 @@
 target C {
   timeout: 1 sec,
-  tracing: true
+  // tracing: true,
+  coordination: centralized
 }
 
 reactor A (offset:time = 0, period:time = 100 msec){
@@ -35,4 +36,6 @@ federated reactor at localhost {
 
   a.out -> b.in
   b.out -> a.in
+  // Replace preceeding line with the following to observe overhead introduced by coordinating
+  // b.out -> a.in after 0
 }
