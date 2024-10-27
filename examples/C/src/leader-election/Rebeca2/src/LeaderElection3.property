@@ -37,7 +37,8 @@ property {
         net2miss5  = (DCN2.heartbeats_missed_2 == 5);
     }
     Assertion{
-        DualPrimary:!(DCN1Primary && DCN2Primary);
+        DualPrimary:!(DCN1Primary && DCN2Primary);  
+        Foo:!switchA1Failed;
         //NoPrimary:!(DCN1.primary!=-1 && DCN2.primary!=-1 && DCN1.primary!=DCN2.primary);
     }
 }

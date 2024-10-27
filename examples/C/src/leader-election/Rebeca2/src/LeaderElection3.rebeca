@@ -1,28 +1,7 @@
 //
 // This program models a redundant fault tolerant system where a primary node, if and when it fails,
-// is replaced by a backup node. This version models network switch failures that are spaced
-// sufficiently far apart in time that dual primaries do not emerge.  To manage the state-space
-// size, the heartbeat period and other time values are reduced.
-//
-// The protocol is described in this paper:
-//
-// Bjarne Johansson; Mats Rågberger; Alessandro V. Papadopoulos; Thomas Nolte, "Consistency Before
-// Availability: Network Reference Point based Failure Detection for Controller Redundancy," paper
-// draft 8/15/23.
-//
-// The key idea in this protocol is that when a backup fails to detect the heartbeats of a primary
-// node, it becomes primary only if it has access to Network Reference Point (NRP), which is a point
-// in the network.
-//
-// The Primary sends heartbeats on two networks,
-// if the Backup receives the heartbeats from both networks then all is fine.
-// If it receives the heartbeat only from one network the Backup pings the NRP, if NRP replies all is fine,
-// if not
-// If Backup misses heartbeats on both networks then it assumes that the Primary failed and pings NRP,
-// if NRP replies, Backup becomes the Primary
-// if not ...
-//
-// The Rebeca code is adopted from the LF code by Edward Lee and Marjan Sirjani
+// is replaced by a backup node. This version adds to LeaderElection2 a nondeterministic phase offset
+// between the primary and the backup.
  
  
 env int heartbeat_period = 20;
@@ -70,7 +49,7 @@ reactiveclass FailureController(10) {
     }
    
     FailureController () {
-        self.chooseFailureTime() after(2*heartbeat_period);  // Let startup phase pass.
+       self.chooseFailureTime() after(2*heartbeat_period);  // Let startup phase pass.
     }
    
     msgsrv chooseFailureTime() {
@@ -141,8 +120,22 @@ reactiveclass Node (20){
         ping_pending = false;
         mode = WAITING;
         if(myFailTime!=0) nodeFail() after(myFailTime);
-        runMe();
+        // If we do  not have offset we do not need the following if statement and we just call runMe();
+        if (Myid != Myprimary) {
+            runMe_WithOffset();
+        } else {
+            runMe();
+        }
+        
+        
     }
+    
+    msgsrv runMe_WithOffset() {
+        // FIXME: Assumes heartbeat_period == 20.
+        int offset = ? (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
+        self.runMe() after(offset);
+    }
+           
    
     // Check whether a response was received to request_new_NRP() and fail if not.
     msgsrv new_NRP_request_timed_out() {
