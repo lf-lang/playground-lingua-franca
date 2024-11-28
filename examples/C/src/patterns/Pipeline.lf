@@ -1,0 +1,35 @@
+/**
+ * Pipeline pattern where a periodic source feeds a chain of reactors that can all execute in
+ * parallel at each logical time step. This example shows how a deadline can interfere with
+ * parallelism if the GEDF_NP scheduler is used.  The target parameter `scheduler` overrides
+ * the default scheduler to use the NP scheduler, which results in fully parallel execution.
+ *
+ * @author Edward A. Lee
+ */
+ target C {
+  scheduler: NP,
+  timeout: 1 sec
+}
+
+import SendCount, Receive from "lib/SendersAndReceivers.lf"
+import TakeTime from "lib/TakeTime.lf"
+
+reactor Deadline extends TakeTime {
+  reaction(in) {=
+  =} deadline (100 ms) {=
+  =}
+}
+
+federated reactor {
+  r0 = new SendCount(period = 100 msec)
+  r1 = new TakeTime(approximate_time = 100 msec)
+  r2 = new TakeTime(approximate_time = 100 msec)
+  r3 = new TakeTime(approximate_time = 100 msec)
+  r4 = new Deadline(approximate_time = 100 msec)
+  r5 = new Receive()
+  r0.out -> r1.in after 100 msec
+  r1.out -> r2.in after 100 msec
+  r2.out -> r3.in after 100 msec
+  r3.out -> r4.in after 100 msec
+  r4.out -> r5.in after 100 msec
+}
