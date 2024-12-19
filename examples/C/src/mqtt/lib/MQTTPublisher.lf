@@ -10,15 +10,21 @@
  *
  * 1. The publisher ensures that the message is null terminated by adding a null terminator if
  * needed. This ensures that the message can be treated as a string at the receiving end. 2. The
- * publisher appends to the end of the message the current logical time at which the publishing
- * occurs.
+ * publisher appends to the end of the message (after the null terminator) a magic string "LFts"
+ * followed by the current logical time at which the publishing occurs. If the `relative_timestamp`
+ * parameter is true (the default is `false`), then the logical time is relative to the start time
+ * of the program.
  *
  * This can be useful if the receiving end will be an instance of `MQTTSubscriber` in another Lingua
  * Franca program. Note that `include_timestamp` *must* be true if an `MQTTSubcriber` that
  * subscribes to this topic has its `use_physical_time` parameter set to false (its default is
  * `true`). Otherwise, the subscriber will issue a warning.
  *
+ * @param topic The topic name to which to publish.
  * @param address The IP address of the MQTT broker.
+ * @param include_timestamp If true, then append the current logical time to the message.
+ * @param relative_timestamp If true, then the timestamp is relative to the start time of the
+ * program.
  * @param timeout Timeout for completion of message sending in milliseconds.
  * @see MQTTSubscriber.
  *
@@ -55,6 +61,7 @@ reactor MQTTPublisher(
     topic: string = "DefaultTopic",
     address: string = "tcp://localhost:1883",
     include_timestamp: bool = false,
+    relative_timestamp: bool = false,
     timeout: time = 10 sec) {
   preamble {=
     // Count of instances of this reactor so that unique client IDs are generated.
@@ -184,7 +191,7 @@ reactor MQTTPublisher(
       }
 
       // Append the current timestamp to the message.
-      instant_t timestamp = lf_time_logical();
+      instant_t timestamp = (self->relative_timestamp) ? lf_time_logical_elapsed() : lf_time_logical();
       encode_int64(timestamp,
         (unsigned char*)(self->inflight.message + length - sizeof(instant_t))
       );

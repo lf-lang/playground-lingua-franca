@@ -9,8 +9,8 @@
  * message. You can change the `use_physical_time` parameter of the `MQTTSubscriber` to `true` to
  * get a (nondeterministic) physical connection, similar to `MQTTPhysical`.
  *
- * The code generator produces three programs, bin/MQTTDistributed_RTI, bin/MQTTDistributed_source,
- * and bin/MQTTDistributed_destination, plus a script bin/MQTTDistributed that runs all three.
+ * The code generator produces two programs, bin/MQTTDistributed_source, and
+ * bin/MQTTDistributed_destination, plus a script bin/MQTTDistributed that runs all three.
  *
  * If the source and destination are running in the same machine, there is no clock synchronization
  * error.
