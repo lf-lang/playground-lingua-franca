@@ -303,9 +303,6 @@ reactiveclass Node (20){
                      }
                      ping_timed_out() after(ping_timeout);
                  }
-                 // Prevent detecting again immediately.
-                 heartbeats_missed_1 = 0;
-                 heartbeats_missed_2 = 0;
                  break;
               
              case 3: //FAILED :
