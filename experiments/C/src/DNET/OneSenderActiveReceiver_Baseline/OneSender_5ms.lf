@@ -1,0 +1,55 @@
+target C {
+    timeout: 30 sec,
+    // logging: debug,
+    DNET: false,
+    tracing: true
+}
+
+reactor Sender(send:bool = false) {
+    timer t(0, 50 msec)
+    output out:int
+    reaction(t) -> out {=
+        if (self->send) {
+            lf_set(out, 42);
+        }
+    =}
+}
+
+reactor Receiver(Period:time=100 msec, ResultFile:string="./Dummy.csv") {  
+    preamble {=
+        FILE* fp;
+    =}
+    timer t(0, Period)
+    input in: int
+
+    reaction(startup) {=
+      fp = fopen(self->ResultFile, "a");
+      if(fp == NULL) {
+        lf_print("Couldn't open the file.");
+      }
+    =}
+
+    reaction(t, in) {=
+        if (lf_time_logical_elapsed() % MSEC(500) == 0) {
+          instant_t lag = lf_time_physical() - lf_time_logical();
+          if(fp == NULL) {
+            lf_print("Couldn't open the file.");
+          } else {
+            fprintf(fp, "%lld,", lag);
+            fprintf(fp, "\n");
+          }
+        }
+    =}
+    
+    reaction(shutdown) {=
+        lf_print("Shutdown invoked.");
+        fclose(fp);
+    =}
+}
+
+federated reactor {
+    s1 = new Sender(send = true)
+    r = new Receiver(Period=5 msec, ResultFile="./OneSender_5ms.csv")
+
+    s1.out -> r.in
+}

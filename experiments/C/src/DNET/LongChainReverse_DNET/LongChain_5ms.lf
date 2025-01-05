@@ -1,0 +1,81 @@
+target C {
+  timeout: 30 sec,
+  // logging: debug,
+  // DNET: false,
+  tracing: true
+}
+
+reactor A(Period:time=100 msec, send:bool = false) {
+  timer t(0, Period)
+  output out:int
+  reaction(t) -> out {=
+      if (self->send) {
+          lf_set(out, 42);
+      }
+  =}
+}
+
+reactor B(Period:time=100 msec, send:bool = false) {
+  timer t(0, Period)
+  input in: int
+  output out:int
+  reaction(t, in) -> out {=
+      if (self->send) {
+          lf_set(out, 42);
+      }
+  =}
+}
+
+reactor C(Period:time=100 msec, send:bool = false) {
+  timer t(0, Period)
+  input in: int
+  output out:int
+  reaction(t, in) -> out {=
+      if (self->send) {
+          lf_set(out, 42);
+      }
+  =}
+}
+
+reactor D(Period:time=100 msec, ResultFile:string="./Dummy.csv") {  
+    preamble {=
+        FILE* fp;
+    =}
+    timer t(0, Period)
+    input in: int
+
+    reaction(startup) {=
+      fp = fopen(self->ResultFile, "a");
+      if(fp == NULL) {
+        lf_print("Couldn't open the file.");
+      }
+    =}
+
+    reaction(t, in) {=
+        if (lf_time_logical_elapsed() % MSEC(500) == 0) {
+          instant_t lag = lf_time_physical() - lf_time_logical();
+          if(fp == NULL) {
+            lf_print("Couldn't open the file.");
+          } else {
+            fprintf(fp, "%lld,", lag);
+            fprintf(fp, "\n");
+          }
+        }
+    =}
+    
+    reaction(shutdown) {=
+        lf_print("Shutdown invoked.");
+        fclose(fp);
+    =}
+}
+
+federated reactor {
+  a = new A(Period=5 msec, send = true)
+  b = new B(Period=25 msec, send = false)
+  c = new C(Period=50 msec, send = false)
+  d = new D(Period=5 msec, ResultFile="./LongChain_5ms.csv")
+
+  a.out -> b.in
+  b.out -> c.in
+  c.out -> d.in
+}

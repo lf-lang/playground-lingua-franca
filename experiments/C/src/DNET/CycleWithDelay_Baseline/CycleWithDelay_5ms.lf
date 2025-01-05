@@ -1,0 +1,70 @@
+target C {
+  timeout: 30 sec,
+  // logging: debug,
+  DNET: false,
+  tracing: true
+}
+
+reactor Sensor(Period:time = 20 msec, ResultFile:string = "..//Results//Dummy.csv") {
+  preamble {=
+    FILE* fp;
+  =}
+  timer t(0, Period)
+
+  state count: int = 0
+
+  input in: int
+
+  output out: int
+
+  reaction(startup) {=
+    fp = fopen(self->ResultFile, "a");
+    if(fp == NULL) {
+      lf_print("Couldn't open the file.");
+    }
+    lf_print("Timer period is %ld.", self->Period);
+  =}
+
+  reaction(t) -> out {=
+    lf_set(out, 1);
+  =}
+
+  reaction(in) {=
+    if (lf_time_logical_elapsed() % MSEC(500) == 0) {
+      instant_t lag = lf_time_physical() - lf_time_logical();
+      if(fp == NULL) {
+        lf_print("Couldn't open the file.");
+      } else {
+        fprintf(fp, "%ld,", lag);
+        fprintf(fp, "\n");
+      }
+    }
+  =}
+
+  reaction(shutdown) {=
+    fclose(fp);
+  =}
+}
+
+reactor RobotArm {
+  state count:int = 0;
+  input in: int
+  output out: int
+
+  reaction(in) -> out {=
+    self->count++;
+    lf_set(out, in->value);
+  =}
+
+  reaction(shutdown) {=
+    lf_print("Received %d messages.", self->count);
+  =}
+}
+
+federated reactor {
+  c_s = new Sensor(Period = 5 msec, ResultFile = "./CycleWithDelay_5ms.csv")
+  c_r = new RobotArm()
+
+  c_s.out -> c_r.in after 100 msec
+  c_r.out -> c_s.in
+}
