@@ -1,0 +1,167 @@
+target C {
+    timeout: 30 sec,
+}
+
+reactor Node(num_nodes: size_t = 1, heartbeat_period : time = 100 msec) {
+    
+    input[num_nodes]  in : int
+    output[num_nodes] out: int
+
+    state leader: bool
+    state election_timeout: time
+    state term: int
+
+    // The follower schedules a timeout action in case a heartbeat
+    // does not arrive. When the heartbeat does arrive, the pending
+    // action will be replaced by a new action with a later expiry.
+    // The minimum spacing of "forever" ensure that only one 
+    // election_timeout_reached event can stay on the event queue.
+    // This is an implementation of a watchdog.
+    // 
+    // FIXME: Not for this case, but it would be nice to be able to
+    // use state variables in action parameters.
+    logical action election_timeout_reached(0 sec, forever, "replace")
+    logical action start_election
+
+    preamble {=
+    #define MSG_HEART       -1
+    #define MSG_ACK         -2
+    #define MSG_ELECTION    -3
+    #define MSG_VOTE        -4
+    #define MSG_LEADER      -5
+    =}
+
+    method random_int_in_range(min: int, max: int) : int {=
+        srand(lf_time_physical()); // Choose a random seed.
+        return rand() % ((max + 1) - min) + min;
+    =}
+
+    // FIXME: Cannot use ports in methods.
+    /*
+    method broadcast_message(out : port, payload : int) {=
+        // Broadcast a heartbeat message to all nodes.
+        for (int i = 0; i < self->num_nodes; i++) {
+            lf_set(out[i], payload);
+        }
+    =}
+    */
+
+    reaction(in) {=
+        for (int i = 0; i < in_width; i++) {
+            if (in[i]->is_present) {
+                lf_print("Received from reactor %d: %d", i, in[i]->value);
+            }
+        }
+    =}
+
+    initial mode Follower {
+        reaction(startup) -> election_timeout_reached {=
+            lf_print("Hello");
+            // Choose a random election timeout between 150~300ms.
+            self->election_timeout = MSEC(random_int_in_range(150, 300));
+            lf_print("election timeout = %lld", self->election_timeout);
+            // Schedule the first timeout action.
+            lf_schedule(election_timeout_reached, self->election_timeout);
+        =}
+
+        // FIXME: For some reason, modifying out raises an error for cycles.
+        reaction(in) -> out, election_timeout_reached {=
+            for (int i = 0; i < in_width; i++) {
+                if (in[i]->is_present) {
+                    if (i == self->leader 
+                        && in[i]->value == MSG_HEART) {
+                        // Send back an ack.
+                        lf_set(out[i], MSG_ACK);
+                        // Renew the pending timeout action's expiry time.
+                        lf_schedule(election_timeout_reached, self->election_timeout);
+                    }
+                    else if (i != self->leader 
+                            && in[i]->value == MSG_ELECTION) {
+                        // Send back a vote.
+                        lf_set(out[i], MSG_VOTE);
+                        // Renew the pending timeout action's expiry time.
+                        lf_schedule(election_timeout_reached, self->election_timeout);
+                    }
+                    else if (i != self->leader
+                            && in[i]->value == MSG_LEADER) {
+                        // A new leader has been declared.
+                        self->leader = i;
+                        // Send back an ack.
+                        lf_set(out[i], MSG_ACK);
+                    }
+                }
+            }
+        =}
+        reaction(election_timeout_reached) -> start_election, Candidate {=
+            lf_print("Timeout! Starting an election...");
+            lf_schedule(start_election, 0);
+            lf_set_mode(Candidate);
+        =}
+    }
+    mode Leader {
+        // The leader periodically sends out a heartbeat message to all
+        // follower nodes to maintain authority.
+        timer heartbeat(0, heartbeat_period)
+        reaction(heartbeat) -> out {=
+            // Broadcast a heartbeat message to all nodes.
+            for (int i = 0; i < self->num_nodes; i++) {
+                lf_set(out[i], MSG_HEART);
+            }
+        =}
+        reaction(in) {=
+            // Receive acks from followers.
+            for (int i = 0; i < self->num_nodes; i++) {
+                if (in[i]->is_present) {
+                    lf_print("Received ack from follower node %d", i);
+                }
+            }
+        =}
+    }
+    mode Candidate {
+        reset state votes_received : int = 0
+        reaction(start_election) -> out, election_timeout_reached {=
+            // Vote for itself.
+            self->votes_received++;
+            // Broadcast an election start message.
+            for (int i = 0; i < self->num_nodes; i++) {
+                lf_set(out[i], MSG_ELECTION);
+            }
+            // Schedule a timeout action to collect votes.
+            lf_schedule(election_timeout_reached, self->election_timeout);
+        =}
+        reaction(in) -> Leader, Follower {=
+            // Receive votes from followers.
+            for (int i = 0; i < self->num_nodes; i++) {
+                if (in[i]->is_present) {
+                    if (in[i]->value == MSG_VOTE) {
+                        lf_print("Received a vote from follower node %d", i);
+                        self->votes_received++;
+                        // Check if a majority of votes is received, if so,
+                        // declare to be the leader.
+                        if (self->votes_received > self->num_nodes / 2) {
+                            lf_set_mode(Leader);
+                        }
+                    }
+                    else if (in[i]->value == MSG_LEADER) {
+                        // Another node has declared itself to be the leader.
+                        self->leader = i;
+                        // Send back an ack.
+                        // lf_set(out[i], MSG_ACK);
+                        // Become a follower.
+                        lf_set_mode(Follower);
+                    }
+                }
+            }
+        =}
+        // If timeout is reached and no leader has been declared, then
+        // we do not have a winner. Restart the election.
+        reaction(election_timeout_reached) -> start_election {=
+            lf_print("No winner! Restart election.");
+        =}
+    }
+}
+
+federated reactor(num_nodes: size_t = 2) {
+    nodes = new[num_nodes] Node(num_nodes=num_nodes)
+    nodes.out ~> interleaved(nodes.in)
+}
