@@ -1,0 +1,42 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  timeout: 1 sec,
+  tracing: true
+}
+
+import PhysicalPlant from "Feedback.lf"
+
+reactor Controller {
+  input remote_update: double
+  input local_update: double
+  output control: double
+
+  state latest_control: double = 0.0
+  state first: bool = true
+
+  reaction c1(local_update, remote_update) {=
+  =}
+
+  reaction c2(local_update) -> control {=
+  =}
+}
+
+reactor Platform {
+  input update: double
+  output publish: double
+  
+  c = new Controller()
+  p = new PhysicalPlant()
+  p.sensor -> c.local_update
+  p.sensor -> publish
+  update -> c.remote_update
+  c.control -> p.control
+}
+
+federated reactor {
+  p1 = new Platform()
+  p2 = new Platform()
+  
+  p1.publish -> p2.update
+  p2.publish -> p1.update
+}

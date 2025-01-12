@@ -1,0 +1,63 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  timeout: 1 sec,
+  tracing: true
+}
+
+reactor PhysicalPlant {
+  input control: double
+  output sensor: double
+  timer t(0, 100 ms)
+
+  reaction p1(t) -> sensor {=
+    lf_set(sensor, 42);
+  =}
+
+  reaction p2(control) {=
+    lf_print("At logical time: " PRINTF_TIME ", received control input %f with lag " PRINTF_TIME,
+        lf_time_logical_elapsed(), control->value, lf_time_physical() - lf_time_logical());
+  =}
+}
+
+reactor Planner {
+  input request: double
+  output response: double
+
+  reaction pl1(request) -> response {=
+    lf_sleep(MSEC(10));
+    lf_set(response, request->value);
+  =}
+}
+
+reactor Controller {
+  input sensor: double
+  output control: double
+
+  state plan: double = 0.0
+
+  output request_for_planning: double
+  input planning: double
+
+  reaction c1(sensor) -> request_for_planning {=
+    lf_set(request_for_planning, sensor->value);
+  =}
+
+  reaction c2(planning) {=
+    self->plan = planning->value;
+  =}
+
+  reaction c3(sensor) -> control {=
+    lf_set(control, self->plan);
+  =}
+}
+
+federated reactor {
+  p = new PhysicalPlant()
+  c = new Controller()
+  pl = new Planner()
+
+  p.sensor -> c.sensor
+  c.request_for_planning -> pl.request
+  pl.response -> c.planning
+  c.control -> p.control
+}
