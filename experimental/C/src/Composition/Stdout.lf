@@ -1,0 +1,14 @@
+/**
+ * This is just a handy little module used for synchronizing prints to stdout.
+ */
+target C
+
+reactor Stdout(n:int(1)) {
+    input[n] in: char*
+    reaction(in) {=
+        // TODO: Handle sparsity of message streams
+        for (int i = 0; i < self->n; i++) {
+            if (in[i]->is_present) printf("%s", in[i]->value);
+        }
+    =}
+}
