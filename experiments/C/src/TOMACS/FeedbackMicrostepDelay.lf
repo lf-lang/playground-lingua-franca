@@ -1,0 +1,17 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  tracing: false
+}
+
+import PhysicalPlant, Controller, Planner from "Feedback.lf"
+
+federated reactor {
+  p = new PhysicalPlant(Period = 15 ms, ResultFile = "./FeedbackMicrostepDelay_15ms_PhysicalPlant.csv")
+  c = new Controller(ResultFile = "./FeedbackMicrostepDelay_15ms_Controller.csv")
+  pl = new Planner()
+
+  p.sensor -> c.sensor
+  c.request_for_planning -> pl.request after 0
+  pl.response -> c.planning
+  c.control -> p.control after 0
+}

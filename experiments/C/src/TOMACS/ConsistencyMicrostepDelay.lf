@@ -1,0 +1,27 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  tracing: false
+}
+
+import PhysicalPlant from "Feedback.lf"
+import Controller from "Consistency.lf"
+
+reactor Platform(Period:time = 100 msec, ResultFile:string="") {
+  input update: double
+  output publish: double
+  
+  c = new Controller()
+  p = new PhysicalPlant(Period=Period, ResultFile=ResultFile)
+  p.sensor -> c.local_update after 0
+  p.sensor -> publish
+  update -> c.remote_update
+  c.control -> p.control
+}
+
+federated reactor {
+  p1 = new Platform(Period = 15 ms, ResultFile = "./ConsistencyMicrostepDelay_15ms.csv")
+  p2 = new Platform(Period = 15 ms)
+  
+  p1.publish -> p2.update after 0
+  p2.publish -> p1.update after 0
+}

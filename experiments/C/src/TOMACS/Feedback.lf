@@ -1,0 +1,144 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  tracing: false
+}
+
+reactor PhysicalPlant(Period:time = 100 msec, ResultFile:string = "") {
+  preamble {=
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+  =}
+
+  input control: double
+  output sensor: double
+  timer t(0, Period)
+  state count: int = 0
+  state index: int = 0
+  state avg_lag: instant_t[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+  reaction p1(t) -> sensor {=
+    lf_set(sensor, 42);
+  =}
+
+  reaction p2(control) {=
+    if (self->index >= 10) {
+      lf_print_error_and_exit("index out of bound.");
+    }
+    instant_t lag = lf_time_physical() - lf_time_logical();
+    instant_t previous_total_lag = self->avg_lag[self->index] * self->count;
+    self->count++;
+    self->avg_lag[self->index] = (previous_total_lag + lag) / self->count;
+
+    if (self->index == 9 && self->count >= 50 ) {
+      lf_request_stop();
+    }
+    if (self->count >= 50) {
+      // lf_print("At " PRINTF_TAG ", avg lag = %lld", lf_time_logical_elapsed(), lf_tag().microstep, self->avg_lag[self->index]);
+      self->index++;
+      self->count = 0;
+    }
+  =}
+
+  reaction(shutdown) {=
+    if (strcmp(self->ResultFile, "") != 0) {
+      FILE* fp;
+      fp = fopen(self->ResultFile, "w");
+      if(fp == NULL) {
+        lf_print("Couldn't open the file.");
+      } else {
+        for (int i = 0; i < 10; i++) {
+          fprintf(fp, "%lld\n", self->avg_lag[i]);
+        }
+      }
+      fclose(fp);
+    }
+  =}
+}
+
+reactor Controller(ResultFile:string = "") {
+  preamble {=
+    #include <string.h>
+  =}
+  input sensor: double
+  output control: double
+
+  state plan: double = 0.0
+
+  output request_for_planning: double
+  input planning: double
+
+  state count: int = 0
+  state index: int = 0
+  state avg_lag: instant_t[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+  reaction c1(sensor) -> request_for_planning {=
+    // if (!self->first) {
+    //   lf_set(control, self->latest_control);
+    // }
+    // self->first = false;
+    // lf_set(request_for_planning, sensor->value);
+    lf_set(request_for_planning, sensor->value);
+  =}
+
+  reaction c2(planning) {=
+    self->plan = planning->value;
+
+    if (self->index >= 10) {
+      lf_print_error_and_exit("index out of bound.");
+    }
+    instant_t lag = lf_time_physical() - lf_time_logical();
+    instant_t previous_total_lag = self->avg_lag[self->index] * self->count;
+    self->count++;
+    self->avg_lag[self->index] = (previous_total_lag + lag) / self->count;
+
+    if (self->index == 9 && self->count >= 50 ) {
+      lf_request_stop();
+    }
+    if (self->count >= 50) {
+      lf_print("At " PRINTF_TAG ", avg lag = %lld", lf_time_logical_elapsed(), lf_tag().microstep, self->avg_lag[self->index]);
+      self->index++;
+      self->count = 0;
+    }
+  =}
+
+  reaction c3(sensor) -> control {=
+    lf_set(control, self->plan);
+  =}
+
+  reaction(shutdown) {=
+    if (strcmp(self->ResultFile, "") != 0) {
+      FILE* fp;
+      fp = fopen(self->ResultFile, "w");
+      if(fp == NULL) {
+        lf_print("Couldn't open the file.");
+      } else {
+        for (int i = 0; i < 10; i++) {
+          fprintf(fp, "%lld\n", self->avg_lag[i]);
+        }
+      }
+      fclose(fp);
+    }
+  =}
+}
+
+reactor Planner {
+  input request: double
+  output response: double
+
+  reaction(request) -> response {=
+    lf_sleep(MSEC(2));
+    lf_set(response, request->value);
+  =}
+}
+
+federated reactor {
+  p = new PhysicalPlant(Period = 15 ms, ResultFile = "./Feedback_15ms_PhysicalPlant.csv")
+  c = new Controller(ResultFile = "./Feedback_15ms_Controller.csv")
+  pl = new Planner()
+
+  p.sensor -> c.sensor
+  c.request_for_planning -> pl.request
+  pl.response -> c.planning
+  c.control -> p.control
+}

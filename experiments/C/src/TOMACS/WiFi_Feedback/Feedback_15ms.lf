@@ -1,0 +1,27 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  tracing: false
+}
+
+import PhysicalPlant, Controller from "../Feedback.lf"
+
+reactor Planner {
+  input request: double
+  output response: double
+
+  reaction(request) -> response {=
+    lf_sleep(MSEC(10));
+    lf_set(response, request->value);
+  =}
+}
+
+federated reactor at localhost {
+  p = new PhysicalPlant(Period = 15 ms, ResultFile = "./Feedback_15ms_PhysicalPlant.csv")
+  c = new Controller(ResultFile = "./Feedback_15ms_Controller.csv")
+  pl = new Planner()
+
+  p.sensor -> c.sensor
+  c.request_for_planning -> pl.request
+  pl.response -> c.planning
+  c.control -> p.control
+}

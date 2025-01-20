@@ -1,0 +1,75 @@
+target C {
+    tracing: false
+}
+
+reactor A (Period:time = 100 msec, ResultFile:string = "") {
+
+  preamble {=
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+  =}
+  input in:int
+  output out:int
+
+  timer t(0, Period)
+  state count: int = 0
+  state index: int = 0
+  state avg_lag: instant_t[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+  reaction(t) -> out {=
+    lf_set(out, 42);
+  =}
+
+  reaction(in) {=
+    if (self->index >= 10) {
+      lf_print_error_and_exit("index out of bound.");
+    }
+    instant_t lag = lf_time_physical() - lf_time_logical();
+    instant_t previous_total_lag = self->avg_lag[self->index] * self->count;
+    self->count++;
+    self->avg_lag[self->index] = (previous_total_lag + lag) / self->count;
+
+    if (self->index == 9 && self->count >= 50 ) {
+      lf_request_stop();
+    }
+    if (self->count >= 50) {
+      lf_print("At " PRINTF_TAG ", avg lag = %lld", lf_time_logical_elapsed(), lf_tag().microstep, self->avg_lag[self->index]);
+      self->index++;
+      self->count = 0;
+    }
+  =}
+
+  reaction(shutdown) {=
+    if (strcmp(self->ResultFile, "") != 0) {
+      FILE* fp;
+      fp = fopen(self->ResultFile, "w");
+      if(fp == NULL) {
+        lf_print("Couldn't open the file.");
+      } else {
+        for (int i = 0; i < 10; i++) {
+          fprintf(fp, "%lld\n", self->avg_lag[i]);
+        }
+      }
+      fclose(fp);
+    }
+  =}
+}
+
+
+reactor B {
+  state first:bool = true;
+  input in:int
+  output out:int
+  reaction(in) -> out {=
+    lf_set(out, in->value);
+  =}
+}
+
+federated reactor {
+  a = new A(Period = 15 msec, ResultFile = "./ZDC_15ms.csv")
+  b = new B()
+
+  a.out -> b.in
+  b.out -> a.in
+}

@@ -1,0 +1,14 @@
+target C {
+    tracing: false
+}
+
+import A from "../ZeroDelayCycle.lf"
+import B from "../ZeroDelayCycle.lf"
+
+federated reactor {
+  a = new A(Period = 30 msec, ResultFile = "./MicrostepDelayCycle_30ms.csv")
+  b = new B()
+
+  a.out -> b.in after 0
+  b.out -> a.in
+}
