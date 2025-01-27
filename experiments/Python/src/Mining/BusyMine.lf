@@ -198,26 +198,26 @@ reactor Display(num_moving_sprites=0, num_static_sprites=0, nav_icon="images/pac
 
   reaction(pygame_tick, game_over) {=
     #Grey background
-        if game_over.is_present:
-          self._game_over = True
-          w = mine.pygame.Surface((400,200))  # the size of your rect
-          w.set_alpha(10)        # alpha level
-          w.fill((128,128,128))       # this fills the entire surface
-          self._screen.blit(w, (100,200))  # (0,0) are the top-left coordinates
+    if game_over.is_present:
+      self._game_over = True
+      w = mine.pygame.Surface((400,200))  # the size of your rect
+      w.set_alpha(10)        # alpha level
+      w.fill((128,128,128))       # this fills the entire surface
+      self._screen.blit(w, (100,200))  # (0,0) are the top-left coordinates
 
-          #Won or lost
-          if game_over.value:
-            text1=self._font.render("Mining Complete!", True, mine.black)
-          else:
-            text1=self._font.render("Collision detected.", True, mine.black)
-          self._screen.blit(text1, [235, 233])
-          #print("game is over")
-          text2=self._font.render("To play again, press ENTER.", True, mine.black)
-          self._screen.blit(text2, [135, 303])
-          text3=self._font.render("To quit, press ESCAPE.", True, mine.black)
-          self._screen.blit(text3, [165, 333])
+      #Won or lost
+      if game_over.value:
+        text1=self._font.render("Mining Complete!", True, mine.black)
+      else:
+        text1=self._font.render("Collision detected.", True, mine.black)
+      self._screen.blit(text1, [235, 233])
+      #print("game is over")
+      text2=self._font.render("To play again, press ENTER.", True, mine.black)
+      self._screen.blit(text2, [135, 303])
+      text3=self._font.render("To quit, press ESCAPE.", True, mine.black)
+      self._screen.blit(text3, [165, 333])
 
-          mine.pygame.display.flip()
+      mine.pygame.display.flip()
   =}
 
   reaction(restart) {=
