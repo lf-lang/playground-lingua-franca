@@ -1,7 +1,6 @@
 # Experiment Results
 ## ZeroDelayCycle.lf & MicrostepDelayCycle.lf
 ### Under LAN setup
-
 ![Graph](LAN_Results/LagLANSimpleCycle.png)
 
 | ZeroDelayCycle.lf | | | | | | | MicrostepDelayCycle.lf | | | | | | |
@@ -18,10 +17,18 @@
 | 401-450 | 4.45 | 3.29 | 1.10 | 0.67 | 0.83 | 1.11 | 401-450 | 0.78 | 0.72 | 0.78 | 0.82 | 0.90 | 1.39 |
 | 451-500 | 3.46 | 4.28 | 0.96 | 0.67 | 0.84 | 1.12 | 451-500 | 1.75 | 0.73 | 0.79 | 0.84 | 0.94 | 1.40 |
 
+#### T-Test
+|Paired t-test|1 ms   |2 ms   |3 ms     |5 ms   |10 ms   |100 ms  |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |6.9964 |2.7275 |1.6861   |0.3294 |-3.3401 |-37.1306|
+|p_value      |0.0001 |0.0233 |0.1261   |0.7494 |0.0087  |0.0     |
+|condition_met|False  |False  |True     |True   |True    |True    |
+
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
 ### Under WiFi setup
-
+#### Raw Data
 ![Graph](WiFi_Results/LagWiFiSimpleCycle.png)
-
 | ZeroDelayCycle.lf | | | | | | | MicrostepDelayCycle.lf | | | | | | |
 |------------|------|------|------|------|-----|---------|-------------|------|------|------|------|-------|---------|
 | Timer ticks | 1 ms | 2 ms | 3 ms | 5 ms | 10 ms | 100 ms | Timer ticks | 1 ms | 2 ms | 3 ms | 5 ms | 10 ms | 100 ms |
@@ -36,10 +43,18 @@
 | 401-450 | 355.9 | 10.5 | 10.8 | 11.1 | 10.8 | 15.2 | 401-450 | 285.2 | 89.0 | 22.9 | 20.2 | 21.0 | 15.8 |
 | 451-500 | 394.2 | 12.3 | 10.9 | 12.6 | 11.1 | 15.4 | 451-500 | 306.5 | 82.3 | 21.8 | 20.2 | 20.4 | 15.0 |
 
-## Feedback.lf & FeedbackMicrostep.lf
-### Under LAN setup
-#### Reactor Conroller
+#### T-Test
+|Paired t-test|15 ms  |30 ms  |45 ms    |75 ms  |150 ms  |500 ms  |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |2.893  |-4.0357|-14.759  |-17.9754|-41.2024|-0.722  |
+|p_value      |0.0178 |0.0029 |0.0      |0.0    |0.0     |0.4886  |
+|condition_met|False  |True   |True     |True   |True    |True    |
 
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
+## Reactor Controller of Feedback.lf & FeedbackMicrostep.lf
+### Under LAN setup
+#### Raw Data
 ![Graph](LAN_Results/LagLANFeedbackController.png)
 
 | Feedback.lf | | | | | | | FeedbackMicrostep.lf | | | | | | |
@@ -55,7 +70,45 @@
 | 401-450 | 553.72 | 134.29 | 1.88 | 2.68 | 2.11 | 3.13 | 401-450 | 496.40 | 87.10 | 2.10 | 2.16 | 2.25 | 3.31 |
 | 451-500 | 615.41 | 145.88 | 1.88 | 2.69 | 2.08 | 3.14 | 451-500 | 553.56 | 96.73 | 2.10 | 2.15 | 2.27 | 3.31 |
 
-#### Reactor PhysicalPlant
+#### T-Test
+|Paired t-test|1 ms    |2 ms    |3 ms      |5 ms    |10 ms    |100 ms   |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |6.6392 |5.9589 |-4.4311  |53.5241|-16.8332|-13.8085|
+|p_value      |0.0001 |0.0002 |0.0016   |0.0    |0.0     |0.0     |
+|condition_met|False  |False  |True     |False  |True    |True    |
+
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
+### Under WiFi setup
+#### Raw Data
+![Graph](WiFi_Results/LagWiFiFeedbackController.png)
+
+| Feedback.lf | | | | | | | FeedbackMicrostep.lf | | | | | | |
+|------------|------|------|------|------|-----|---------|-------------|------|------|------|------|-------|---------|
+| Timer ticks | 1 ms | 2 ms | 3 ms | 5 ms | 10 ms | 100 ms | Timer ticks | 1 ms | 2 ms | 3 ms | 5 ms | 10 ms | 100 ms |
+| 1-50 | 523.21 | 208.40 | 38.91 | 24.32 | 33.58 | 27.85 | 1-50 | 596.25 | 128.94 | 33.60 | 35.34 | 34.67 | 33.78 |
+| 51-100 | 1520.73 | 501.41 | 115.88 | 24.80 | 32.29 | 29.06 | 51-100 | 1907.02 | 313.52 | 30.73 | 29.87 | 36.51 | 34.79 |
+| 101-150 | 2549.56 | 765.60 | 179.39 | 27.85 | 32.10 | 30.22 | 101-150 | 3186.75 | 446.62 | 63.67 | 36.10 | 35.16 | 34.15 |
+| 151-200 | 3611.89 | 1062.43 | 219.71 | 31.74 | 34.04 | 31.04 | 151-200 | 4410.51 | 574.06 | 86.82 | 41.56 | 31.50 | 34.40 |
+| 201-250 | 4609.88 | 1305.28 | 384.22 | 27.87 | 36.22 | 32.96 | 201-250 | 5490.57 | 760.13 | 59.33 | 68.84 | 31.66 | 31.52 |
+| 251-300 | 5633.37 | 1496.24 | 493.47 | 26.99 | 30.94 | 27.07 | 251-300 | 6666.64 | 1005.65 | 55.78 | 41.45 | 38.85 | 33.78 |
+| 301-350 | 6591.64 | 1894.94 | 598.07 | 28.40 | 28.54 | 27.92 | 301-350 | 7843.55 | 1196.60 | 32.95 | 85.33 | 37.44 | 31.45 |
+| 351-400 | 7568.12 | 2196.57 | 805.44 | 27.63 | 32.52 | 28.42 | 351-400 | 9051.57 | 1431.76 | 116.86 | 91.83 | 33.17 | 33.20 |
+| 401-450 | 8533.97 | 2456.20 | 802.08 | 25.71 | 51.64 | 27.94 | 401-450 | 10304.85 | 1669.02 | 63.16 | 53.28 | 50.25 | 34.25 |
+| 451-500 | 9419.03 | 2681.64 | 799.82 | 27.73 | 47.14 | 30.95 | 451-500 | 11494.72 | 1978.27 | 31.50 | 63.44 | 38.34 | 33.09 |
+
+#### T-Test
+|Paired t-test|15 ms   |30ms   |45 ms     |75 ms   |150ms   |500ms   |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |-5.3021|6.5246 |4.167    |-4.0642|-0.4935 |-5.319  |
+|p_value      |0.0005 |0.0001 |0.0024   |0.0028 |0.6335  |0.0005  |
+|condition_met|True   |False  |False    |True   |True    |True    |
+
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
+## Reactor PhysicalPlant of Feedback.lf & FeedbackMicrostep.lf
+### Under LAN setup
+#### Raw Data
 
 ![Graph](LAN_Results/LagLANFeedbackPhysicalPlant.png)
 
@@ -73,27 +126,17 @@
 | 401-450 | 554.32 | 134.54 | 2.58 | 3.07 | 2.48 | 3.73 | 401-450 | 495.08 | 85.76 | 0.71 | 0.75 | 0.84 | 1.70 |
 | 451-500 | 616.02 | 146.14 | 2.57 | 3.09 | 2.44 | 3.72 | 451-500 | 552.23 | 95.39 | 0.75 | 0.75 | 0.84 | 1.68 |
 
+#### T-Test
+|Paired t-test|1 ms    |2 ms    |3 ms      |5 ms    |10 ms    |100 ms   |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |6.9804 |6.2835 |57.21    |171.456|213.5244|156.3852|
+|p_value      |0.0001 |0.0001 |0.0      |0.0    |0.0     |0.0     |
+|condition_met|False  |False  |False    |False  |False   |False   |
+
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
 ### Under WiFi setup
-#### Reactor Conroller
-
-![Graph](WiFi_Results/LagWiFiFeedbackController.png)
-
-| Feedback.lf | | | | | | | FeedbackMicrostep.lf | | | | | | |
-|------------|------|------|------|------|-----|---------|-------------|------|------|------|------|-------|---------|
-| Timer ticks | 1 ms | 2 ms | 3 ms | 5 ms | 10 ms | 100 ms | Timer ticks | 1 ms | 2 ms | 3 ms | 5 ms | 10 ms | 100 ms |
-| 1-50 | 523.21 | 208.40 | 38.91 | 24.32 | 33.58 | 27.85 | 1-50 | 596.25 | 128.94 | 33.60 | 35.34 | 34.67 | 33.78 |
-| 51-100 | 1520.73 | 501.41 | 115.88 | 24.80 | 32.29 | 29.06 | 51-100 | 1907.02 | 313.52 | 30.73 | 29.87 | 36.51 | 34.79 |
-| 101-150 | 2549.56 | 765.60 | 179.39 | 27.85 | 32.10 | 30.22 | 101-150 | 3186.75 | 446.62 | 63.67 | 36.10 | 35.16 | 34.15 |
-| 151-200 | 3611.89 | 1062.43 | 219.71 | 31.74 | 34.04 | 31.04 | 151-200 | 4410.51 | 574.06 | 86.82 | 41.56 | 31.50 | 34.40 |
-| 201-250 | 4609.88 | 1305.28 | 384.22 | 27.87 | 36.22 | 32.96 | 201-250 | 5490.57 | 760.13 | 59.33 | 68.84 | 31.66 | 31.52 |
-| 251-300 | 5633.37 | 1496.24 | 493.47 | 26.99 | 30.94 | 27.07 | 251-300 | 6666.64 | 1005.65 | 55.78 | 41.45 | 38.85 | 33.78 |
-| 301-350 | 6591.64 | 1894.94 | 598.07 | 28.40 | 28.54 | 27.92 | 301-350 | 7843.55 | 1196.60 | 32.95 | 85.33 | 37.44 | 31.45 |
-| 351-400 | 7568.12 | 2196.57 | 805.44 | 27.63 | 32.52 | 28.42 | 351-400 | 9051.57 | 1431.76 | 116.86 | 91.83 | 33.17 | 33.20 |
-| 401-450 | 8533.97 | 2456.20 | 802.08 | 25.71 | 51.64 | 27.94 | 401-450 | 10304.85 | 1669.02 | 63.16 | 53.28 | 50.25 | 34.25 |
-| 451-500 | 9419.03 | 2681.64 | 799.82 | 27.73 | 47.14 | 30.95 | 451-500 | 11494.72 | 1978.27 | 31.50 | 63.44 | 38.34 | 33.09 |
-
-#### Reactor PhysicalPlant
-
+#### Raw Data
 ![Graph](WiFi_Results/LagWiFiFeedbackPhysicalPlant.png)
 
 | Feedback.lf | | | | | | | FeedbackMicrostep.lf | | | | | | |
@@ -110,9 +153,18 @@
 | 401-450 | 8537.52 | 2460.18 | 805.74 | 29.51 | 57.03 | 31.95 | 401-450 | 10286.95 | 1653.00 | 47.97 | 37.32 | 31.88 | 17.59 |
 | 451-500 | 9422.38 | 2685.43 | 803.47 | 32.03 | 51.61 | 35.69 | 451-500 | 11476.84 | 1962.40 | 16.86 | 46.18 | 20.39 | 16.68 |
 
+#### T-Test
+|Paired t-test|15 ms   |30ms   |45 ms     |75 ms   |150ms   |500ms   |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |-5.1904|6.7759 |4.3771   |-1.034 |12.5791 |22.1455 |
+|p_value      |0.0006 |0.0001 |0.0018   |0.3281 |0.0     |0.0     |
+|condition_met|True   |False  |False    |True   |False   |False   |
+
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
 ## Consistency.lf & ConsistencyMicrostep.lf
 ### Under LAN setup
-
+#### Raw Data
 ![Graph](LAN_Results/LagLANConsistency.png)
 
 | Consistency.lf | | | | | | | ConsistencyMicrostep.lf | | | | | | |
@@ -128,8 +180,17 @@
 | 401-450 | 252.83 | 2.66 | 1.44 | 1.52 | 2.91 | 3.27 | 401-450 | 296.13 | 3.49 | 2.71 | 1.52 | 1.59 | 2.30 |
 | 451-500 | 281.08 | 2.66 | 1.43 | 1.50 | 2.90 | 3.26 | 451-500 | 329.08 | 3.48 | 2.71 | 1.52 | 1.59 | 2.28 |
 
-### Under WiFi setup
+#### T-Test
+|Paired t-test|1 ms    |2 ms    |3 ms      |5 ms    |10 ms    |100 ms   |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |-5.6572|-9.2526|-207.2646|-4.5534|234.1499|142.3137|
+|p_value      |0.0003 |0.0    |0.0      |0.0014 |0.0     |0.0     |
+|condition_met|True   |True   |True     |True   |False   |False   |
 
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
+
+### Under WiFi setup
+#### Raw Data
 ![Graph](WiFi_Results/LagWiFiConsistency.png)
 
 | Consistency.lf | | | | | | | ConsistencyMicrostep.lf | | | | | | |
@@ -144,3 +205,12 @@
 | 351-400 | 3286.46 | 334.25 | 57.42 | 20.35 | 19.67 | 19.98 | 351-400 | 3761.64 | 295.61 | 25.09 | 22.05 | 22.15 | 19.69 |
 | 401-450 | 3847.32 | 349.14 | 108.66 | 22.12 | 20.69 | 20.05 | 401-450 | 4352.15 | 252.32 | 25.53 | 20.51 | 21.70 | 20.33 |
 | 451-500 | 4391.91 | 349.15 | 96.80 | 48.09 | 21.08 | 21.46 | 451-500 | 4919.65 | 191.63 | 27.32 | 23.00 | 24.14 | 22.09 |
+
+#### T-Test
+|Paired t-test|15 ms   |30ms   |45 ms     |75 ms   |150ms   |500ms   |
+|-------------|-------|-------|---------|-------|--------|--------|
+|t_statistic  |-5.2987|-0.2153|2.0547   |1.1858 |-3.9233 |1.3162  |
+|p_value      |0.0005 |0.8343 |0.0701   |0.2661 |0.0035  |0.2206  |
+|condition_met|True   |True   |True     |True   |True    |True    |
+
+Condition: Whether there is no statistical difference between two results (p_value > 0.05) or the zero-delay cycle approach exhibits less lag than the microstep-delay cycle approach (p_value < 0.05 and t_statistic < 0).
