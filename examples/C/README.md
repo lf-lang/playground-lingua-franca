@@ -5,6 +5,7 @@
 * [Browser UIs](src/browser-ui/README.md): How to create a browser-based UI for an LF program.
 * [Car Brake](src/car-brake/README.md): Sketch of ADAS system illustrating the CAL theorem.
 * [Deadlines](src/deadlines/README.md): Uses of deadlines in Lingua Franca.
+* [Decentralized coordination](src/decentralized-coordination/README.md): Tutorial on federated decentralized coordination.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
 * [Furuta Pendulum](src/modal_models/FurutaPendulum/README.md): A controller and simulation illustrating a modal reactor.
 * [Keyboard](src/keyboard/README.md): Responding to keyboard input using ncurses.

@@ -35,4 +35,8 @@ reactor Random(seed: {= unsigned int =} = 0) {
     double u = random() / (RAND_MAX + 1.0);
     return -log(1.0 - u) / lambda;
   =}
+
+  method uniform_double(min: double, max: double): double {=
+    return min + (max - min) * (random() / (RAND_MAX + 1.0));
+  =}
 }
