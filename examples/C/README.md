@@ -19,3 +19,4 @@
 * [Train Door](src/train-door/README.md): Train door controller from a verification paper.
 * [Low Code](src/low-code/LowCode.lf): Using ChatGPT to generate reaction bodies.
 * [Watchdog](src/watchdog/README.md): Federated illustration of watchdogs.
+* [Zero-delay Cycles](src/zero-delay-cycles/README.md): Federated patterns with zero-delay cycles.

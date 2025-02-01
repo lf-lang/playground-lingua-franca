@@ -1,0 +1,33 @@
+target C
+
+reactor A (Period:time = 1 msec) {
+  input in:int
+  output out:int
+
+  timer t(0, Period)
+
+  reaction(t) -> out {=
+    lf_set(out, 42);
+  =}
+
+  reaction(in) {=
+    //
+  =}
+}
+
+
+reactor B {
+  input in:int
+  output out:int
+  reaction(in) -> out {=
+    lf_set(out, in->value);
+  =}
+}
+
+federated reactor {
+  a = new A(Period = 1 msec)
+  b = new B()
+
+  a.out -> b.in
+  b.out -> a.in
+}
