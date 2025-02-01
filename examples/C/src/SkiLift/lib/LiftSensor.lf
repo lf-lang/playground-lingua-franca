@@ -1,0 +1,11 @@
+target C
+
+reactor LiftSensor {
+  output start_ready: bool
+  output end_ready: bool
+
+  reaction(startup) -> start_ready, end_ready {=
+    lf_set(start_ready, true);
+    lf_set(end_ready, true);
+  =}
+}

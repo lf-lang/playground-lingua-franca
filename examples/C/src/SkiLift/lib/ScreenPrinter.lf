@@ -1,0 +1,7 @@
+target C {
+  cmake-include: ["../c_lib/drawSkiLift.cmake"],
+  files: ["../c_lib/drawSkiLift.c"]
+}
+
+reactor ScreenPrinter {
+}

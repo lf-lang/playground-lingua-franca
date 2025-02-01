@@ -1,0 +1,25 @@
+/**
+ * @author Cheng Yen, Tsai
+ */
+target C
+
+
+reactor EntryGate {
+  input open: bool  // Toggle mode
+
+  mode OPEN {
+    reaction(open) -> reset(CLOSE) {=
+      if (open->value) {
+        lf_set_mode(CLOSE);
+      }
+    =}
+  }
+
+  initial mode CLOSE {
+    reaction(open) -> reset(OPEN) {=
+      if (!open->value) {
+        lf_set_mode(OPEN);
+      }
+    =}
+  }
+}

@@ -1,0 +1,272 @@
+/**
+ * This illustrates bank of reactors where each reactor produces an output that is broadcast to all
+ * reactors in the bank, including itself.
+ *
+ * @author Christian Menard
+ * @author Edward A. Lee
+ */
+
+target C {
+ // cmake-include: ["c_lib/drawSkiLift.cmake"],
+ // files:["c_lib/drawSkiLift.c"]
+}
+
+import EntryGate from "./EntryGate.lf"
+import EntrySensor from "lib/EntrySensor.lf"
+import LiftSensor from "lib/LiftSensor.lf"
+import ObjectDetector from "lib/ObjectDetector.lf"
+//import ScreenPrinter from "lib/ScreenPrinter.lf"
+
+preamble {=
+  #define WIDTH 80      // Width of the terminal screen
+  #define HEIGHT 6      // Number of rows for the ski lift
+  #define NUM_CHAIRS 10 // Number of ski lift chairs
+  #define ANIMATION_HEIGHT 13
+  #include <stdio.h>
+  #include <string.h>
+  #include <unistd.h>
+  #include <signal.h>
+  static volatile bool is_running = true;
+  static volatile int offset = 0;
+  static void moveCursor(int row, int col) {
+    // Move cursor to (row, col)
+    printf("\033[%d;%dH", row, col);
+    fflush(stdout);
+  }
+  static void clearScreen() {
+    printf("\033[H\033[J"); // ANSI escape code to clear the screen
+  }
+  static void clearLine() {
+    printf("\033[2K"); // Clear the entire line
+    fflush(stdout);
+  } 
+
+  
+  static void drawSkiLift(int offset) {
+    char screen[HEIGHT][WIDTH];
+  
+    // Clear the screen array
+    for (int i = 0; i < HEIGHT; i++) {
+      memset(screen[i], ' ', WIDTH - 1);
+      screen[i][WIDTH - 1] = '\0';
+    }
+  
+    // Draw the top row of chairs
+    for (int i = 0; i < NUM_CHAIRS; i++) {
+      int pos = (i * 8 + offset) % WIDTH;
+      if (pos + 1 > 4 && pos + 1 < WIDTH - 10) {
+        screen[0][pos] = '-';
+        screen[0][pos + 1] = 'o';
+        screen[0][pos + 2] = '-';
+        screen[1][pos] = '/';
+        screen[1][pos + 1] = '|';
+        screen[1][pos + 2] = '\\';
+      }
+    }
+  
+    // Draw the bottom row of chairs
+    for (int i = 0; i < NUM_CHAIRS; i++) {
+      int pos = (i * 8 - offset + WIDTH) % WIDTH;
+      if (pos + 2 > 4 && pos + 2 < WIDTH - 10) {
+        screen[HEIGHT - 2][pos] = '-';
+        screen[HEIGHT - 2][pos + 1] = 'o';
+        screen[HEIGHT - 2][pos + 2] = '-';
+        screen[HEIGHT - 1][pos] = '/';
+        screen[HEIGHT - 1][pos + 1] = '|';
+        screen[HEIGHT - 1][pos + 2] = '\\';
+      }
+    }
+  
+    // Draw the left-most and right-most vertical lines
+    for (int i = 0; i < NUM_CHAIRS; i++) {
+      int pos_top =
+        (i * 8 + offset) % WIDTH;
+      int pos_bottom =
+        (i * 8 - offset + WIDTH) % WIDTH;
+  
+      // Left vertical connection (top to bottom)
+      if (pos_top + 1 > 5 && pos_top + 1 < WIDTH - 10) {
+        screen[2][1] = '|';
+        screen[3][1] = '|';
+      }
+  
+      // Right vertical connection (bottom to top)
+      if (pos_bottom + 2 > 8 && pos_bottom + 2 < WIDTH - 5) {
+        screen[2][WIDTH - 6] = '|';
+        screen[3][WIDTH - 6] = '|';
+      }
+    }
+  
+    // Print the screen to the terminal
+    for (int i = 0; i < HEIGHT; i++) {
+      printf("%s\n", screen[i]);
+    }
+  }
+  
+  static void skiLiftInit() {
+    clearScreen();
+    printf("Ski Lift Animation\n");
+    printf(
+        "---------------------------------------------------------------------"
+        "-------\n\n\n");
+    drawSkiLift(offset);
+    printf("\n\n");
+    printf(
+        "---------------------------------------------------------------------"
+        "-------\n");
+    offset = (offset + 1) % WIDTH; // Update the offset for the next frame
+  }
+  static void skiLiftUpdate() {
+    for (int i = HEIGHT - 1; i > 0; i--) {
+      moveCursor(i + 4, 1);
+      clearLine();
+    }
+    drawSkiLift(offset);
+    offset = (offset + 1) % WIDTH;
+  }
+  static void printMotionStatus(const char* str_motion) {
+    moveCursor(ANIMATION_HEIGHT + 1, 1);
+    clearLine();
+    printf("Lift Status: %s\n", str_motion);
+    fflush(stdout);
+  }
+  static void printGateStatus(const char* str_gate) {
+    moveCursor(ANIMATION_HEIGHT + 2, 1);
+    clearLine();
+    printf("Gate Status: %s\n", str_gate);
+    fflush(stdout);
+  }
+=}
+
+main reactor Lift {
+  preamble {=
+    static int32_t passenger_cnt = 0;
+  =}
+  state move: bool = true;
+  state open: bool = false;
+  state stay_cur_mode: bool = true;
+  state count: int32_t = 0;
+  state start_number: int32_t = 0;
+  state end_number: int32_t = 0;
+  liftMotion = new LiftMotion()
+  entryGate = new EntryGate()
+  entrySensor = new EntrySensor()
+  liftSensor = new LiftSensor()
+  objectDetector = new ObjectDetector()
+  // Start the program (When staff press the start button of the lift)
+  reaction(startup) -> liftMotion.move, entryGate.open {=
+    skiLiftInit();
+    lf_set(liftMotion.move, self->move);
+    // Toggle move for the next time
+  =}
+
+  // Behaviors on the start of the lift
+  reaction(liftSensor.start_ready) -> entryGate.open {=
+    if (liftSensor.start_ready->value) {
+      self->open = true;
+    } else {
+      self->open = false;
+    }
+    lf_set(entryGate.open, self->open);
+  =}
+
+  reaction(objectDetector.start_number) {=
+    if (objectDetector.start_number != 0) {
+      self->start_number = objectDetector.start_number->value;
+    }
+  =}
+
+
+  timer t(0, 500 msec);
+  reaction(t) -> liftMotion.move {=
+    // start_number from objectDetector
+    // passenger_cnt from entrySensor
+    // if (self->start_number != 0 && self->start_number != passenger_cnt) {
+    //   self->move = false;
+    // } else {
+    //   self->move = true;
+    // }
+    self->count++;
+    if (self->count % 10 == 0) {
+      self->move = !self->move;
+    }
+    lf_set(liftMotion.move, self->move);
+  =}
+
+  state gate_t_counter: int32_t = 0;
+  timer t_gate(0, 1 sec);
+  reaction(t_gate) -> entryGate.open {=
+    if (self->gate_t_counter % 4 == 0) {
+      self->open = true;
+      lf_set(entryGate.open, self->open);
+      printGateStatus("Open");
+    } else if (self->gate_t_counter % 4 == 1) {
+      self->open = false;
+      lf_set(entryGate.open, self->open);
+      printGateStatus("Close");
+    }
+    self->gate_t_counter ++;
+  =}
+
+  reaction(entrySensor.gate_1) {=
+    if (entrySensor.gate_1->value) {
+      passenger_cnt ++;
+    }
+  =}
+  reaction(entrySensor.gate_2) {=
+    if (entrySensor.gate_2->value) {
+      passenger_cnt ++;
+    }
+  =}
+  reaction(entrySensor.gate_3) {=
+    if (entrySensor.gate_3->value) {
+      passenger_cnt ++;
+    }
+  =}
+
+  // Behavior on the end of the lift
+  reaction(liftSensor.end_ready) -> liftMotion.move {=
+    if (liftSensor.end_ready->value) {
+      if (self->end_number != 0) {
+     //   self->move = false;
+      } else {
+      //  self->move = true;
+      }
+      //lf_set(liftMotion.move, self->move);
+    }
+  =}
+
+  reaction(objectDetector.end_number) {=
+    if (objectDetector.end_number != 0) {
+      self->end_number = objectDetector.end_number->value;
+    }
+  =}
+
+}
+
+reactor LiftMotion {
+  input move: bool  // Toggle mode
+
+  initial mode MOVING {
+    reaction(move) -> reset(MOVING), reset(STOPPED) {=
+      if (move->value) {
+        skiLiftUpdate();
+        lf_set_mode(MOVING);
+        printMotionStatus("Moving");
+      } else {
+        lf_set_mode(STOPPED);
+      }
+    =}
+  }
+
+  mode STOPPED {
+    reaction(move) -> reset(MOVING), reset(STOPPED) {=
+      if (!move->value) {
+        lf_set_mode(STOPPED);
+        printMotionStatus("Stop");
+      } else {
+        lf_set_mode(MOVING);
+      }
+    =}
+  }
+}
