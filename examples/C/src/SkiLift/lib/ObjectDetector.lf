@@ -1,0 +1,11 @@
+target C
+
+reactor ObjectDetector {
+  output start_number: int32_t
+  output end_number: int32_t
+
+  reaction(startup) -> start_number, end_number {=
+    lf_set(start_number, 3);
+    lf_set(end_number, 3);
+  =}
+}
