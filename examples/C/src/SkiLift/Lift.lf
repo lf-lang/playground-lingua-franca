@@ -23,6 +23,7 @@ preamble {=
   #define NUM_CHAIRS 10 // Number of ski lift chairs
   #define ANIMATION_HEIGHT 13
   #include <stdio.h>
+  #include <stdlib.h>
   #include <string.h>
   #include <unistd.h>
   #include <signal.h>
@@ -35,6 +36,7 @@ preamble {=
   }
   static void clearScreen() {
     printf("\033[H\033[J"); // ANSI escape code to clear the screen
+    fflush(stdout);
   }
   static void clearLine() {
     printf("\033[2K"); // Clear the entire line
@@ -117,11 +119,15 @@ preamble {=
     offset = (offset + 1) % WIDTH; // Update the offset for the next frame
   }
   static void skiLiftUpdate() {
-    for (int i = HEIGHT - 1; i > 0; i--) {
+    for (int i = HEIGHT + 3 - 1; i > 0; i--) {
       moveCursor(i + 4, 1);
       clearLine();
     }
     drawSkiLift(offset);
+    printf("\n\n");
+    printf(
+        "---------------------------------------------------------------------"
+        "-------\n");
     offset = (offset + 1) % WIDTH;
   }
   static void printMotionStatus(const char* str_motion) {
@@ -135,6 +141,8 @@ preamble {=
     clearLine();
     printf("Gate Status: %s\n", str_gate);
     fflush(stdout);
+    moveCursor(ANIMATION_HEIGHT + 3, 1);
+    printf("\033[J");
   }
 =}
 
@@ -157,18 +165,17 @@ main reactor Lift {
   reaction(startup) -> liftMotion.move, entryGate.open {=
     skiLiftInit();
     lf_set(liftMotion.move, self->move);
-    // Toggle move for the next time
   =}
 
   // Behaviors on the start of the lift
-  reaction(liftSensor.start_ready) -> entryGate.open {=
-    if (liftSensor.start_ready->value) {
-      self->open = true;
-    } else {
-      self->open = false;
-    }
-    lf_set(entryGate.open, self->open);
-  =}
+  //  reaction(liftSensor.start_ready) -> entryGate.open {=
+  //    if (liftSensor.start_ready->value) {
+  //      self->open = true;
+  //    } else {
+  //      self->open = false;
+  //    }
+  //    lf_set(entryGate.open, self->open);
+  //  =}
 
   reaction(objectDetector.start_number) {=
     if (objectDetector.start_number != 0) {
@@ -225,16 +232,16 @@ main reactor Lift {
   =}
 
   // Behavior on the end of the lift
-  reaction(liftSensor.end_ready) -> liftMotion.move {=
-    if (liftSensor.end_ready->value) {
-      if (self->end_number != 0) {
-     //   self->move = false;
-      } else {
-      //  self->move = true;
-      }
-      //lf_set(liftMotion.move, self->move);
-    }
-  =}
+ // reaction(liftSensor.end_ready) -> liftMotion.move {=
+ //   if (liftSensor.end_ready->value) {
+ //     if (self->end_number != 0) {
+ //    //   self->move = false;
+ //     } else {
+ //     //  self->move = true;
+ //     }
+ //     //lf_set(liftMotion.move, self->move);
+ //   }
+ // =}
 
   reaction(objectDetector.end_number) {=
     if (objectDetector.end_number != 0) {
