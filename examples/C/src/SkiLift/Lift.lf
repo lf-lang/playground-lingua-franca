@@ -1,9 +1,19 @@
 /**
- * This illustrates bank of reactors where each reactor produces an output that is broadcast to all
- * reactors in the bank, including itself.
+* This project simulates the behavior of ski lifts with a focus on improving 
+ * safety and reducing labor costs through automation using Lingua Franca. 
+ * The simulation models key aspects of ski lift operations, including:
  *
- * @author Christian Menard
- * @author Edward A. Lee
+ * 1. Passenger Flow & Lift Capacity
+ *    - Ensuring smooth and efficient boarding/unboarding.
+ * 2. Safety Mechanisms
+ *    - Detecting potential dangers and automating responses to prevent accidents.
+ * 3. Autonomous Control
+ *    - Optimizing lift operations with minimal human intervention.
+ *
+ * The goal is to explore how automation can enhance safety while reducing 
+ * operational costs, making ski lifts more efficient and reliable.
+ *
+ * @author Cheng Yen, Tsai
  */
 target C
 
@@ -170,15 +180,7 @@ main reactor Lift {
     lf_set(liftMotion.move, self->move);
   =}
 
-  // Behaviors on the start of the lift
-  // reaction(liftSensor.start_ready) -> entryGate.open {=
-  // if (liftSensor.start_ready->value) {
-  // self->open = true;
-  //    } else {
-  // self->open = false;
-  //    }
-  // lf_set(entryGate.open, self->open);
-  //  =}
+  // TODO: Behaviors on the start of the lift
   reaction(objectDetector.start_number) {=
     if (objectDetector.start_number != 0) {
       self->start_number = objectDetector.start_number->value;
@@ -186,13 +188,6 @@ main reactor Lift {
   =}
 
   reaction(t) -> liftMotion.move {=
-    // start_number from objectDetector
-    // passenger_cnt from entrySensor
-    // if (self->start_number != 0 && self->start_number != passenger_cnt) {
-    //   self->move = false;
-    // } else {
-    //   self->move = true;
-    // }
     self->count++;
     if (self->count % 10 == 0) {
       self->move = !self->move;
@@ -231,17 +226,8 @@ main reactor Lift {
     }
   =}
 
-  // Behavior on the end of the lift
-  // reaction(liftSensor.end_ready) -> liftMotion.move {=
-  // if (liftSensor.end_ready->value) {
-  // if (self->end_number != 0) {
-  //    //   self->move = false;
-  //     } else {
-  //     //  self->move = true;
-  //     }
-  //     //lf_set(liftMotion.move, self->move);
-  //   }
-  // =}
+  // TODO: Behavior on the end of the lift
+
   reaction(objectDetector.end_number) {=
     if (objectDetector.end_number != 0) {
       self->end_number = objectDetector.end_number->value;

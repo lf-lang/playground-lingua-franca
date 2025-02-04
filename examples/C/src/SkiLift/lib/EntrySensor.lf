@@ -1,3 +1,6 @@
+/**
+ * @author Cheng Yen, Tsai
+ */
 target C
 
 preamble {=
@@ -20,17 +23,11 @@ reactor EntrySensor {
   output gate_1: bool
   output gate_2: bool
   output gate_3: bool
-  // output gate_4: bool
-  // output gate_5: bool
-  // output gate_6: bool
 
   timer t(0, 200 msec);
   reaction(t) -> gate_1, gate_2, gate_3 {=
     lf_set(gate_1, random_bool());
     lf_set(gate_2, random_bool());
     lf_set(gate_3, random_bool());
-    // lf_set(gate_4, true);
-    // lf_set(gate_5, true);
-    // lf_set(gate_6, true);
   =}
 }
