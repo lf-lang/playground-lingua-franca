@@ -52,7 +52,6 @@ main reactor Lift {
     self->offset = (self->offset + 1) % self->screen_wideth; // Update the offset for the next frame
   =}
 
-  // TODO: Behaviors on the start of the lift
   reaction(objectDetector.start_number) {=
     if (objectDetector.start_number != 0) {
       self->start_number = objectDetector.start_number->value;
@@ -102,7 +101,6 @@ main reactor Lift {
     }
   =}
 
-  // TODO: Behavior on the end of the lift
   reaction(objectDetector.end_number) {=
     if (objectDetector.end_number != 0) {
       self->end_number = objectDetector.end_number->value;
