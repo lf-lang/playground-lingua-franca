@@ -16,11 +16,12 @@
  */
 target C
 
-import EntryGate from "./EntryGate.lf"
+import EntryGate from "lib/EntryGate.lf"
 import EntrySensor from "lib/EntrySensor.lf"
 import LiftSensor from "lib/LiftSensor.lf"
 import ObjectDetector from "lib/ObjectDetector.lf"
 import ScreenPrinter from "lib/ScreenPrinter.lf"
+import LiftMotion from "lib/LiftMotion.lf"
 
 main reactor Lift {
   state move: bool = true
@@ -107,34 +108,4 @@ main reactor Lift {
       self->end_number = objectDetector.end_number->value;
     }
   =}
-}
-
-reactor LiftMotion {
-  input move: bool  // Toggle mode
-  input offset: int32_t
-  screenPrinter = new ScreenPrinter()
-
-  initial mode MOVING {
-    reaction(move, offset) ->
-    reset(MOVING), reset(STOPPED), screenPrinter.motion_msg, screenPrinter.offset {=
-      if (move->value) {
-        lf_set(screenPrinter.offset, offset->value);
-        lf_set_mode(MOVING);
-      } else {
-        lf_set_mode(STOPPED);
-        lf_set(screenPrinter.motion_msg ,"Stop");
-      }
-    =}
-  }
-
-  mode STOPPED {
-    reaction(move) -> reset(MOVING), reset(STOPPED), screenPrinter.motion_msg {=
-      if (!move->value) {
-        lf_set_mode(STOPPED);
-      } else {
-        lf_set_mode(MOVING);
-        lf_set(screenPrinter.motion_msg ,"Moving");
-      }
-    =}
-  }
 }
