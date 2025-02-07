@@ -15,4 +15,8 @@ These examples show usage patterns for zero-delay cycles in Lingua Franca.
 <td> <img src="img/ZeroDelayCycle.png" alt="ZeroDelayCycle" width="400">
 <td> <a href="ZeroDelayCycle.lf">ZeroDelayCycle.lf</a>: Trivial test case.</td>
 </tr>
+<tr>
+<td> <img src="img/CausalityLoop.png" alt="CausalityLoop" width="400">
+<td> <a href="failing/CausalityLoop.lf">CausalityLoop.lf</a>: Failing example due to a causality loop.</td>
+</tr>
 </table>
