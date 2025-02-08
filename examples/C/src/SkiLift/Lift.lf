@@ -1,0 +1,109 @@
+/**
+ * This project simulates the behavior of ski lifts with a focus on improving safety and reducing
+ * labor costs through automation using Lingua Franca. The simulation models key aspects of ski lift
+ * operations, including:
+ *
+ * 1. Passenger Flow & Lift Capacity: Ensuring smooth and efficient boarding/unboarding.
+ *
+ * 2. Safety Mechanisms: Detecting potential dangers and automating responses to prevent accidents.
+ *
+ * 3. Autonomous Control: Optimizing lift operations with minimal human intervention.
+ *
+ * The goal is to explore how automation can enhance safety while reducing operational costs, making
+ * ski lifts more efficient and reliable.
+ *
+ * @author Cheng Yen, Tsai
+ */
+target C
+
+import EntryGate from "lib/EntryGate.lf"
+import EntrySensor from "lib/EntrySensor.lf"
+import LiftSensor from "lib/LiftSensor.lf"
+import ObjectDetector from "lib/ObjectDetector.lf"
+import ScreenPrinter from "lib/ScreenPrinter.lf"
+import LiftMotion from "lib/LiftMotion.lf"
+
+main reactor Lift {
+  state move: bool = true
+  state open: bool = false
+  state stay_cur_mode: bool = true
+  state count: int32_t = 0
+  state start_number: int32_t = 0
+  state end_number: int32_t = 0
+  state screen_wideth: int32_t = 80
+  state passenger_cnt: int32_t = 0
+  liftMotion = new LiftMotion()
+  entryGate = new EntryGate()
+  entrySensor = new EntrySensor()
+  liftSensor = new LiftSensor()
+  objectDetector = new ObjectDetector()
+  screenPrinter = new ScreenPrinter()
+
+  timer t(500 msec, 500 msec)
+
+  state gate_t_counter: int32_t = 0
+  state offset: int32_t = 0
+  timer t_gate(0, 1 sec)
+
+  // Start the program (When staff press the start button of the lift)
+  reaction(startup) -> screenPrinter.offset, screenPrinter.motion_msg {=
+    lf_set(screenPrinter.offset, self->offset);
+    lf_set(screenPrinter.motion_msg, "Moving");
+    self->offset = (self->offset + 1) % self->screen_wideth; // Update the offset for the next frame
+  =}
+
+  reaction(objectDetector.start_number) {=
+    if (objectDetector.start_number != 0) {
+      self->start_number = objectDetector.start_number->value;
+    }
+  =}
+
+  reaction(t) -> liftMotion.move, liftMotion.offset {=
+    self->count++;
+    if (self->count % 10 == 0) {
+      self->move = !self->move;
+    } else {
+      self->offset = (self->offset + 1) % self->screen_wideth; // Update the offset for the next frame
+    }
+
+    lf_set(liftMotion.move, self->move);
+    lf_set(liftMotion.offset, self->offset);
+  =}
+
+  reaction(t_gate) -> entryGate.open, screenPrinter.gate_msg {=
+    if (self->gate_t_counter % 4 == 0) {
+      self->open = true;
+      lf_set(entryGate.open, self->open);
+      lf_set(screenPrinter.gate_msg, "Open");
+    } else if (self->gate_t_counter % 4 == 1) {
+      self->open = false;
+      lf_set(entryGate.open, self->open);
+      lf_set(screenPrinter.gate_msg, "Close");
+    }
+    self->gate_t_counter ++;
+  =}
+
+  reaction(entrySensor.gate_1) {=
+    if (entrySensor.gate_1->value) {
+      self->passenger_cnt ++;
+    }
+  =}
+
+  reaction(entrySensor.gate_2) {=
+    if (entrySensor.gate_2->value) {
+      self->passenger_cnt ++;
+    }
+  =}
+
+  reaction(entrySensor.gate_3) {=
+    if (entrySensor.gate_3->value) {
+      self->passenger_cnt ++;
+    }
+  =}
+
+  reaction(objectDetector.end_number) {=
+    if (objectDetector.end_number != 0) {
+      self->end_number = objectDetector.end_number->value;
+    }
+  =}
+}
