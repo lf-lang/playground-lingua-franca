@@ -55,5 +55,10 @@ int main() {
 
     int reexecutions = calculate_reexecutions(p_F, p_req);
 
+    printf("Computed per-cycle CPU fault probability: %e\n", lambda_cpu_per_cycle);
+    printf("Computed per-cycle Memory fault probability: %e\n", lambda_mem_per_cycle);
+    printf("Natural failure probability per job: %e\n", p_F);
+    printf("Required number of re-executions: %d\n", reexecutions);
+
     return 0;
 }
