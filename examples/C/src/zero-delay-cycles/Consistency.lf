@@ -14,17 +14,15 @@ reactor Controller {
   state latest_control: double = 0.0
   state first: bool = true
 
-  reaction c1(local_update, remote_update) {=
-  =}
+  reaction c1(local_update, remote_update) {=  =}
 
-  reaction c2(local_update) -> control {=
-  =}
+  reaction c2(local_update) -> control {=  =}
 }
 
 reactor Platform {
   input update: double
   output publish: double
-  
+
   c = new Controller()
   p = new PhysicalPlant()
   p.sensor -> c.local_update
@@ -36,7 +34,7 @@ reactor Platform {
 federated reactor {
   p1 = new Platform()
   p2 = new Platform()
-  
+
   p1.publish -> p2.update
   p2.publish -> p1.update
 }
