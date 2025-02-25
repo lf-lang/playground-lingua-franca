@@ -1,6 +1,4 @@
-/**
- * @author Cheng Yen, Tsai
- */
+/** @author Cheng Yen, Tsai */
 target C
 
 preamble {=
@@ -8,6 +6,7 @@ preamble {=
   #include <stdbool.h>
   #include <stdlib.h>
 =}
+
 reactor EntrySensor {
   preamble {=
     int random_bool() {
@@ -24,7 +23,8 @@ reactor EntrySensor {
   output gate_2: bool
   output gate_3: bool
 
-  timer t(0, 200 msec);
+  timer t(0, 200 msec)
+
   reaction(t) -> gate_1, gate_2, gate_3 {=
     lf_set(gate_1, random_bool());
     lf_set(gate_2, random_bool());

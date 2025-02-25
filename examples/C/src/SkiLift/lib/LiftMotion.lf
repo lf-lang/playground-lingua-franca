@@ -1,5 +1,7 @@
 target C
+
 import ScreenPrinter from "ScreenPrinter.lf"
+
 reactor LiftMotion {
   input move: bool  // Toggle mode
   input offset: int32_t

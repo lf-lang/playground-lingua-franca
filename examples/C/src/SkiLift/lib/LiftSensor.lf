@@ -1,6 +1,4 @@
-/**
- * @author Cheng Yen, Tsai
- */
+/** @author Cheng Yen, Tsai */
 target C
 
 reactor LiftSensor {

@@ -1,5 +1,6 @@
 /** @author Cheng Yen, Tsai */
 target C
+
 preamble {=
   #define WIDTH 80      // Width of the terminal screen
   #define HEIGHT 6      // Number of rows for the ski lift
