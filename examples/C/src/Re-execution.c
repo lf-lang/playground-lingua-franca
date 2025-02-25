@@ -23,6 +23,15 @@ double compute_natural_failure(double lambda_cpu, double lambda_mem, int exposur
     return 1 - (1 - p_F_cpu) * (1 - p_F_mem); 
 }
 
+// Calculate the required number of re-executions.
+int calculate_reexecutions(double p_F, double p_req) {
+    if (p_F <= p_req) {
+        return 0; // No re-execution needed
+    }
+    // N_(re-exec,i) = max(0, ⌈log (p_(req,i)) / log (p_F_i)⌉ − 1)
+    return (int) fmax(0, ceil(log(p_req) / log(p_F)) - 1);
+}
+
 int main() {
     // Given values
     double lambda_cpu_per_hour = 1e-6; // λ_cpu: CPU fault rate per hour.
@@ -43,6 +52,8 @@ int main() {
 
     // Get natural failure rate p_F.
     double p_F = compute_natural_failure(lambda_cpu_per_cycle, lambda_mem_per_cycle, exposure_cpu, exposure_mem);
+
+    int reexecutions = calculate_reexecutions(p_F, p_req);
 
     return 0;
 }
