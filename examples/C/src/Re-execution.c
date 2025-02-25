@@ -1,3 +1,10 @@
+/**
+ * Get the minimum number of re-execution necessary to meet the requirements.
+ * In this example, I assume that one CPU and one memory is used.
+ */
+
+// gcc Re-execution.c -o Re-execution
+
 #include <stdio.h>
 #include <math.h>
 
