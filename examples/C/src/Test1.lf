@@ -1,5 +1,10 @@
-// Parallel execution on three processes, compare, if two fails, fail program.
-// Does not reexecute. Consider one fail as 
+/**
+ * Parallel execution on three processes, compare, if two fails, fail program. Does not reexecute.
+ * 	1.	Three Count reactors generate numbers independently.
+ *	2.	The Compare reactor evaluates these numbers.
+ *	3.	The Display reactor prints results based on comparisons.
+ * 0: three same, 1: two same, -1: all three different.
+ */
 
 target C {
   timeout: 5 sec
