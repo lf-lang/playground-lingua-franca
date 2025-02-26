@@ -1,8 +1,12 @@
 /**
-Every time the timer triggers, try triggering a function, that randomly gets a segmentation fault. If a seg fault occurs, retry the function, going back to the checkpoint saved by setjmp(), and longjmp() functions.
-Try until it success and hit the SUCCESS_COUNT_TARGET, during MAX_TRY_COUNT tries.
+ * Every time the timer triggers, try triggering a random_segfault() function, 
+ * that randomly gets a segmentation fault.
+ * If a seg fault occurs, retry the function, going back to the checkpoint 
+ * saved by setjmp(), and longjmp() functions.
+ * Try until it success and hit the SUCCESS_COUNT_TARGET, during MAX_TRY_COUNT tries.
+ * If it succeeds at least once before MAX_TRY_COUNT (2 tries), the system outputs 0.
+ * If it exceeds MAX_TRY_COUNT without success, the system outputs -1.
 */
-
 
 target C
 
