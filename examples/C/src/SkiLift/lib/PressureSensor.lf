@@ -1,0 +1,52 @@
+/**
+ * This reactor generates mock data from the pressure sensors located in both the ready area and the
+ * chair lift. The dataset includes some mismatched weights between the ready area and the chair
+ * lift to simulate the situations that passengers fail to get on the lifts.
+ *
+ * @author Cheng-Yen Tsai
+ */
+target C
+
+reactor PressureSensor {
+  preamble {=
+    const float ready_area_mock_data[50] = {
+        0.0, 420.0, 510.0, 395.0, 445.0, 480.0, 525.0, 460.0, 415.0, 500.0, 490.0,
+        530.0, 450.0, 475.0, 505.0, 515.0, 470.0, 495.0, 435.0, 520.0, 485.0,
+        455.0, 525.0, 510.0, 445.0, 500.0, 480.0, 435.0, 510.0, 495.0, 465.0,
+        490.0, 530.0, 505.0, 460.0, 475.0, 520.0, 485.0, 455.0, 505.0, 470.0,
+        515.0, 490.0, 525.0, 480.0, 435.0, 500.0, 455.0, 520.0, 495.0, 465.0
+    };
+    /**
+     * idx 3: 143 lbs less
+     * idx 5: 30 lbs less
+     * idx 7: 150 lbs less
+     * idx 10: 165 lbs less
+     * idx 13: 30 lbs less
+     * idx 14: 10 lbs more
+     * idx 21: 180 lbs less
+     * idx 35: 100 lbs less
+     */
+    const float chair_lift_mock_data[50] = {
+        0.0, 420.0, 510.0, 252.0, 445.0, 450.0, 525.0, 310.0, 415.0, 500.0, 325.0,
+        530.0, 450.0, 445.0, 515.0, 515.0, 470.0, 495.0, 435.0, 520.0, 485.0,
+        275.0, 525.0, 510.0, 445.0, 500.0, 480.0, 435.0, 510.0, 495.0, 465.0,
+        490.0, 530.0, 505.0, 460.0, 375.0, 520.0, 485.0, 455.0, 505.0, 470.0,
+        515.0, 490.0, 525.0, 480.0, 435.0, 500.0, 455.0, 520.0, 495.0, 465.0
+    };
+  =}
+  output ready_weight: float
+  output lift_weight: float
+  state idx: int32_t = 0
+  state time_cnt: int32_t = 0
+
+  timer t(0, 100 msec)
+
+  reaction(t) -> ready_weight, lift_weight {=
+    if (self->time_cnt % 100 == 0) {
+      self->idx++;
+    }
+    lf_set(ready_weight, ready_area_mock_data[self->idx]);
+    lf_set(lift_weight, chair_lift_mock_data[self->idx]);
+    self->time_cnt++;
+  =}
+}
