@@ -36,6 +36,7 @@
  */
 target Python {
   fast: true,
+  single-threaded: true, // Need to be able to plot, because plotter must be invoked in the main thread.
   timeout: 16 s
 }
 
