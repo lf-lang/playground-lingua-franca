@@ -149,7 +149,7 @@ void printReadyWeight(float ready_weight)
 {
   moveCursor(ANIMATION_HEIGHT + 3, 1);
   clearLine();
-  fprintf(stdout, "Weight on ready area: %.2f\n", ready_weight);
+  fprintf(stdout, "Current weight on the ready area: %.2f\n", ready_weight);
   fflush(stdout);
 }
 
@@ -157,7 +157,7 @@ void printLiftWeight(float lift_weight)
 {
   moveCursor(ANIMATION_HEIGHT + 4, 1);
   clearLine();
-  fprintf(stdout, "Weight on the current chair lift: %.2f\n", lift_weight);
+  fprintf(stdout, "The weight will be on the current chair lift: %.2f\n", lift_weight);
   fflush(stdout);
 }
 
