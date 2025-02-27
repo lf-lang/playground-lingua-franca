@@ -143,7 +143,35 @@ void printGateStatus(char *str_gate)
   clearLine();
   fprintf(stdout, "Gate Status: %s\n", str_gate);
   fflush(stdout);
+}
+
+void printReadyWeight(float ready_weight)
+{
   moveCursor(ANIMATION_HEIGHT + 3, 1);
-  fprintf(stdout, "\033[J");
+  clearLine();
+  fprintf(stdout, "Weight on ready area: %.2f\n", ready_weight);
+  fflush(stdout);
+}
+
+void printLiftWeight(float lift_weight)
+{
+  moveCursor(ANIMATION_HEIGHT + 4, 1);
+  clearLine();
+  fprintf(stdout, "Weight on the current chair lift: %.2f\n", lift_weight);
+  fflush(stdout);
+}
+
+void printDebugStr(char *debug_str)
+{
+  moveCursor(ANIMATION_HEIGHT + 5, 1);
+  clearLine();
+  fprintf(stdout, "[Debug] String: %s\n", debug_str);
+  fflush(stdout);
+}
+void printDebugInt(int32_t debug_int)
+{
+  moveCursor(ANIMATION_HEIGHT + 6, 1);
+  clearLine();
+  fprintf(stdout, "[Debug] Int: %d\n", debug_int);
   fflush(stdout);
 }

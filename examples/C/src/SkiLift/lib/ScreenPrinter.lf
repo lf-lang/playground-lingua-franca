@@ -10,10 +10,18 @@ reactor ScreenPrinter {
     void skiLiftUpdate(int32_t offset);
     void printMotionStatus(char* str_motion);
     void printGateStatus(char* str_gate);
+    void printDebugStr(char* debug_str);
+    void printDebugInt(int32_t debug_int);
+    void printReadyWeight(float ready_weight);
+    void printLiftWeight(float lift_weight);
   =}
   input offset: int32_t
   input motion_msg: string
   input gate_msg: string
+  input debug_str: string
+  input debug_int: int32_t
+  input ready_weight: float
+  input lift_weight: float
 
   reaction(offset) {=
     if (offset->value == 0) {
@@ -29,5 +37,21 @@ reactor ScreenPrinter {
 
   reaction(gate_msg) {=
     printGateStatus(gate_msg->value);
+  =}
+
+  reaction(debug_str) {=
+    printDebugStr(debug_str->value);
+  =}
+
+  reaction(debug_int) {=
+    printDebugInt(debug_int->value);
+  =}
+
+  reaction(ready_weight) {=
+    printReadyWeight(ready_weight->value);
+  =}
+
+  reaction(lift_weight) {=
+    printLiftWeight(lift_weight->value);
   =}
 }
