@@ -86,7 +86,7 @@ reactor RandomSegfault {
 
   reaction(shutdown) {=
     if (self->success_count == SUCCESS_COUNT_TARGET) {
-      printf("Success count is %d. Finishing program.\n", self->success_count);
+      printf("Success count is %d. Finishing program.\n", self->success_count); 
     } else {
       printf("Reached maximum tries %d. Terminating.\n", self->try_count);
     }
