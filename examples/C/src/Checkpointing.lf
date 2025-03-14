@@ -1,0 +1,11 @@
+// Add checkpointing.
+
+target C {
+    timeout: 5 sec
+  }
+  
+  preamble {=
+    #include <stdlib.h> // rand()
+    #include <time.h> // time()
+  =}
+  
