@@ -37,6 +37,7 @@ main reactor Lift {
   state lift_weight_from_sensor: int32_t = 0
   state ready_weight: int32_t = 0
   state lift_weight: int32_t = 0
+  state exit_weight: int32_t = 0
   liftMotion = new LiftMotion()
   entryGate = new EntryGate()
   entrySensor = new EntrySensor()
@@ -79,11 +80,14 @@ main reactor Lift {
    * The chairlift cycle takes 10 seconds from ready to takeoff. The process is as follows:
    * - 1s ~ 3s: Entry gates are open for passengers to enter.
    * - 4s ~ 7s: Passengers move to the ready area.
-   * - 8s: The weight of the pressure sensor in the ready area is recorded as `ready_weight`.
+   * - 7s: The weight of the pressure sensor in the ready area is recorded as `ready_weight`.
+   * - 8s ~ 9s: Check on the exit area to see if there are people block the exit.
    * - 10s: The weight on the chairlift is measured and compared to `ready_weight` to verify if all
    * passengers are on the lift. If there is a mismatch between the two weights, the lift will stop
    * until they match. This simulates a scenario where a passenger fails to get on the lift within
    * the second but successfully boards afterward.
+   *
+   * When the weight
    */
   reaction(t_gate) -> entryGate.open, screenPrinter.gate_msg, screenPrinter.debug_int {=
     int32_t gate_t_cnt_offset = self->gate_t_cnt % 10;
@@ -101,6 +105,13 @@ main reactor Lift {
         self->ready_weight = self->ready_weight_from_sensor;
         self->lift_weight = self->lift_weight_from_sensor;
         self->gate_t_cnt ++;
+      } else if (gate_t_cnt_offset == 7 || gate_t_cnt_offset == 8) {
+        if (self->exit_weight <= 50) {
+            self->urgent = false;
+            self->gate_t_cnt ++;
+        } else {
+            self->urgent = true;
+        }
       } else if (gate_t_cnt_offset == 9) {
         // set 50 lbs for deviation
         if (abs(self->ready_weight - self->lift_weight) <= 50) {
@@ -130,5 +141,10 @@ main reactor Lift {
   reaction(pressureSensor.lift_weight) -> screenPrinter.lift_weight {=
     self->lift_weight = pressureSensor.lift_weight->value;
       lf_set(screenPrinter.lift_weight, self->lift_weight);
+  =}
+
+  reaction(pressureSensor.exit_weight) -> screenPrinter.exit_weight {=
+    self->exit_weight = pressureSensor.exit_weight->value;
+      lf_set(screenPrinter.exit_weight, self->exit_weight);
   =}
 }

@@ -14,6 +14,7 @@ reactor ScreenPrinter {
     void printDebugInt(int32_t debug_int);
     void printReadyWeight(float ready_weight);
     void printLiftWeight(float lift_weight);
+    void printExitWeight(float exit_lift_weight);
   =}
   input offset: int32_t
   input motion_msg: string
@@ -22,6 +23,7 @@ reactor ScreenPrinter {
   input debug_int: int32_t
   input ready_weight: float
   input lift_weight: float
+  input exit_weight: float
 
   reaction(offset) {=
     if (offset->value == 0) {
@@ -53,5 +55,9 @@ reactor ScreenPrinter {
 
   reaction(lift_weight) {=
     printLiftWeight(lift_weight->value);
+  =}
+
+  reaction(exit_weight) {=
+    printExitWeight(exit_weight->value);
   =}
 }

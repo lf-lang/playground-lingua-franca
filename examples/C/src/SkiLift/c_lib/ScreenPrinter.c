@@ -161,16 +161,24 @@ void printLiftWeight(float lift_weight)
   fflush(stdout);
 }
 
-void printDebugStr(char *debug_str)
+void printExitWeight(float exit_weight)
 {
   moveCursor(ANIMATION_HEIGHT + 5, 1);
+  clearLine();
+  fprintf(stdout, "Current weight on the exit area: %.2f\n", exit_weight);
+  fflush(stdout);
+}
+
+void printDebugStr(char *debug_str)
+{
+  moveCursor(ANIMATION_HEIGHT + 6, 1);
   clearLine();
   fprintf(stdout, "[Debug] String: %s\n", debug_str);
   fflush(stdout);
 }
 void printDebugInt(int32_t debug_int)
 {
-  moveCursor(ANIMATION_HEIGHT + 6, 1);
+  moveCursor(ANIMATION_HEIGHT + 7, 1);
   clearLine();
   fprintf(stdout, "[Debug] Int: %d\n", debug_int);
   fflush(stdout);
