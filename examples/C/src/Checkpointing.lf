@@ -8,3 +8,22 @@ preamble {=
   #include <time.h> // time()
 =}
 
+reactor Checkpoint {}
+
+
+reactor Program {
+  timer t (0, 500 msec)
+  output out: int
+  reaction(t) -> out {=
+    =} deadline(3 msec) {=
+    =}
+
+
+
+}
+
+main reactor {
+  p = new Program()
+
+
+}
