@@ -1,0 +1,33 @@
+target C
+
+import ScreenPrinter from "ScreenPrinter.lf"
+
+reactor LiftMotion {
+  input move: bool  // Toggle mode
+  input offset: int32_t
+  screenPrinter = new ScreenPrinter()
+
+  initial mode MOVING {
+    reaction(move, offset) ->
+    reset(MOVING), reset(STOPPED), screenPrinter.motion_msg, screenPrinter.offset {=
+      if (move->value) {
+        lf_set(screenPrinter.offset, offset->value);
+        lf_set_mode(MOVING);
+      } else {
+        lf_set_mode(STOPPED);
+        lf_set(screenPrinter.motion_msg ,"Stop");
+      }
+    =}
+  }
+
+  mode STOPPED {
+    reaction(move) -> reset(MOVING), reset(STOPPED), screenPrinter.motion_msg {=
+      if (!move->value) {
+        lf_set_mode(STOPPED);
+      } else {
+        lf_set_mode(MOVING);
+        lf_set(screenPrinter.motion_msg ,"Moving");
+      }
+    =}
+  }
+}
