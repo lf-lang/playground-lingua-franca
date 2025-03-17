@@ -12,44 +12,58 @@ preamble {=
 reactor Startup {
   output out: int
   reaction(startup) -> out {=
+    srand(time(NULL));
     lf_set(out, 0);
   =}
 }
 
-reactor Checkpoint {
+reactor Retry {
   preamble {=
     int do_something() {
       int out = 0;
-      // lf_sleep(MSEC(1));
-      if (rand() % 10 < 8) {  // 10% chance
-        // lf_sleep(MSEC(3));
-        out = -1;
+      // Checkpoint 1
+      if (rand() % 10 < 8) {  // 80% chance
+        return -1;
       }
-      return out;
+      // Checkpoint 2
+      if (rand() % 10 < 8) {  // 80% chance
+        lf_sleep(MSEC(10));
+      }
+      return 0;
     }
   =}
-  // timer t(0, 500 msec)
+
   input in: int
   output out: int
-  // logical action a
+  logical action a: int
 
-  reaction(in) -> out {=
-    lf_print("Input: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", in->value, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
-    if (in->value == 0) {
-      lf_set(out, do_something());
-    } else {
-      // When the in->value is -1, sleep 10 msecs and retry.
-      lf_sleep(MSEC(10));
-      lf_set(out, do_something());
-    }
+  reaction(in) -> a {=
+    lf_schedule (a, 0);  
   =}
 
-  // reaction (a) -> out {=
-  //   int result = do_something();
+  reaction (a) -> out {=
+    int result = do_something();
+    lf_print("Result: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", result, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+    if (result == 0) {
+      lf_set(out, 0);
+    } else {
+      lf_schedule(a, MSEC(10));
+    }
+  =} deadline(10 msec) {=
+    lf_schedule(a, MSEC(10));
+    lf_print("\nDeadline violation detected on Logical time: %lld, microstep: %d, Physical time: %lld\n", lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+  =}
 
-  //   =}
-
-
+  // reaction(in) -> out {=
+  //   lf_print("Input: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", in->value, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+  //   if (in->value == 0) {
+  //     lf_set(out, do_something());
+  //   } else {
+  //     // When the in->value is -1, sleep 10 msecs and retry.
+  //     lf_sleep(MSEC(10));
+  //     lf_set(out, do_something());
+  //   }
+  // =}
 
 
   // reaction(a) -> out {=
@@ -63,7 +77,7 @@ reactor Checkpoint {
 
 main reactor {
   s = new Startup()
-  c = new Checkpoint()
+  c = new Retry()
   s.out -> c.in
   // c.out-> c.in
 }
