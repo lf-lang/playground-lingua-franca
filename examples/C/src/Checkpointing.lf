@@ -6,24 +6,64 @@ target C {
 preamble {=
   #include <stdlib.h> // rand()
   #include <time.h> // time()
+  #include "platform.h" // lf_sleep()
 =}
 
-reactor Checkpoint {}
-
-
-reactor Program {
-  timer t (0, 500 msec)
+reactor Startup {
   output out: int
-  reaction(t) -> out {=
-    =} deadline(3 msec) {=
-    =}
+  reaction(startup) -> out {=
+    lf_set(out, 0);
+  =}
+}
+
+reactor Checkpoint {
+  preamble {=
+    int do_something() {
+      int out = 0;
+      // lf_sleep(MSEC(1));
+      if (rand() % 10 < 8) {  // 10% chance
+        // lf_sleep(MSEC(3));
+        out = -1;
+      }
+      return out;
+    }
+  =}
+  // timer t(0, 500 msec)
+  input in: int
+  output out: int
+  // logical action a
+
+  reaction(in) -> out {=
+    lf_print("Input: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", in->value, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+    if (in->value == 0) {
+      lf_set(out, do_something());
+    } else {
+      // When the in->value is -1, sleep 10 msecs and retry.
+      lf_sleep(MSEC(10));
+      lf_set(out, do_something());
+    }
+  =}
+
+  // reaction (a) -> out {=
+  //   int result = do_something();
+
+  //   =}
 
 
 
+
+  // reaction(a) -> out {=
+  //   while (!lf_check_deadline(self, true)){
+  //     do_something();
+  //   }
+  // =} deadline(10 msec) {=
+  //   lf_schedule(a, MSEC(10));
+  // =}
 }
 
 main reactor {
-  p = new Program()
-
-
+  s = new Startup()
+  c = new Checkpoint()
+  s.out -> c.in
+  // c.out-> c.in
 }
