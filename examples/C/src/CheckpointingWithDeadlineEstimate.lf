@@ -19,11 +19,19 @@ reactor Startup {
   =}
 }
 
-reactor Retry (threshold: time = 1000 msec) {
+reactor Retry(threshold: time = 2000 msec) {
   preamble {=
-    #define TASK1_SLEEP_MSEC  150
-    #define TASK2_SLEEP_MSEC  150
-    #define TASK3_SLEEP_MSEC  150
+    #define TASK1_SLEEP_MSEC  200
+    #define TASK2_SLEEP_MSEC  200
+    #define TASK3_SLEEP_MSEC  200
+
+    // Temporary lookup table...
+    static const int TASK_SLEEP_TIMES[] = {
+      0, // Index 0 is unused
+      TASK1_SLEEP_MSEC + TASK2_SLEEP_MSEC + TASK3_SLEEP_MSEC, // For a->value == 1
+      TASK2_SLEEP_MSEC + TASK3_SLEEP_MSEC, // For a->value == 2
+      TASK3_SLEEP_MSEC // For a->value == 3
+    };
 
     int task1() {
       lf_sleep(MSEC(TASK1_SLEEP_MSEC));
@@ -62,14 +70,12 @@ reactor Retry (threshold: time = 1000 msec) {
           return ret; // Return failure checkpoint
         }
       }
-      if (checkpoint <= 2) {  // Start from task2 if the previous step succeeded
-        ret = task2();
+      if (checkpoint <= 3) {  // Start from task2 if the previous step succeeded
+        ret = task3();
         if (ret != 0){
           return ret; // Return failure checkpoint
         }
       }
-      task3();
-
       return 0;
     }
   =}
@@ -84,12 +90,23 @@ reactor Retry (threshold: time = 1000 msec) {
   =}
 
   reaction(a) -> out {=
+    // Check if available to finish on time.
+    int64_t remaining_minimum_time;
+    remaining_minimum_time = MSEC(TASK_SLEEP_TIMES[a->value]);
+
+    // If the passed (physical time + remaining minimum execution time) exceeds the deadline, do not execute anymore.
+    int64_t estimated_minimum_elapsed_time = lf_time_physical_elapsed() - lf_time_logical_elapsed() + remaining_minimum_time;
+    if (estimated_minimum_elapsed_time > self->threshold) {
+      lf_print("Estimated deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+      lf_print("The estimated minimum elapsed time is %lld msecs, while the deadline is %lld msecs.\n", estimated_minimum_elapsed_time / MSEC(1), self->threshold / MSEC(1));
+      exit(1);
+    }
+
     int result = total_task(a->value);
     lf_print("Result: %d, Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", result, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     lf_check_deadline(self, true);
-    // Check if available to finish on time.
-    
-    
+
+
     if (result == 0) {
       // lf_set(out, 0);
       exit(1);
@@ -99,7 +116,7 @@ reactor Retry (threshold: time = 1000 msec) {
     }
   =} deadline(threshold) {=
     // lf_schedule(a, MSEC(10));
-    lf_print("\nDeadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+    lf_print("Deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     // lf_set(out, 0);
     exit(1);
   =}
