@@ -1,0 +1,89 @@
+// For fault tolerance, retry the task. However, does not retry the total task, retries from the last failed subtask.
+// User divides the total task into subtasks. If the subtask success, return 0, else, return the task number.
+target C {
+  timeout: 5 sec
+}
+
+preamble {=
+  #include <stdlib.h> // rand()
+  #include "platform.h" // lf_sleep()
+=}
+
+reactor Startup {
+  output out: int
+
+  reaction(startup) -> out {=
+    srand(time(NULL));
+    lf_set(out, 0);
+  =}
+}
+
+reactor Retry {
+  preamble {=
+    int task1() {
+      if (rand() % 10 < 8) {  // 80% chance
+        return 1;
+      }
+      return 0;
+    }
+    int task2() {
+      if (rand() % 10 < 8) {  // 80% chance
+        return 2;
+      }
+      return 0;
+    }
+    // Miss deadline, but return success.
+    int task3() {
+      // Checkpoint 2
+      if (rand() % 10 < 8) {  // 80% chance
+        lf_sleep(MSEC(10));
+      }
+      return 0;
+    }
+    int do_something(int checkpoint) {
+      int ret = -1;
+      if (checkpoint <= 1) {  // Start from task1 if no checkpoint
+        ret = task1();
+        if (ret != 0) {
+          return ret; // Return failure checkpoint
+        }
+      }
+
+      if (checkpoint <= 2) {  // Start from task2 if the previous step succeeded
+        ret = task2();
+        if (ret != 0){
+          return ret; // Return failure checkpoint
+        }
+      }
+
+      return 0;
+    }
+  =}
+
+  input in: int
+  output out: int
+  logical action a: int
+
+  reaction(in) -> a {=
+    lf_schedule_int (a, 0, 1);
+  =}
+
+  reaction(a) -> out {=
+    int result = do_something(a->value);
+    lf_print("Result: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", result, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+    if (result == 0) {
+      lf_set(out, 0);
+    } else {
+      lf_schedule_int(a, MSEC(10), result);
+    }
+  =} deadline(10 msec) {=
+    lf_schedule(a, MSEC(10));
+    lf_print("\nDeadline violation detected on Logical time: %lld, microstep: %d, Physical time: %lld\n", lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+  =}
+}
+
+main reactor {
+  s = new Startup()
+  c = new Retry()
+  s.out -> c.in  // c.out-> c.in
+}
