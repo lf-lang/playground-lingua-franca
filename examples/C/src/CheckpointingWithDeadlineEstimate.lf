@@ -1,5 +1,6 @@
 // For fault tolerance, retry the task. However, does not retry the total task, retries from the last failed subtask.
 // User divides the total task into subtasks. If the subtask success, return 0, else, return the task number.
+// Even if some tasks success, but misses the deadline, reports deadline violation.
 target C {
   timeout: 5 sec
 }
@@ -21,12 +22,14 @@ reactor Startup {
 reactor Retry {
   preamble {=
     int task1() {
+      lf_sleep(MSEC(15));
       if (rand() % 10 < 8) {  // 80% chance
         return 1;
       }
       return 0;
     }
     int task2() {
+      lf_sleep(MSEC(10));
       if (rand() % 10 < 8) {  // 80% chance
         return 2;
       }
@@ -34,7 +37,7 @@ reactor Retry {
     }
     // Miss deadline, but return success.
     int task3() {
-      // Checkpoint 2
+      lf_sleep(MSEC(10));
       if (rand() % 10 < 8) {  // 80% chance
         lf_sleep(MSEC(10));
       }
@@ -55,6 +58,12 @@ reactor Retry {
           return ret; // Return failure checkpoint
         }
       }
+      if (checkpoint <= 2) {  // Start from task2 if the previous step succeeded
+        ret = task2();
+        if (ret != 0){
+          return ret; // Return failure checkpoint
+        }
+      }
       task3();
 
       return 0;
@@ -64,6 +73,7 @@ reactor Retry {
   input in: int
   output out: int
   logical action a: int
+  state expected_time: time = 10 msec
 
   reaction(in) -> a {=
     lf_schedule_int (a, 0, 1);
@@ -71,18 +81,21 @@ reactor Retry {
 
   reaction(a) -> out {=
     int result = total_task(a->value);
-    lf_print("Result: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", result, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+    lf_print("Result: %d, Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", result, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     lf_check_deadline(self, true);
     // Check if available to finish on time.
     
     if (result == 0) {
-      lf_set(out, 0);
+      // lf_set(out, 0);
+      exit(1);
     } else {
-      lf_schedule_int(a, MSEC(10), result);
+      lf_schedule_int(a, MSEC(100), result);
     }
-  =} deadline(10 msec) {=
+  =} deadline(1000 msec) {=
     // lf_schedule(a, MSEC(10));
-    lf_print("\nDeadline violation detected on Logical time: %lld, microstep: %d, Physical time: %lld\n", lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+    lf_print("\nDeadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+    // lf_set(out, 0);
+    exit(1);
   =}
 }
 
