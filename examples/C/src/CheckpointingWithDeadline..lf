@@ -40,7 +40,7 @@ reactor Retry {
       }
       return 0;
     }
-    int do_something(int checkpoint) {
+    int total_task(int checkpoint) {
       int ret = -1;
       if (checkpoint <= 1) {  // Start from task1 if no checkpoint
         ret = task1();
@@ -69,7 +69,7 @@ reactor Retry {
   =}
 
   reaction(a) -> out {=
-    int result = do_something(a->value);
+    int result = total_task(a->value);
     lf_print("Result: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", result, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
     if (result == 0) {
       lf_set(out, 0);
