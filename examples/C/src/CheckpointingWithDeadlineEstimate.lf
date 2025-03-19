@@ -21,15 +21,19 @@ reactor Startup {
 
 reactor Retry {
   preamble {=
+    #define TASK1_SLEEP_MSEC  150
+    #define TASK2_SLEEP_MSEC  10
+    #define TASK3_SLEEP_MSEC  10
+
     int task1() {
-      lf_sleep(MSEC(15));
+      lf_sleep(MSEC(TASK1_SLEEP_MSEC));
       if (rand() % 10 < 8) {  // 80% chance
         return 1;
       }
       return 0;
     }
     int task2() {
-      lf_sleep(MSEC(10));
+      lf_sleep(MSEC(TASK2_SLEEP_MSEC));
       if (rand() % 10 < 8) {  // 80% chance
         return 2;
       }
@@ -37,9 +41,9 @@ reactor Retry {
     }
     // Miss deadline, but return success.
     int task3() {
-      lf_sleep(MSEC(10));
+      lf_sleep(MSEC(TASK3_SLEEP_MSEC));
       if (rand() % 10 < 8) {  // 80% chance
-        lf_sleep(MSEC(10));
+        lf_sleep(MSEC(TASK3_SLEEP_MSEC));
       }
       return 0;
     }
