@@ -1,6 +1,5 @@
 // For fault tolerance, retry the task. However, does not retry the total task, retries from the last failed subtask.
 // User divides the total task into subtasks. If the subtask success, return 0, else, return the task number.
-// Even if some tasks success, but misses the deadline, reports deadline violation.
 target C {
   timeout: 5 sec
 }
@@ -74,6 +73,8 @@ reactor Retry {
     int result = total_task(a->value);
     lf_print("Result: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", result, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
     lf_check_deadline(self, true);
+    // Check if available to finish on time.
+    
     if (result == 0) {
       lf_set(out, 0);
     } else {
