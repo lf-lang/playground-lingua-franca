@@ -54,25 +54,6 @@ reactor Retry {
     lf_print("\nDeadline violation detected on Logical time: %lld, microstep: %d, Physical time: %lld\n", lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
   =}
 
-  // reaction(in) -> out {=
-  //   lf_print("Input: %d, Logical time: %lld, microstep: %d, Physical time: %lld\n", in->value, lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
-  //   if (in->value == 0) {
-  //     lf_set(out, do_something());
-  //   } else {
-  //     // When the in->value is -1, sleep 10 msecs and retry.
-  //     lf_sleep(MSEC(10));
-  //     lf_set(out, do_something());
-  //   }
-  // =}
-
-
-  // reaction(a) -> out {=
-  //   while (!lf_check_deadline(self, true)){
-  //     do_something();
-  //   }
-  // =} deadline(10 msec) {=
-  //   lf_schedule(a, MSEC(10));
-  // =}
 }
 
 main reactor {
