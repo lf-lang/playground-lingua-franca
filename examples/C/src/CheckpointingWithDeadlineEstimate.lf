@@ -83,7 +83,6 @@ reactor Retry(threshold: time = 2000 msec) {
   input in: int
   output out: int
   logical action a: int
-  state expected_time: time = 10 msec
 
   reaction(in) -> a {=
     lf_schedule_int (a, 0, 1);
@@ -104,8 +103,9 @@ reactor Retry(threshold: time = 2000 msec) {
 
     int result = total_task(a->value);
     lf_print("Result: %d, Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", result, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+    
+    // Check if deadline violated. However, will already exit when the estimated time goes over.
     lf_check_deadline(self, true);
-
 
     if (result == 0) {
       // lf_set(out, 0);
