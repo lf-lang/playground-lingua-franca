@@ -29,19 +29,23 @@ for arg in "$@"; do
 done
 
 # Install dependencies
+
+# We need python3.10 to use LF
+sudo add-apt-repository -y 'ppa:deadsnakes/ppa'
 sudo apt-get update
+
 ## Setup C, C++, Python, Rust, protobuf, gRPC, gnuplot
 sudo apt-get install --assume-yes \
     build-essential \
-    python3 python3-dev python3-pip \
+    python3.10 python3.10-dev \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
     protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot
     
-python3 -m pip install --upgrade pip
+python3.10 -m pip install --upgrade pip
 # Install python dependencies and
 # latest CMake; see https://www.kitware.com/cmake-python-wheels/ https://askubuntu.com/a/1070770
-sudo python3 -m pip install --exists-action i requests setuptools cmake
+sudo python3.10 -m pip install --exists-action i requests setuptools cmake
 
 if [ $SETUP_NETWORK = true ]; then 
     # Install support for protocol buffers
