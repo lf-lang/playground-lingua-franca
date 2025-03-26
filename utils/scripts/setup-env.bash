@@ -73,7 +73,9 @@ if [ $SETUP_ROS = true ]; then
         OS_VERSION_ID="$(\. /etc/os-release && echo "${VERSION_ID}")"
         # See https://www.ros.org/reps/rep-2000.html
         ROS_VERSION_CODENAME=""
-        if ([[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "22.04" ]]) || \
+        if [[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "24.04" ]]; then
+            ROS_VERSION_CODENAME="jazzy"
+        elif ([[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "22.04" ]]) || \
         ([[ "${OS_ID}" = "debian" ]] && [[ "${OS_VERSION_ID}" = "11" ]]); then
             ROS_VERSION_CODENAME="iron"
         elif [[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "20.04" ]]; then

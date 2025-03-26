@@ -11,7 +11,7 @@ jobs:
     uses: lf-lang/lingua-franca/.github/workflows/latest-release.yml@master
     
   check-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: find-latest-release
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +35,7 @@ jobs:
           compiler_ref: ${{ needs.find-latest-release.outputs.ref }} # for testing, consider replacing with "master"
 
   check-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: find-latest-release
     steps:
       - uses: actions/checkout@v4
