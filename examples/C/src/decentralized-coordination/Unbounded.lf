@@ -1,0 +1,37 @@
+/**
+ * A federated example where a source produces outputs much faster than a sink can consume them.
+ * This example needs feedback to have stable memory usage. See the README.md file for more details.
+ * @author Edward A. Lee
+ */
+target C {
+  coordination: decentralized
+}
+
+reactor Source {
+  output out: int
+  state count: int = 0
+  logical action a
+
+  reaction(startup, a) -> out, a {=
+    lf_set(out, self->count++);
+    lf_schedule(a, 0);
+  =}
+}
+
+reactor Sink(STA: time = 100 weeks) {
+  input in: int
+
+  reaction(in) {=
+    tag_t now = lf_tag();
+    lf_print("**** Received %d at tag " PRINTF_TAG " with lag " PRINTF_TIME,
+        in->value, now.time - lf_time_start(), now.microstep,
+        lf_time_physical() - now.time);
+    lf_sleep(MSEC(100));
+  =}
+}
+
+federated reactor {
+  s = new Source()
+  d = new Sink()
+  s.out -> d.in
+}

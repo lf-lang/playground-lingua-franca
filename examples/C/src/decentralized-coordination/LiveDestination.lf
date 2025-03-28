@@ -1,0 +1,35 @@
+/**
+ * A simple federated example that elaborates SimpleFeedForward so that the destination reactor has
+ * its own timer-driven activity. It has large lags that can be fixed by using STAA instead of STA.
+ * This example also explores the use of after delays vs. STA and STAA. See the README.md file for
+ * more details.
+ * @author Edward A. Lee
+ */
+target C {
+  coordination: decentralized
+}
+
+import Count from "../lib/Count.lf"
+
+reactor Destination(STA: time = 100 weeks) {
+  input in: int
+  timer t(0, 500 ms)
+
+  reaction(t) {=
+    interval_t lag = lf_time_physical() - lf_time_logical();
+    lf_print("**** Local reaction lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+        lag/1000, lf_time_logical_elapsed()/1000);
+  =}
+
+  reaction(in) {=
+    interval_t lag = lf_time_physical() - lf_time_logical();
+    lf_print("**** Reaction to network input %d lag is " PRINTF_TIME "us at logical time " PRINTF_TIME "us.",
+        in->value, lag/1000, lf_time_logical_elapsed()/1000);
+  =}
+}
+
+federated reactor {
+  c = new Count(offset=0, period = 3 s)
+  p = new Destination()
+  c.out -> p.in
+}
