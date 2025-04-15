@@ -54,7 +54,7 @@ reactor RandomSegfault {
     signal(SIGTRAP, handle_sigtrap);
   =}
 
-  reaction(t) ->out {=
+  reaction(t) -> out {=
     if (self->try_count < MAX_TRY_COUNT) {
       if (self->success_count < SUCCESS_COUNT_TARGET) {
         self->try_count ++;

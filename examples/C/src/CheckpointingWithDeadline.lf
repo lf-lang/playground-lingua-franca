@@ -69,7 +69,7 @@ reactor Retry {
     lf_schedule_int (a, 0, 1);
   =}
 
-reaction(a) -> out {=
+reaction(a) -> out, a {=
   int result = total_task(a->value);
   lf_print("Result: %d, Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", result, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
   lf_check_deadline(self, true);
