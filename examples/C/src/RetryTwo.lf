@@ -1,0 +1,177 @@
+// For fault tolerance, retry the task. However, does not retry the total task, retries from the last failed subtask.
+// User divides the total task into subtasks. If the subtask success, return 0, else, return the task number.
+// Even if some tasks success, but misses the deadline, reports deadline violation.
+target C {
+    timeout: 5 sec
+  }
+  
+preamble {=
+  #include <stdlib.h> // rand()
+  #include "platform.h" // lf_sleep()
+=}
+  
+  // reactor Startup {
+  //   output out: int
+  
+  //   // Trigger the first task.
+  //   reaction(startup) -> out {=
+  //     srand(time(NULL));
+  //     lf_set(out, 0);
+  //   =}
+  // }
+
+reactor Segment(wcet: time = 20 msec, seg_num: int = 0) {
+  preamble {=
+  
+    #define TASK1_SLEEP_MSEC  200
+    #define TASK2_SLEEP_MSEC  200
+    #define TASK3_SLEEP_MSEC  200
+  
+    // // Temporary lookup table...
+    // static const int TASK_SLEEP_TIMES[] = {
+    //   0, // Index 0 is unused
+    //   TASK1_SLEEP_MSEC + TASK2_SLEEP_MSEC + TASK3_SLEEP_MSEC, // For a->value == 1
+    //   TASK2_SLEEP_MSEC + TASK3_SLEEP_MSEC, // For a->value == 2
+    //   TASK3_SLEEP_MSEC // For a->value == 3
+    // };
+    
+    int task1() {
+      lf_sleep(MSEC(TASK1_SLEEP_MSEC));
+      if (rand() % 10 < 8) {  // 80% chance
+        return 1;
+      }
+      return 0;
+    }
+    int task2() {
+      lf_sleep(MSEC(TASK2_SLEEP_MSEC));
+      if (rand() % 10 < 8) {  // 80% chance
+        return 2;
+      }
+      return 0;
+    }
+  =}
+    
+  input retry: int
+  input newtry: int
+  output out: int
+  reaction(startup) -> out {=
+    srand(time(NULL));
+    if(self->seg_num == 0) {
+      lf_print("Set non-zero seg_num.");
+      exit(1);
+    //  Triggering first task is possible here, but the diagram can look dirty. 
+    //  Just cleaning up this whole startup reaction is also possible.
+    } else if (self->seg_num == 1) {
+      // Start first task.
+      lf_set(out, task1());
+    } else {
+      // Do nothing.
+    }
+  =}
+
+  reaction(retry) -> out {=
+    if(retry->value == 1 && self->seg_num == 1) {
+      lf_set(out, task1());
+    } else if(retry->value == 2 && self->seg_num == 2) {
+      lf_set(out, task2());
+    } else {
+      // Do nothing.
+    }
+  =}
+  reaction(newtry) -> out {=
+    if(newtry->value == 1 && self->seg_num == 1) {
+      lf_set(out, task1());
+    } else if(newtry->value == 2 && self->seg_num == 2) {
+      lf_set(out, task2());
+    } else {
+      // Do nothing.
+    }
+  =}
+}
+
+
+reactor Retry (wcet: time = 20 msec, seg_num: int = 0) {
+  input in: int // Segment success 0. else fail.
+  output out: int
+  logical action a: int
+  reaction(startup){=
+    if(self->seg_num == 0) {
+      lf_print("Set non-zero seg_num.");
+      exit(1);
+    }
+  =}
+  reaction(in) -> a {=
+    if(in->value == 0) {
+      // Success.
+      // TODO: How much should I delay when success? Need to delay as much as LET.
+      lf_schedule_int (a, 0, in->value);
+    } else {
+      // Failed.
+      // Need to retry with logical delay.
+      // Need few inputs. 1. If failed or success. 2. How much logical time delay.
+      lf_schedule_int (a, self->wcet, in->value); 
+    }
+  =}
+  reaction(a) -> out {=
+    if(a->value == 0) {
+      // Success
+      lf_set(out, self->seg_num + 1); // 0 means success, no need to retry.
+    } else {
+      // Failed.
+      lf_set(out, self->seg_num); // Failure. Should retry. 
+    }
+    // out will be sent to both the current and next segment.
+    // The current segment will retry looking the value 0, 
+    // The next segment will receive -1, does not try and do nothing.
+  =}
+}
+  
+  
+main reactor {
+  // start = new Startup()
+  preamble {=
+  
+    #define TASK1_SLEEP_MSEC  200
+    #define TASK2_SLEEP_MSEC  200
+    #define TASK3_SLEEP_MSEC  200
+  
+    // // Temporary lookup table...
+    // static const int TASK_SLEEP_TIMES[] = {
+    //   0, // Index 0 is unused
+    //   TASK1_SLEEP_MSEC + TASK2_SLEEP_MSEC + TASK3_SLEEP_MSEC, // For a->value == 1
+    //   TASK2_SLEEP_MSEC + TASK3_SLEEP_MSEC, // For a->value == 2
+    //   TASK3_SLEEP_MSEC // For a->value == 3
+    // };
+    
+    int task1() {
+      lf_sleep(MSEC(TASK1_SLEEP_MSEC));
+      if (rand() % 10 < 8) {  // 80% chance
+        return 1;
+      }
+      return 0;
+    }
+    int task2() {
+      lf_sleep(MSEC(TASK2_SLEEP_MSEC));
+      if (rand() % 10 < 8) {  // 80% chance
+        return 2;
+      }
+      return 0;
+    }
+  =}
+
+
+  s1 = new Segment(wcet= 20 msec, seg_num = 1)
+  s2 = new Segment(wcet= 20 msec, seg_num = 2)
+  s3 = new Segment(wcet= 20 msec, seg_num = 3)
+  r1 = new Retry(wcet= 20 msec, seg_num = 1)
+  r2 = new Retry(wcet= 20 msec, seg_num = 2)
+  // start.out->r1.in;
+  s1.out ->r1.in after 0
+  r1.out->s1.retry
+  r1.out ->s2.newtry
+  
+  s2.out ->r2.in after 0
+  r2.out->s2.retry
+  r2.out ->s3.newtry
+}
+  
