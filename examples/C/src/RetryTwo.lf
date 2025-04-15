@@ -107,10 +107,14 @@ reactor Segment(wcet: time = 20 msec, seg_num: int = 0) {
 }
 
 
-reactor Retry (wcet: time = 20 msec, seg_num: int = 0) {
+reactor Retry (wcet: time = 20 msec, seg_num: int = 0, dead_line: time = 0 msec) {
   input in: int // Segment success 0. else fail.
+  input instance_start_time_update: time
   output out: int
-  logical action a: int
+  logical action check_deadline: int
+  logical action trigger: int
+
+  state instance_start_time: time
 
   reaction(startup){=
     if(self->seg_num == 0) {
@@ -119,27 +123,36 @@ reactor Retry (wcet: time = 20 msec, seg_num: int = 0) {
     }
   =}
 
-  reaction(in) -> a {=
+  reaction(instance_start_time_update){=
+    self->instance_start_time = instance_start_time_update->value;
+  =}
+
+  reaction(in) -> check_deadline {=
     if(in->value == 0) {
       // Success.
       lf_print("Task success. Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
       // TODO: How much should I delay when success? Need to delay as much as LET.
-      lf_schedule_int (a, 0, in->value);
+      lf_schedule_int (check_deadline, 0, in->value);
     } else {
       // Failed.
       // Need to retry with logical delay.
       // Need few inputs. 1. If failed or success. 2. How much logical time delay.
       lf_print("Task Failed. Advancing logical time by %lld msecs. Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs\n", self->wcet / MSEC(1), lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
-      lf_schedule_int (a, self->wcet, in->value); 
+      lf_schedule_int (check_deadline, self->wcet, in->value); 
     }
   =}
-  // reaction(a) -> out{=
-  //   //TODO: Check deadline. In Logical Time.
+  reaction(check_deadline) -> trigger{=
+    //TODO: Check deadline. In Logical Time.
+    if(self->dead_line < lf_time_logical_elapsed() - self->instance_start_time) {
+      lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->dead_line + self->instance_start_time)/ MSEC(1));
+    } else {
+      lf_schedule_int (trigger, 0, check_deadline->value);
+    }
 
-  // =}
+  =}
 
-  reaction(a) -> out {=
-    if(a->value == 0) {
+  reaction(trigger) -> out {=
+    if(trigger->value == 0) {
       // Success
       lf_set(out, self->seg_num + 1); // 0 means success, no need to retry.
     } else {
@@ -152,28 +165,33 @@ reactor Retry (wcet: time = 20 msec, seg_num: int = 0) {
   =}
 }
 
-reactor Periodic(period : time = 0 msec) {
-  timer t (0, period)
+reactor Periodic(start_time: time = 0 msec, period : time = 0 msec) {
+  timer t (start_time, period)
   output out: int
-  reaction (t)->out{=
+  output instance_start_time: time
+  reaction (t)->out, instance_start_time{=
     lf_set(out, 1);
+    lf_set(instance_start_time, lf_time_logical_elapsed());
   =}
 }
 
-reactor Task(period : time = 0 msec, dead_line: time = 0 msec, start_time: time = 0 msec) {
+reactor Task(wcet: time = 0 msec, period : time = 0 msec, dead_line: time = 0 msec, start_time: time = 0 msec) {
 
   // input in: int
   // output out: int
-  trigger = new Periodic(period = period)
-  s1 = new Segment(wcet= 300 msec, seg_num = 1)
-  s2 = new Segment(wcet= 300 msec, seg_num = 2)
-  s3 = new Segment(wcet= 300 msec, seg_num = 3)
-  r1 = new Retry(wcet= 300 msec, seg_num = 1)
-  r2 = new Retry(wcet= 300 msec, seg_num = 2)
-  r3 = new Retry(wcet= 300 msec, seg_num = 3)
+  trigger = new Periodic(start_time = start_time, period = period)
+  s1 = new Segment(wcet= wcet, seg_num = 1)
+  s2 = new Segment(wcet= wcet, seg_num = 2)
+  s3 = new Segment(wcet= wcet, seg_num = 3)
+  r1 = new Retry(wcet= wcet, seg_num = 1, dead_line = dead_line)
+  r2 = new Retry(wcet= wcet, seg_num = 2, dead_line = dead_line)
+  r3 = new Retry(wcet= wcet, seg_num = 3, dead_line = dead_line)
   // start.out->r1.in;
 
   trigger.out ->s1.newtry
+  trigger.instance_start_time -> r1.instance_start_time_update
+  trigger.instance_start_time -> r2.instance_start_time_update
+  trigger.instance_start_time -> r3.instance_start_time_update
   s1.out ->r1.in after 0
   r1.out->s1.retry
   r1.out ->s2.newtry
@@ -181,6 +199,7 @@ reactor Task(period : time = 0 msec, dead_line: time = 0 msec, start_time: time 
   s2.out ->r2.in after 0
   r2.out->s2.retry
   r2.out ->s3.newtry
+
   s3.out ->r3.in after 0
   r3.out->s3.retry
 
@@ -189,29 +208,11 @@ reactor Task(period : time = 0 msec, dead_line: time = 0 msec, start_time: time 
 }
   
 main reactor {
-  // timer t (0, 2000 msec)
 
-  task1 = new Task(period= 3000 msec, dead_line=2000 msec, start_time=0 msec)
+  task1 = new Task(wcet = 300 msec, period= 3000 msec, dead_line=2000 msec, start_time=0 msec)
 
   reaction(startup) {=
     srand(time(NULL));
   =}
-
-  // s1 = new Segment(wcet= 300 msec, seg_num = 1)
-  // s2 = new Segment(wcet= 300 msec, seg_num = 2)
-  // s3 = new Segment(wcet= 300 msec, seg_num = 3)
-  // r1 = new Retry(wcet= 300 msec, seg_num = 1)
-  // r2 = new Retry(wcet= 300 msec, seg_num = 2)
-  // r3 = new Retry(wcet= 300 msec, seg_num = 3)
-  // // start.out->r1.in;
-  // s1.out ->r1.in after 0
-  // r1.out->s1.retry
-  // r1.out ->s2.newtry
-  
-  // s2.out ->r2.in after 0
-  // r2.out->s2.retry
-  // r2.out ->s3.newtry
-  // s3.out ->r3.in after 0
-  // r3.out->s3.retry
 }
   
