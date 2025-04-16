@@ -23,14 +23,14 @@ reactor Task(period: time = 0 msec) {
 
     int seg1() {
       lf_sleep(MSEC(TASK1_SLEEP_MSEC));
-      if (rand() % 10 < 3) {  // 80% chance
+      if (rand() % 10 < 8) {  // 80% chance
         return 1;
       }
       return 0;
     }
     int seg2() {
       lf_sleep(MSEC(TASK2_SLEEP_MSEC));
-      if (rand() % 10 < 3) {  // 80% chance
+      if (rand() % 10 < 8) {  // 80% chance
         return 2;
       }
       return 0;
@@ -66,10 +66,8 @@ reactor Task(period: time = 0 msec) {
       return 0;
     }
   =}
-  timer t(0, period)   // timer t(start_time, period)
+  timer t(0, period)
   input in: int
-  // input retry: int
-  // input newtry: int
   output success: int
   output fail: int
 
@@ -104,39 +102,57 @@ reactor Task(period: time = 0 msec) {
   =}
 }
 
-reactor Retry(wcet: time = 20 msec, optwcet: time = 20 msec, dead_line: time = 0 msec) {
+reactor Retry(wcet: time = 20 msec, optwcet: time = 20 msec, period: time = 0 msec, dead_line: time = 0 msec) {
+
+  timer t(0, period)
+
   input success: int
   input fail: int
-  output out: int  // input instance_start_time_update: time
-  logical action a: int
-  logical action b: int
+  output out: int
+  
+  logical action check_deadline: int
+  logical action trigger: int
+  state instance_start_time: time
+  // state instance_deadline: time
 
-  // logical action check_deadline: int
-  // logical action trigger: int
-  // state instance_start_time: time
-  // reaction(instance_start_time_update) {=
-  // self->instance_start_time = instance_start_time_update->value;
-  // =}
 
-  reaction(success, fail)-> a {=
+  reaction (t) {=
+    // Update the instance start time. This can also be implemented by a message by the Task reactor.
+    self->instance_start_time = lf_time_logical_elapsed();
+    // self->instance_deadline = lf_time_logical_elapsed() + self->dead_line;
+  =}
+
+  reaction(success, fail)-> check_deadline {=
     lf_print("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     if (fail->value == 0) {
       // Task is finished. Advance as much as the sucessed segments.
       // TODO: What if different WCET per segment?
-      lf_schedule_int(a, self->optwcet * success->value, 0);
+      lf_schedule_int(check_deadline, self->optwcet * success->value, 0);
       lf_print("All segments finished.");
       lf_print("%d tasks success. Advancing logical time by %lld. \n", success->value, self->optwcet * success->value / MSEC(1));
     } else {
       // Segment failed. Advance as much as successed segments + 1 failed segment.
-      lf_schedule_int(a, self->optwcet * success->value + self->wcet, fail->value);
+      lf_schedule_int(check_deadline, self->optwcet * success->value + self->wcet, fail->value);
       lf_print("Segment %d failed. %d tasks success. Advancing logical time by %lld. \n", fail->value, success->value, (self->optwcet * success->value + self->wcet) / MSEC(1));
     }
   =}
-  reaction(a) -> out {=
-    if(a->value == 0) {
-      // Do nothing.
+
+  reaction(check_deadline) -> trigger {=
+    // Check deadline in logical time. Does not schedule next retry, when deadline violation.
+    //TODO: Now, check if it is schedulable, not doing everything.
+    if(self->dead_line < lf_time_logical_elapsed() - self->instance_start_time) {
+      lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->dead_line + self->instance_start_time)/ MSEC(1));
+    // } else if(self->dead_line < lf_time_logical_elapsed() - self->instance_start_time) {
+    //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->dead_line + self->instance_start_time)/ MSEC(1));
     } else {
-      lf_set(out, a->value);
+      lf_schedule_int (trigger, 0, check_deadline->value);
+    }
+  =}
+  reaction(trigger) -> out {=
+    if(trigger->value == 0) {
+      // 0 means, all segments are finished. Don't trigger the task again, so do nothing.
+    } else {
+      lf_set(out, trigger->value);
     }
   =}
   // reaction(success) -> a {=
@@ -219,9 +235,9 @@ reactor Periodic(start_time: time = 0 msec, period: time = 0 msec) {
 }
 
 main reactor {
-  task = new Task(period = 5000 msec)  // trigger = new Periodic(start_time = 0, period = 2000 msec)
-  retry = new Retry(wcet = 300 msec, optwcet = 300 msec, dead_line = 5000 msec)
-  task.fail -> retry.fail              // trigger.out -> task.in
+  task = new Task(period = 5000 msec)
+  retry = new Retry(wcet = 300 msec, optwcet = 300 msec, period = 5000 msec, dead_line = 3000 msec)
+  task.fail -> retry.fail
   task.success -> retry.success
   retry.out -> task.in after 0
 
