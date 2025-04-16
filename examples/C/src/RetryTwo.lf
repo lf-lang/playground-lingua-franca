@@ -142,13 +142,15 @@ reactor Retry (wcet: time = 20 msec, seg_num: int = 0, dead_line: time = 0 msec)
     }
   =}
   reaction(check_deadline) -> trigger{=
-    //TODO: Check deadline. In Logical Time.
+    // Check deadline in logical time. Does not schedule next retry, when deadline violation.
+    //TODO: Now, check if it is schedulable, not doing everything.
     if(self->dead_line < lf_time_logical_elapsed() - self->instance_start_time) {
       lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->dead_line + self->instance_start_time)/ MSEC(1));
-    } else {
+    // } else if(self->dead_line < lf_time_logical_elapsed() - self->instance_start_time) {
+    //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->dead_line + self->instance_start_time)/ MSEC(1));
+    } else { 
       lf_schedule_int (trigger, 0, check_deadline->value);
     }
-
   =}
 
   reaction(trigger) -> out {=
