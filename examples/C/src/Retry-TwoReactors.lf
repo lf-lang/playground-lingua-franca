@@ -75,13 +75,16 @@ reactor Task(period: time = 0 msec) {
 
   // reaction(t) ->in
   reaction(t) -> success, fail {=
+    lf_print("New instance of task starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     int ret = total_task(1);
     lf_set(fail, ret);
+    // Calculate the number of successed segments. If ret=3 and in in=1, 2 segments success. 
     int temp = ret - 1;
     if (temp >= 0) {
       lf_set(success, temp);
     } else if (temp < 0) {
-      //TODO: Make it to number of task.
+      // This means ret was 0 and successed to end of task. Recalculate the number of successed segments.
+      //TODO: 4 is hard coded. Chane it to total number of segments.
       lf_set(success, temp + 4);
     }
   =}
