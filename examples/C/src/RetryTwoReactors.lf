@@ -5,6 +5,8 @@ target C {
 preamble {=
   #include <stdlib.h> // rand()
   #include "platform.h" // lf_sleep()
+  #define NUMBER_OF_SEGMENTS 3
+  // seg1 wcet, opt wcet.
 =}
 
 reactor Task(period: time = 0 msec) {
@@ -12,7 +14,6 @@ reactor Task(period: time = 0 msec) {
     #define TASK1_SLEEP_MSEC  200
     #define TASK2_SLEEP_MSEC  200
     #define TASK3_SLEEP_MSEC  200
-    #define NUMBER_OF_SEGMENTS 3
     #define FAILURE_RATE 80 // 80% chance
 
     int seg1() {
@@ -64,33 +65,27 @@ reactor Task(period: time = 0 msec) {
   input in: int
   output success: int
   output fail: int
+  output instance_start_time: time
 
-  // reaction(t) ->in
-  reaction(t) -> success, fail {=
-    lf_print("\n**** New instance of task starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
-    int ret = total_task(1);
-    lf_set(fail, ret);
-    // Calculate the number of successed segments. If ret=3 and in in=1, 2 segments success.
-    int temp = ret - 1;
-    if (temp >= 0) {
-      lf_set(success, temp);
-    } else if (temp < 0) {
-      // This means ret was 0 and successed to end of task. Recalculate the number of successed segments.
-      //TODO: 4 is hard coded. Chane it to total number of segments.
-      lf_set(success, temp + NUMBER_OF_SEGMENTS + 1);
+  reaction(t, in) -> success, fail, instance_start_time{=
+    int temp, ret;
+
+    if(in->is_present) {
+      ret = total_task(in->value);
+      temp = ret - in->value;
+    } else {
+      lf_set(instance_start_time, lf_time_logical_elapsed());
+      // When timer triggers.
+      lf_print("\n**** New instance of task starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+      ret = total_task(1);
+      // Calculate the number of successed segments. If ret=3 and in in=1, 2 segments success.
+      temp = ret - 1;
     }
-  =}
-
-  reaction(in) -> success, fail {=
-    int ret = total_task(in->value);
     lf_set(fail, ret);
-    // Calculate the number of successed segments. If ret=3 and in in=1, 2 segments success.
-    int temp = ret - in->value;
     if (temp >= 0) {
       lf_set(success, temp);
     } else if (temp < 0) {
       // This means ret was 0 and successed to end of task. Recalculate the number of successed segments.
-      //TODO: 4 is hard coded. Chane it to total number of segments.
       lf_set(success, temp + NUMBER_OF_SEGMENTS + 1);
     }
   =}
@@ -102,10 +97,11 @@ reactor Retry(
     period: time = 0 msec,
     dead_line: time = 0 msec) {
   preamble {=
-    #define NUMBER_OF_SEGMENTS 3
+    // #define NUMBER_OF_SEGMENTS 3
   =}
   timer t(0, period)
 
+  input instance_start_time_update: time
   input success: int
   input fail: int
   output out: int
@@ -114,10 +110,11 @@ reactor Retry(
   logical action trigger: int
   state instance_start_time: time
 
-  reaction(t) {=
+  reaction(instance_start_time_update) {=
     // Update the instance start time. This can also be implemented by a message by the Task reactor.
     self->instance_start_time = lf_time_logical_elapsed();
   =}
+  
 
   reaction(success, fail) -> check_deadline {=
     lf_print("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
@@ -164,6 +161,7 @@ reactor Retry(
 main reactor {
   task = new Task(period = 5000 msec)
   retry = new Retry(wcet = 300 msec, optwcet = 250 msec, period = 5000 msec, dead_line = 3000 msec)
+  task.instance_start_time->retry.instance_start_time_update
   task.fail -> retry.fail
   task.success -> retry.success
   retry.out -> task.in after 0
