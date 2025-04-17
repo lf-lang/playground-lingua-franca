@@ -1,0 +1,42 @@
+/**
+ * This version of the ReflexGame uses an enclave rather than a background thread to collect
+ * keyboard inputs. The Key reactor runs with its own enclave and sends keyboard inputs to the rest
+ * of the program using a physical connection. It uses a reaction that blocks on keyboard input, so
+ * its logical time will lag far behind that of the rest of the program (it advances logical time by
+ * 1 sec for each character that you type). If you cheat, the program will attempt to exit using
+ * `lf_request_stop()`, but the Key enclave will not exit until its logical time reaches the stop
+ * time. This may require typing many characters. If instead you exit by typing Control-D, then
+ * everything exits normally.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  keepalive: true
+}
+
+import RandomSource, GetUserInput from "ReflexGame.lf"
+
+reactor Key {
+  logical action trigger
+  output key: char
+
+  reaction(startup, trigger) -> key, trigger {=
+    char c = getchar();
+    lf_set(key, c);
+    if (c != EOF) {
+      lf_schedule(trigger, SEC(1));
+    } else {
+      lf_request_stop();
+    }
+  =}
+}
+
+main reactor {
+  p = new RandomSource()
+  g = new GetUserInput()
+  @enclave
+  u = new Key()
+  p.out -> g.prompt
+  g.another -> p.another
+  u.key ~> g.user_response
+}

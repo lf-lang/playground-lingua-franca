@@ -11,6 +11,7 @@
 * [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.
 * [MQTT](src/mqtt/README.md): Interacting with MQTT-based services.
 * [Patterns](src/patterns/README.md): Common communication patterns.
+* [Reflex Game](src/reflex-game/README.md): Interactive timed game.
 * [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
 * [Rosace](src/rosace/README.md): Aircraft controller illustrating periodic systems with multiple periods.
 * [SDV](src/sdv/README.md): Software defined vehicle sketch integrating user input, a web display, and sound.

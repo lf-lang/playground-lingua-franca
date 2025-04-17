@@ -97,9 +97,9 @@ reactiveclass FailureController(10) {
             } else if (s == 6) {
                 switchB3.switchFail();
             }
-            self.maybeFail() after (min_interval);           
+            self.chooseFailureTime() after (min_interval);           
         } else {
-            self.maybeFail() after (1);
+            self.chooseFailureTime() after (1);
         }
     }
 }
@@ -160,15 +160,15 @@ reactiveclass Node (20){
             if (ping_pending) {
                 // Backup node did not get a response to the ping of the NRP.
                 ping_pending = false;
-                NRP_network++;
                 // Request a new NRP, unless it pinged the NRP because both networks had missed heartbeats.
                 // In that case, it should just fail.
                 if (become_primary_on_ping_response) {
                     become_primary_on_ping_response = false;
                     mode = FAILED;
-                } else if (NRP_network < NumberOfNetworks) {
+                } else if (NRP_network <= NumberOfNetworks) {
                     // Request a new NRP should be possible.
                     NRP_pending = true;
+                    NRP_network++;
                     NRP_switch_id = NRPCandidates[NRP_network];
                     if (NRP_network == 0) out1.request_new_NRP(id) after(networkDelay);
                     else out2.request_new_NRP(id) after(networkDelay);
@@ -229,9 +229,9 @@ reactiveclass Node (20){
     }
    
     msgsrv request_new_NRP(int origin) {
-        NRP_network++;
-        if (NRP_network < NumberOfNetworks) {
+        if (NRP_network <= NumberOfNetworks) {
             // Should be possible to respond with a new NRP.
+            NRP_network++;
             NRP_switch_id = NRPCandidates[NRP_network];
             if (NRP_network == 0) out1.new_NRP(id, NRP_network, NRP_switch_id);
             else out2.new_NRP(id, NRP_network, NRP_switch_id);
@@ -303,6 +303,9 @@ reactiveclass Node (20){
                      }
                      ping_timed_out() after(ping_timeout);
                  }
+                 // Prevent detecting again immediately.
+                 heartbeats_missed_1 = 0;
+                 heartbeats_missed_2 = 0;
                  break;
               
              case 3: //FAILED :
