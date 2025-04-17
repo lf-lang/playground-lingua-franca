@@ -1,7 +1,11 @@
 /**
- * This reactor is a base class for reactors that generate or use random numbers. The method
- * random() returns an integer between 0 and RAND_MAX. The method exponential(lambda) returns an
- * exponential random variable with rate lambda (expected value 1/lambda).
+ * This reactor is a base class for reactors that generate or use random numbers. Available methods
+ * are:
+ *
+ * * random(): returns an integer between 0 and RAND_MAX.
+ * * exponential(lambda): returns an exponential random variable with rate lambda (expected value
+ * 1/lambda).
+ * * bernoulli(p): returns 1 with probability p and 0 with probability 1-p.
  *
  * This reactor ensures that if a seed is set, then the reactor returns a repeatable random number
  * sequence regardless of how many other reactors are generating random numbers.
@@ -34,5 +38,10 @@ reactor Random(seed: {= unsigned int =} = 0) {
   method exponential(lambda: double): double {=
     double u = random() / (RAND_MAX + 1.0);
     return -log(1.0 - u) / lambda;
+  =}
+
+  method bernoulli(p: double): int {=
+    int rand = rand_r(&self->seed);
+    if (rand < (RAND_MAX + 1.0) * p) return 1; else return 0;
   =}
 }

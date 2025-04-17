@@ -1,0 +1,43 @@
+property { 
+    define {
+        DCN1Waiting  = (DCN1.mode ==0);
+        DCN1Primary = (DCN1.mode ==1);
+        DCN1Backup  = (DCN1.mode ==2);
+        DCN1Failed  = (DCN1.mode ==3);
+        
+        DCN2Waiting  = (DCN2.mode ==0);
+        DCN2Primary = (DCN2.mode ==1);
+        DCN2Backup  = (DCN2.mode ==2);
+        DCN2Failed  = (DCN2.mode ==3);
+        
+        switchA1Failed  = (switchA1.failed);
+        switchA2Failed  = (switchA2.failed);
+        switchA3Failed  = (switchA3.failed);
+        switchB1Failed  = (switchB1.failed);
+        switchB2Failed  = (switchB2.failed);
+        switchB3Failed  = (switchB3.failed);
+        
+        switchA1NRP  = (DCN1.NRP_switch_id==1 && DCN2.NRP_switch_id==1);
+        switchB1NRP  = (DCN1.NRP_switch_id==4 && DCN2.NRP_switch_id==4);
+        switchA3NRP  = (DCN2.NRP_switch_id==3 && DCN1.NRP_switch_id==3);
+        switchB3NRP  = (DCN2.NRP_switch_id==6 && DCN1.NRP_switch_id==6);
+
+        
+        
+        net1miss1  = (DCN2.heartbeats_missed_1 == 1);
+        net1miss2  = (DCN2.heartbeats_missed_1 == 2);
+        net1miss3  = (DCN2.heartbeats_missed_1 == 3);
+        net1miss4  = (DCN2.heartbeats_missed_1 == 4);
+        net1miss5  = (DCN2.heartbeats_missed_1 == 5);
+        
+        net2miss1  = (DCN2.heartbeats_missed_2 == 1);
+        net2miss2  = (DCN2.heartbeats_missed_2 == 2);
+        net2miss3  = (DCN2.heartbeats_missed_2 == 3);
+        net2miss4  = (DCN2.heartbeats_missed_2 == 4);
+        net2miss5  = (DCN2.heartbeats_missed_2 == 5);
+    }
+    Assertion{
+        DualPrimary:!(DCN1Primary && DCN2Primary);
+        //NoPrimary:!(DCN1.primary!=-1 && DCN2.primary!=-1 && DCN1.primary!=DCN2.primary);
+    }
+}
