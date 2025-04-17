@@ -33,6 +33,10 @@ This directory contains Lingua Franca programs representing a number of common d
 <td> <img src="img/Simultaneity.png" alt="Simultaneity" width="50%"> </td>
 <td> <a href="Simultaneity.lf"> Simultaneity.lf</a>: An illustration of logical simultaneity. </td>
 </tr>
+<tr>
+<td> <img src="img/Pipeline.png" alt="Simultaneity" width="100%"> </td>
+<td> <a href="Pipeline.lf"> Pipeline.lf</a>: An illustration parallelism with deadlines. </td>
+</tr>
 </table>
 
 
