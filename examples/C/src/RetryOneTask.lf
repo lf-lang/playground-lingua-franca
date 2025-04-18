@@ -182,6 +182,10 @@ reactor CheckDeadlineAndRetry {
 reactor Periodic(period: time = 0 msec) {
   timer t(0, period)
   output out: int
+
+  reaction(startup) {=
+    srand(time(NULL));
+  =}
   reaction(t) -> out {=
     lf_set(out, 0);
   =}
@@ -197,7 +201,4 @@ main reactor {
   task.fail -> retry.fail
   retry.out -> task.in after 0
 
-  reaction(startup) {=
-    srand(time(NULL));
-  =}
 }
