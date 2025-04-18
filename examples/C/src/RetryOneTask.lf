@@ -35,10 +35,9 @@ preamble {=
     SEG2_OPTWCET,
     SEG3_OPTWCET
   };
-    
 =}
 
-reactor Task(period: time = 0 msec) {
+reactor Task {
   preamble {=
     #define TASK1_SLEEP_MSEC  200
     #define TASK2_SLEEP_MSEC  200
@@ -90,6 +89,7 @@ reactor Task(period: time = 0 msec) {
       return 0;
     }
   =}
+
   input new_instance: int
   input in: int
   logical action advance_lt: int
@@ -120,7 +120,6 @@ reactor Task(period: time = 0 msec) {
     // Schedule logical action to advance time. 
     lf_print("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
 
-
     // Caluculate the time of the total successed segments.
     int total_success_time = 0; // msecs
     for (int i=0; i < num_of_success; i++){
@@ -137,7 +136,6 @@ reactor Task(period: time = 0 msec) {
       lf_schedule_int(advance_lt, total_success_time * MSEC(1) + TASK1_WCET[failed_task_num] * MSEC(1), failed_task_num);
       lf_print("Segment %d failed. %d task(s) success. Advancing logical time by %lld msecs. \n", failed_task_num, num_of_success, total_success_time + TASK1_WCET[failed_task_num]);
     }
-    
   =}
   reaction(advance_lt) -> fail {=
     lf_set(fail, advance_lt->value);
@@ -145,18 +143,15 @@ reactor Task(period: time = 0 msec) {
 }
 
 reactor CheckDeadlineAndRetry {
-
   input instance_start_time_update: time
   input fail: int
   output out: int
-
   state instance_start_time: time
 
   reaction(instance_start_time_update) {=
     // Update the instance start time. This can also be implemented by a message by the Task reactor.
     self->instance_start_time = lf_time_logical_elapsed();
   =}
-
   reaction(fail) -> out{=
     if(fail->value == 0) {
       // 0 means, all segments are finished. Don't trigger the task again, so do nothing.
@@ -170,7 +165,6 @@ reactor CheckDeadlineAndRetry {
         // Don't erase this part.
         // } else if(TASK_DEADLINE * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
       //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (TASK_DEADLINE * MSEC(1) + self->instance_start_time)/ MSEC(1));
-
       } else {
         // Did not violate predicted deadline.
         lf_set(out, fail->value);
@@ -192,7 +186,7 @@ reactor Periodic(period: time = 0 msec) {
 }
 
 main reactor {
-  task = new Task(period = 5000 msec)
+  task = new Task()
   retry = new CheckDeadlineAndRetry()
   periodic = new Periodic(period = 5000 msec)
 
@@ -200,5 +194,4 @@ main reactor {
   task.instance_start_time->retry.instance_start_time_update
   task.fail -> retry.fail
   retry.out -> task.in after 0
-
 }
