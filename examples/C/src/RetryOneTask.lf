@@ -90,13 +90,13 @@ reactor Task(period: time = 0 msec) {
       return 0;
     }
   =}
-  timer t(0, period)
+  input new_instance: int
   input in: int
   logical action advance_lt: int
   output fail: int
   output instance_start_time: time
 
-  reaction(t, in) -> advance_lt, instance_start_time{=
+  reaction(new_instance, in) -> advance_lt, instance_start_time{=
     int seg_start_num, num_of_success, failed_task_num;
 
     if(in->is_present) {
@@ -179,10 +179,20 @@ reactor CheckDeadlineAndRetry {
   =}
 }
 
+reactor Periodic(period: time = 0 msec) {
+  timer t(0, period)
+  output out: int
+  reaction(t) -> out {=
+    lf_set(out, 0);
+  =}
+}
+
 main reactor {
   task = new Task(period = 5000 msec)
   retry = new CheckDeadlineAndRetry()
+  periodic = new Periodic(period = 5000 msec)
 
+  periodic.out -> task.new_instance
   task.instance_start_time->retry.instance_start_time_update
   task.fail -> retry.fail
   retry.out -> task.in after 0
