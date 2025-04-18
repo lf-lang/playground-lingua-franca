@@ -6,11 +6,36 @@ preamble {=
   #include <stdlib.h> // rand()
   #include "platform.h" // lf_sleep()
   #define NUMBER_OF_SEGMENTS 3
-  // seg1 wcet, opt wcet.
+  #define TASK_DEADLINE 3000 // msecs
 
-  #define WCET 300 // In msecs
-  #define OPTWCET 250 // In msecs
-  #define TASK_DEADLINE 3000
+  #define WCET 300 // msecs
+  #define OPTWCET 250 // msecs
+
+  #define SEG1_WCET 300 // msecs
+  #define SEG1_OPTWCET 250 // msecs
+
+  #define SEG2_WCET 300 // msecs
+  #define SEG2_OPTWCET 250 // msecs
+
+  #define SEG3_WCET 300 // msecs
+  #define SEG3_OPTWCET 250 // msecs
+
+  // WCET lookup table.
+  static const int TASK1_WCET[] = {
+    0, // Index 0 is unused
+    SEG1_WCET,
+    SEG2_WCET,
+    SEG3_WCET
+  };
+
+  // OPTWCET lookup table...
+  static const int TASK1_OPTWCET[] = {
+    0, // Index 0 is unused
+    SEG1_OPTWCET,
+    SEG2_OPTWCET,
+    SEG3_OPTWCET
+  };
+    
 =}
 
 reactor Task(period: time = 0 msec) {
@@ -18,7 +43,7 @@ reactor Task(period: time = 0 msec) {
     #define TASK1_SLEEP_MSEC  200
     #define TASK2_SLEEP_MSEC  200
     #define TASK3_SLEEP_MSEC  200
-    #define FAILURE_RATE 80 // 80% chance
+    #define FAILURE_RATE 20 // 80% chance
 
     int seg1() {
       lf_sleep(MSEC(TASK1_SLEEP_MSEC));
@@ -68,42 +93,49 @@ reactor Task(period: time = 0 msec) {
   timer t(0, period)
   input in: int
   logical action advance_lt: int
-  // output success: int
   output fail: int
   output instance_start_time: time
 
   reaction(t, in) -> advance_lt, instance_start_time{=
-    int num_of_success, failed_task_num;
+    int seg_start_num, num_of_success, failed_task_num;
 
     if(in->is_present) {
       // When Retry was triggered. in->value should not be 0.
-      failed_task_num = total_task(in->value);
-      num_of_success = failed_task_num - in->value;
+      seg_start_num = in->value;
     } else {
       // When timer is triggering the next instance.
+      seg_start_num = 1; // Start from segment 1.
       lf_set(instance_start_time, lf_time_logical_elapsed());
       // When timer triggers.
       lf_print("\n**** New instance of task starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
-      failed_task_num = total_task(1);
-      // Calculate the number of successed segments. If failed_task_num=3 and in in=1, 2 segments success.
-      num_of_success = failed_task_num - 1;
     }
+    failed_task_num = total_task(seg_start_num);
+    // Calculate the number of successed segments. If failed_task_num=3 and in seg_start_num=1, 2 segments success.
+    num_of_success = failed_task_num - seg_start_num;
     if (num_of_success < 0) {
       // This means failed_task_num was 0 and successed to end of task. Recalculate the number of successed segments.
-      // lf_set(success, num_of_success + NUMBER_OF_SEGMENTS + 1);
       num_of_success += NUMBER_OF_SEGMENTS + 1;
-    }
+    } 
+
+    // Schedule logical action to advance time. 
     lf_print("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+
+
+    // Caluculate the time of the total successed segments.
+    int total_success_time = 0; // msecs
+    for (int i=0; i < num_of_success; i++){
+      total_success_time += TASK1_OPTWCET[seg_start_num+ i];
+    }
+
     if(failed_task_num == 0) {
       // Task is finished. Advance as much as the sucessed segments.
-      // TODO: What if different WCET per segment?
-      lf_schedule_int(advance_lt, OPTWCET * MSEC(1) * num_of_success, 0);
+      lf_schedule_int(advance_lt, total_success_time * MSEC(1), 0);
       lf_print("All segments finished.");
-      lf_print("%d task(s) success. Advancing logical time by %lld msecs. \n", num_of_success, OPTWCET * num_of_success);
+      lf_print("%d task(s) success. Advancing logical time by %lld msecs. \n", num_of_success, total_success_time);
     } else {
       // Segment failed. Advance as much as successed segments + 1 failed segment.
-      lf_schedule_int(advance_lt, OPTWCET * MSEC(1) * num_of_success + WCET * MSEC(1), failed_task_num);
-      lf_print("Segment %d failed. %d task(s) success. Advancing logical time by %lld msecs. \n", failed_task_num, num_of_success, OPTWCET * num_of_success + WCET);
+      lf_schedule_int(advance_lt, total_success_time * MSEC(1) + TASK1_WCET[failed_task_num] * MSEC(1), failed_task_num);
+      lf_print("Segment %d failed. %d task(s) success. Advancing logical time by %lld msecs. \n", failed_task_num, num_of_success, total_success_time + TASK1_WCET[failed_task_num]);
     }
     
   =}
@@ -112,10 +144,9 @@ reactor Task(period: time = 0 msec) {
   =}
 }
 
-reactor Retry {
+reactor CheckDeadlineAndRetry {
 
   input instance_start_time_update: time
-  // input success: int
   input fail: int
   output out: int
 
@@ -131,7 +162,7 @@ reactor Retry {
       // 0 means, all segments are finished. Don't trigger the task again, so do nothing.
     } else {
       // Check deadline in logical time. Does not schedule next retry, when deadline violation.
-      instant_t min_instance_finish_time = lf_time_logical_elapsed() + (NUMBER_OF_SEGMENTS - fail->value + 1) * WCET * MSEC(1);
+      instant_t min_instance_finish_time = lf_time_logical_elapsed() + (NUMBER_OF_SEGMENTS - fail->value + 1) * OPTWCET * MSEC(1);
       if(min_instance_finish_time > self->instance_start_time + (TASK_DEADLINE * MSEC(1))) {
         lf_print("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
         lf_print("****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld.\nDropping left over tasks, and giving up instance.\n",  (TASK_DEADLINE * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
@@ -150,7 +181,8 @@ reactor Retry {
 
 main reactor {
   task = new Task(period = 5000 msec)
-  retry = new Retry()
+  retry = new CheckDeadlineAndRetry()
+
   task.instance_start_time->retry.instance_start_time_update
   task.fail -> retry.fail
   retry.out -> task.in after 0
