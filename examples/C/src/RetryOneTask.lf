@@ -5,8 +5,6 @@ target C {
 preamble {=
   #include <stdlib.h> // rand()
   #include "platform.h" // lf_sleep()
-  #define NUMBER_OF_SEGMENTS 3
-  #define TASK_DEADLINE 3000 // msecs
 
   typedef struct task_info_t {
     uint16_t task_num;
@@ -105,7 +103,7 @@ reactor Task (task_num : uint16_t = 0, dead_line: uint16_t = 0, num_of_segs: uin
     num_of_success = failed_task_num - seg_start_num;
     if (num_of_success < 0) {
       // This means failed_task_num was 0 and successed to end of task. Recalculate the number of successed segments.
-      num_of_success += NUMBER_OF_SEGMENTS + 1;
+      num_of_success +=  self->task_info.num_of_segs + 1;
     } 
 
     // Schedule logical action to advance time. 
@@ -160,18 +158,18 @@ reactor CheckDeadlineAndRetry {
 
       // Caluculate the additional time required to finish task.
       int total_success_time = 0; // msecs
-      for (int i=fail->value; i <= NUMBER_OF_SEGMENTS; i++){
+      for (int i=fail->value; i <=  self->task_info.num_of_segs; i++){
         total_success_time += self->task_info.optwcet[i - 1];
       }
 
       instant_t min_instance_finish_time = lf_time_logical_elapsed() + total_success_time * MSEC(1);
-      if(min_instance_finish_time > self->instance_start_time + (TASK_DEADLINE * MSEC(1))) {
+      if(min_instance_finish_time > self->instance_start_time + (self->task_info.dead_line * MSEC(1))) {
         lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
-        lf_print("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (TASK_DEADLINE * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
+        lf_print("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
         // *****This else if tests when there is no deadline prediction! 
         // Don't erase this part.
-        // } else if(TASK_DEADLINE * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
-      //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (TASK_DEADLINE * MSEC(1) + self->instance_start_time)/ MSEC(1));
+        // } else if(self->task_info.dead_line * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
+      //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
       } else {
         // Did not violate predicted deadline.
         lf_set(out, fail->value);
@@ -191,6 +189,7 @@ reactor Periodic(period: time = 0 msec) {
     lf_set(out, 0);
   =}
 }
+
 main reactor {
   task = new Task(task_num = 1, dead_line = 3000, num_of_segs = 3, wcet = {300, 300, 300}, optwcet = {250, 250, 250})
   retry = new CheckDeadlineAndRetry()
