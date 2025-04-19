@@ -1,0 +1,112 @@
+/**
+ * Every time the timer triggers, try triggering a random_segfault() function, 
+ * that randomly gets a segmentation fault.
+ * If a seg fault occurs, retry the function, going back to the checkpoint 
+ * saved by setjmp(), and longjmp() functions.
+ * Try until it success and hit the SUCCESS_COUNT_TARGET, during MAX_TRY_COUNT tries.
+ * If it succeeds at least once before MAX_TRY_COUNT (2 tries), the system outputs 0.
+ * If it exceeds MAX_TRY_COUNT without success, the system outputs -1.
+*/
+
+target C
+
+preamble {=
+  #include <stdlib.h> // rand()
+  #include <time.h> // time()
+  #include <signal.h> // signal()
+  #include <setjmp.h> // jmp_buf longjmp() setjmp()
+  #define MAX_TRY_COUNT 2
+  #define SUCCESS_COUNT_TARGET 1
+=}
+
+reactor RandomSegfault {
+  preamble {=
+    jmp_buf jump_buffer;
+    void random_segfault() {
+        if (rand() % 10 < 8) {  // 10% chance
+            printf("Causing a segmentation fault!\n");
+            int *ptr = NULL;
+            *ptr = 42;  // Segfault!
+        } else {
+            printf("Function executed successfully.\n");
+        }
+    }
+    // Handler for segmentation fault
+    void handle_sigsegv(int sig) {
+      printf("Segmentation Fault (SIGSEGV) detected! Recovering...\n");
+      longjmp(jump_buffer, 1);  // Jump back to safe execution point
+    }
+    // Handler for trace trap (SIGTRAP). Only for Mac.
+    void handle_sigtrap(int sig) {
+      printf("Trace trap (SIGTRAP) detected! Recovering...\n");
+      longjmp(jump_buffer, 1);  // Jump back to safe execution point
+    }
+  =}
+  timer t (0, 500 msec)
+  output out: int
+  state try_count: int = 0
+  state success_count: int = 0
+
+  reaction(startup) {=
+    srand(time(NULL));
+    // Register sinal handler.
+    signal(SIGSEGV, handle_sigsegv);
+    signal(SIGTRAP, handle_sigtrap);
+  =}
+
+  reaction(t) -> out {=
+    if (self->try_count < MAX_TRY_COUNT) {
+      if (self->success_count < SUCCESS_COUNT_TARGET) {
+        self->try_count ++;
+        if (setjmp(jump_buffer) == 0) {
+          printf("\nSetting safe checkpoint...\n");
+        } else {
+          self->try_count ++;
+          printf("Failed! Tries: %d, Success: %d\n", self->try_count, self->success_count);
+          printf("Recovered from segmentation fault. Restarting safely...\n\n");
+        }
+        printf("Logical time: %lld, microstep: %d, Physical time: %lld\n", lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+        random_segfault();
+        self->success_count ++;
+        printf("Successed! Tries: %d, Success: %d\n", self->try_count, self->success_count);
+      } else {
+        lf_set(out, 0);
+      }
+    } else {
+      if (self->success_count == SUCCESS_COUNT_TARGET){
+        lf_set(out, 0);
+      } else {
+        lf_set(out, -1);
+      }
+    }
+  =} deadline(3 msec) {=
+    printf("\nDeadline violation detected on Logical time: %lld, microstep: %d, Physical time: %lld\n", lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+    // Do something.
+  =}
+
+  reaction(shutdown) {=
+    if (self->success_count == SUCCESS_COUNT_TARGET) {
+      printf("Success count is %d. Finishing program.\n", self->success_count); 
+    } else {
+      printf("Reached maximum tries %d. Terminating.\n", self->try_count);
+    }
+  =}
+}
+
+reactor Display {
+  input in: int
+  reaction(in) {=
+    if (in->value == 0) {
+      printf("Successfully finished.\n");
+    } else if (in -> value  == -1){
+      printf("Failed to reach success count.\n");
+    }
+    lf_request_stop();
+  =}
+}
+
+main reactor {
+  a = new RandomSegfault()
+  d = new Display()
+  a.out -> d. in
+}
