@@ -13,6 +13,7 @@ reactor LiftMotion {
       if (move->value) {
         lf_set(screenPrinter.offset, offset->value);
         lf_set_mode(MOVING);
+        lf_set(screenPrinter.motion_msg ,"Moving");
       } else {
         lf_set_mode(STOPPED);
         lf_set(screenPrinter.motion_msg ,"Stop");
@@ -24,6 +25,7 @@ reactor LiftMotion {
     reaction(move) -> reset(MOVING), reset(STOPPED), screenPrinter.motion_msg {=
       if (!move->value) {
         lf_set_mode(STOPPED);
+        lf_set(screenPrinter.motion_msg ,"Stop");
       } else {
         lf_set_mode(MOVING);
         lf_set(screenPrinter.motion_msg ,"Moving");
