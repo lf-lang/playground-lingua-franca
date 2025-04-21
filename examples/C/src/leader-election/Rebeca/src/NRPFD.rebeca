@@ -24,7 +24,7 @@
 env int heartbeat_period = 1000;
 env int max_missed_heartbeats = 2;
 env int ping_timeout = 500;  
-env int nrp_timeout = 500;
+env int nrp_timeout = 500; // Timeout for requesting a new NRP.
 // Node Modes
 env byte WAITING = 0;
 env byte PRIMARY = 1;
@@ -35,10 +35,10 @@ env byte NumberOfNetworks = 2;
 // for testing
 env int fails_at_time = 0; //zero for no failure
 
-env int switchA1failtime = 0;
-env int switchA2failtime = 1501;
+env int switchA1failtime = 2004;
+env int switchA2failtime = 0;
 env int switchA3failtime = 0;
-env int switchB1failtime = 1502;
+env int switchB1failtime = 3007;
 env int switchB2failtime = 0;
 env int switchB3failtime = 0;
 
@@ -49,11 +49,11 @@ env int networkDelay = 1;
 env int networkDelayForNRPPing = 1;
 
 reactiveclass Node (20){
-
+ 
     knownrebecs {
         Switch out1, out2;
     }
-   
+  
     statevars {
            byte mode;
            int id;
@@ -61,19 +61,17 @@ reactiveclass Node (20){
            int heartbeats_missed_1;
            int heartbeats_missed_2;
            int NRP_network;
-           int attacker;
            int NRP_switch_id;
            boolean NRP_pending;
-           boolean become_primary_on_ping_response;  
+           boolean become_primary_on_ping_response; 
            int primary;
            boolean ping_pending;
     }
-    
+   
     Node (int Myid, int Myprimary, int NRPCan1_id, int NRPCan2_id, int myFailTime) {
         id = Myid;
-        attacker=0;
         NRPCandidates[0] = NRPCan1_id;
-        NRPCandidates[1] = NRPCan2_id;    
+        NRPCandidates[1] = NRPCan2_id;   
         heartbeats_missed_1 = 0;
         heartbeats_missed_2 = 0;
         NRP_network = -1;
@@ -86,144 +84,184 @@ reactiveclass Node (20){
         if(myFailTime!=0) nodeFail() after(myFailTime);
         runMe();
     }
-    
-    // logical action new_NRP_request_timed_out(nrp_timeout)  
+   
+    // Check whether a response was received to request_new_NRP() and fail if not.
     msgsrv new_NRP_request_timed_out() {
         if (mode == BACKUP) {
             if (NRP_pending) {
                 NRP_pending = false;
-                if (become_primary_on_ping_response) {
-                    become_primary_on_ping_response = false;
-                }
+                mode = FAILED;
             }
         }
-    }     
+    }    
      
     // logical action ping_timed_out(ping_timeout)
     msgsrv ping_timed_out() {
         if (mode == BACKUP) {
             if (ping_pending) {
+                // Backup node did not get a response to the ping of the NRP.
                 ping_pending = false;
-            } else {
-                mode = PRIMARY;
-                heartbeats_missed_1 = 0; 
-                heartbeats_missed_2 = 0;
-                primary=id;
-                NRP_pending = true;
-            }
-        } else if (mode == PRIMARY) {
-            if (ping_pending) {
-                mode = PRIMARY;
-                NRP_network++;
-                if (NRP_network < NumberOfNetworks) {
+                // Request a new NRP, unless it pinged the NRP because both networks had missed heartbeats.
+                // In that case, it should just fail.
+                if (become_primary_on_ping_response) {
+                    become_primary_on_ping_response = false;
+                    mode = FAILED;
+                } else if (NRP_network <= NumberOfNetworks) {
+                    // Request a new NRP should be possible.
+                    NRP_pending = true;
+                    NRP_network++;
                     NRP_switch_id = NRPCandidates[NRP_network];
-                    if (NRP_network == 0) out1.new_NRP(id, NRP_network, NRP_switch_id);
-                    else out2.new_NRP(id, NRP_network, NRP_switch_id);
+                    if (NRP_network == 0) out1.request_new_NRP(id) after(networkDelay);
+                    else out2.request_new_NRP(id) after(networkDelay);
+                    self.new_NRP_request_timed_out() after(nrp_timeout);
                 } else {
                     NRP_network = NumberOfNetworks;
                     mode = FAILED; // Operator intervention required.
-                    NRP_pending = true;
                 }
-            } else if (attacker < 1) {
+            }
+        } else if (mode == PRIMARY) {
+            if (ping_pending) {
+                // NRP did not respond to ping. Try to find a new NRP, if possible, and fail otherwise.
+                NRP_pending = true;
+                NRP_network++;
+                if (NRP_network < NumberOfNetworks) {
+                    // Select the NRP candidate on the new network and ping it.
+                    NRP_switch_id = NRPCandidates[NRP_network];
+                    if (NRP_network == 0) out1.pingNRP(id, NRP_switch_id) after(networkDelay);
+                    else out2.pingNRP(id, NRP_switch_id) after(networkDelay);
+                    self.ping_timed_out() after(ping_timeout);
+                } else {
+                    NRP_network = NumberOfNetworks;
+                    mode = FAILED; // Operator intervention required.
+                }
+            } else {
                out1.heartBeat(0, id) after(networkDelay);
                out2.heartBeat(1, id) after(networkDelay);
             }
         }
     }
-     
-    msgsrv pingNRP_response(int mid) {
-        if (mode==WAITING); 
-        else if (mode == BACKUP) ping_pending = false;
-        else if (mode == PRIMARY) ping_pending = false;
-    }
     
+    msgsrv pingNRP_response(int mid) {
+        if (mode == BACKUP) {
+            ping_pending = false;
+            if (become_primary_on_ping_response) {
+                // Confirmed that NRP is accessible even though heartbeats are missing on both networks.
+                // Become primary.
+                become_primary_on_ping_response = false;
+                mode = PRIMARY;
+                primary = id;
+            }
+        } else if (mode == PRIMARY) {
+            ping_pending = false;
+            if (NRP_pending) {
+                NRP_pending = false; // NRP is confirmed.
+                if (NRP_network==0) out1.new_NRP(id, NRP_network, NRP_switch_id);
+                else out2.new_NRP(id, NRP_network, NRP_switch_id);
+            }
+        }
+    }
+   
     msgsrv new_NRP(int mid, int mNRP_network, int mNRP_switch_id) {
         NRP_network = mNRP_network;
         NRP_switch_id = mNRP_switch_id;
+        NRP_pending = false;
+        // There is no need to ping the new NRP because the new_NRP message came in
+        // over the network containing the NRP, so the NRP must be accessible.
+    }
+   
+    msgsrv request_new_NRP(int origin) {
+        if (NRP_network <= NumberOfNetworks) {
+            // Should be possible to respond with a new NRP.
+            NRP_network++;
+            NRP_switch_id = NRPCandidates[NRP_network];
+	        if (NRP_network == 0) out1.new_NRP(id, NRP_network, NRP_switch_id);
+	        else out2.new_NRP(id, NRP_network, NRP_switch_id);
+	    }
     }
     
-    msgsrv runMe() { 
+    msgsrv runMe() {
         switch(mode) {
-            case 0: //WAITING : 
+            case 0: //WAITING :
                 if (id == primary) {
                     mode = PRIMARY;
                     NRP_network++;
-                    if (NRP_network<NumberOfNetworks) {
+                    if (NRP_network < NumberOfNetworks) {
                         NRP_switch_id = NRPCandidates[NRP_network];
-                        if (NRP_network==0) out1.new_NRP(id, NRP_network, NRP_switch_id);
+                        if (NRP_network == 0) out1.new_NRP(id, NRP_network, NRP_switch_id);
                         else out2.new_NRP(id, NRP_network, NRP_switch_id);
-                     } else NRP_network=NumberOfNetworks;
+                     } else NRP_network = NumberOfNetworks;
                  } else mode = BACKUP;
                  break;
-             case 1: //PRIMARY : 
-                 if(NRP_network==0) {    
+             case 1: //PRIMARY :
+                 if (NRP_network == 0) {   
                      ping_pending = true;
-                     out1.pingNRP(id, NRP_switch_id) after(5);
+                     out1.pingNRP(id, NRP_switch_id) after(networkDelay);
                      ping_timed_out() after(ping_timeout);
                  } else {
                      ping_pending = true;
-                     out2.pingNRP(id, NRP_switch_id) after(5);
+                     out2.pingNRP(id, NRP_switch_id) after(networkDelay);
                      ping_timed_out() after(ping_timeout);
                  }
                  NRP_pending = true;
                  break;
-             case 2: //BACKUP : 
+             case 2: //BACKUP :
                  heartbeats_missed_1++;
                  heartbeats_missed_2++;
-     
+    
                  if (heartbeats_missed_1 > max_missed_heartbeats && heartbeats_missed_2 > max_missed_heartbeats) {
-                     if (heartbeats_missed_1==heartbeats_missed_2 && heartbeats_missed_2==max_missed_heartbeats+1) {
+                     if (heartbeats_missed_1==heartbeats_missed_2) {
+                         // Simultaneous heartbeat misses.
+                         // In the paper, this is tmoAllNotSimul.
+                         // For the tmoAllSimul optimization in the paper, we assume that if
+                         // self->heartbeats_missed[0] == self->heartbeats_missed[1], then most likely, it is
+                         // the primary that failed, and not the network, so can immediately become the primary.
+                         // Otherwise, it is possible that one network failed, and then the other failed, in which
+                         // case, we may have a partitioned network.
                          mode = PRIMARY;
-                         heartbeats_missed_1 = 0; 
-                         heartbeats_missed_2 = 0;
-                         primary=id;
-                         NRP_pending = true;
+                         primary = id;
                      } else {
-                         // Saturate the missed heartbeat counts to prevent state-space explosion.
-                         heartbeats_missed_1 = (heartbeats_missed_1>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_1;
-                         heartbeats_missed_2 = (heartbeats_missed_2>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_2;
-                         if(NRP_network==0){    
-                             ping_pending = true;
-                             NRP_network=-1;
-                             out1.pingNRP(id, NRP_switch_id) after(5);
-                             ping_timed_out() after(ping_timeout);
+                         // Both heartbeat miss counters are above threshold, but they are not equal.
+                         // We do not assume the primary failed. Instead, check whether the NRP is reachable,
+                         // and if so, then become primary.
+                         become_primary_on_ping_response = true;
+                         ping_pending = true;
+                         if (NRP_network == 0){   
+                             out1.pingNRP(id, NRP_switch_id) after(networkDelay);
                          } else {
-                             ping_pending = true;
-                             NRP_network=-1;                                           
-                             out2.pingNRP(id, NRP_switch_id) after(5);
-                             ping_timed_out() after(ping_timeout);
+                             out2.pingNRP(id, NRP_switch_id) after(networkDelay);
                          }
-                         NRP_pending = true;
+                         ping_timed_out() after(ping_timeout);
                      }
                  } else if (heartbeats_missed_1 > max_missed_heartbeats || heartbeats_missed_2 > max_missed_heartbeats) {
+                     // Heartbeat missed on one network but not yet on the other.
+                     // Ping the NRP to make sure we retain access to it so that we can be an effective backup.
+                     // This corresponds to tmoSomeNotAll in the paper.
+                     ping_pending = true;
                      if (NRP_network==0 && heartbeats_missed_1 > max_missed_heartbeats) {
-                         ping_pending = true;
-                         out1.pingNRP(id, NRP_switch_id) after(5);
-                         ping_timed_out() after(ping_timeout);
+                         out1.pingNRP(id, NRP_switch_id) after(networkDelay);
                      } else if (NRP_network ==1  && heartbeats_missed_2 > max_missed_heartbeats) {
-                         ping_pending = true;
-                         out2.pingNRP(id, NRP_switch_id) after(5);
-                         ping_timed_out() after(ping_timeout);
+                         out2.pingNRP(id, NRP_switch_id) after(networkDelay);
                      }
-                     // Saturate the missed heartbeat counts to prevent state-space explosion.
-                     heartbeats_missed_1 = (heartbeats_missed_1>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_1;
-                     heartbeats_missed_2 = (heartbeats_missed_2>max_missed_heartbeats+2) ? max_missed_heartbeats+2 : heartbeats_missed_2;
+                     ping_timed_out() after(ping_timeout);
                  }
+                 // Prevent detecting again immediately.
+                 heartbeats_missed_1 = 0;
+                 heartbeats_missed_2 = 0;
                  break;
-               
-             case 3: //FAILED : 
+              
+             case 3: //FAILED :
                  break;
-        } 
+        }
         self.runMe() after(heartbeat_period);
     }
-     
+    
     msgsrv heartBeat(byte networkId, int senderid) {
         if (mode==BACKUP) {
             if (networkId == 0) heartbeats_missed_1 = 0;
             else heartbeats_missed_2 = 0;
         }
     }
-    
+   
     msgsrv nodeFail() {
         primary=-1;
         mode = FAILED;
@@ -238,10 +276,10 @@ reactiveclass Node (20){
 }
 
 reactiveclass Switch(10) {
-
+ 
     knownrebecs {
     }
-    
+   
     statevars {
         byte mynetworkId;
         int id;
@@ -263,51 +301,59 @@ reactiveclass Switch(10) {
         nodeTarget1=n1;
         if (myFailTime!=0) switchFail() after(myFailTime);
     }
-    
+   
     msgsrv switchFail() {
         failed = true;
         amINRP=false;
     }
-    
+   
     msgsrv pingNRP_response(int senderNode) {
         if (!failed) {
             if (terminal && senderNode <= 100) {
-                nodeTarget1.pingNRP_response(id)after(1); //Pass back
+                nodeTarget1.pingNRP_response(id) after(networkDelay); //Pass back
             } else if (senderNode>id) {
-                switchTarget1.pingNRP_response(id)after(1);
+                switchTarget1.pingNRP_response(id) after(networkDelay);
             } else {
-                switchTarget2.pingNRP_response(id)after(1);
+                switchTarget2.pingNRP_response(id) after(networkDelay);
             }
         }
     }
-    
+   
+    msgsrv request_new_NRP(int senderNode) {
+        if (!failed) {
+            if (terminal && senderNode < 100) nodeTarget1.request_new_NRP(id) after(networkDelay);
+            else if (senderNode > id) switchTarget1.request_new_NRP(id) after(networkDelay);
+            else switchTarget2.request_new_NRP(id) after(networkDelay);
+        }
+    }
+   
     msgsrv pingNRP(int senderNode, int NRP) {
         if (!failed) {
-            if (NRP==id) {
-                if (senderNode < 100) switchTarget2.pingNRP_response(id)after(1); //Response
-                else nodeTarget1.pingNRP_response(id)after(1);
+            if (NRP == id) {
+                if (senderNode < 100) switchTarget2.pingNRP_response(id) after(networkDelay); //Response
+                else nodeTarget1.pingNRP_response(id) after(networkDelay);
             } else {
                 if(senderNode < 100) {
-                    if(senderNode>id) switchTarget1.pingNRP(id, NRP)after(1);
-                    else switchTarget2.pingNRP(id, NRP) after(1);
+                    if(senderNode>id) switchTarget1.pingNRP(id, NRP) after(networkDelay);
+                    else switchTarget2.pingNRP(id, NRP) after(networkDelay);
                 } else {
-                    switchTarget2.pingNRP(id, NRP) after(1);
+                    switchTarget2.pingNRP(id, NRP) after(networkDelay);
                 }
             }
         }
     }
-
+ 
     msgsrv new_NRP(int senderNode, int mNRP_network, int mNRP_switch_id) {
         if (!failed) {
-            if (id==mNRP_switch_id) amINRP=true; 
+            if (id == mNRP_switch_id) amINRP=true;
             else amINRP=false;
-          
+         
             if (terminal && senderNode < 100) nodeTarget1.new_NRP(id, mNRP_network, mNRP_switch_id); //Pass back
             else if(senderNode>id) switchTarget1.new_NRP(id, mNRP_network, mNRP_switch_id);
             else switchTarget2.new_NRP(id, mNRP_network, mNRP_switch_id);
         }
     }
-    
+   
     msgsrv heartBeat(byte networkId, int senderNode) {
         if (!failed) {
             if (terminal && senderNode < 100) nodeTarget1.heartBeat(networkId,id) after(networkDelay);
