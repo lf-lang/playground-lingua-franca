@@ -3,6 +3,7 @@
  *
  * @author Dongha Kim
  */
+
 target C {
   timeout: 9900 msec
 }
@@ -20,12 +21,36 @@ preamble {=
   } task_info_t;
 =}
 
-reactor Task(
+reactor TaskTemplate(
     task_num: uint16_t = 0,
     dead_line: uint16_t = 0,
     num_of_segs: uint16_t = 0,
     wcet: uint16_t[] = {},
     optwcet: uint16_t[] = {}) {
+
+  input new_instance: int
+  input in: int
+  logical action advance_lt: int
+  output fail: int
+  output instance_start_time: time
+  output task_info_update: task_info_t
+  state task_info: task_info_t
+
+  reaction(startup) -> task_info_update {=
+    self->task_info.task_num = self->task_num;
+    self->task_info.num_of_segs = self->num_of_segs;
+    self->task_info.wcet = self->wcet;
+    self->task_info.optwcet = self->optwcet;
+    self->task_info.dead_line = self->dead_line;
+    lf_set(task_info_update, self->task_info);
+  =}
+
+  reaction(advance_lt) -> fail {=
+    lf_set(fail, advance_lt->value);
+  =}
+}
+
+reactor Task extends TaskTemplate {
   preamble {=
     #define TASK1_SLEEP_MSEC  200
     #define TASK2_SLEEP_MSEC  200
@@ -77,24 +102,7 @@ reactor Task(
       return 0;
     }
   =}
-
-  input new_instance: int
-  input in: int
-  logical action advance_lt: int
-  output fail: int
-  output instance_start_time: time
-  output task_info_update: task_info_t
-  state task_info: task_info_t
-
-  reaction(startup) -> task_info_update {=
-    self->task_info.task_num = self->task_num;
-    self->task_info.num_of_segs = self->num_of_segs;
-    self->task_info.wcet = self->wcet;
-    self->task_info.optwcet = self->optwcet;
-    self->task_info.dead_line = self->dead_line;
-    lf_set(task_info_update, self->task_info);
-  =}
-
+  
   reaction(new_instance, in) -> advance_lt, instance_start_time {=
     int seg_start_num, num_of_success, failed_task_num;
 
@@ -134,10 +142,6 @@ reactor Task(
       lf_schedule_int(advance_lt, total_success_time * MSEC(1) + self->task_info.wcet[failed_task_num - 1] * MSEC(1), failed_task_num);
       lf_print("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_task_num, num_of_success, total_success_time + self->task_info.wcet[failed_task_num - 1]);
     }
-  =}
-
-  reaction(advance_lt) -> fail {=
-    lf_set(fail, advance_lt->value);
   =}
 }
 
