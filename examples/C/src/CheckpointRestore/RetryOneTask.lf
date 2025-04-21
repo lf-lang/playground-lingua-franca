@@ -1,3 +1,20 @@
+/**
+ * This project implements a fault-tolerant task execution model using checkpoint and retry
+ * mechanisms, and predictive task dropping. The system is designed to simulate execution of
+ * multi-segment tasks with faults using logical execution time.
+ *
+ * 1. Checkpointed Task Execution: Tasks are divided into segments, each with its own worst-case and
+ * optimistic execution time. Faults are simulated with probabilistic failures, and task is restored
+ * from the checkpoint when fails.
+ *
+ * 2. Predictive Task Dropping: Upon segment failure, the system evaluates whether retrying will
+ * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
+ *
+ * The purpose of this design is to investigate how logic-based scheduling and retry policies can
+ * improve reliability in real-time embedded systems.
+ *
+ * @author Dongha Kim
+ */
 target C {
   timeout: 9900 msec
 }
@@ -15,7 +32,12 @@ preamble {=
   } task_info_t;
 =}
 
-reactor Task (task_num : uint16_t = 0, dead_line: uint16_t = 0, num_of_segs: uint16_t = 0, wcet: uint16_t[] = {}, optwcet: uint16_t[] = {}) {
+reactor Task(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet: uint16_t[] = {},
+    optwcet: uint16_t[] = {}) {
   preamble {=
     #define TASK1_SLEEP_MSEC  200
     #define TASK2_SLEEP_MSEC  200
@@ -85,7 +107,7 @@ reactor Task (task_num : uint16_t = 0, dead_line: uint16_t = 0, num_of_segs: uin
     lf_set(task_info_update, self->task_info);
   =}
 
-  reaction(new_instance, in) -> advance_lt, instance_start_time{=
+  reaction(new_instance, in) -> advance_lt, instance_start_time {=
     int seg_start_num, num_of_success, failed_task_num;
 
     if(in->is_present) {
@@ -104,9 +126,9 @@ reactor Task (task_num : uint16_t = 0, dead_line: uint16_t = 0, num_of_segs: uin
     if (num_of_success < 0) {
       // This means failed_task_num was 0 and successed to end of task. Recalculate the number of successed segments.
       num_of_success +=  self->task_info.num_of_segs + 1;
-    } 
+    }
 
-    // Schedule logical action to advance time. 
+    // Schedule logical action to advance time.
     lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
 
     // Caluculate the time of the total successed segments.
@@ -125,11 +147,13 @@ reactor Task (task_num : uint16_t = 0, dead_line: uint16_t = 0, num_of_segs: uin
       lf_print("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_task_num, num_of_success, total_success_time + self->task_info.wcet[failed_task_num - 1]);
     }
   =}
+
   reaction(advance_lt) -> fail {=
     lf_set(fail, advance_lt->value);
   =}
 }
-// Naming? Timely retry? 
+
+// Naming? Timely retry?
 reactor CheckDeadlineAndRetry {
   input instance_start_time_update: time
   input fail: int
@@ -150,7 +174,8 @@ reactor CheckDeadlineAndRetry {
     // Update the instance start time. This can also be implemented by a message by the Task reactor.
     self->instance_start_time = lf_time_logical_elapsed();
   =}
-  reaction(fail) -> out{=
+
+  reaction(fail) -> out {=
     if(fail->value == 0) {
       // 0 means, all segments are finished. Don't trigger the task again, so do nothing.
     } else {
@@ -166,7 +191,7 @@ reactor CheckDeadlineAndRetry {
       if(min_instance_finish_time > self->instance_start_time + (self->task_info.dead_line * MSEC(1))) {
         lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
         lf_print("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
-        // *****This else if tests when there is no deadline prediction! 
+        // *****This else if tests when there is no deadline prediction!
         // Don't erase this part.
         // } else if(self->task_info.dead_line * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
       //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
@@ -177,6 +202,7 @@ reactor CheckDeadlineAndRetry {
     }
   =}
 }
+
 // Task scheduler
 reactor Periodic(period: time = 0 msec) {
   timer t(0, period)
@@ -185,19 +211,25 @@ reactor Periodic(period: time = 0 msec) {
   reaction(startup) {=
     srand(time(NULL));
   =}
+
   reaction(t) -> out {=
     lf_set(out, 0);
   =}
 }
 
 main reactor {
-  task = new Task(task_num = 1, dead_line = 3000, num_of_segs = 3, wcet = {300, 300, 300}, optwcet = {250, 250, 250})
+  task = new Task(
+      task_num=1,
+      dead_line=3000,
+      num_of_segs=3,
+      wcet = {300, 300, 300},
+      optwcet = {250, 250, 250})
   retry = new CheckDeadlineAndRetry()
   periodic = new Periodic(period = 5000 msec)
 
   periodic.out -> task.new_instance
   task.task_info_update -> retry.task_info_update
-  task.instance_start_time->retry.instance_start_time_update
+  task.instance_start_time -> retry.instance_start_time_update
   task.fail -> retry.fail
   retry.out -> task.in after 0
 }
