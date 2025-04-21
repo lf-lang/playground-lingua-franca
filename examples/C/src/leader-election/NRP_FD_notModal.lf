@@ -82,7 +82,6 @@ reactor Node(
   state heartbeats_missed: int[2] = {0}
   state primary: int = 0            // The known primary node.
   state ping_pending: bool = false  // Ping has been issued and not responded to.
-  state ping_timeout_pending: bool = false  // Ping timeout timer hasn't expired.
   state become_primary_on_ping_response: bool = false
   state NRP_network: int = {= INITIAL_NRP_NETWORK =}
   state NRP_switch_id: int = 0      // 0 means not known.
@@ -164,7 +163,6 @@ reactor Node(
             message_t message = {ping_NRP, self->id, 0, 0};
             lf_set(out[self->NRP_network], message);
             self->ping_pending = true;
-            self->ping_timeout_pending = true;
             lf_schedule(ping_timed_out, 0);
           } else if (in[c]->value.type == ping_NRP_response) {
             lf_print(PRINTF_TIME ": Primary node %d received ping response on network %d. NRP is %d.",
@@ -268,7 +266,6 @@ reactor Node(
           // Wait for a response before becoming primary.
           self->become_primary_on_ping_response = true;
           self->ping_pending = true;
-          self->ping_timeout_pending = true;
           lf_schedule(ping_timed_out, 0);
         } else {
           lf_print_warning(PRINTF_TIME "**** Do not know which switch is the NRP! Cannot become primary.",
@@ -287,13 +284,12 @@ reactor Node(
         );
         // Ping the NRP.
         message_t message = {ping_NRP, self->id, self->NRP_switch_id, 0};
-        if (!self->ping_pending && !self->ping_timeout_pending && self->NRP_switch_id != 0) {
+        if (!self->ping_pending && !self->ping_pending && self->NRP_switch_id != 0) {
           lf_set(out[self->NRP_network], message);
           lf_print(PRINTF_TIME ": Backup node %d pings NRP on network %d, switch %d",
               lf_time_logical_elapsed(), self->id, self->NRP_network, self->NRP_switch_id
           );
           self->ping_pending = true;
-          self->ping_timeout_pending = true;
           lf_schedule(ping_timed_out, 0);
         }
       }
@@ -307,14 +303,13 @@ reactor Node(
   reaction(ping_NRP_timer) -> out, ping_timed_out {=
     if (self->my_mode == primary) {
       // Ping the NRP if there is one and there isn't a ping timeout pending.
-      if (self->NRP_switch_id != 0 && !self->ping_timeout_pending) {
+      if (self->NRP_switch_id != 0 && !self->ping_pending) {
         lf_print(PRINTF_TIME ": Primary node %d pings NRP %d (routine).",
           lf_time_logical_elapsed(), self->id, self->NRP_switch_id
         );
         message_t ping = {ping_NRP, self->id, self->NRP_switch_id, 0};
         lf_set(out[self->NRP_network], ping);
         self->ping_pending = true;
-        self->ping_timeout_pending = true;
         lf_schedule(ping_timed_out, 0);
       }
     }
@@ -322,7 +317,7 @@ reactor Node(
 
   reaction(ping_timed_out) -> out, ping_timed_out, new_NRP_request_timed_out {=
     if (self->my_mode == primary) {
-      self->ping_timeout_pending = false;
+      self->ping_pending = false;
       if (self->ping_pending) {
         // Ping timed out.
         self->ping_pending = false;
@@ -347,12 +342,11 @@ reactor Node(
           message_t message = {ping_NRP, self->id, 0, 0};
           lf_set(out[self->NRP_network], message);
           self->ping_pending = true;
-          self->ping_timeout_pending = true;
           lf_schedule(ping_timed_out, 0);
         }
       }
     } else if (self->my_mode == backup) {
-      self->ping_timeout_pending = false;
+      self->ping_pending = false;
       if (self->ping_pending) {
         // Ping timed out.
         lf_print(PRINTF_TIME ": Backup node %d gets no response from ping.", lf_time_logical_elapsed(), self->id);
