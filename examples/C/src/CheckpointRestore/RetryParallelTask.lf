@@ -210,8 +210,8 @@ main reactor {
       task_num=1,
       dead_line=3000,
       num_of_segs=3,
-      wcet = {150, 150, 150},
-      optwcet = {130, 130, 130})
+      wcet = {350, 350, 350},
+      optwcet = {300, 300, 300})
   retry1 = new CheckDeadlineAndRetry()
   task2 = new Task(
       task_num=2,
