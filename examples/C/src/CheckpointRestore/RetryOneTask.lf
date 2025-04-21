@@ -203,8 +203,7 @@ reactor CheckDeadlineAndRetry {
   =}
 }
 
-// Task scheduler
-reactor Periodic(period: time = 0 msec) {
+reactor TaskScheduler(period: time = 0 msec) {
   timer t(0, period)
   output out: int
 
@@ -225,9 +224,9 @@ main reactor {
       wcet = {300, 300, 300},
       optwcet = {250, 250, 250})
   retry = new CheckDeadlineAndRetry()
-  periodic = new Periodic(period = 5000 msec)
+  scheduler = new TaskScheduler(period = 5000 msec)
 
-  periodic.out -> task.new_instance
+  scheduler.out -> task.new_instance
   task.task_info_update -> retry.task_info_update
   task.instance_start_time -> retry.instance_start_time_update
   task.fail -> retry.fail

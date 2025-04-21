@@ -10,8 +10,6 @@ target C {
 preamble {=
   #include <stdlib.h> // rand()
   #include "platform.h" // lf_sleep()
-  // #define NUMBER_OF_SEGMENTS 3
-  // #define TASK_DEADLINE 3000 // msecs
 
   typedef struct task_info_t {
     uint16_t task_num;
@@ -143,6 +141,7 @@ reactor Task(
   =}
 }
 
+// Naming? Timely retry?
 reactor CheckDeadlineAndRetry {
   input instance_start_time_update: time
   input fail: int
@@ -192,7 +191,7 @@ reactor CheckDeadlineAndRetry {
   =}
 }
 
-reactor Periodic(period: time = 0 msec) {
+reactor TaskScheduler(period: time = 0 msec) {
   timer t(0, period)
   output out: int
 
@@ -220,15 +219,15 @@ main reactor {
       wcet = {300, 300, 300},
       optwcet = {250, 250, 250})
   retry2 = new CheckDeadlineAndRetry()
-  periodic = new Periodic(period = 5000 msec)
+  scheduler = new TaskScheduler(period = 5000 msec)
 
-  periodic.out -> task1.new_instance
+  scheduler.out -> task1.new_instance
   task1.task_info_update -> retry1.task_info_update
   task1.instance_start_time -> retry1.instance_start_time_update
   task1.fail -> retry1.fail
   retry1.out -> task1.in after 0
 
-  periodic.out -> task2.new_instance
+  scheduler.out -> task2.new_instance
   task2.task_info_update -> retry2.task_info_update
   task2.instance_start_time -> retry2.instance_start_time_update
   task2.fail -> retry2.fail
