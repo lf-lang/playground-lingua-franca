@@ -41,7 +41,7 @@ reactor Task1 extends TaskTemplate {
       return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
     }
 
-    int total_task(int checkpoint) {
+    int total_task1(int checkpoint) {
       if (checkpoint <= 1 && task1_seg1()) return 1;
       if (checkpoint <= 2 && task1_seg2()) return 2;
       if (checkpoint <= 3 && task1_seg3()) return 3;
