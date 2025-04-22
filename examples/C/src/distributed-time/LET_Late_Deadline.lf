@@ -2,11 +2,11 @@
  * This example shows a classic sensor-processor-actuator system. The `after` delays on the
  * connections provide a system-level Logical Execution Time (LET). If these delays are large enough
  * to absorb upstream processing times and communication latencies, then the default STA of zero is
- * safe. In these cases, it is safe anyway because the Processor and Actuator have no other inputs
+ * safe. In these cases, it is safe anyway because the Compute and Actuator have no other inputs
  * or events (clocks or actions), and hence will not attempt to advance logical time unless an input
  * arrives.
  *
- * However, this example has a flaw that may make it unacceptable in practice: the Processor, on
+ * However, this example has a flaw that may make it unacceptable in practice: the Compute, on
  * every second firing, takes 50ms to process the data, which causes a violation of the deadline at
  * the Actuator. The problem, however, is that the deadline handler is not invoked until the input
  * actually arrives. This may be too late for the application, which may need to respond to such a
@@ -30,12 +30,12 @@ reactor Sensor {
     self->counter++;
     lf_sleep(MSEC(10));
     lf_set(out, self->counter);
-    lf_print("Sensor1 " PRINTF_TIME ": Sensing... (counter=%d)",
+    lf_print("Sensor " PRINTF_TIME ": Sensing... (counter=%d)",
         lf_time_logical_elapsed(), self->counter);
   =}
 }
 
-reactor Processor {
+reactor Compute {
   input in: int
   output out: int
   state counter: int = 0
@@ -43,11 +43,11 @@ reactor Processor {
   @label("10 or 50 ms delay")
   reaction(in) -> out {=
     if (self->counter % 2 == 0) {
-        lf_print("Processor1 " PRINTF_TIME " : Normal processing(10ms)... (in=%d)",
+        lf_print("Compute " PRINTF_TIME " : Normal processing(10ms)... (in=%d)",
             lf_time_logical_elapsed(), in->value);
         lf_sleep(MSEC(10));
     } else {
-        lf_print("Processor1 " PRINTF_TIME ": Excessive delay processing(50ms)... (in=%d)",
+        lf_print("Compute " PRINTF_TIME ": Excessive delay processing(50ms)... (in=%d)",
             lf_time_logical_elapsed(), in->value);
         lf_sleep(MSEC(50));
     }
@@ -62,20 +62,20 @@ reactor Actuator(STA: time = 0) {
 
   @label("normal")
   reaction(in) {=
-    lf_print("Actuator1 " PRINTF_TIME ": Actuating with sensor value (in=%d) at physical time " PRINTF_TIME,
+    lf_print("Actuator " PRINTF_TIME ": Actuating with sensor value (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
     self->data_arrived = true;
   =} deadline(5 ms) {=
-    lf_print("Actuator1 " PRINTF_TIME ": *** Deadline missed on sensor data (in=%d) at physical time " PRINTF_TIME " ***",
+    lf_print("Actuator " PRINTF_TIME ": *** Deadline missed on sensor data (in=%d) at physical time " PRINTF_TIME " ***",
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
   =}
 }
 
 federated reactor {
-  a1_sensor = new Sensor()
-  b1_processor = new Processor()
-  c1_actuator = new Actuator()
+  s = new Sensor()
+  c = new Compute()
+  a = new Actuator()
 
-  a1_sensor.out -> b1_processor.in after 15 ms
-  b1_processor.out -> c1_actuator.in after 15 ms
+  s.out -> c.in after 15 ms
+  c.out -> a.in after 15 ms
 }

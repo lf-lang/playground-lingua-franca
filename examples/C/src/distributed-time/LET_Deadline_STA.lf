@@ -16,7 +16,7 @@ target C {
   workers: 8
 }
 
-reactor Sensor1 {
+reactor Sensor {
   output out: int
   timer t(0, 100 ms)
   state counter: int = 0
@@ -26,12 +26,12 @@ reactor Sensor1 {
     self->counter++;
     lf_sleep(MSEC(10));
     lf_set(out, self->counter);
-    lf_print("Sensor1 " PRINTF_TIME ": Sensing... (counter=%d)",
+    lf_print("Sensor " PRINTF_TIME ": Sensing... (counter=%d)",
         lf_time_logical_elapsed(), self->counter);
   =}
 }
 
-reactor Processor1 {
+reactor Compute {
   input in: int
   output out: int
   state counter: int = 0
@@ -39,11 +39,11 @@ reactor Processor1 {
   @label("10 or 50 ms delay")
   reaction(in) -> out {=
     if (self->counter % 2 == 0) {
-        lf_print("Processor1 " PRINTF_TIME " : Normal processing(10ms)... (in=%d)",
+        lf_print("Compute " PRINTF_TIME " : Normal processing(10ms)... (in=%d)",
             lf_time_logical_elapsed(), in->value);
         lf_sleep(MSEC(10));
     } else {
-        lf_print("Processor1 " PRINTF_TIME ": Excessive delay processing(50ms)... (in=%d)",
+        lf_print("Compute " PRINTF_TIME ": Excessive delay processing(50ms)... (in=%d)",
             lf_time_logical_elapsed(), in->value);
         lf_sleep(MSEC(50));
     }
@@ -52,52 +52,52 @@ reactor Processor1 {
   =}
 }
 
-reactor Actuator1(STA: time = 0) {
+reactor Actuator(STA: time = 0) {
   input in: int
   timer t(30 ms, 100 ms)
   state data_arrived: bool = false
 
   @label("normal")
   reaction(in) {=
-    lf_print("Actuator1 " PRINTF_TIME ": Actuating with sensor value (in=%d) at physical time " PRINTF_TIME,
+    lf_print("Actuator " PRINTF_TIME ": Actuating with sensor value (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
     self->data_arrived = true;
   =} STAA(5 ms) {=
-    lf_print("Actuator1 " PRINTF_TIME ": *** STAA violation on sensor data (in=%d) at physical time " PRINTF_TIME ". Dropping data.",
+    lf_print("Actuator " PRINTF_TIME ": *** STAA violation on sensor data (in=%d) at physical time " PRINTF_TIME ". Dropping data.",
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
   =} deadline(5 ms) {=
-    lf_print("Actuator1 " PRINTF_TIME ": *** Deadline missed on sensor data (in=%d) at physical time " PRINTF_TIME " ***",
+    lf_print("Actuator " PRINTF_TIME ": *** Deadline missed on sensor data (in=%d) at physical time " PRINTF_TIME " ***",
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
   =}
 
   @label("checker")
   reaction(t) {=
     if (self->data_arrived) {
-        lf_print("Actuator1 Checker " PRINTF_TIME ": Data arrived on time.",
+        lf_print("Actuator Checker " PRINTF_TIME ": Data arrived on time.",
             lf_time_logical_elapsed());
         self->data_arrived = false;
     } else {
-        lf_print("Actuator1 Checker " PRINTF_TIME ": *** Data late. Actuating backup at physical time " PRINTF_TIME,
+        lf_print("Actuator Checker " PRINTF_TIME ": *** Data late. Actuating backup at physical time " PRINTF_TIME,
             lf_time_logical_elapsed(), lf_time_physical_elapsed());
     }
   =} deadline(20 ms) {=
     if (self->data_arrived) {
       // Data arrived on time, but normal handler (reaction 1) took too long.
-      lf_print("Actuator1 Checker " PRINTF_TIME ": *** Normal handler took too long. Reacting at physical time " PRINTF_TIME,
+      lf_print("Actuator Checker " PRINTF_TIME ": *** Normal handler took too long. Reacting at physical time " PRINTF_TIME,
           lf_time_logical_elapsed(), lf_time_physical_elapsed());
       self->data_arrived = false;
     } else {
-      lf_print("Actuator1 " PRINTF_TIME ": ************** Deadline missed. Backup actuation is late at physical time " PRINTF_TIME,
+      lf_print("Actuator " PRINTF_TIME ": ************** Deadline missed. Backup actuation is late at physical time " PRINTF_TIME,
           lf_time_logical_elapsed(), lf_time_physical_elapsed());
     }
   =}
 }
 
 federated reactor {
-  a1_sensor = new Sensor1()
-  b1_processor = new Processor1()
-  c1_actuator = new Actuator1()
+  s = new Sensor()
+  c = new Compute()
+  a = new Actuator()
 
-  a1_sensor.out -> b1_processor.in after 15 ms
-  b1_processor.out -> c1_actuator.in after 15 ms
+  s.out -> c.in after 15 ms
+  c.out -> a.in after 15 ms
 }
