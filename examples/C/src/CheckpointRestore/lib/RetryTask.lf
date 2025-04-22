@@ -1,17 +1,4 @@
 /**
- * This project implements a fault-tolerant task execution model using checkpoint and retry
- * mechanisms, and predictive task dropping. The system is designed to simulate execution of
- * multi-segment tasks with faults using logical execution time.
- *
- * 1. Checkpointed Task Execution: Tasks are divided into segments, each with its own worst-case and
- * optimistic execution time. Faults are simulated with probabilistic failures, and task is restored
- * from the checkpoint when fails.
- *
- * 2. Predictive Task Dropping: Upon segment failure, the system evaluates whether retrying will
- * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
- *
- * The purpose of this design is to investigate how logic-based scheduling and retry policies can
- * improve reliability in real-time embedded systems.
  *
  * @author Dongha Kim
  */
