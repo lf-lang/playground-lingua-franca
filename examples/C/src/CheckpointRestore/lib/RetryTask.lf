@@ -29,6 +29,7 @@ preamble {=
     uint16_t* wcet;
     uint16_t* optwcet;
   } task_info_t;
+  typedef int (*task_fn_t)(int checkpoint);
   #endif
 =}
 
@@ -39,7 +40,8 @@ reactor TaskTemplate(
     wcet: uint16_t[] = {},
     optwcet: uint16_t[] = {}) {
   preamble {=
-    int total_task(int checkpoint);
+    int total_task1(int checkpoint);
+    int total_task2(int checkpoint);
   =}
   input new_instance: int
   input in: int
@@ -48,9 +50,19 @@ reactor TaskTemplate(
   output instance_start_time: time
   output task_info_update: task_info_t
   state task_info: task_info_t
+  state task_fn: task_fn_t
+
+  method set_fn_ptr() {=
+    if(self->task_num == 1) {
+      self->task_fn = total_task1;
+    } else if(self->task_num == 2) {
+    self->task_fn = total_task2;
+    }
+  =}
 
   reaction(startup) -> task_info_update {=
     self->task_info.task_num = self->task_num;
+    set_fn_ptr();
     self->task_info.num_of_segs = self->num_of_segs;
     self->task_info.wcet = self->wcet;
     self->task_info.optwcet = self->optwcet;
@@ -71,7 +83,7 @@ reactor TaskTemplate(
       // When timer triggers.
       lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     }
-    failed_seg_num = total_task(seg_start_num);
+    failed_seg_num = self->task_fn(seg_start_num);
     // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
     num_of_success = failed_seg_num - seg_start_num;
     if (num_of_success < 0) {
