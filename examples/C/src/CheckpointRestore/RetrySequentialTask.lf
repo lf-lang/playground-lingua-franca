@@ -1,0 +1,106 @@
+/**
+ * Add a parallel task with different worst case execution times.
+ *
+ * @author Dongha Kim
+ */
+ target C {
+  timeout: 9900 msec
+}
+
+
+import TaskTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/RetryTask.lf"
+
+reactor Task1 extends TaskTemplate {
+  preamble {=
+    #define TASK1_SEG1_SLEEP_MSEC  200
+    #define TASK1_SEG2_SLEEP_MSEC  200
+    #define TASK1_SEG3_SLEEP_MSEC  200
+    #define FAILURE_RATE 50 // 80% chance
+
+    int task1_seg1() {
+      lf_sleep(MSEC(TASK1_SEG1_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 1 : 0;
+    }
+    int task1_seg2() {
+      lf_sleep(MSEC(TASK1_SEG2_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 2 : 0;
+    }
+    int task1_seg3() {
+      lf_sleep(MSEC(TASK1_SEG3_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
+    }
+
+    int total_task1(int checkpoint) {
+      if (checkpoint <= 1 && task1_seg1()) return 1;
+      if (checkpoint <= 2 && task1_seg2()) return 2;
+      if (checkpoint <= 3 && task1_seg3()) return 3;
+      return 0;
+    }
+  =}
+}
+
+reactor Task2 extends TaskTemplate {
+  preamble {=
+    #define TASK2_SEG1_SLEEP_MSEC  200
+    #define TASK2_SEG2_SLEEP_MSEC  200
+    #define TASK2_SEG3_SLEEP_MSEC  200
+    #define TASK2_SEG4_SLEEP_MSEC  200
+    #define FAILURE_RATE 80 // 80% chance
+
+    int task2_seg1() {
+      lf_sleep(MSEC(TASK2_SEG1_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 1 : 0;
+    }
+    int task2_seg2() {
+      lf_sleep(MSEC(TASK2_SEG2_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 2 : 0;
+    }
+    int task2_seg3() {
+      lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
+    }
+    int task2_seg4() {
+      lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
+      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
+    }
+
+    int total_task2(int checkpoint) {
+      if (checkpoint <= 1 && task2_seg1()) return 1;
+      if (checkpoint <= 2 && task2_seg2()) return 2;
+      if (checkpoint <= 3 && task2_seg3()) return 3;
+      if (checkpoint <= 4 && task2_seg4()) return 4;
+      return 0;
+    }
+  =}
+}
+
+main reactor {
+  task1 = new Task1(
+      task_num=1,
+      dead_line=3000,
+      num_of_segs=3,
+      wcet = {350, 350, 350},
+      optwcet = {300, 300, 300})
+  retry1 = new CheckDeadlineAndRetry()
+  task2 = new Task2(
+      task_num=2,
+      dead_line=3000,
+      num_of_segs=4,
+      wcet = {300, 300, 300, 300},
+      optwcet = {250, 250, 250, 250})
+  retry2 = new CheckDeadlineAndRetry()
+  scheduler = new TaskScheduler(period = 5000 msec)
+
+  scheduler.out -> task1.new_instance
+  task1.task_info_update -> retry1.task_info_update
+  task1.instance_start_time -> retry1.instance_start_time_update
+  task1.fail -> retry1.fail
+  retry1.out -> task1.in after 0
+
+  // scheduler.out -> task2.new_instance
+  retry1.out->task2.new_instance
+  task2.task_info_update -> retry2.task_info_update
+  task2.instance_start_time -> retry2.instance_start_time_update
+  task2.fail -> retry2.fail
+  retry2.out -> task2.in after 0
+}

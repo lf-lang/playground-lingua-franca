@@ -1,7 +1,4 @@
-/**
- *
- * @author Dongha Kim
- */
+/** @author Dongha Kim */
 target C
 
 preamble {=
@@ -64,11 +61,16 @@ reactor TaskTemplate(
       // When Retry was triggered. in->value should not be 0.
       seg_start_num = in->value;
     } else {
-      // When timer is triggering the next instance.
-      seg_start_num = 1; // Start from segment 1.
-      lf_set(instance_start_time, lf_time_logical_elapsed());
-      // When timer triggers.
-      lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+      // When triggering the next instance.
+      if(new_instance->value == 0){
+        // Only start when the value is 0.
+        seg_start_num = 1; // Start from segment 1.
+        lf_set(instance_start_time, lf_time_logical_elapsed());
+        // When timer triggers.
+        lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+      } else {
+        return;
+      }
     }
     failed_seg_num = self->task_fn(seg_start_num);
     // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
@@ -128,6 +130,7 @@ reactor CheckDeadlineAndRetry {
   reaction(fail) -> out {=
     if(fail->value == 0) {
       // 0 means, all segments are finished. Don't trigger the task again, so do nothing.
+      lf_set(out, 0);
     } else {
       // Check deadline in logical time. Does not schedule next retry, when deadline violation.
 
