@@ -104,7 +104,7 @@ reactor Task extends TaskTemplate {
   =}
   
   reaction(new_instance, in) -> advance_lt, instance_start_time {=
-    int seg_start_num, num_of_success, failed_task_num;
+    int seg_start_num, num_of_success, failed_seg_num;
 
     if(in->is_present) {
       // When Retry was triggered. in->value should not be 0.
@@ -116,11 +116,11 @@ reactor Task extends TaskTemplate {
       // When timer triggers.
       lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     }
-    failed_task_num = total_task(seg_start_num);
-    // Calculate the number of successed segments. If failed_task_num=3 and in seg_start_num=1, 2 segments success.
-    num_of_success = failed_task_num - seg_start_num;
+    failed_seg_num = total_task(seg_start_num);
+    // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
+    num_of_success = failed_seg_num - seg_start_num;
     if (num_of_success < 0) {
-      // This means failed_task_num was 0 and successed to end of task. Recalculate the number of successed segments.
+      // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
       num_of_success +=  self->task_info.num_of_segs + 1;
     }
 
@@ -133,14 +133,14 @@ reactor Task extends TaskTemplate {
       total_success_time += self->task_info.optwcet[seg_start_num + i -1];
     }
 
-    if(failed_task_num == 0) {
+    if(failed_seg_num == 0) {
       // Task is finished. Advance as much as the sucessed segments.
       lf_schedule_int(advance_lt, total_success_time * MSEC(1), 0);
       lf_print("TASK%d: All segments finished. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, num_of_success, total_success_time);
     } else {
       // Segment failed. Advance as much as successed segments + 1 failed segment.
-      lf_schedule_int(advance_lt, total_success_time * MSEC(1) + self->task_info.wcet[failed_task_num - 1] * MSEC(1), failed_task_num);
-      lf_print("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_task_num, num_of_success, total_success_time + self->task_info.wcet[failed_task_num - 1]);
+      lf_schedule_int(advance_lt, total_success_time * MSEC(1) + self->task_info.wcet[failed_seg_num - 1] * MSEC(1), failed_seg_num);
+      lf_print("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_seg_num, num_of_success, total_success_time + self->task_info.wcet[failed_seg_num - 1]);
     }
   =}
 }
