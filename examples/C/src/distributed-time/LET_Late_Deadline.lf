@@ -2,13 +2,13 @@
  * This example shows a classic sensor-processor-actuator system. The `after` delays on the
  * connections provide a system-level Logical Execution Time (LET). If these delays are large enough
  * to absorb upstream processing times and communication latencies, then the default STA of zero is
- * safe. In these cases, it is safe anyway because the Compute and Actuator have no other inputs
- * or events (clocks or actions), and hence will not attempt to advance logical time unless an input
+ * safe. In these cases, it is safe anyway because the Compute and Actuator have no other inputs or
+ * events (clocks or actions), and hence will not attempt to advance logical time unless an input
  * arrives.
  *
- * However, this example has a flaw that may make it unacceptable in practice: the Compute, on
- * every second firing, takes 50ms to process the data, which causes a violation of the deadline at
- * the Actuator. The problem, however, is that the deadline handler is not invoked until the input
+ * However, this example has a flaw that may make it unacceptable in practice: the Compute, on every
+ * second firing, takes 50ms to process the data, which causes a violation of the deadline at the
+ * Actuator. The problem, however, is that the deadline handler is not invoked until the input
  * actually arrives. This may be too late for the application, which may need to respond to such a
  * deadline violation sooner. This is fixed in LET_Deadline_STA.lf.
  *
