@@ -17,36 +17,28 @@ preamble {=
   #endif
 =}
 
-reactor TaskTemplate(
+reactor TaskRetryTemplate(
     task_num: uint16_t = 0,
     dead_line: uint16_t = 0,
     num_of_segs: uint16_t = 0,
     wcet: uint16_t[] = {},
     optwcet: uint16_t[] = {}) {
-  preamble {=
-    int total_task1(int checkpoint);
-    int total_task2(int checkpoint);
-  =}
   input new_instance: int
   input in: int
   logical action advance_lt: int
+  logical action trigger_task: int
+  logical action calculate_lt: int
+
   output fail: int
   output instance_start_time: time
   output task_info_update: task_info_t
   state task_info: task_info_t
   state task_fn: task_fn_t
+  state seg_start_num: int
 
-  method set_fn_ptr() {=
-    if(self->task_num == 1) {
-      self->task_fn = total_task1;
-    } else if(self->task_num == 2) {
-    self->task_fn = total_task2;
-    }
-  =}
 
   reaction(startup) -> task_info_update {=
     self->task_info.task_num = self->task_num;
-    set_fn_ptr();
     self->task_info.num_of_segs = self->num_of_segs;
     self->task_info.wcet = self->wcet;
     self->task_info.optwcet = self->optwcet;
@@ -54,17 +46,15 @@ reactor TaskTemplate(
     lf_set(task_info_update, self->task_info);
   =}
 
-  reaction(new_instance, in) -> advance_lt, instance_start_time {=
-    int seg_start_num, num_of_success, failed_seg_num;
-
+  reaction(new_instance, in) -> trigger_task, instance_start_time {=
     if(in->is_present) {
       // When Retry was triggered. in->value should not be 0.
-      seg_start_num = in->value;
+      self->seg_start_num = in->value;
     } else {
       // When triggering the next instance.
       if(new_instance->value == 0){
         // Only start when the value is 0.
-        seg_start_num = 1; // Start from segment 1.
+        self->seg_start_num = 1; // Start from segment 1.
         lf_set(instance_start_time, lf_time_logical_elapsed());
         // When timer triggers.
         lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
@@ -72,9 +62,19 @@ reactor TaskTemplate(
         return;
       }
     }
-    failed_seg_num = self->task_fn(seg_start_num);
+    lf_schedule_int(trigger_task, 0, self->seg_start_num);
+  =}
+
+  // Should be implemented in the extended reactor.
+//   reaction(trigger_task) -> calculate_lt {=
+//     total_task1(self->seg_start_num);
+//     lf_schedule_int(calculate_lt, 0, total_task1(self->seg_start_num));
+//   =}
+
+  reaction(calculate_lt) -> advance_lt {=  
     // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
-    num_of_success = failed_seg_num - seg_start_num;
+    int failed_seg_num = calculate_lt->value;
+    int num_of_success = failed_seg_num - self->seg_start_num;
     if (num_of_success < 0) {
       // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
       num_of_success +=  self->task_info.num_of_segs + 1;
@@ -86,7 +86,7 @@ reactor TaskTemplate(
     // Caluculate the time of the total successed segments.
     int total_success_time = 0; // msecs
     for (int i=0; i < num_of_success; i++){
-      total_success_time += self->task_info.optwcet[seg_start_num + i -1];
+      total_success_time += self->task_info.optwcet[self->seg_start_num + i -1];
     }
 
     if(failed_seg_num == 0) {
