@@ -7,15 +7,15 @@
   timeout: 9900 msec
 }
 
+// import DonghaTemplate from "lib/DonghaTemplate.lf"
+import TaskRetryTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
 
-import TaskTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/RetryTask.lf"
-
-reactor Task1 extends TaskTemplate {
+reactor Task1 extends TaskRetryTemplate {
   preamble {=
     #define TASK1_SEG1_SLEEP_MSEC  200
     #define TASK1_SEG2_SLEEP_MSEC  200
     #define TASK1_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 50 // 80% chance
+    #define FAILURE_RATE 80 // 80% chance
 
     int task1_seg1() {
       lf_sleep(MSEC(TASK1_SEG1_SLEEP_MSEC));
@@ -37,9 +37,14 @@ reactor Task1 extends TaskTemplate {
       return 0;
     }
   =}
+
+  reaction(trigger_task) -> calculate_lt {=
+    total_task1(self->seg_start_num);
+    lf_schedule_int(calculate_lt, 0, total_task1(self->seg_start_num));
+  =}
 }
 
-reactor Task2 extends TaskTemplate {
+reactor Task2 extends TaskRetryTemplate {
   preamble {=
     #define TASK2_SEG1_SLEEP_MSEC  200
     #define TASK2_SEG2_SLEEP_MSEC  200
@@ -71,6 +76,10 @@ reactor Task2 extends TaskTemplate {
       if (checkpoint <= 4 && task2_seg4()) return 4;
       return 0;
     }
+  =}
+
+  reaction(trigger_task) -> calculate_lt {=
+    lf_schedule_int(calculate_lt, 0, total_task2(self->seg_start_num));
   =}
 }
 

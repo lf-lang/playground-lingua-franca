@@ -15,13 +15,14 @@
  *
  * @author Dongha Kim
  */
-target C {
+ target C {
   timeout: 9900 msec
 }
 
-import TaskTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/RetryTask.lf"
+// import DonghaTemplate from "lib/DonghaTemplate.lf"
+import TaskRetryTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
 
-reactor Task1 extends TaskTemplate {
+reactor Task1 extends TaskRetryTemplate {
   preamble {=
     #define TASK1_SEG1_SLEEP_MSEC  200
     #define TASK1_SEG2_SLEEP_MSEC  200
@@ -47,10 +48,10 @@ reactor Task1 extends TaskTemplate {
       if (checkpoint <= 3 && task1_seg3()) return 3;
       return 0;
     }
-    // This is a dummy definition to satisfy the linker — task_num != 2 won't call this
-    int total_task2(int checkpoint) {
-      return 0;
-    }
+  =}
+
+  reaction(trigger_task) -> calculate_lt {=
+    lf_schedule_int(calculate_lt, 0, total_task1(self->seg_start_num));
   =}
 }
 
