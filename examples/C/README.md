@@ -6,6 +6,7 @@
 * [Car Brake](src/car-brake/README.md): Sketch of ADAS system illustrating the CAL theorem.
 * [Deadlines](src/deadlines/README.md): Uses of deadlines in Lingua Franca.
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
+* [Distributed STA and STAA](src/distributed-sta/README.md): How to set STA and STAA in federated/decentralized.
 * [Distributed Time](src/distributed-time/README.md): Federated, decentralized, with deadlines.
 * [Furuta Pendulum](src/modal_models/FurutaPendulum/README.md): A controller and simulation illustrating a modal reactor.
 * [Keyboard](src/keyboard/README.md): Responding to keyboard input using ncurses.

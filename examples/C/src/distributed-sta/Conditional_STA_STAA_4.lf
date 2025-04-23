@@ -1,0 +1,54 @@
+/**
+ * Variant where the STA (safe-to-advance) is 20 ms, and the STAA (safe-to-assume-absent) is zero.
+ * Note that even though the STA is not used at the start tag, the wait time at an input port is
+ * STA+STAA, so even though the STAA is zero, the downstream will not infer an absence of the input
+ * at a tag _t_ until the physical time _t_ + STA + STAA has passed.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  coordination: decentralized,
+  timeout: 1 s,
+  workers: 8
+}
+
+reactor Upstream {
+  output out: int
+  timer t(0, 100 ms)
+  state counter: int = 0
+
+  reaction(t) -> out {=
+    self->counter++;
+    lf_sleep(MSEC(10));
+    lf_set(out, self->counter);
+    lf_print("Upstream " PRINTF_TIME ": Sensing... (counter=%d)",
+        lf_time_logical_elapsed(), self->counter);
+  =}
+}
+
+@label("STA == 20ms, STAA == 0")
+reactor Downstream(STA: time = 20 ms) {
+  input in: int
+  timer t(0, 100 ms)
+
+  reaction(in) {=
+    lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
+  =} STAA(0) {=
+    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
+  =}
+
+  reaction(t) {=
+    lf_print("Downstream " PRINTF_TAG ": React to timer at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+  =}
+}
+
+federated reactor {
+  s = new Upstream()
+  @label("STA == STAA == 0")
+  a = new Downstream()
+
+  s.out -> a.in
+}

@@ -1,0 +1,57 @@
+/**
+ * In this variant, the downstream reactor has a timer that triggers much more often than incoming
+ * signals. In this case, whenever the local timer triggers at a tag where no input is expected, the
+ * system has to wait for the STA+STAA time before it can safely assume that the input is absent.
+ * This causes an unnecessary delay in the processing of the timer event. Notice that you could
+ * reverse the order of the reactions and use STAA = 20 ms instead of STA = 20 ms, but this would
+ * also delay the effect that any input could have on the actions taken in response to the local
+ * timer.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  coordination: decentralized,
+  timeout: 1 s,
+  workers: 8
+}
+
+reactor Upstream {
+  output out: int
+  timer t(0, 100 ms)
+  state counter: int = 0
+
+  reaction(t) -> out {=
+    self->counter++;
+    lf_sleep(MSEC(10));
+    lf_set(out, self->counter);
+    lf_print("Upstream " PRINTF_TIME ": Sensing... (counter=%d)",
+        lf_time_logical_elapsed(), self->counter);
+  =}
+}
+
+@label("STA == 20ms, STAA == 0")
+reactor Downstream(STA: time = 20 ms) {
+  input in: int
+  timer t(0, 10 ms)
+
+  reaction(in) {=
+    lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
+  =} STAA(0) {=
+    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
+  =}
+
+  reaction(t) {=
+    lf_print("Downstream " PRINTF_TAG ": React to timer at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
+  =}
+}
+
+federated reactor {
+  s = new Upstream()
+  @label("STA == STAA == 0")
+  a = new Downstream()
+
+  s.out -> a.in
+}
