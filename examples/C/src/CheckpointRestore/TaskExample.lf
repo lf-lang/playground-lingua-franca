@@ -2,7 +2,7 @@ target C
 
 import TaskRetryTemplate from "lib/TaskRetryTemplate.lf"
 
-reactor Task1<T, U> extends TaskRetryTemplate {
+reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
   preamble {=
     #define TASK1_SEG1_SLEEP_MSEC  200
     #define TASK1_SEG2_SLEEP_MSEC  200
@@ -47,7 +47,7 @@ reactor Task1<T, U> extends TaskRetryTemplate {
       return 0;
     }
   =}
-  state saved_value: U
+  state saved_value: CHECK_T
 
   reaction(new_instance) {=
     self->saved_value = 0;
@@ -59,12 +59,12 @@ reactor Task1<T, U> extends TaskRetryTemplate {
   =}
 }
 
-reactor Task2<T, U> extends TaskRetryTemplate {
+reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
   preamble {=
     #define TASK2_SEG1_SLEEP_MSEC  200
     #define TASK2_SEG2_SLEEP_MSEC  200
     #define TASK2_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 80 // 80% chance
+    #define FAILURE_RATE 50 // 80% chance
 
     int task2_seg1(int in, int* out) {
       lf_sleep(MSEC(TASK2_SEG1_SLEEP_MSEC));
@@ -115,7 +115,7 @@ reactor Task2<T, U> extends TaskRetryTemplate {
       return 0;
     }
   =}
-  state saved_value: U
+  state saved_value: CHECK_T
 
   reaction(new_instance) {=
     self->saved_value = 0;

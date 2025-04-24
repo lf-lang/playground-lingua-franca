@@ -11,14 +11,14 @@ import CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
 import Task1, Task2 from "TaskExample.lf"
 
 main reactor {
-  task1 = new Task1<int, int>(
+  task1 = new Task1<int, int, int>(
       task_num=1,
       dead_line=3000,
       num_of_segs=3,
       wcet = {350, 350, 350},
       optwcet = {300, 300, 300})
   retry1 = new CheckDeadlineAndRetry()
-  task2 = new Task2<int, int>(
+  task2 = new Task2<int, int, int>(
       task_num=2,
       dead_line=3000,
       num_of_segs=4,

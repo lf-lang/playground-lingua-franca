@@ -17,7 +17,7 @@ preamble {=
   #endif
 =}
 
-reactor TaskRetryTemplate<T, U>(
+reactor TaskRetryTemplate<IN_T, OUT_T>(
     task_num: uint16_t = 0,
     dead_line: uint16_t = 0,
     num_of_segs: uint16_t = 0,
@@ -25,8 +25,8 @@ reactor TaskRetryTemplate<T, U>(
     optwcet: uint16_t[] = {}) {
   input new_instance: int
   input retry: int
-  input task_input: T
-  output task_output: U
+  input task_input: IN_T
+  output task_output: OUT_T
   logical action advance_lt: int
   logical action trigger_task: int
   logical action calculate_lt: int
@@ -37,8 +37,8 @@ reactor TaskRetryTemplate<T, U>(
   state task_info: task_info_t
   state task_fn: task_fn_t
   state seg_start_num: int
-  state task_input: T
-  state task_output: U
+  state task_input: IN_T
+  state task_output: OUT_T
 
   reaction(startup) -> task_info_update {=
     self->task_info.task_num = self->task_num;
@@ -174,10 +174,10 @@ reactor CheckDeadlineAndRetry {
   =}
 }
 
-reactor TaskScheduler<T>(period: time = 0 msec, in: T = 0) {
+reactor TaskScheduler<IN_T>(period: time = 0 msec, in: IN_T = 0) {
   timer t(0, period)
   output trigger: int
-  output task_input: T
+  output task_input: IN_T
 
   reaction(startup) {=
     // Setup rand() function.

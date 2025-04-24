@@ -23,7 +23,7 @@ import CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
 import Task1 from "TaskExample.lf"
 
 main reactor {
-  task = new Task1<int, int>(
+  task = new Task1<int, int, int>(
       task_num=1,
       dead_line=3000,
       num_of_segs=3,
