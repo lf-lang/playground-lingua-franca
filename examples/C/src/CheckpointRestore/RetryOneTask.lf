@@ -92,9 +92,9 @@ main reactor {
   scheduler = new TaskScheduler<int>(period = 5000 msec, in = 0)
 
   scheduler.trigger -> task.new_instance
-  scheduler.task_input -> task.in
+  scheduler.task_input -> task.task_input
   task.task_info_update -> retry.task_info_update
   task.instance_start_time -> retry.instance_start_time_update
-  task.fail -> retry.fail
+  task.failed_seg -> retry.failed_seg
   retry.out -> task.retry after 0
 }
