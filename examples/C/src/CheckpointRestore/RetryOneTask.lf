@@ -69,5 +69,5 @@ main reactor {
   task.task_info_update -> retry.task_info_update
   task.instance_start_time -> retry.instance_start_time_update
   task.fail -> retry.fail
-  retry.out -> task.in after 0
+  retry.out -> task.retry after 0
 }

@@ -104,11 +104,11 @@ main reactor {
   task1.task_info_update -> retry1.task_info_update
   task1.instance_start_time -> retry1.instance_start_time_update
   task1.fail -> retry1.fail
-  retry1.out -> task1.in after 0
+  retry1.out -> task1.retry after 0
 
   scheduler.out -> task2.new_instance
   task2.task_info_update -> retry2.task_info_update
   task2.instance_start_time -> retry2.instance_start_time_update
   task2.fail -> retry2.fail
-  retry2.out -> task2.in after 0
+  retry2.out -> task2.retry after 0
 }

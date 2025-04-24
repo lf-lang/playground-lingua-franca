@@ -24,7 +24,7 @@ reactor TaskRetryTemplate(
     wcet: uint16_t[] = {},
     optwcet: uint16_t[] = {}) {
   input new_instance: int
-  input in: int
+  input retry: int
   logical action advance_lt: int
   logical action trigger_task: int
   logical action calculate_lt: int
@@ -45,10 +45,10 @@ reactor TaskRetryTemplate(
     lf_set(task_info_update, self->task_info);
   =}
 
-  reaction(new_instance, in) -> trigger_task, instance_start_time {=
-    if(in->is_present) {
-      // When Retry was triggered. in->value should not be 0.
-      self->seg_start_num = in->value;
+  reaction(new_instance, retry) -> trigger_task, instance_start_time {=
+    if(retry->is_present) {
+      // When Retry was triggered. retry->value should not be 0.
+      self->seg_start_num = retry->value;
     } else {
       // When triggering the next instance.
       if(new_instance->value == 0){
