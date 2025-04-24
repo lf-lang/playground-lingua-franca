@@ -7,10 +7,9 @@ target C {
   timeout: 9900 msec
 }
 
-// import DonghaTemplate from "lib/DonghaTemplate.lf"
 import TaskRetryTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
 
-reactor Task1 extends TaskRetryTemplate {
+reactor Task1<T, U> extends TaskRetryTemplate {
   preamble {=
     #define TASK1_SEG1_SLEEP_MSEC  200
     #define TASK1_SEG2_SLEEP_MSEC  200
@@ -44,7 +43,7 @@ reactor Task1 extends TaskRetryTemplate {
   =}
 }
 
-reactor Task2 extends TaskRetryTemplate {
+reactor Task2<T, U> extends TaskRetryTemplate {
   preamble {=
     #define TASK2_SEG1_SLEEP_MSEC  200
     #define TASK2_SEG2_SLEEP_MSEC  200
@@ -84,23 +83,24 @@ reactor Task2 extends TaskRetryTemplate {
 }
 
 main reactor {
-  task1 = new Task1(
+  task1 = new Task1<int, int>(
       task_num=1,
       dead_line=3000,
       num_of_segs=3,
       wcet = {350, 350, 350},
       optwcet = {300, 300, 300})
   retry1 = new CheckDeadlineAndRetry()
-  task2 = new Task2(
+  task2 = new Task2<int, int>(
       task_num=2,
       dead_line=3000,
       num_of_segs=4,
       wcet = {300, 300, 300, 300},
       optwcet = {250, 250, 250, 250})
   retry2 = new CheckDeadlineAndRetry()
-  scheduler = new TaskScheduler(period = 5000 msec)
+  scheduler = new TaskScheduler<int>(period = 5000 msec, in = 0)
 
-  scheduler.out -> task1.new_instance
+  scheduler.trigger -> task1.new_instance
+  scheduler.task_input -> task1.in
   task1.task_info_update -> retry1.task_info_update
   task1.instance_start_time -> retry1.instance_start_time_update
   task1.fail -> retry1.fail

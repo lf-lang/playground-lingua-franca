@@ -17,7 +17,7 @@ preamble {=
   #endif
 =}
 
-reactor TaskRetryTemplate(
+reactor TaskRetryTemplate<T, U>(
     task_num: uint16_t = 0,
     dead_line: uint16_t = 0,
     num_of_segs: uint16_t = 0,
@@ -25,6 +25,8 @@ reactor TaskRetryTemplate(
     optwcet: uint16_t[] = {}) {
   input new_instance: int
   input retry: int
+  input in: T
+  output out: U
   logical action advance_lt: int
   logical action trigger_task: int
   logical action calculate_lt: int
@@ -35,6 +37,8 @@ reactor TaskRetryTemplate(
   state task_info: task_info_t
   state task_fn: task_fn_t
   state seg_start_num: int
+  state task_input: T
+  state task_output: U
 
   reaction(startup) -> task_info_update {=
     self->task_info.task_num = self->task_num;
@@ -43,6 +47,10 @@ reactor TaskRetryTemplate(
     self->task_info.optwcet = self->optwcet;
     self->task_info.dead_line = self->dead_line;
     lf_set(task_info_update, self->task_info);
+  =}
+
+  reaction(in) {=
+    self->task_input = in->value;
   =}
 
   reaction(new_instance, retry) -> trigger_task, instance_start_time {=
@@ -58,6 +66,7 @@ reactor TaskRetryTemplate(
         // When timer triggers.
         lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
       } else {
+        // New instance should only be triggered when value is 0.
         return;
       }
     }
@@ -154,15 +163,18 @@ reactor CheckDeadlineAndRetry {
   =}
 }
 
-reactor TaskScheduler(period: time = 0 msec) {
+reactor TaskScheduler<T>(period: time = 0 msec, in: T = 0) {
   timer t(0, period)
-  output out: int
+  output trigger: int
+  output task_input: T
 
   reaction(startup) {=
+    // Setup rand() function.
     srand(time(NULL));
   =}
 
-  reaction(t) -> out {=
-    lf_set(out, 0);
+  reaction(t) -> trigger, task_input {=
+    lf_set(trigger, 0);
+    lf_set(task_input, self->in);
   =}
 }
