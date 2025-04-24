@@ -7,7 +7,7 @@ reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
     #define TASK1_SEG1_SLEEP_MSEC  200
     #define TASK1_SEG2_SLEEP_MSEC  200
     #define TASK1_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 20 // 80% chance
+    #define FAILURE_RATE 20 // % chance
 
     int task1_seg1(int in, int* out) {
       lf_sleep(MSEC(TASK1_SEG1_SLEEP_MSEC));
@@ -64,7 +64,7 @@ reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
     #define TASK2_SEG1_SLEEP_MSEC  200
     #define TASK2_SEG2_SLEEP_MSEC  200
     #define TASK2_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 50 // 80% chance
+    #define FAILURE_RATE 50 // % chance
 
     int task2_seg1(int in, int* out) {
       lf_sleep(MSEC(TASK2_SEG1_SLEEP_MSEC));
