@@ -7,85 +7,8 @@ target C {
   timeout: 9900 msec
 }
 
-import TaskRetryTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
-
-reactor Task1<T, U> extends TaskRetryTemplate {
-  preamble {=
-    #define TASK1_SEG1_SLEEP_MSEC  200
-    #define TASK1_SEG2_SLEEP_MSEC  200
-    #define TASK1_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 80 // 80% chance
-
-    int task1_seg1() {
-      lf_sleep(MSEC(TASK1_SEG1_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 1 : 0;
-    }
-    int task1_seg2() {
-      lf_sleep(MSEC(TASK1_SEG2_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 2 : 0;
-    }
-    int task1_seg3() {
-      lf_sleep(MSEC(TASK1_SEG3_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
-    }
-
-    int total_task1(int in, int* out, int checkpoint) {
-      // Do something with input.
-      if (checkpoint <= 1 && task1_seg1()) return 1;
-      if (checkpoint <= 2 && task1_seg2()) return 2;
-      if (checkpoint <= 3 && task1_seg3()) return 3;
-      // Do something with output.
-      *out = 0;
-      return 0;
-    }
-  =}
-
-  reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, total_task1(self->task_input, &self->task_output, self->seg_start_num));
-  =}
-}
-
-reactor Task2<T, U> extends TaskRetryTemplate {
-  preamble {=
-    #define TASK2_SEG1_SLEEP_MSEC  200
-    #define TASK2_SEG2_SLEEP_MSEC  200
-    #define TASK2_SEG3_SLEEP_MSEC  200
-    #define TASK2_SEG4_SLEEP_MSEC  200
-    #define FAILURE_RATE 80 // 80% chance
-
-    int task2_seg1() {
-      lf_sleep(MSEC(TASK2_SEG1_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 1 : 0;
-    }
-    int task2_seg2() {
-      lf_sleep(MSEC(TASK2_SEG2_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 2 : 0;
-    }
-    int task2_seg3() {
-      lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
-    }
-    int task2_seg4() {
-      lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 4 : 0;
-    }
-
-    int total_task2(int in, int* out, int checkpoint) {
-      // Do something with input.
-      if (checkpoint <= 1 && task2_seg1()) return 1;
-      if (checkpoint <= 2 && task2_seg2()) return 2;
-      if (checkpoint <= 3 && task2_seg3()) return 3;
-      if (checkpoint <= 4 && task2_seg4()) return 4;
-      // Do something with output.
-      *out = 0;
-      return 0;
-    }
-  =}
-
-  reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, total_task2(self->task_input, &self->task_output, self->seg_start_num));
-  =}
-}
+import CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
+import Task1, Task2 from "TaskExample.lf"
 
 main reactor {
   task1 = new Task1<int, int>(
@@ -102,7 +25,7 @@ main reactor {
       wcet = {300, 300, 300, 300},
       optwcet = {250, 250, 250, 250})
   retry2 = new CheckDeadlineAndRetry()
-  scheduler = new TaskScheduler<int>(period = 5000 msec, in = 0)
+  scheduler = new TaskScheduler<int>(period = 5000 msec, in=0)
 
   scheduler.trigger -> task1.new_instance
   scheduler.task_input -> task1.task_input

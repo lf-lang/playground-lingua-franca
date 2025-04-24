@@ -145,7 +145,7 @@ reactor CheckDeadlineAndRetry {
   reaction(failed_seg) -> out {=
     if(failed_seg->value == 0) {
       // 0 means, all segments are finished.
-      // Still need to signal output with 0. 
+      // Still need to signal output with 0.
       // If the task's retry port gets 0, does nothing.
       // If the task's new_instance port gets 0, it starts a new instance.
       lf_set(out, 0);
