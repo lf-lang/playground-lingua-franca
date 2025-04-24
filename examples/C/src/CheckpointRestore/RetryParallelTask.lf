@@ -65,7 +65,7 @@ reactor Task2<T, U> extends TaskRetryTemplate {
     }
     int task2_seg4() {
       lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
+      return (rand() % 100 < FAILURE_RATE) ? 4 : 0;
     }
 
     int total_task2(int checkpoint) {

@@ -65,7 +65,7 @@ reactor Task2<T, U> extends TaskRetryTemplate {
     }
     int task2_seg4() {
       lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
-      return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
+      return (rand() % 100 < FAILURE_RATE) ? 4 : 0;
     }
 
     int total_task2(int checkpoint) {
@@ -105,6 +105,8 @@ main reactor {
   task1.instance_start_time -> retry1.instance_start_time_update
   task1.failed_seg -> retry1.failed_seg
   retry1.out -> task1.retry after 0
+
+  task1.task_output -> task2.task_input
 
   retry1.out -> task2.new_instance
   task2.task_info_update -> retry2.task_info_update

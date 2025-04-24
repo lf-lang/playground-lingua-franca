@@ -26,7 +26,7 @@ reactor TaskRetryTemplate<T, U>(
   input new_instance: int
   input retry: int
   input task_input: T
-  output out: U
+  output task_output: U
   logical action advance_lt: int
   logical action trigger_task: int
   logical action calculate_lt: int
@@ -111,11 +111,11 @@ reactor TaskRetryTemplate<T, U>(
         }
   =}
 
-  reaction(advance_lt) -> failed_seg, out {=
+  reaction(advance_lt) -> failed_seg, task_output {=
     lf_set(failed_seg, advance_lt->value);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
     if (advance_lt->value == 0) {
-      lf_set(out, self->task_output);
+      lf_set(task_output, self->task_output);
     }
   =}
 }
@@ -146,8 +146,8 @@ reactor CheckDeadlineAndRetry {
     if(failed_seg->value == 0) {
       // 0 means, all segments are finished.
       // Still need to signal output with 0. 
-      // If the task's retry gets 0, does nothing.
-      // If the new_instance gets 0, 
+      // If the task's retry port gets 0, does nothing.
+      // If the task's new_instance port gets 0, it starts a new instance.
       lf_set(out, 0);
     } else {
       // Check deadline in logical time. Does not schedule next retry, when deadline violation.
