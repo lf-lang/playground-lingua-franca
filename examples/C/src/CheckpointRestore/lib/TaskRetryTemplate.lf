@@ -56,17 +56,21 @@ reactor TaskRetryTemplate<T, U>(
   reaction(new_instance, retry) -> trigger_task, instance_start_time {=
     if(retry->is_present) {
       // When Retry was triggered. retry->value should not be 0.
-      self->seg_start_num = retry->value;
-    } else {
-      // When triggering the next instance.
+      if (retry->value != 0) {
+        self->seg_start_num = retry->value;
+      } else {
+        // Don't trigger retry. 0 means the segment was completed.
+        return;
+      }
+    } else { // When new_instance is triggered.
+      // Can be triggered by the timer or anything. However, only start when the value is 0.
       if(new_instance->value == 0){
-        // Only start when the value is 0.
         self->seg_start_num = 1; // Start from segment 1.
         lf_set(instance_start_time, lf_time_logical_elapsed());
         // When timer triggers.
         lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
       } else {
-        // New instance should only be triggered when value is 0.
+        // New instance should only be triggered when value is 0. Don't schedule to trigger task.
         return;
       }
     }
@@ -109,6 +113,10 @@ reactor TaskRetryTemplate<T, U>(
 
   reaction(advance_lt) -> fail {=
     lf_set(fail, advance_lt->value);
+    // If
+    if (advance_lt->value == 0) {
+
+    }
   =}
 }
 
