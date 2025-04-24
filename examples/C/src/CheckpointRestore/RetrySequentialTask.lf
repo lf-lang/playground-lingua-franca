@@ -29,17 +29,19 @@ reactor Task1<T, U> extends TaskRetryTemplate {
       return (rand() % 100 < FAILURE_RATE) ? 3 : 0;
     }
 
-    int total_task1(int checkpoint) {
+    int total_task1(int in, int* out, int checkpoint) {
+      // Do something with input.
       if (checkpoint <= 1 && task1_seg1()) return 1;
       if (checkpoint <= 2 && task1_seg2()) return 2;
       if (checkpoint <= 3 && task1_seg3()) return 3;
+      // Do something with output.
+      *out = 0;
       return 0;
     }
   =}
 
   reaction(trigger_task) -> calculate_lt {=
-    total_task1(self->seg_start_num);
-    lf_schedule_int(calculate_lt, 0, total_task1(self->seg_start_num));
+    lf_schedule_int(calculate_lt, 0, total_task1(self->task_input, &self->task_output, self->seg_start_num));
   =}
 }
 
@@ -68,17 +70,20 @@ reactor Task2<T, U> extends TaskRetryTemplate {
       return (rand() % 100 < FAILURE_RATE) ? 4 : 0;
     }
 
-    int total_task2(int checkpoint) {
+    int total_task2(int in, int* out, int checkpoint) {
+      // Do something with input.
       if (checkpoint <= 1 && task2_seg1()) return 1;
       if (checkpoint <= 2 && task2_seg2()) return 2;
       if (checkpoint <= 3 && task2_seg3()) return 3;
       if (checkpoint <= 4 && task2_seg4()) return 4;
+      // Do something with output.
+      *out = 0;
       return 0;
     }
   =}
 
   reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, total_task2(self->seg_start_num));
+    lf_schedule_int(calculate_lt, 0, total_task2(self->task_input, &self->task_output, self->seg_start_num));
   =}
 }
 
