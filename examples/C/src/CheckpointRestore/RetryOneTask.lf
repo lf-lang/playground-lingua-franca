@@ -15,7 +15,7 @@
  *
  * @author Dongha Kim
  */
- target C {
+target C {
   timeout: 9900 msec
 }
 
