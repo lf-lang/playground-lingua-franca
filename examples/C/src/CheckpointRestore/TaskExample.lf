@@ -47,10 +47,23 @@ reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
       return 0;
     }
   =}
+  input task_input: IN_T
+  output task_output: OUT_T
+  state task_input: IN_T
+  state task_output: OUT_T
+
   state saved_value: CHECK_T
 
-  reaction(new_instance) {=
+  reaction(new_instance, task_input) {=
     self->saved_value = 0;
+    self->task_input = task_input->value;
+  =}
+
+  reaction(advance_lt) -> task_output {=
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (advance_lt->value == 0) {
+      lf_set(task_output, self->task_output);
+    }
   =}
 
   reaction(trigger_task) -> calculate_lt {=
@@ -115,12 +128,24 @@ reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
       return 0;
     }
   =}
+  input task_input: IN_T
+  output task_output: OUT_T
+  state task_input: IN_T
+  state task_output: OUT_T
+
   state saved_value: CHECK_T
 
-  reaction(new_instance) {=
+  reaction(new_instance, task_input) {=
     self->saved_value = 0;
+    self->task_input = task_input->value;
   =}
 
+  reaction(advance_lt) -> task_output {=
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (advance_lt->value == 0) {
+      lf_set(task_output, self->task_output);
+    }
+  =}
   reaction(trigger_task) -> calculate_lt {=
     lf_schedule_int(calculate_lt, 0, total_task2(self->task_input, &self->task_output, &self->saved_value, self->seg_start_num));
     lf_print("Saved_value: %d", self->saved_value);
