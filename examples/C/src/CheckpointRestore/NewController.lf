@@ -1,0 +1,73 @@
+target C
+
+import TaskRetryTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/TaskRetryTemplate.lf"
+
+preamble {=
+  #define REAL_TYPE double
+
+  #define delta_th_eq (1.5868660794926)
+  #define delta_e_eq (0.012009615652468)
+
+  // const REAL_TYPE K1_intVa =   0.049802610664357;
+  // const REAL_TYPE K1_Va     = -0.486813084356079;
+  // const REAL_TYPE K1_Vz     = -0.077603095495388;
+  // const REAL_TYPE K1_q      = 21.692383376322041;
+=}
+
+reactor VzControl50 extends TaskRetryTemplate {
+  preamble {=
+    const REAL_TYPE K2_intVz   = 0.000627342822264;
+    const REAL_TYPE K2_Vz     = -0.003252836726554;
+    const REAL_TYPE K2_q       = 0.376071446897134;
+    const REAL_TYPE K2_az     = -0.001566907423747;
+
+    REAL_TYPE Vz_control_50(REAL_TYPE Vz_f, REAL_TYPE Vz_c, REAL_TYPE q_f, REAL_TYPE az_f){
+     static REAL_TYPE y = 0.0;
+     static REAL_TYPE Ts_K2 = 1.0/50.0;
+     static REAL_TYPE integrator = 0.0;
+
+     // Output
+     y = K2_intVz * integrator + K2_Vz * Vz_f + K2_q * q_f + K2_az * az_f + delta_e_eq;
+     // State
+     integrator += Ts_K2 * (Vz_c - Vz_f);
+
+     return y;
+    }
+  =}
+  input Vz_f: REAL_TYPE
+  input Vz_c: REAL_TYPE
+  input q_f: REAL_TYPE
+  input az_f: REAL_TYPE
+  output delta_e_c: REAL_TYPE
+
+  state Vz_f: REAL_TYPE
+  state Vz_c: REAL_TYPE
+  state q_f: REAL_TYPE
+  state az_f: REAL_TYPE
+  state delta_e_c: REAL_TYPE
+
+  state saved_value: REAL_TYPE
+
+  reaction(new_instance, Vz_f, Vz_c, q_f, az_f) {=
+    self->saved_value = 0;
+    self->Vz_f = Vz_f->value;
+    self->Vz_c = Vz_c->value;
+    self->q_f = q_f->value;
+    self->az_f = az_f->value;
+  =}
+
+  reaction(advance_lt) -> delta_e_c {=
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (advance_lt->value == 0) {
+      lf_set(delta_e_c, self->delta_e_c);
+    }
+  =}
+
+  reaction(trigger_task) -> calculate_lt {=
+    lf_schedule_int(calculate_lt, 0, total_task1(self->task_input, &self->task_output, &self->saved_value, self->seg_start_num));
+  =}
+}
+
+main reactor {
+  Vz_ct = new VzControl50()
+}
