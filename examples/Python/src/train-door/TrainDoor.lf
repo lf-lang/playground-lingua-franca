@@ -4,7 +4,9 @@
  * button press), it has to first check whether the vehicle was recently in motion. The request will
  * be denied if motion has been detected less than two seconds ago.
  */
-target Python
+target Python {
+  keepalive: true
+}
 
 reactor MotionDetector {
   preamble {=
