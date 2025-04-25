@@ -54,7 +54,7 @@ reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
 
   state saved_value: CHECK_T
 
-  reaction(new_instance, task_input) {=
+  reaction(task_input) {=
     self->saved_value = 0;
     self->task_input = task_input->value;
   =}
@@ -135,7 +135,7 @@ reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
 
   state saved_value: CHECK_T
 
-  reaction(new_instance, task_input) {=
+  reaction(task_input) {=
     self->saved_value = 0;
     self->task_input = task_input->value;
   =}
