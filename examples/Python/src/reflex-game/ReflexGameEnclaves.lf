@@ -1,0 +1,129 @@
+/**
+ * This version of the ReflexGame uses an enclave rather than a background thread to collect
+ * keyboard inputs. The Key reactor runs with its own enclave and sends keyboard inputs to the rest
+ * of the program using a physical connection. It uses a reaction that blocks on keyboard input, so
+ * its logical time will lag far behind that of the rest of the program. Each time you press Enter
+ * on the keyboard, it produces an output and schedules a physical action, which results in the same
+ * blocking reaction being invoked again. Because it is a physical action, each time you press
+ * Enter, logical time catches up to physical time.
+ *
+ * @author Edward A. Lee
+ */
+ target Python {
+  keepalive: true
+}
+
+/**
+ * Produce a counting sequence at random times with a minimum and maximum time between outputs
+ * specified as parameters.
+ *
+ * @param min_time The minimum time between outputs.
+ * @param max_time The maximum time between outputs.
+ */
+ reactor RandomSource(min_time = 2 sec, max_time = 8 sec) {
+  preamble {=
+    import random
+    import time
+
+    def additional_time(self, min_time, max_time):
+        # Generate a random additional delay over the minimum.
+        # Assume millisecond precision is enough.
+        interval_in_msec = (max_time - min_time) // MSEC(1)
+        return (self.random.randint(0, interval_in_msec - 1)) * MSEC(1)
+  =}
+  input another
+  output out
+  logical action prompt(min_time)
+  state count = 0
+
+  reaction(startup) -> prompt {=
+    print("***********************************************")
+    print("Watch for the prompt, then hit Return or Enter.")
+    print("Type Control-D (EOF) to quit.\n")
+
+    # Set a seed for random number generation based on the current time
+    self.random.seed(int(self.time.time()))
+
+    # Schedule the first event
+    prompt.schedule(self.additional_time(0, self.max_time - self.min_time))
+  =}
+
+  reaction(prompt) -> out {=
+    self.count += 1
+    print(f"{self.count}. Hit Return or Enter!", end="", flush=True)
+    out.set(self.count)
+  =}
+
+  reaction(another) -> prompt {=
+    # Schedule the next event
+    prompt.schedule(self.additional_time(0, self.max_time - self.min_time))
+  =}
+}
+
+/**
+ * Upon receiving a prompt, record the time of the prompt. When user input arrives, schedule a
+ * physical action that records the time of this event and then report the response time. Also,
+ * check for cheating.
+ */
+ reactor GetUserInput {
+  state prompt_time = 0
+  state total_time_in_ms = 0
+  state count = 0
+
+  input prompt
+  input user_response
+  output another
+
+  reaction(prompt) {=
+    self.prompt_time = lf.time.logical()
+  =}
+
+  reaction(user_response) -> another {=
+    # If the prompt_time is 0, then the user is cheating and
+    # hitting return before being prompted.
+    if self.prompt_time == 0:
+        print("YOU CHEATED!")
+        request_stop()
+    else:
+        time_in_ms = (lf.time.logical() - self.prompt_time) // 1000000
+        print(f"Response time in milliseconds: {time_in_ms}")
+        self.count += 1
+        self.total_time_in_ms += time_in_ms
+        # Reset the prompt_time to indicate that there is no new prompt
+        self.prompt_time = 0
+        # Trigger another prompt
+        another.set(42)
+  =}
+
+  reaction(shutdown) {=
+    if self.count > 0:
+        print(f"\n**** Average response time: {self.total_time_in_ms//self.count}.")
+    else:
+        print("\n**** No attempts.")
+  =}
+}
+
+reactor Key {
+  # Use a physical action so that on each keypress, logical time catches up to physical time.
+  physical action trigger
+  output key
+
+  reaction(startup, trigger) -> key, trigger {=
+    try:
+        c = input()
+        key.set(c)
+        trigger.schedule(0)
+    except EOFError:
+        request_stop()
+  =}
+}
+
+main reactor {
+  p = new RandomSource()
+  g = new GetUserInput()
+  @enclave
+  u = new Key()
+  p.out -> g.prompt
+  g.another -> p.another
+  u.key ~> g.user_response
+}
