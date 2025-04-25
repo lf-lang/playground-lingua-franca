@@ -9,7 +9,7 @@
  *
  * @author Edward A. Lee
  */
- target Python {
+target Python {
   keepalive: true
 }
 
@@ -20,7 +20,7 @@
  * @param min_time The minimum time between outputs.
  * @param max_time The maximum time between outputs.
  */
- reactor RandomSource(min_time = 2 sec, max_time = 8 sec) {
+reactor RandomSource(min_time = 2 sec, max_time = 8 sec) {
   preamble {=
     import random
     import time
@@ -65,7 +65,7 @@
  * physical action that records the time of this event and then report the response time. Also,
  * check for cheating.
  */
- reactor GetUserInput {
+reactor GetUserInput {
   state prompt_time = 0
   state total_time_in_ms = 0
   state count = 0
