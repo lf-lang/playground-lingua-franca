@@ -1,0 +1,27 @@
+target Python {
+    timeout: 3 sec
+}
+
+reactor Counter(stride(1)) {
+    state count(0)
+    timer t(0, 1 sec)
+    output out
+    reaction(t) -> out {=
+        out.set(self.count)
+        self.count += self.stride
+    =}
+}
+
+reactor Printer {
+    input _in
+    reaction(_in) {=
+        # using thread-safe print function provided by the runtime
+        print(f"Hello World! {_in.value}.")
+    =}
+}
+
+main reactor {
+    c = new Counter(stride = 1)
+    p = new Printer()
+    c.out -> p._in
+}

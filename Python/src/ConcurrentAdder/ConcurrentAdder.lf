@@ -1,0 +1,38 @@
+target Python {
+    timeout: 5 sec
+}
+
+reactor Counter(stride(1), period(1 sec)) {
+    state count(0);
+    // timer triggers reaction
+    timer t(0, period);
+    output out;
+    reaction(t) -> out {= 
+        out.set(self.count)
+        self.count += self.stride
+    =}
+}
+
+reactor Adder(bank_value(1)) {
+    input _in;
+    output out;
+    reaction(_in) -> out {=
+        out.set(_in.value + self.bank_value)
+    =}
+}
+
+reactor Printer(N(4)) {
+    input[N] _in;
+    reaction(_in) {=
+        for i in range(self.N):
+            print(f"Result {_in[i].value}")
+    =}
+}
+
+main reactor(stride(10), period(1 sec), N(4)) {
+    c = new Counter(stride=stride, period=period);
+    a = new[4] Adder();
+    p = new Printer(N=N);
+    (c.out)+ -> a._in;
+    a.out -> p._in;
+}
