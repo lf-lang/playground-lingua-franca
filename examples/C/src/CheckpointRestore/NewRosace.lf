@@ -1,6 +1,6 @@
 target C {
   fast: true,
-  build: "../rosace/build_run_plot.sh NewRosace",
+  build: "./build_run_plot.sh NewRosace",
   timeout: 10 min
 }
 
@@ -25,7 +25,7 @@ reactor Command(period: time = 100 ms, value: double = 0.0) {
   =}
 }
 
-main reactor(filter_period: time = 10 ms) {  
+main reactor NewRosace (filter_period: time = 10 ms) {  
   a = new Aircraft()              // variables = new Variables()
   c = new NewController(filter_period=filter_period)
   altitude = new Command(value=11000)  // Altitude command

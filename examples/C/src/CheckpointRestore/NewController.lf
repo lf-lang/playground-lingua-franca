@@ -9,6 +9,8 @@ preamble {=
   #define delta_th_eq (1.5868660794926)
   #define delta_e_eq (0.012009615652468)
 
+  #define FAILURE_RATE 30 // % chance
+
   #ifndef TASK_INFO_T_DEFINED
   #define TASK_INFO_T_DEFINED
   typedef struct task_info_t {
@@ -29,17 +31,42 @@ reactor VaControl50 extends TaskRetryTemplate {
     const REAL_TYPE K1_q      = 21.692383376322041;
     const REAL_TYPE Va_eq       = 230.0;
 
-    int Va_control_50(REAL_TYPE Va_f, REAL_TYPE Vz_f, REAL_TYPE q_f, REAL_TYPE Va_c, REAL_TYPE* output, REAL_TYPE* saved_state, int seg_start_num){
+    int Va_control_50(REAL_TYPE Va_f, REAL_TYPE Vz_f, REAL_TYPE q_f, REAL_TYPE Va_c, REAL_TYPE* output, REAL_TYPE* saved_y, REAL_TYPE* saved_integrator,int seg_start_num){
     	static REAL_TYPE y = 0.0;
     	static REAL_TYPE Ts_K1 = 1.0/50.0;
     	static REAL_TYPE integrator = 0.0;
 
-    	// Output
-    	y = K1_intVa * integrator + K1_Va * (Va_f - Va_eq) + K1_Vz * Vz_f + K1_q * q_f + delta_th_eq;
-    	// State
-    	integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
-      *output = y;
-      return 0;
+      // // Output
+    	// y = K1_intVa * integrator + K1_Va * (Va_f - Va_eq) + K1_Vz * Vz_f + K1_q * q_f + delta_th_eq;
+    	// // State
+    	// integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
+      // *output = y;
+      // return 0;
+
+      // Output
+      if (seg_start_num <= 1) {
+        // Check if input is correct.
+    	  y = K1_intVa * integrator + K1_Va * (Va_f - Va_eq) + K1_Vz * Vz_f + K1_q * q_f + delta_th_eq;
+        if (rand() % 100 < FAILURE_RATE) {
+          return 1;
+        } else {
+          *saved_y = y;
+          *saved_integrator = integrator;
+        }
+      }
+      if (seg_start_num <= 2) {
+        // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
+        integrator = *saved_integrator;
+        // State
+    	  integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
+        if (rand() % 100 < FAILURE_RATE) {
+          return 2;
+        } else {
+        *output = *saved_y;
+        // *output = y;
+        }
+        return 0;
+      }
     }
   =}
   input Va_f: double  // filtered true airspeed
@@ -54,10 +81,12 @@ reactor VaControl50 extends TaskRetryTemplate {
   state Va_c: double
   state delta_th_c: double
 
-  state saved_value: double
+  state saved_y: double
+  state saved_integrator: double
 
   reaction(Va_f, Vz_f, q_f, Va_c) {=
-    self->saved_value = 0;
+    self->saved_y = 0;
+    self->saved_integrator = 0;
     self->Va_f = Va_f->value;
     self->Vz_f = Vz_f->value;
     self->q_f = q_f->value;
@@ -72,28 +101,46 @@ reactor VaControl50 extends TaskRetryTemplate {
   =}
 
   reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, Va_control_50(self->Va_f, self->Vz_f, self->q_f, self->Va_c, &self->delta_th_c, &self->saved_value, self->seg_start_num));
+    lf_schedule_int(calculate_lt, 0, Va_control_50(self->Va_f, self->Vz_f, self->q_f, self->Va_c, &self->delta_th_c, &self->saved_y, &self->saved_integrator, self->seg_start_num));
   =}
 }
 
 reactor VzControl50 extends TaskRetryTemplate {
   preamble {=
-    const REAL_TYPE K2_intVz   = 0.000627342822264;
-    const REAL_TYPE K2_Vz     = -0.003252836726554;
-    const REAL_TYPE K2_q       = 0.376071446897134;
-    const REAL_TYPE K2_az     = -0.001566907423747;
+      const REAL_TYPE K2_intVz   = 0.000627342822264;
+      const REAL_TYPE K2_Vz     = -0.003252836726554;
+      const REAL_TYPE K2_q       = 0.376071446897134;
+      const REAL_TYPE K2_az     = -0.001566907423747;
 
-    int Vz_control_50(REAL_TYPE Vz_f, REAL_TYPE Vz_c, REAL_TYPE q_f, REAL_TYPE az_f, REAL_TYPE* output, REAL_TYPE* saved_state, int seg_start_num){
-      static REAL_TYPE y = 0.0;
-      static REAL_TYPE Ts_K2 = 1.0/50.0;
-      static REAL_TYPE integrator = 0.0;
+      int Vz_control_50(REAL_TYPE Vz_f, REAL_TYPE Vz_c, REAL_TYPE q_f, REAL_TYPE az_f, REAL_TYPE* output, REAL_TYPE* saved_y, REAL_TYPE* saved_integrator, int seg_start_num){
+        static REAL_TYPE y = 0.0;
+        static REAL_TYPE Ts_K2 = 1.0/50.0;
+        static REAL_TYPE integrator = 0.0;
 
-      // Output
-      y = K2_intVz * integrator + K2_Vz * Vz_f + K2_q * q_f + K2_az * az_f + delta_e_eq;
-      // State
-      integrator += Ts_K2 * (Vz_c - Vz_f);
-      *output = y;
-      return 0;
+        // Output
+        if (seg_start_num <= 1) {
+          // Check if input is correct.
+          y = K2_intVz * integrator + K2_Vz * Vz_f + K2_q * q_f + K2_az * az_f + delta_e_eq;
+          if (rand() % 100 < FAILURE_RATE) {
+            return 1;
+          } else {
+            *saved_y = y;
+            *saved_integrator = integrator;
+          }
+        }
+        if (seg_start_num <= 2) {
+          // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
+          integrator = *saved_integrator;
+          // State
+          integrator += Ts_K2 * (Vz_c - Vz_f);
+          if (rand() % 100 < FAILURE_RATE) {
+            return 2;
+          } else {
+          *output = *saved_y;
+          // *output = y;
+          }
+        return 0;
+      }
     }
   =}
   input Vz_f: double
@@ -108,10 +155,12 @@ reactor VzControl50 extends TaskRetryTemplate {
   state az_f: double
   state delta_e_c: double
 
-  state saved_value: double
+  state saved_y: double
+  state saved_integrator: double
 
   reaction(Vz_f, Vz_c, q_f, az_f) {=
-    self->saved_value = 0;
+    self->saved_y = 0;
+    self->saved_integrator = 0;
     self->Vz_f = Vz_f->value;
     self->Vz_c = Vz_c->value;
     self->q_f = q_f->value;
@@ -126,7 +175,7 @@ reactor VzControl50 extends TaskRetryTemplate {
   =}
 
   reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, Vz_control_50(self->Vz_f, self->Vz_c, self->q_f, self->az_f, &self->delta_e_c, &self->saved_value, self->seg_start_num));
+    lf_schedule_int(calculate_lt, 0, Vz_control_50(self->Vz_f, self->Vz_c, self->q_f, self->az_f, &self->delta_e_c, &self->saved_y, &self->saved_integrator, self->seg_start_num));
   =}
 }
 
@@ -139,10 +188,10 @@ reactor VaControl50Retry {
 
   Va_ct_Retry = new VaControl50(
       task_num=2,
-      dead_line=3000,
-      num_of_segs=1,
-      wcet={300},
-      optwcet={250})
+      dead_line=10,
+      num_of_segs=2,
+      wcet = {2, 2},
+      optwcet = {1, 1})
   retry = new CheckDeadlineAndRetry()
 
   Va_ct_Retry.task_info_update -> retry.task_info_update
@@ -169,10 +218,10 @@ reactor VzControl50Retry {
 
   Vz_ct_Retry = new VzControl50(
       task_num=1,
-      dead_line=3000,
-      num_of_segs=1,
-      wcet={300},
-      optwcet={250})
+      dead_line=10,
+      num_of_segs=2,
+      wcet = {2, 2},
+      optwcet = {1, 1})
   retry = new CheckDeadlineAndRetry()
 
   Vz_ct_Retry.task_info_update -> retry.task_info_update
@@ -253,13 +302,3 @@ reactor NewController(filter_period: time = 10 ms) {
   Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Va_f, Va_ct.Vz_f, Va_ct.Va_c, Va_ct.q_f
   Va_ct.delta_th_c -> delta_thc
 }
-
-// main reactor {
-//   m = new NController()
-//   // Vz_ct_Retry = new VzControl50Retry()
-//   // Va_ct_Retry = new VaControl50Retry()
-
-
-
-//   // a = new VaControl50()
-// }
