@@ -239,6 +239,20 @@ reactor VzControl50Retry {
   =}
 }
 
+reactor Stabilizer(period: time = 10 ms) {
+  input delta_th_c: double
+  input delta_e_c: double
+  output delta_thc: double
+  output delta_ec: double
+
+  timer t(0, period)
+
+  reaction(t) delta_th_c, delta_e_c -> delta_thc, delta_ec {=
+    lf_set(delta_thc, delta_th_c->value);
+    lf_set(delta_ec, delta_e_c->value);
+  =}
+}
+
 reactor NewController(filter_period: time = 10 ms) {
   // Sensor inputs from aircraft
   // Vertical speed
@@ -292,13 +306,22 @@ reactor NewController(filter_period: time = 10 ms) {
   Vz_ct = new VzControl50Retry()
   Va_ct = new VaControl50Retry()
 
+  stabilzer = new Stabilizer(period=filter_period)
+
   h, az, Vz, q, Va -> h_f.x, az_f.x, Vz_f.x, q_f.x, Va_f.x
   c -> h_c.s
   h_f.y -> h_c.x
 
   Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vz_f, Vz_ct.az_f, Vz_ct.Vz_c, Vz_ct.q_f
-  Vz_ct.delta_e_c -> delta_ec
+  // Vz_ct.delta_e_c -> delta_ec
+
+  Vz_ct.delta_e_c -> stabilzer.delta_e_c
+  stabilzer.delta_ec->delta_ec
+
 
   Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Va_f, Va_ct.Vz_f, Va_ct.Va_c, Va_ct.q_f
-  Va_ct.delta_th_c -> delta_thc
+  // Va_ct.delta_th_c -> delta_thc
+
+  Va_ct.delta_th_c -> stabilzer.delta_th_c
+  stabilzer.delta_thc->delta_thc
 }
