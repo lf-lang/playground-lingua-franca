@@ -168,6 +168,9 @@ reactor Node(bank_index: int = 0, num_nodes: size_t = 1, heartbeat_period: time 
   mode Candidate {
     reset state votes_received: int = 0
     reaction(start_election) -> out, election_timeout_reached {=
+      // Reset the vote count to 0.
+      // NOTE: This was a real bug, which could be a good test case for model checking.
+      self->votes_received = 0;
       // Vote for itself.
       self->votes_received++;
       // Broadcast an election start message.
@@ -246,7 +249,7 @@ reactor Node(bank_index: int = 0, num_nodes: size_t = 1, heartbeat_period: time 
   }
 }
 
-federated reactor(num_nodes: size_t = 3) {
+federated reactor(num_nodes: size_t = 5) {
   nodes = new[num_nodes] Node(num_nodes=num_nodes)
   nodes.out ~> interleaved(nodes.in)
 }
