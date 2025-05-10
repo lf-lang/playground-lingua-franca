@@ -1,6 +1,6 @@
 target C
 
-import TaskRetryTemplate, CheckDeadlineAndRetry from "lib/TaskRetryTemplate.lf"
+import TaskRetryTemplate, CheckDeadlineAndRetry from "lib/TaskRetryTemplateOnlyReactions.lf"
 import Filter, Hold from "../rosace/RosaceController.lf"
 
 preamble {=
@@ -52,13 +52,16 @@ reactor VaControl50 extends TaskRetryTemplate {
         } else {
           *saved_y = y;
           *saved_integrator = integrator;
+          printf("Va:*saved_integrator = %ld\n", *saved_integrator);
         }
       }
       if (seg_start_num <= 2) {
         // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
         integrator = *saved_integrator;
+        printf("Va:Before: integrator: %ld\n", integrator);
         // State
     	  integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
+        printf("Va:After: integrator: %ld\n", integrator);
         if (rand() % 100 < FAILURE_RATE) {
           return 2;
         } else {
@@ -126,13 +129,16 @@ reactor VzControl50 extends TaskRetryTemplate {
           } else {
             *saved_y = y;
             *saved_integrator = integrator;
+            printf("Vz:*saved_integrator = %ld\n", *saved_integrator);
           }
         }
         if (seg_start_num <= 2) {
           // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
           integrator = *saved_integrator;
+          printf("Vz:Before: integrator: %ld\n", integrator);
           // State
           integrator += Ts_K2 * (Vz_c - Vz_f);
+          printf("Vz:After: integrator: %ld\n", integrator);
           if (rand() % 100 < FAILURE_RATE) {
             return 2;
           } else {
@@ -248,8 +254,10 @@ reactor Stabilizer(period: time = 10 ms) {
   timer t(0, period)
 
   reaction(t) delta_th_c, delta_e_c -> delta_thc, delta_ec {=
+    lf_print("STABILIZER: Current Logical time: %lld msecs", lf_time_logical_elapsed() / MSEC(1));
     lf_set(delta_thc, delta_th_c->value);
     lf_set(delta_ec, delta_e_c->value);
+    lf_print("delta_th_c: %ld\ndelta_e_c: %ld\n", delta_th_c->value, delta_e_c->value);
   =}
 }
 
