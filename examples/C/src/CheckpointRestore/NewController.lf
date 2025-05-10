@@ -1,6 +1,6 @@
 target C
 
-import TaskRetryTemplate, CheckDeadlineAndRetry from "lib/TaskRetryTemplateOnlyReactions.lf"
+import TaskRetryTemplate, TaskBody, AdvanceTime, CheckDeadlineAndRetry from "lib/TaskRetryTemplate.lf"
 import Filter, Hold from "../rosace/RosaceController.lf"
 
 preamble {=
@@ -23,7 +23,7 @@ preamble {=
   #endif
 =}
 
-reactor VaControl50 extends TaskRetryTemplate {
+reactor VaControl50Body extends TaskBody {
   preamble {=
     const REAL_TYPE K1_intVa =   0.049802610664357;
     const REAL_TYPE K1_Va     = -0.486813084356079;
@@ -52,16 +52,13 @@ reactor VaControl50 extends TaskRetryTemplate {
         } else {
           *saved_y = y;
           *saved_integrator = integrator;
-          printf("Va:*saved_integrator = %ld\n", *saved_integrator);
         }
       }
       if (seg_start_num <= 2) {
         // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
         integrator = *saved_integrator;
-        printf("Va:Before: integrator: %ld\n", integrator);
         // State
     	  integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
-        printf("Va:After: integrator: %ld\n", integrator);
         if (rand() % 100 < FAILURE_RATE) {
           return 2;
         } else {
@@ -78,37 +75,57 @@ reactor VaControl50 extends TaskRetryTemplate {
   input Va_c: double  // Commanded true airspeed setpoint
   output delta_th_c: double
 
-  state Va_f: double
-  state Vz_f: double
-  state q_f: double
-  state Va_c: double
   state delta_th_c: double
 
   state saved_y: double
   state saved_integrator: double
 
-  reaction(Va_f, Vz_f, q_f, Va_c) {=
-    self->saved_y = 0;
-    self->saved_integrator = 0;
-    self->Va_f = Va_f->value;
-    self->Vz_f = Vz_f->value;
-    self->q_f = q_f->value;
-    self->Va_c = Va_c->value;
-  =}
+reaction(trigger_task) Va_f, Vz_f, q_f, Va_c -> calculate_lt, delta_th_c {=
+  int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, self->seg_start_num);
+  lf_set(calculate_lt, result);
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  if (result == 0) {
+    lf_set(delta_th_c, self->delta_th_c);
+  }
+=}
+}
 
-  reaction(advance_lt) -> delta_th_c {=
-    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+reactor VaControl50Tail extends AdvanceTime {
+  input delta_th_c: double
+  output delta_thc: double
+
+  reaction(advance_lt) delta_th_c -> delta_thc {=
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
     if (advance_lt->value == 0) {
-      lf_set(delta_th_c, self->delta_th_c);
-    }
-  =}
-
-  reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, Va_control_50(self->Va_f, self->Vz_f, self->q_f, self->Va_c, &self->delta_th_c, &self->saved_y, &self->saved_integrator, self->seg_start_num));
+      lf_set(delta_thc, delta_th_c->value);
+    }  
   =}
 }
 
-reactor VzControl50 extends TaskRetryTemplate {
+reactor VaControl50 extends TaskRetryTemplate {
+
+  input Va_f: double  // filtered true airspeed
+  input Vz_f: double  // filtered vertical climb rate
+  input q_f: double   // filtered pitch rate
+  input Va_c: double  // Commanded true airspeed setpoint
+  output delta_thc: double
+
+  va_body = new VaControl50Body()
+  va_tail = new VaControl50Tail()
+
+  Va_f->va_body.Va_f
+  Vz_f->va_body.Vz_f
+  q_f->va_body.q_f
+  Va_c->va_body.Va_c
+  trigger.trigger_task -> va_body.trigger_task
+  va_body.calculate_lt->va_tail.calculate_lt
+  va_tail.failed_seg->failed_seg
+  va_body.delta_th_c->va_tail.delta_th_c
+  va_tail.delta_thc->delta_thc
+}
+
+reactor VzControl50Body extends TaskBody {
   preamble {=
       const REAL_TYPE K2_intVz   = 0.000627342822264;
       const REAL_TYPE K2_Vz     = -0.003252836726554;
@@ -129,16 +146,13 @@ reactor VzControl50 extends TaskRetryTemplate {
           } else {
             *saved_y = y;
             *saved_integrator = integrator;
-            printf("Vz:*saved_integrator = %ld\n", *saved_integrator);
           }
         }
         if (seg_start_num <= 2) {
           // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
           integrator = *saved_integrator;
-          printf("Vz:Before: integrator: %ld\n", integrator);
           // State
           integrator += Ts_K2 * (Vz_c - Vz_f);
-          printf("Vz:After: integrator: %ld\n", integrator);
           if (rand() % 100 < FAILURE_RATE) {
             return 2;
           } else {
@@ -155,42 +169,63 @@ reactor VzControl50 extends TaskRetryTemplate {
   input az_f: double
   output delta_e_c: double
 
-  state Vz_f: double
-  state Vz_c: double
-  state q_f: double
-  state az_f: double
   state delta_e_c: double
 
   state saved_y: double
   state saved_integrator: double
 
-  reaction(Vz_f, Vz_c, q_f, az_f) {=
-    self->saved_y = 0;
-    self->saved_integrator = 0;
-    self->Vz_f = Vz_f->value;
-    self->Vz_c = Vz_c->value;
-    self->q_f = q_f->value;
-    self->az_f = az_f->value;
-  =}
-
-  reaction(advance_lt) -> delta_e_c {=
+  reaction(trigger_task) Vz_f, Vz_c, q_f, az_f -> calculate_lt, delta_e_c {=
+    int result = Vz_control_50(Vz_f->value, Vz_c->value, q_f->value, az_f->value, &self->delta_e_c, &self->saved_y, &self->saved_integrator, self->seg_start_num);
+    lf_set(calculate_lt, result);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-    if (advance_lt->value == 0) {
+    if (result == 0) {
       lf_set(delta_e_c, self->delta_e_c);
     }
   =}
+}
 
-  reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, Vz_control_50(self->Vz_f, self->Vz_c, self->q_f, self->az_f, &self->delta_e_c, &self->saved_y, &self->saved_integrator, self->seg_start_num));
+reactor VzControl50Tail extends AdvanceTime {
+  input delta_e_c: double
+  output delta_ec: double
+
+  reaction(advance_lt) delta_e_c -> delta_ec {=
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+    if (advance_lt->value == 0) {
+      lf_set(delta_ec, delta_e_c->value);
+    }  
   =}
 }
+
+reactor VzControl50 extends TaskRetryTemplate {
+
+  input Vz_f: double
+  input Vz_c: double
+  input q_f: double 
+  input az_f: double 
+  output delta_ec: double
+
+  vz_body = new VzControl50Body()
+  vz_tail = new VzControl50Tail()
+
+  Vz_f->vz_body.Vz_f
+  Vz_c->vz_body.Vz_c
+  q_f->vz_body.q_f
+  az_f->vz_body.az_f
+  trigger.trigger_task -> vz_body.trigger_task
+  vz_body.calculate_lt->vz_tail.calculate_lt
+  vz_tail.failed_seg->failed_seg
+  vz_body.delta_e_c->vz_tail.delta_e_c
+  vz_tail.delta_ec->delta_ec
+}
+
 
 reactor VaControl50Retry {
   input Va_f: double
   input Vz_f: double
   input q_f: double
   input Va_c: double
-  output delta_th_c: double
+  output delta_thc: double
 
   Va_ct_Retry = new VaControl50(
       task_num=2,
@@ -208,7 +243,7 @@ reactor VaControl50Retry {
   Vz_f -> Va_ct_Retry.Vz_f
   q_f -> Va_ct_Retry.q_f
   Va_c -> Va_ct_Retry.Va_c
-  Va_ct_Retry.delta_th_c -> delta_th_c
+  Va_ct_Retry.delta_thc -> delta_thc
 
   reaction(Va_f) -> Va_ct_Retry.new_instance {=
     lf_set(Va_ct_Retry.new_instance, 0);
@@ -220,7 +255,7 @@ reactor VzControl50Retry {
   input Vz_c: double
   input q_f: double
   input az_f: double
-  output delta_e_c: double
+  output delta_ec: double
 
   Vz_ct_Retry = new VzControl50(
       task_num=1,
@@ -238,7 +273,7 @@ reactor VzControl50Retry {
   Vz_c -> Vz_ct_Retry.Vz_c
   q_f -> Vz_ct_Retry.q_f
   az_f -> Vz_ct_Retry.az_f
-  Vz_ct_Retry.delta_e_c -> delta_e_c
+  Vz_ct_Retry.delta_ec -> delta_ec
 
   reaction(Vz_f) -> Vz_ct_Retry.new_instance {=
     lf_set(Vz_ct_Retry.new_instance, 0);
@@ -254,10 +289,8 @@ reactor Stabilizer(period: time = 10 ms) {
   timer t(0, period)
 
   reaction(t) delta_th_c, delta_e_c -> delta_thc, delta_ec {=
-    lf_print("STABILIZER: Current Logical time: %lld msecs", lf_time_logical_elapsed() / MSEC(1));
     lf_set(delta_thc, delta_th_c->value);
     lf_set(delta_ec, delta_e_c->value);
-    lf_print("delta_th_c: %ld\ndelta_e_c: %ld\n", delta_th_c->value, delta_e_c->value);
   =}
 }
 
@@ -311,29 +344,31 @@ reactor NewController(filter_period: time = 10 ms) {
       a = {0.914975803093201, -1.911199519984605},
       b = {0.001860178914816, 0.001916104193780})
 
-  Vz_ct = new VzControl50Retry()
   Va_ct = new VaControl50Retry()
-  
+  Vz_ct = new VzControl50Retry()
+
   h, az, Vz, q, Va -> h_f.x, az_f.x, Vz_f.x, q_f.x, Va_f.x
   c -> h_c.s
   h_f.y -> h_c.x
-  
-  Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vz_f, Vz_ct.az_f, Vz_ct.Vz_c, Vz_ct.q_f
-  
-  stabilzer = new Stabilizer(period=filter_period)
-  // Without Stabilizer
-  // Vz_ct.delta_e_c -> delta_ec
-
-  // With Stabilizer
-  Vz_ct.delta_e_c -> stabilzer.delta_e_c
-  stabilzer.delta_ec->delta_ec
-
 
   Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Va_f, Va_ct.Vz_f, Va_ct.Va_c, Va_ct.q_f
-  // Without Stabilizer  
-  // Va_ct.delta_th_c -> delta_thc
+  Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vz_f, Vz_ct.az_f, Vz_ct.Vz_c, Vz_ct.q_f
 
-  // With Stabilizer
-  Va_ct.delta_th_c -> stabilzer.delta_th_c
-  stabilzer.delta_thc->delta_thc
+  // Without Stabilizer  
+  Va_ct.delta_thc -> delta_thc
+  Vz_ct.delta_ec -> delta_ec
+
+  // stabilzer = new Stabilizer(period=filter_period)
+
+
+  // // With Stabilizer
+  // Vz_ct.delta_e_c -> stabilzer.delta_e_c
+  // stabilzer.delta_ec->delta_ec
+
+
+
+
+  // // With Stabilizer
+  // Va_ct.delta_th_c -> stabilzer.delta_th_c
+  // stabilzer.delta_thc->delta_thc
 }
