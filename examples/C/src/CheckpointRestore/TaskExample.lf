@@ -1,13 +1,13 @@
 target C
 
-import TaskRetryTemplate from "lib/TaskRetryTemplate.lf"
+import TaskRetryTemplate, TaskBody, AdvanceTime from "lib/TaskRetryTemplate.lf"
 
-reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
+reactor Task1Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   preamble {=
     #define TASK1_SEG1_SLEEP_MSEC  200
     #define TASK1_SEG2_SLEEP_MSEC  200
     #define TASK1_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 20 // % chance
+    #define FAILURE_RATE 30 // % chance
 
     int task1_seg1(int in, int* out) {
       lf_sleep(MSEC(TASK1_SEG1_SLEEP_MSEC));
@@ -47,37 +47,64 @@ reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
       return 0;
     }
   =}
+
+  input task_input: IN_T
+  output task_output: OUT_T
+  state saved_output: OUT_T
+  state saved_value: CHECK_T
+
+  reaction(trigger_task) task_input -> calculate_lt, task_output {=
+    int result = total_task1(task_input->value, &self->saved_output, &self->saved_value, trigger_task->value);
+    lf_set(calculate_lt, result);
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (result == 0) {
+      lf_set(task_output, self->task_output);
+    }
+    lf_print("Saved_value: %d", self->saved_value);
+  =}
+}
+
+reactor Task1Tail<OUT_T> extends AdvanceTime {
+  input task_output: OUT_T
+  output out: OUT_T
+
+  reaction(advance_lt) task_output -> out {=
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+    if (advance_lt->value == 0) {
+      lf_set(out, task_output->value);
+    }  
+  =}
+}
+
+reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
+
   input task_input: IN_T
   output task_output: OUT_T
   state task_input: IN_T
   state task_output: OUT_T
 
-  state saved_value: CHECK_T
+  logical action test: int
+  task1body = new Task1Body<IN_T, OUT_T, CHECK_T>()
+  task1tail = new Task1Tail<OUT_T>()
 
-  reaction(task_input) {=
-    self->saved_value = 0;
-    self->task_input = task_input->value;
-  =}
-
-  reaction(advance_lt) -> task_output {=
-    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-    if (advance_lt->value == 0) {
-      lf_set(task_output, self->task_output);
-    }
-  =}
-
-  reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, total_task1(self->task_input, &self->task_output, &self->saved_value, self->seg_start_num));
-    lf_print("Saved_value: %d", self->saved_value);
-  =}
+  task_input->task1body.task_input
+  trigger.trigger_task -> task1body.trigger_task
+  task1body.calculate_lt->task1tail.calculate_lt
+  task1tail.failed_seg->failed_seg
+  task1body.task_output->task1tail.task_output
+  task1tail.out->task_output
 }
 
-reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
+
+
+
+reactor Task2Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   preamble {=
     #define TASK2_SEG1_SLEEP_MSEC  200
     #define TASK2_SEG2_SLEEP_MSEC  200
     #define TASK2_SEG3_SLEEP_MSEC  200
-    #define FAILURE_RATE 50 // % chance
+    #define FAILURE_RATE 30 // % chance
 
     int task2_seg1(int in, int* out) {
       lf_sleep(MSEC(TASK2_SEG1_SLEEP_MSEC));
@@ -109,45 +136,59 @@ reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
       }
     }
 
-    int task2_seg4(int in, int* out) {
-      lf_sleep(MSEC(TASK2_SEG3_SLEEP_MSEC));
-      if (rand() % 100 < FAILURE_RATE) {
-        return 4;
-      } else {
-        *out = in + 4;
-        return 0;
-      }
-    }
-
     int total_task2(int in, int* out, int* saved_value, int checkpoint) {
       if (checkpoint <= 1 && task2_seg1(in, saved_value)) return 1;
       if (checkpoint <= 2 && task2_seg2(*saved_value, saved_value)) return 2;
       if (checkpoint <= 3 && task2_seg3(*saved_value, saved_value)) return 3;
-      if (checkpoint <= 4 && task2_seg4(*saved_value, saved_value)) return 4;
       *out = *saved_value;
       return 0;
     }
   =}
+
+  input task_input: IN_T
+  output task_output: OUT_T
+  state saved_output: OUT_T
+  state saved_value: CHECK_T
+
+  reaction(trigger_task) task_input -> calculate_lt, task_output {=
+    int result = total_task2(task_input->value, &self->saved_output, &self->saved_value, trigger_task->value);
+    lf_set(calculate_lt, result);
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (result == 0) {
+      lf_set(task_output, self->task_output);
+    }
+    lf_print("Saved_value: %d", self->saved_value);
+  =}
+}
+
+reactor Task2Tail<OUT_T> extends AdvanceTime {
+  input task_output: OUT_T
+  output out: OUT_T
+
+  reaction(advance_lt) task_output -> out {=
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+    if (advance_lt->value == 0) {
+      lf_set(out, task_output->value);
+    }  
+  =}
+}
+
+reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
+
   input task_input: IN_T
   output task_output: OUT_T
   state task_input: IN_T
   state task_output: OUT_T
 
-  state saved_value: CHECK_T
+  logical action test: int
+  task2body = new Task2Body<IN_T, OUT_T, CHECK_T>()
+  task2tail = new Task2Tail<OUT_T>()
 
-  reaction(task_input) {=
-    self->saved_value = 0;
-    self->task_input = task_input->value;
-  =}
-
-  reaction(advance_lt) -> task_output {=
-    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-    if (advance_lt->value == 0) {
-      lf_set(task_output, self->task_output);
-    }
-  =}
-  reaction(trigger_task) -> calculate_lt {=
-    lf_schedule_int(calculate_lt, 0, total_task2(self->task_input, &self->task_output, &self->saved_value, self->seg_start_num));
-    lf_print("Saved_value: %d", self->saved_value);
-  =}
+  task_input->task2body.task_input
+  trigger.trigger_task -> task1body.trigger_task
+  task2body.calculate_lt->task2tail.calculate_lt
+  task2tail.failed_seg->failed_seg
+  task2body.task_output->task2tail.task_output
+  task2tail.out->task_output
 }

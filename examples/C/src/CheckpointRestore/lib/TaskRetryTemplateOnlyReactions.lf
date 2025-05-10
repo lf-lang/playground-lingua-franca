@@ -16,11 +16,32 @@ preamble {=
   #endif
 =}
 
-reactor TriggerTask {
+reactor TaskRetryTemplate(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet: uint16_t[] = {},
+    optwcet: uint16_t[] = {}) {
   input new_instance: int
   input retry: int
-  output trigger_task: int
+  logical action advance_lt: int
+  logical action trigger_task: int
+  logical action calculate_lt: int
+
+  output failed_seg: int
   output instance_start_time: time
+  output task_info_update: task_info_t
+  state task_info: task_info_t
+  state seg_start_num: int
+
+  reaction(startup) -> task_info_update {=
+    self->task_info.task_num = self->task_num;
+    self->task_info.num_of_segs = self->num_of_segs;
+    self->task_info.wcet = self->wcet;
+    self->task_info.optwcet = self->optwcet;
+    self->task_info.dead_line = self->dead_line;
+    lf_set(task_info_update, self->task_info);
+  =}
 
   reaction(new_instance, retry) -> trigger_task, instance_start_time {=
     if(retry->is_present) {
@@ -45,12 +66,6 @@ reactor TriggerTask {
     }
     lf_schedule_int(trigger_task, 0, self->seg_start_num);
   =}
-}
-
-reactor AdvanceTime {
-  input calculate_lt: int
-  logical action advance_lt: int
-  output failed_seg: int
 
   reaction(calculate_lt) -> advance_lt {=
     // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
@@ -84,43 +99,6 @@ reactor AdvanceTime {
   reaction(advance_lt) -> failed_seg {=
     lf_set(failed_seg, advance_lt->value);
   =}
-}
-
-reactor TaskRetryTemplate(
-    task_num: uint16_t = 0,
-    dead_line: uint16_t = 0,
-    num_of_segs: uint16_t = 0,
-    wcet: uint16_t[] = {},
-    optwcet: uint16_t[] = {}) {
-  input new_instance: int
-  input retry: int
-
-  output failed_seg: int
-  output instance_start_time: time
-  output task_info_update: task_info_t
-  state task_info: task_info_t
-  state seg_start_num: int
-
-  trigger = new TriggerTask()
-  // advance = new AdvanceTime()
-  new_instance -> trigger.new_instance
-  retry -> trigger.retry
-  trigger.instance_start_time -> instance_start_time
-  // advance.failed_seg -> failed_seg
-
-  reaction(startup) -> task_info_update {=
-    self->task_info.task_num = self->task_num;
-    self->task_info.num_of_segs = self->num_of_segs;
-    self->task_info.wcet = self->wcet;
-    self->task_info.optwcet = self->optwcet;
-    self->task_info.dead_line = self->dead_line;
-    lf_set(task_info_update, self->task_info);
-  =}
-}
-
-reactor TaskBody{
-  input trigger_task: int
-  output calculate_lt: int
 }
 
 // Naming? Timely retry?
