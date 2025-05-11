@@ -67,6 +67,7 @@ reactor VaControl50Body extends TaskBody {
         }
         return 0;
       }
+      return 0; // Just to avoid warnings.
     }
   =}
   input Va_f: double  // filtered true airspeed
@@ -81,7 +82,7 @@ reactor VaControl50Body extends TaskBody {
   state saved_integrator: double
 
 reaction(trigger_task) Va_f, Vz_f, q_f, Va_c -> calculate_lt, delta_th_c {=
-  int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, self->seg_start_num);
+  int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, trigger_task->value);
   lf_set(calculate_lt, result);
   // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
   if (result == 0) {
@@ -90,14 +91,15 @@ reaction(trigger_task) Va_f, Vz_f, q_f, Va_c -> calculate_lt, delta_th_c {=
 =}
 }
 
-reactor VaControl50Tail extends AdvanceTime {
+reactor VaControl50Tail{
+  input trigger_output: int
   input delta_th_c: double
   output delta_thc: double
 
-  reaction(advance_lt) delta_th_c -> delta_thc {=
+  reaction(trigger_output) delta_th_c -> delta_thc {=
   // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
   // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
-    if (advance_lt->value == 0) {
+    if (trigger_output->value == 0) {
       lf_set(delta_thc, delta_th_c->value);
     }  
   =}
@@ -114,13 +116,12 @@ reactor VaControl50 extends TaskRetryTemplate {
   va_body = new VaControl50Body()
   va_tail = new VaControl50Tail()
 
-  Va_f->va_body.Va_f
-  Vz_f->va_body.Vz_f
-  q_f->va_body.q_f
-  Va_c->va_body.Va_c
+  Va_f, Vz_f, q_f, Va_c -> va_body.Va_f, va_body.Vz_f, va_body.q_f, va_body.Va_c
+
   trigger.trigger_task -> va_body.trigger_task
-  va_body.calculate_lt->va_tail.calculate_lt
-  va_tail.failed_seg->failed_seg
+  va_body.calculate_lt->advance.calculate_lt
+  advance.failed_seg->failed_seg
+  advance.failed_seg->va_tail.trigger_output
   va_body.delta_th_c->va_tail.delta_th_c
   va_tail.delta_thc->delta_thc
 }
@@ -175,7 +176,7 @@ reactor VzControl50Body extends TaskBody {
   state saved_integrator: double
 
   reaction(trigger_task) Vz_f, Vz_c, q_f, az_f -> calculate_lt, delta_e_c {=
-    int result = Vz_control_50(Vz_f->value, Vz_c->value, q_f->value, az_f->value, &self->delta_e_c, &self->saved_y, &self->saved_integrator, self->seg_start_num);
+    int result = Vz_control_50(Vz_f->value, Vz_c->value, q_f->value, az_f->value, &self->delta_e_c, &self->saved_y, &self->saved_integrator, trigger_task->value);
     lf_set(calculate_lt, result);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
     if (result == 0) {
@@ -184,14 +185,15 @@ reactor VzControl50Body extends TaskBody {
   =}
 }
 
-reactor VzControl50Tail extends AdvanceTime {
+reactor VzControl50Tail{
+  input trigger_output: int
   input delta_e_c: double
   output delta_ec: double
 
-  reaction(advance_lt) delta_e_c -> delta_ec {=
+  reaction(trigger_output) delta_e_c -> delta_ec {=
   // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
   // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
-    if (advance_lt->value == 0) {
+    if (trigger_output->value == 0) {
       lf_set(delta_ec, delta_e_c->value);
     }  
   =}
@@ -208,13 +210,11 @@ reactor VzControl50 extends TaskRetryTemplate {
   vz_body = new VzControl50Body()
   vz_tail = new VzControl50Tail()
 
-  Vz_f->vz_body.Vz_f
-  Vz_c->vz_body.Vz_c
-  q_f->vz_body.q_f
-  az_f->vz_body.az_f
+  Vz_f, Vz_c, q_f,  az_f -> vz_body.Vz_f, vz_body.Vz_c, vz_body.q_f, vz_body.az_f
   trigger.trigger_task -> vz_body.trigger_task
-  vz_body.calculate_lt->vz_tail.calculate_lt
-  vz_tail.failed_seg->failed_seg
+  vz_body.calculate_lt->advance.calculate_lt
+  advance.failed_seg->failed_seg
+  advance.failed_seg->vz_tail.trigger_output
   vz_body.delta_e_c->vz_tail.delta_e_c
   vz_tail.delta_ec->delta_ec
 }
