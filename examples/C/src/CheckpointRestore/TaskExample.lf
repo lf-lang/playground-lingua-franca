@@ -154,7 +154,7 @@ reactor Task2Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
     lf_set(calculate_lt, result);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
     if (result == 0) {
-      lf_set(task_output, self->task_output);
+      lf_set(task_output, self->saved_output);
     }
     lf_print("Saved_value: %d", self->saved_value);
   =}
