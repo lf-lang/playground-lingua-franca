@@ -9,7 +9,7 @@ preamble {=
   #define delta_th_eq (1.5868660794926)
   #define delta_e_eq (0.012009615652468)
 
-  #define FAILURE_RATE 30 // % chance
+  #define FAILURE_RATE 80 // % chance
 
   #ifndef TASK_INFO_T_DEFINED
   #define TASK_INFO_T_DEFINED
@@ -52,13 +52,16 @@ reactor VaControl50Body extends TaskBody {
         } else {
           *saved_y = y;
           *saved_integrator = integrator;
+          // lf_print("Va:*saved_integrator = %f\n", *saved_integrator);
         }
       }
       if (seg_start_num <= 2) {
         // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
         integrator = *saved_integrator;
+        // lf_print("Va:Before: integrator: %f\n", integrator);
         // State
     	  integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
+        // lf_print("Va:After: integrator: %f\n", integrator);
         if (rand() % 100 < FAILURE_RATE) {
           return 2;
         } else {
@@ -82,7 +85,9 @@ reactor VaControl50Body extends TaskBody {
   state saved_integrator: double
 
 reaction(trigger_task) Va_f, Vz_f, q_f, Va_c -> calculate_lt, delta_th_c {=
+  // lf_print("VaControl: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
   int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, trigger_task->value);
+  // lf_print("Va:delta_th_c: %f", self->delta_th_c);
   lf_set(calculate_lt, result);
   // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
   if (result == 0) {
@@ -101,6 +106,8 @@ reactor VaControl50Tail{
   // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
     if (trigger_output->value == 0) {
       lf_set(delta_thc, delta_th_c->value);
+      // lf_print("VaControlTail: Current Logical time: %lld msecs, microstep: %d", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep);
+      // lf_print("Sending delta_thc: %f", delta_thc->value);
     }  
   =}
 }
@@ -147,13 +154,16 @@ reactor VzControl50Body extends TaskBody {
           } else {
             *saved_y = y;
             *saved_integrator = integrator;
+            // lf_print("Vz:*saved_integrator = %f\n", *saved_integrator);
           }
         }
         if (seg_start_num <= 2) {
           // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
           integrator = *saved_integrator;
+          // lf_print("Vz:Before: integrator: %f\n", integrator);
           // State
           integrator += Ts_K2 * (Vz_c - Vz_f);
+          // lf_print("Vz:After: integrator: %f\n", integrator);
           if (rand() % 100 < FAILURE_RATE) {
             return 2;
           } else {
@@ -176,7 +186,9 @@ reactor VzControl50Body extends TaskBody {
   state saved_integrator: double
 
   reaction(trigger_task) Vz_f, Vz_c, q_f, az_f -> calculate_lt, delta_e_c {=
+    // lf_print("VzControl: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
     int result = Vz_control_50(Vz_f->value, Vz_c->value, q_f->value, az_f->value, &self->delta_e_c, &self->saved_y, &self->saved_integrator, trigger_task->value);
+    // lf_print("Vz:delta_e_c: %f", self->delta_e_c);
     lf_set(calculate_lt, result);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
     if (result == 0) {
@@ -195,6 +207,8 @@ reactor VzControl50Tail{
   // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
     if (trigger_output->value == 0) {
       lf_set(delta_ec, delta_e_c->value);
+      // lf_print("VzControlTail: Current Logical time: %lld msecs, microstep: %d", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep);
+      // lf_print("Sending delta_ec: %f", delta_e_c->value);
     }  
   =}
 }
@@ -226,6 +240,7 @@ reactor VaControl50Retry {
   input q_f: double
   input Va_c: double
   output delta_thc: double
+  timer t(0, 20 msec)
 
   Va_ct_Retry = new VaControl50(
       task_num=2,
@@ -245,7 +260,7 @@ reactor VaControl50Retry {
   Va_c -> Va_ct_Retry.Va_c
   Va_ct_Retry.delta_thc -> delta_thc
 
-  reaction(Va_f) -> Va_ct_Retry.new_instance {=
+  reaction(t) -> Va_ct_Retry.new_instance {=
     lf_set(Va_ct_Retry.new_instance, 0);
   =}
 }
@@ -256,6 +271,7 @@ reactor VzControl50Retry {
   input q_f: double
   input az_f: double
   output delta_ec: double
+  timer t(0, 20 msec)
 
   Vz_ct_Retry = new VzControl50(
       task_num=1,
@@ -275,22 +291,8 @@ reactor VzControl50Retry {
   az_f -> Vz_ct_Retry.az_f
   Vz_ct_Retry.delta_ec -> delta_ec
 
-  reaction(Vz_f) -> Vz_ct_Retry.new_instance {=
+  reaction(t) -> Vz_ct_Retry.new_instance {=
     lf_set(Vz_ct_Retry.new_instance, 0);
-  =}
-}
-
-reactor Stabilizer(period: time = 10 ms) {
-  input delta_th_c: double
-  input delta_e_c: double
-  output delta_thc: double
-  output delta_ec: double
-
-  timer t(0, period)
-
-  reaction(t) delta_th_c, delta_e_c -> delta_thc, delta_ec {=
-    lf_set(delta_thc, delta_th_c->value);
-    lf_set(delta_ec, delta_e_c->value);
   =}
 }
 
@@ -357,18 +359,4 @@ reactor NewController(filter_period: time = 10 ms) {
   // Without Stabilizer  
   Va_ct.delta_thc -> delta_thc
   Vz_ct.delta_ec -> delta_ec
-
-  // stabilzer = new Stabilizer(period=filter_period)
-
-
-  // // With Stabilizer
-  // Vz_ct.delta_e_c -> stabilzer.delta_e_c
-  // stabilzer.delta_ec->delta_ec
-
-
-
-
-  // // With Stabilizer
-  // Va_ct.delta_th_c -> stabilzer.delta_th_c
-  // stabilzer.delta_thc->delta_thc
 }
