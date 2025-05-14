@@ -320,7 +320,7 @@ reactor RaftNode(bank_index: int = 0, num_nodes: size_t = 1, heartbeat_period: t
   /**************************************/
 
   input   client_update   : int
-  input   client_get      : char*
+  input   client_get      : bool
   output  client_response : int       // FIXME: Cannot be char* without serialization. Send back an int instead.
   state   shares          : int = 100 // The number of shares a client owns
 
@@ -365,10 +365,35 @@ reactor RaftNode(bank_index: int = 0, num_nodes: size_t = 1, heartbeat_period: t
 }
 
 reactor Server(num_nodes: size_t = 5) {
-  input[num_nodes] in: int
-  // output[num_nodes] get: bool // FIXME: Does not work. Got broken pipe and federates start to drop.
-  output get: char*
-  s = new ServerUI()
+  preamble {=
+    #include <string.h>
+    #include <errno.h>
+
+    int get_shares_from_query(const char *url, int *out)
+    {
+      const char *key = "shares=";
+      const char *p = strstr(url, key);
+      if (!p)                   // key not found
+        return -1;
+
+      errno = 0;
+      char *endptr;
+      long val = strtol(p + strlen(key), &endptr, 10);
+
+      if (p + strlen(key) == endptr)         // no digits
+        return -2;
+      if (errno == ERANGE || val > INT_MAX)  // overflow
+        return -3;
+
+      *out = (int)val;
+      return 0;
+    }
+  =}
+
+  input [num_nodes] in      : int
+  output[num_nodes] get     : bool
+  output[num_nodes] update  : int
+  s = new ServerUI(initial_file="exchange.html")
 
   // Filter multiport results into a single-port result.
   reaction(in) -> s.response {=
@@ -385,13 +410,27 @@ reactor Server(num_nodes: size_t = 5) {
     }
   =}
 
-  s.request -> get
-  // FIXME: The following does not work. Got broken pipe and federates start to drop.
-  // reaction(s.request) -> get {=
-  //   for (int i = 0; i < self->num_nodes; i++) {
-  //     lf_set(get[i], true);
-  //   }
-  // =}
+  // Route requests
+  reaction(s.request) -> get, update {=
+    printf("Request: %s.\n", s.request->value);
+    if (strcmp(s.request->value, "/get ") == 0) {
+      for (int i = 0; i < self->num_nodes; i++) {
+        lf_set(get[i], true);
+      }
+    }
+    else {
+      int shares;
+      if (get_shares_from_query(s.request->value, &shares) == 0) {
+        printf("Shares = %d\n", shares);
+      } else {
+        printf("Could not parse shares\n");
+        return;
+      }
+      for (int i = 0; i < self->num_nodes; i++) {
+        lf_set(update[i], shares);
+      }
+    }
+  =}
 }
 
 federated reactor(num_nodes: size_t = 5) {
@@ -400,8 +439,9 @@ federated reactor(num_nodes: size_t = 5) {
 
   state count: int = 0
   server = new Server()
-  (server.get)+ ~> nodes.client_get
+
+  // NOTE: Connections must be physical, otherwise get broken pipe and federates start to drop.
   nodes.client_response ~> server.in
-  // server.get ~> nodes.client_get // FIXME: Does not work. Got broken pipe and federates start to drop.
-  // nodes.client_response -> server.in // FIXME: Does not work. Server node would disconnect from all raft nodes.
+  server.get ~> nodes.client_get
+  server.update ~> nodes.client_update
 }
