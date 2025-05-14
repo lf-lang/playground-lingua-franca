@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Simple but Robust Stock Exchange</title></head>
+  <body>
+    <h1>Simple but Robust Stock Exchange</h1>
+    <button id="buttonGet">Get Balance</button>
+    <button id="buttonUpdate">Buy/Sell NVIDIA</button>
+    <p id="response">Welcome to the stock exchange! Want to buy some NVIDIA?</p>
+    <script>
+  document.getElementById('buttonGet').addEventListener('click', function() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onload = function() {
+      if (this.status == 200) {
+        document.getElementById('response').innerHTML = this.responseText;
+      } else {
+        document.getElementById('response').innerHTML = "Error: " + this.statusText;
+      }
+    };
+    xhttp.open('GET', '/count', true);
+    xhttp.send(null);
+  }); 
+    </script>
+  </body>
+</html>
