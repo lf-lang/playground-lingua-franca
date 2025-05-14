@@ -1,0 +1,199 @@
+target Python {
+    keepalive: true
+}
+
+preamble {=
+import pandas as pd
+import time
+
+filename = "wafer.csv"
+wafer_data = None
+
+def read_csv():
+    global wafer_data
+    try:
+        wafer_data = pd.read_csv(filename, sep=",", header=0)
+        print(f"File '{filename}' caricato correttamente.")
+    except FileNotFoundError:
+        print(f"Errore: File '{filename}' non trovato.")
+        wafer_data = None
+    except Exception as e:
+        print(f"Errore durante il caricamento del file: {e}")
+        wafer_data = None
+
+def get_phase_data(index, start, end):
+    global wafer_data
+    if wafer_data is None:
+        read_csv()
+    if wafer_data is not None and index < len(wafer_data):
+        nome = wafer_data.iloc[index, 0]
+        data = wafer_data.iloc[index, start:end+1].tolist()
+        return nome, data
+    return None, []
+
+def get_wafer_status(index):
+    global wafer_data
+    if wafer_data is not None and index < len(wafer_data):
+        try:
+            return int(wafer_data.iloc[index, -1])
+        except:
+            return -1
+    return -1
+=}
+
+reactor Fase(col_start=0, col_end=0) {
+    input start_flag
+    input wafer_index
+    output end_flag
+
+    reaction(start_flag, wafer_index) -> end_flag {=
+        index = wafer_index.value
+        nome, data = get_phase_data(index, self.col_start, self.col_end)
+        if nome and data:
+            print(f"Reattore Fase {self.col_start}-{self.col_end} attivato per wafer {nome}")
+            print(f"Valori sensori: {[float(value) for value in data]}")
+        else:
+            print("Errore nella lettura dei dati.")
+        time.sleep(1)
+        end_flag.set(1)
+    =}
+}
+
+reactor FaseFinale(col=0) {
+    input start_flag
+    input wafer_index
+    output risultato
+
+    reaction(start_flag, wafer_index) -> risultato {=
+        index = wafer_index.value
+        nome, _ = get_phase_data(index, 0, self.col)
+        status = get_wafer_status(index)
+        if nome:
+            print(f"Reattore Fase Finale attivato per wafer {nome}")
+        if status == 1:
+            print(f"Wafer {nome} accettabile!")
+        elif status == -1:
+            print(f"Wafer {nome} non accettabile.")
+        else:
+            print(f"Errore nello stato del wafer {nome}.")
+        risultato.set(status)
+    =}
+}
+
+main reactor {
+    state wafer_index = 0
+    state fase = 1
+
+    f1 = new Fase(col_start=1, col_end=84)
+    f2 = new Fase(col_start=85, col_end=169)
+    f3 = new Fase(col_start=170, col_end=254)
+    f4 = new Fase(col_start=255, col_end=339)
+    f5 = new Fase(col_start=340, col_end=424)
+    f6 = new Fase(col_start=425, col_end=509)
+    f7 = new Fase(col_start=510, col_end=590)
+    f8 = new FaseFinale(col=591)
+
+    logical action next_step
+
+    reaction(startup) -> next_step {=
+        read_csv()
+        print("Inizio produzione wafer")
+        self.fase = 1
+        self.wafer_index = 0
+        next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f1.start_flag, f1.wafer_index {=
+        if self.fase == 1:
+            f1.wafer_index.set(self.wafer_index)
+            f1.start_flag.set(1)
+    =}
+    reaction(f1.end_flag) -> next_step {=
+        if self.fase == 1:
+            self.fase = 2
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f2.start_flag, f2.wafer_index {=
+        if self.fase == 2:
+            f2.wafer_index.set(self.wafer_index)
+            f2.start_flag.set(1)
+    =}
+    reaction(f2.end_flag) -> next_step {=
+        if self.fase == 2:
+            self.fase = 3
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f3.start_flag, f3.wafer_index {=
+        if self.fase == 3:
+            f3.wafer_index.set(self.wafer_index)
+            f3.start_flag.set(1)
+    =}
+    reaction(f3.end_flag) -> next_step {=
+        if self.fase == 3:
+            self.fase = 4
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f4.start_flag, f4.wafer_index {=
+        if self.fase == 4:
+            f4.wafer_index.set(self.wafer_index)
+            f4.start_flag.set(1)
+    =}
+    reaction(f4.end_flag) -> next_step {=
+        if self.fase == 4:
+            self.fase = 5
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f5.start_flag, f5.wafer_index {=
+        if self.fase == 5:
+            f5.wafer_index.set(self.wafer_index)
+            f5.start_flag.set(1)
+    =}
+    reaction(f5.end_flag) -> next_step {=
+        if self.fase == 5:
+            self.fase = 6
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f6.start_flag, f6.wafer_index {=
+        if self.fase == 6:
+            f6.wafer_index.set(self.wafer_index)
+            f6.start_flag.set(1)
+    =}
+    reaction(f6.end_flag) -> next_step {=
+        if self.fase == 6:
+            self.fase = 7
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f7.start_flag, f7.wafer_index {=
+        if self.fase == 7:
+            f7.wafer_index.set(self.wafer_index)
+            f7.start_flag.set(1)
+    =}
+    reaction(f7.end_flag) -> next_step {=
+        if self.fase == 7:
+            self.fase = 8
+            next_step.schedule(0)
+    =}
+
+    reaction(next_step) -> f8.start_flag, f8.wafer_index {=
+        if self.fase == 8:
+            f8.wafer_index.set(self.wafer_index)
+            f8.start_flag.set(1)
+    =}
+    reaction(f8.risultato) -> next_step {=
+        if self.fase == 8:
+            print(f"Produzione completata per wafer {self.wafer_index}. Stato: {f8.risultato}")
+            self.wafer_index += 1
+            self.fase = 1
+            global wafer_data
+            if wafer_data is not None and self.wafer_index < len(wafer_data):
+                next_step.schedule(0)
+            else:
+                print("Tutti i wafer sono stati processati.")
+    =}
+}
