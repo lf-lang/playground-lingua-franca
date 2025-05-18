@@ -1,6 +1,6 @@
 target C
 
-import TaskRetryTemplate, TaskBody, AdvanceTime from "lib/TaskRetryTemplate.lf"
+import TaskRetryTemplate, TaskBody from "lib/TaskRetryTemplate.lf"
 
 reactor Task1Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   preamble {=
