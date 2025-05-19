@@ -20,7 +20,7 @@ combined_df = pd.DataFrame([
 ]).reset_index(drop=True)
 
 # Labels
-strategy_labels = ['Baseline', 'WCET', 'WCET+OPT'] * 3
+strategy_labels = ['Baseline', 'WCET', 'OPT'] * 3
 failure_rate_labels = ['1%', '5%', '10%']
 x = np.array([0, 1, 2, 3.2, 4.2, 5.2, 6.4, 7.4, 8.4])
 # empty_x = [3, 7]
@@ -31,7 +31,7 @@ colors = ['#1f77b4', '#2ca02c']
 hatches = ['\\', '//']
 
 plt.rcParams['font.family'] = 'Times New Roman'
-fig, ax = plt.subplots(figsize=(10, 5))
+fig, ax = plt.subplots(figsize=(5, 5))
 
 # Plot stacked bars
 bars1 = ax.bar(x, combined_df['Deadline_miss'],
@@ -52,30 +52,33 @@ ax.set_xticks([])
 
 # Draw strategy labels (top row)
 for xi, label in zip(x, strategy_labels):
-    ax.text(xi, -10, label, ha='center', va='top', fontsize=15)
+    ax.text(xi, -10, label, ha='center', va='top', fontsize=20, rotation=45)
+    # ax.text(xi, -10, label, ha='center', va='top', fontsize=20)
 
 # Draw group labels (bottom row)
 group_positions = [np.mean(x[i:i+3]) for i in range(0, len(x), 3)]
 for pos, label in zip(group_positions, failure_rate_labels):
-    ax.text(pos, -65, label, ha='center', va='top', fontsize=15, fontweight='bold')
+    # ax.text(pos, -170, label, ha='center', va='top', fontsize=20, rotation=45, fontweight='bold')
+    ax.text(pos, -230, label, ha='center', va='top', fontsize=20, fontweight='bold')
 
 # Adjust bottom limit to fit both label rows
 ax.set_ylim(bottom=0)
+
 # # Draw divider lines
-# for div in [3, 7]:
-#     ax.plot([div, div], [-2, -12], color='black', linewidth=1.2, clip_on=False)
+# for div in [2.6, 5.8]:
+#     ax.plot([div, div], [-10, -310], color='black', linewidth=1.2, clip_on=False)
 
 # Add total labels above each full bar
 for i in range(len(x)):
     dm = combined_df['Deadline_miss'][i]
     ef = combined_df['Execution_failed'][i]
     total = dm + ef
-    ax.text(x[i], total + 1, f'{total}', ha='center', va='bottom', fontsize=15)
+    ax.text(x[i], total + 1, f'{int(total)}', ha='center', va='bottom', fontsize=15)
 
 # Axis and legend
-ax.set_xlim(-0.5, 9.3)
+ax.set_xlim(-0.5, 9)
 # ax.set_ylim(bottom=-15)
-ax.set_ylabel('Task Failure Count', fontsize=15)
+ax.set_ylabel('Task Failure Count', fontsize=20, labelpad=-10)
 ax.tick_params(axis='y', labelsize=15)
 ax.grid(axis='y', linestyle='--', alpha=0.5)
 ax.legend(fontsize=15)
