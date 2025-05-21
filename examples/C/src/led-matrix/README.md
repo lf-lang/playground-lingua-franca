@@ -1,4 +1,3 @@
-
 <h1 align="center">
   <br>
   <img src="assets/LedLogo.png" alt="Markdownify" width="50">
@@ -111,6 +110,4 @@ Fortunately, the official pico-examples repository includes a PIO implementation
 
 If you have any insight on why the lingua franca might mess with the timing protocol of my original driver I would love to hear about it. 
 
-For any inquiries on this project please email me at: bengunnels8@gmail.com
-
-
+For any inquiries on this project please email me (Benjamin Gunnels, @ben-gunnels) at: bengunnels8@gmail.com
