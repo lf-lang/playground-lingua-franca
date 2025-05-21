@@ -1,218 +1,222 @@
 /**
  * This program uses a modal model to display a variety of LED animations on a WS2812 RGB Led Panel.
- * The WS2812, or Neopixel, uses precise timing of pulses to encode 1s and 0s. See lib/ws2812.pio to see the mechanism.
- * Animations can be added or altered in lib/src/ws2812.c and then added to a mode in the LED reactor.
- * 
- * For convenience a remapped array can be used to interact with the LED array in a row, column format. The 
- * remapping object in the LED reactor
+ * The WS2812, or Neopixel, uses precise timing of pulses to encode 1s and 0s. See lib/ws2812.pio to
+ * see the mechanism. Animations can be added or altered in lib/src/ws2812.c and then added to a
+ * mode in the LED reactor.
+ *
+ * For convenience a remapped array can be used to interact with the LED array in a row, column
+ * format. The remapping object in the LED reactor
  *
  * @author Benjamin Gunnels
  */
 target C {
-    platform: {
-        name: "rp2040",
-        board: "pico"
-    },
-    single-threaded: true,
-    files: ["./lib/"],  
-    cmake-include: ["./lib/lib.txt"]  
+  platform: {
+    name: "rp2040",
+    board: "pico"
+  },
+  single-threaded: true,
+  files: ["./lib/"],
+  cmake-include: ["./lib/lib.txt"]
 }
-  
-preamble {=
-    #include <stdio.h>
-    #include "pico/stdlib.h"
-    #include "hardware/timer.h"
-    #include "led_remapping.h"
-    #include "ws2812.h"
-    #include "hardware/pio.h"
-    #include "ws2812.pio.h"
 
-    #define NUM_MODES 5
-    #define NUM_LEDS 256 // How many leds are in your array
+preamble {=
+  #include <stdio.h>
+  #include "pico/stdlib.h"
+  #include "hardware/timer.h"
+  #include "led_remapping.h"
+  #include "ws2812.h"
+  #include "hardware/pio.h"
+  #include "ws2812.pio.h"
+
+  #define NUM_MODES 5
+  #define NUM_LEDS 256 // How many leds are in your array
 =}
 
 reactor LED {
-    input change_mode: int
-    input frame: int
+  input change_mode: int
+  input frame: int
 
-    preamble {=
-        #define ROWS 16
-        #define COLS 16
+  preamble {=
+    #define ROWS 16
+    #define COLS 16
 
-        int sm = 0;
+    int sm = 0;
 
-        PIO pio = pio0;
-        uint offset; 
+    PIO pio = pio0;
+    uint offset;
 
-        // Create a one dimensional array to map the colors onto the LED strip
-        uint32_t led_strip[ROWS*COLS] = {0};
+    // Create a one dimensional array to map the colors onto the LED strip
+    uint32_t led_strip[ROWS*COLS] = {0};
 
-        // Create a two dimensional array for convenience mapping effects
-        uint32_t** remapping;
+    // Create a two dimensional array for convenience mapping effects
+    uint32_t** remapping;
 
-        // Lock the critical sections sending the colors to preserve timing.
-        lf_mutex_t led_mutex; 
+    // Lock the critical sections sending the colors to preserve timing.
+    lf_mutex_t led_mutex;
+  =}
+
+  reaction(startup) {=
+    // Initialize the mutex
+    lf_mutex_init(&led_mutex);
+
+    // Initialize the remapping array during startup
+    remapping = remap(ROWS, COLS);
+    if (remapping == NULL) {
+        printf("Error: Remapping initialization failed.\n");
+    } else {
+        printf("Remapping successfully initialized.\n");
+    }
+
+    offset = pio_add_program(pio, &ws2812_program);
+
+    ws2812_program_init(pio, sm, offset, ws2812_config.pin, 800000, false); // 800kHz WS2812B
+  =}
+
+  initial mode MODE_1 {
+    reaction(frame) {=
+      rainbow(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+
+      // Send the colors to the WS2812 LEDs
+      lf_mutex_lock(&led_mutex);
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+      lf_mutex_unlock(&led_mutex);
     =}
 
-    reaction (startup) {=
-        // Initialize the mutex
-        lf_mutex_init(&led_mutex);
-        
-        // Initialize the remapping array during startup
-        remapping = remap(ROWS, COLS);
-        if (remapping == NULL) {
-            printf("Error: Remapping initialization failed.\n");
-        } else {
-            printf("Remapping successfully initialized.\n");
-        }
+    reaction(change_mode) -> reset(MODE_2) {=
+      lf_set_mode(MODE_2);
+    =}
+  }
 
-        offset = pio_add_program(pio, &ws2812_program);
+  mode MODE_2 {
+    reaction(frame) {=
+      aurora(led_strip, remapping, frame->value, 0.015, ROWS, COLS);
 
-        ws2812_program_init(pio, sm, offset, ws2812_config.pin, 800000, false); // 800kHz WS2812B
+      // Send the colors to the WS2812 LEDs
+      lf_mutex_lock(&led_mutex);
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+      lf_mutex_unlock(&led_mutex);
     =}
 
-    initial mode MODE_1 {
-        reaction(frame) {=
-            rainbow(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+    reaction(change_mode) -> reset(MODE_3) {=
+      lf_set_mode(MODE_3);
+    =}
+  }
 
-            // Send the colors to the WS2812 LEDs
-            lf_mutex_lock(&led_mutex);
-            send_colors(pio, sm, led_strip, NUM_LEDS);
-            lf_mutex_unlock(&led_mutex);
-        =}
+  mode MODE_3 {
+    reaction(frame) {=
+      beating_heart(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
-        reaction(change_mode) -> reset(MODE_2) {=
-            lf_set_mode(MODE_2);
-        =}
-    }
+      // Send the colors to the WS2812 LEDs
+      lf_mutex_lock(&led_mutex);
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+      lf_mutex_unlock(&led_mutex);
+    =}
 
-    mode MODE_2 {
-        reaction(frame) {=
-            aurora(led_strip, remapping, frame->value, 0.015, ROWS, COLS);
+    reaction(change_mode) -> reset(MODE_4) {=
+      lf_set_mode(MODE_4);
+    =}
+  }
 
-            // Send the colors to the WS2812 LEDs
-            lf_mutex_lock(&led_mutex);
-            send_colors(pio, sm, led_strip, NUM_LEDS);
-            lf_mutex_unlock(&led_mutex);
-        =}
+  mode MODE_4 {
+    reaction(frame) {=
+      chessboard(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
-        reaction(change_mode) -> reset(MODE_3) {=
-            lf_set_mode(MODE_3);
-        =}
-    }
+      // Send the colors to the WS2812 LEDs
+      lf_mutex_lock(&led_mutex);
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+      lf_mutex_unlock(&led_mutex);
+    =}
 
-    mode MODE_3 {
-        reaction(frame) {=
-            beating_heart(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+    reaction(change_mode) -> reset(MODE_5) {=
+      lf_set_mode(MODE_5);
+    =}
+  }
 
-            // Send the colors to the WS2812 LEDs
-            lf_mutex_lock(&led_mutex);
-            send_colors(pio, sm, led_strip, NUM_LEDS);
-            lf_mutex_unlock(&led_mutex);
-        =}
-        reaction(change_mode) -> reset(MODE_4) {=
-            lf_set_mode(MODE_4);
-        =}
-    }
+  mode MODE_5 {
+    reaction(frame) {=
+      old_glory(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
-    mode MODE_4 {
-        reaction(frame) {=
-            chessboard(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+      // Send the colors to the WS2812 LEDs
+      lf_mutex_lock(&led_mutex);
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+      lf_mutex_unlock(&led_mutex);
+    =}
 
-            // Send the colors to the WS2812 LEDs
-            lf_mutex_lock(&led_mutex);
-            send_colors(pio, sm, led_strip, NUM_LEDS);
-            lf_mutex_unlock(&led_mutex);
-        =}
-        reaction(change_mode) -> reset(MODE_5) {=
-            lf_set_mode(MODE_5);
-        =}
-    }
-
-    mode MODE_5 {
-        reaction(frame) {=
-            old_glory(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
-
-            // Send the colors to the WS2812 LEDs
-            lf_mutex_lock(&led_mutex);
-            send_colors(pio, sm, led_strip, NUM_LEDS);
-            lf_mutex_unlock(&led_mutex);
-        =}
-        reaction(change_mode) -> reset(MODE_1) {=
-            lf_set_mode(MODE_1);
-        =}
-    }
+    reaction(change_mode) -> reset(MODE_1) {=
+      lf_set_mode(MODE_1);
+    =}
+  }
 }
 
 main reactor {
-    physical action button_press
-    logical action change_mode
+  physical action button_press
+  logical action change_mode
 
-    state next_frame: int = 0
-    state led_mode: int = 0
+  state next_frame: int = 0
+  state led_mode: int = 0
 
-    timer iterator(1 s, 300 ms) 
-    timer mode_poll(1 s, 100 ms)
+  timer iterator(1 s, 300 ms)
+  timer mode_poll(1 s, 100 ms)
 
-    led = new LED()
+  led = new LED()
 
-    preamble {=
-        void initialize_leds(ws2812_config_t* ws2812_config) {
-            gpio_init(ws2812_config->pin);
-            gpio_set_dir(ws2812_config->pin, GPIO_OUT);
-            gpio_put(ws2812_config->pin, 0);
-        }
+  preamble {=
+    void initialize_leds(ws2812_config_t* ws2812_config) {
+        gpio_init(ws2812_config->pin);
+        gpio_set_dir(ws2812_config->pin, GPIO_OUT);
+        gpio_put(ws2812_config->pin, 0);
+    }
 
-        static void set_mode(int * mode)
+    static void set_mode(int * mode)
+    {
+        // Circle around when the mode is increased
+        *mode = (*mode < NUM_MODES) ? *mode + 1 : 1;
+    }
+
+    int poll_mode(int * mode)
+    {
+        if (!gpio_get(BUTTON))
         {
-            // Circle around when the mode is increased
-            *mode = (*mode < NUM_MODES) ? *mode + 1 : 1;
-        }
-
-        int poll_mode(int * mode)
-        {
+            sleep_ms(100);
             if (!gpio_get(BUTTON))
             {
-                sleep_ms(100);
-                if (!gpio_get(BUTTON))
-                {
-                    set_mode(mode);
-                    return 1;
-                }
+                set_mode(mode);
+                return 1;
             }
-            return 0;
         }
-    =}
+        return 0;
+    }
+  =}
 
-    reaction (startup) {=
-        // Initialize the hardware
-        stdio_init_all();
-        // Initialize the LED pin
-        initialize_leds(&ws2812_config);
+  reaction(startup) {=
+    // Initialize the hardware
+    stdio_init_all();
+    // Initialize the LED pin
+    initialize_leds(&ws2812_config);
 
-        // Initialize the switch button pin
-        gpio_init(BUTTON);
-        gpio_set_dir(BUTTON, GPIO_IN);
-        gpio_pull_up(BUTTON);
-        
-        // Time to breathe
-        sleep_ms(1000);
-    =}
+    // Initialize the switch button pin
+    gpio_init(BUTTON);
+    gpio_set_dir(BUTTON, GPIO_IN);
+    gpio_pull_up(BUTTON);
 
-    reaction(mode_poll)-> change_mode {=
-        if (poll_mode(&(self->led_mode))) {
-            lf_schedule(change_mode, 0); // Trigger change mode
-        }
-    =}
+    // Time to breathe
+    sleep_ms(1000);
+  =}
 
-    reaction(change_mode)->led.change_mode{=
-        lf_set(led.change_mode, 1);
-    =}
+  reaction(mode_poll) -> change_mode {=
+    if (poll_mode(&(self->led_mode))) {
+        lf_schedule(change_mode, 0); // Trigger change mode
+    }
+  =}
 
-    reaction(iterator)->led.frame {=
-        if (self->next_frame < 760) self->next_frame++;
-        else self->next_frame = 0; // Reset the frame every 760 frames
-        
-        lf_set(led.frame, self->next_frame);
-    =}
+  reaction(change_mode) -> led.change_mode {=
+    lf_set(led.change_mode, 1);
+  =}
+
+  reaction(iterator) -> led.frame {=
+    if (self->next_frame < 760) self->next_frame++;
+    else self->next_frame = 0; // Reset the frame every 760 frames
+
+    lf_set(led.frame, self->next_frame);
+  =}
 }
