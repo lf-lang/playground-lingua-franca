@@ -1,0 +1,10 @@
+test/node_modules/
+bin/
+target/
+src-gen/
+include/
+build/
+.vscode/
+
+# MacOS junk
+.DS_Store
