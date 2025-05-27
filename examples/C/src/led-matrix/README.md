@@ -18,6 +18,8 @@
 
 LedDisplay.lf uses a modal model to toggle LED animations which are projected onto a WS2812 Neopixel LED array board. The program depends on Programmable I/O (PIO) to interface with the hardware on the LED array using sub-microsecond timing precision. 
 
+The original code can be viewed at <a href="https://github.com/ben-gunnels/embedded_systems_projects/tree/main/projects/led_display">led_display</a>.
+
 ## 1a. **Hardware Requirements**
 
 To build this project, you will need the following components:
@@ -109,5 +111,30 @@ Achieving this level of timing precision in software alone proved unreliable and
 Fortunately, the official pico-examples repository includes a PIO implementation for driving WS2812 LEDs. By integrating this into the project, I was able to restore reliable operation and ensure consistent communication with the LED matrix.
 
 If you have any insight on why the lingua franca might mess with the timing protocol of my original driver I would love to hear about it. 
+
+The original timing protocol, from authon Kevin Thomas used for-loops to mimic the PWM required to send bits to the LED board. 
+
+```
+// Source: led_display/ws2812.c
+void ws2812_send_bit(ws2812_config_t *ws2812_config, bool bit)
+{
+    uint8_t index = 0;
+
+    if (bit) {
+        // one
+        for (index = 0; index <= 10; index++)
+            gpio_put(ws2812_config->pin, 1);
+        for (index = 0; index <= 2; index++)
+            gpio_put(ws2812_config->pin, 0);
+    } else {
+        // zero
+        for (index = 0; index <= 3; index++)
+            gpio_put(ws2812_config->pin, 1);
+        for (index = 0; index <= 10; index++)
+            gpio_put(ws2812_config->pin, 0);
+    }
+}
+
+```
 
 For any inquiries on this project please email me (Benjamin Gunnels, @ben-gunnels) at: bengunnels8@gmail.com
