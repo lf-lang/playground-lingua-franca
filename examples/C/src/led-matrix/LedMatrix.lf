@@ -50,15 +50,9 @@ reactor LED {
 
     // Create a two dimensional array for convenience mapping effects
     uint32_t** remapping;
-
-    // Lock the critical sections sending the colors to preserve timing.
-    lf_mutex_t led_mutex;
   =}
 
   reaction(startup) {=
-    // Initialize the mutex
-    lf_mutex_init(&led_mutex);
-
     // Initialize the remapping array during startup
     remapping = remap(ROWS, COLS);
     if (remapping == NULL) {
@@ -77,9 +71,7 @@ reactor LED {
       rainbow(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
       // Send the colors to the WS2812 LEDs
-      lf_mutex_lock(&led_mutex);
       send_colors(pio, sm, led_strip, NUM_LEDS);
-      lf_mutex_unlock(&led_mutex);
     =}
 
     reaction(change_mode) -> reset(MODE_2) {=
@@ -92,9 +84,7 @@ reactor LED {
       aurora(led_strip, remapping, frame->value, 0.015, ROWS, COLS);
 
       // Send the colors to the WS2812 LEDs
-      lf_mutex_lock(&led_mutex);
       send_colors(pio, sm, led_strip, NUM_LEDS);
-      lf_mutex_unlock(&led_mutex);
     =}
 
     reaction(change_mode) -> reset(MODE_3) {=
@@ -107,9 +97,7 @@ reactor LED {
       beating_heart(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
       // Send the colors to the WS2812 LEDs
-      lf_mutex_lock(&led_mutex);
       send_colors(pio, sm, led_strip, NUM_LEDS);
-      lf_mutex_unlock(&led_mutex);
     =}
 
     reaction(change_mode) -> reset(MODE_4) {=
@@ -122,9 +110,7 @@ reactor LED {
       chessboard(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
       // Send the colors to the WS2812 LEDs
-      lf_mutex_lock(&led_mutex);
       send_colors(pio, sm, led_strip, NUM_LEDS);
-      lf_mutex_unlock(&led_mutex);
     =}
 
     reaction(change_mode) -> reset(MODE_5) {=
@@ -137,9 +123,7 @@ reactor LED {
       old_glory(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
 
       // Send the colors to the WS2812 LEDs
-      lf_mutex_lock(&led_mutex);
       send_colors(pio, sm, led_strip, NUM_LEDS);
-      lf_mutex_unlock(&led_mutex);
     =}
 
     reaction(change_mode) -> reset(MODE_1) {=
