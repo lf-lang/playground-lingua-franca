@@ -145,6 +145,8 @@ main reactor {
   led = new LED()
 
   preamble {=
+    int button_pressed = 0;
+
     void initialize_leds(ws2812_config_t* ws2812_config) {
         gpio_init(ws2812_config->pin);
         gpio_set_dir(ws2812_config->pin, GPIO_OUT);
@@ -161,13 +163,15 @@ main reactor {
     {
         if (!gpio_get(BUTTON))
         {
-            sleep_ms(100);
-            if (!gpio_get(BUTTON))
+            if (button_pressed)
             {
                 set_mode(mode);
                 return 1;
             }
+            button_pressed = 1; // Set button_pressed to true, check that it is still being pressed the next time it is polled
         }
+        else button_pressed = 0;
+        
         return 0;
     }
   =}
@@ -187,15 +191,12 @@ main reactor {
     sleep_ms(1000);
   =}
 
-  reaction(mode_poll) -> change_mode {=
+  reaction(mode_poll) -> led.change_mode {=
     if (poll_mode(&(self->led_mode))) {
-        lf_schedule(change_mode, 0); // Trigger change mode
+        lf_set(led.change_mode, 1); // Trigger mode change
     }
   =}
 
-  reaction(change_mode) -> led.change_mode {=
-    lf_set(led.change_mode, 1);
-  =}
 
   reaction(iterator) -> led.frame {=
     if (self->next_frame < 760) self->next_frame++;
