@@ -20,13 +20,13 @@
 # Run the binaries and save their output
 
 #### Ubuntu
-/usr/bin/time -v ./examples/C/bin/EvalApproach05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalApproach_fail05.txt 2>&1
+/usr/bin/time -v ./examples/C/bin/EvalApproach05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalApproach_fail0.txt 2>&1
 echo "✅ Finished EvalApproach05"
 
-/usr/bin/time -v ./examples/C/bin/EvalNoAdvance05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalNoAdvance_fail05.txt 2>&1
+/usr/bin/time -v ./examples/C/bin/EvalNoAdvance05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalNoAdvance_fail0.txt 2>&1
 echo "✅ Finished EvalNoAdvance05"
 
-/usr/bin/time -v ./examples/C/bin/EvalWorstCase05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalWorstCase_fail05.txt 2>&1
+/usr/bin/time -v ./examples/C/bin/EvalWorstCase05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalWorstCase_fail0.txt 2>&1
 echo "✅ Finished EvalWorstCase05"
 
 
@@ -62,13 +62,13 @@ echo "✅ Finished EvalWorstCase5"
 
 ################ MAC environment
 
-gtime -v ./examples/C/bin/EvalApproach05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalApproach_fail05.txt 2>&1
+gtime -v ./examples/C/bin/EvalApproach05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalApproach_fail0.txt 2>&1
 echo "✅ Finished EvalApproach05"
 
-gtime -v ./examples/C/bin/EvalNoAdvance05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalNoAdvance_fail05.txt 2>&1
+gtime -v ./examples/C/bin/EvalNoAdvance05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalNoAdvance_fail0.txt 2>&1
 echo "✅ Finished EvalNoAdvance05"
 
-gtime -v ./examples/C/bin/EvalWorstCase05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalWorstCase_fail05.txt 2>&1
+gtime -v ./examples/C/bin/EvalWorstCase05 > examples/C/src/CheckpointRestore/failing/evaluation/res100k/EvalWorstCase_fail0.txt 2>&1
 echo "✅ Finished EvalWorstCase05"
 
 
