@@ -79,7 +79,24 @@ reactor OutHandler<OUT_T>{
   =}
 }
 
-reactor Task<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
+reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
+
+  input task_in: IN_T
+  output task_out: OUT_T
+
+  task1body = new TaskBody<IN_T, OUT_T, CHECK_T>()
+  task1tail = new OutHandler<OUT_T>()
+
+  task_in->task1body.task_in
+  trigger.start_seg -> task1body.start_seg
+  task1body.f_seg->advance.f_seg
+  advance.failed_seg->failed_seg
+  advance.failed_seg->task1tail.trigger_out
+  task1body.t_out->task1tail.t_out
+  task1tail.task_out->task_out
+}
+
+reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
 
   input task_in: IN_T
   output task_out: OUT_T
