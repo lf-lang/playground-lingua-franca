@@ -1,0 +1,110 @@
+target C
+
+import TaskRetryTemplate, TaskBody, TaskRetryWorstCaseTemplate from "TaskRetryTemplate.lf"
+
+import TaskRetryNoAdvance from "TaskRetryNoAdvanceTemplate.lf"
+
+reactor TaskScheduler(period: time = 0 msec) {
+  timer t(0, period)
+  output trigger: int
+  state total_tasks: int = 0
+
+  reaction(startup) {=
+    // Setup rand() function.
+    // Fix seed.
+    srand(16);
+    // Seed 16 fails on failure_rate 1%. Around 6600.
+
+    // Even using same seed, our approach differs with just re-executing because after task dropping they don't have same behavior..
+  =}
+
+  reaction(t) -> trigger{=
+    lf_set(trigger, 0);
+    self->total_tasks ++;
+  =}
+
+  reaction(shutdown) {=
+    lf_print("Total_tasks: %d.", self->total_tasks - 1);
+  =}
+}
+
+reactor Task1Body extends TaskBody {
+  preamble {=
+    #include <time.h>
+    #define TASK_SEG_WCET_MSEC  10
+    #define FT_RATE 1.1
+    #define TASK_SEG_WCET_FT_MSEC  TASK_SEG_WCET_MSEC * FT_RATE
+
+    #define FAILURE_RATE 2 // % chance
+
+    void busy_wait(int ms) {
+      struct timespec start, now;
+      clock_gettime(CLOCK_MONOTONIC, &start);
+      do {
+          clock_gettime(CLOCK_MONOTONIC, &now);
+      } while ((now.tv_sec - start.tv_sec) * 1000 + (now.tv_nsec - start.tv_nsec) / 1e6 < ms);
+    }
+
+    int random_sleep() {
+      // Generate a random float between 0.6 and 1.0
+      float factor = ((float)(rand() % 41) / 100.0f) + 0.6f;
+      if (rand() % 100 < FAILURE_RATE) {
+        // lf_sleep(MSEC(TASK_SEG_WCET_FT_MSEC * factor));
+        busy_wait(TASK_SEG_WCET_FT_MSEC * factor);
+        return 1;
+      } else {
+        // lf_sleep(MSEC(TASK_SEG_WCET_MSEC * factor));
+        busy_wait(TASK_SEG_WCET_FT_MSEC * factor);
+        return 0;
+      }
+    }
+    int task1_seg1() {
+      return random_sleep();
+    }
+
+    int task1_seg2() {
+      return random_sleep();
+    }
+
+    int task1_seg3() {
+      return random_sleep();
+    }
+
+    int total_task1(int checkpoint) {
+      if (checkpoint <= 1 && task1_seg1()) return 1;
+      if (checkpoint <= 2 && task1_seg2()) return 2;
+      if (checkpoint <= 3 && task1_seg3()) return 3;
+      return 0;
+    }
+  =}
+
+  reaction(trigger_task) -> calculate_lt {=
+    int result = total_task1(trigger_task->value);
+    lf_set(calculate_lt, result);
+  =}
+}
+
+reactor Task1 extends TaskRetryTemplate {
+  task1body = new Task1Body()
+
+  trigger.trigger_task -> task1body.trigger_task
+  trigger.trigger_task -> advance.seg_start_num
+  task1body.calculate_lt->advance.calculate_lt
+  advance.failed_seg->failed_seg
+}
+
+// With no advancing logical time.
+reactor Task2 extends TaskRetryNoAdvance{
+  task2body = new Task1Body()
+  trigger.trigger_task -> task2body.trigger_task
+  task2body.calculate_lt->failed_seg
+}
+
+reactor Task3 extends TaskRetryWorstCaseTemplate {
+  task1body = new Task1Body()
+
+  trigger.trigger_task -> task1body.trigger_task
+  trigger.trigger_task -> advance.seg_start_num
+  task1body.calculate_lt->advance.calculate_lt
+  advance.failed_seg->failed_seg
+}
