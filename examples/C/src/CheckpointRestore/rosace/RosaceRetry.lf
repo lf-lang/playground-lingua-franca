@@ -1,0 +1,47 @@
+target C {
+  fast: true,
+  build: "./build_run_plot.sh RosaceRetry",
+  // single-threaded: true,
+  timeout: 10 min
+}
+
+import Aircraft from "AircraftSimulator.lf"
+import NewController from "ControllerWithCheckpoints.lf"
+import PrintToFile from "../../lib/PrintToFile.lf"
+
+preamble {=
+  // Shared constants.
+  // Trimming parameters
+  #define Va_eq (230.0)   // Nominal airspeed?
+  #define h_eq (10000.0)
+
+=}
+
+reactor Command(period: time = 100 ms, value: double = 0.0) {
+  timer t(0, period)
+  output c: double
+
+  reaction(t) -> c {=
+    lf_set(c, self->value);
+  =}
+}
+
+main reactor RosaceRetry (filter_period: time = 10 ms) {  
+  a = new Aircraft()              // variables = new Variables()
+  c = new NewController(filter_period=filter_period)
+  altitude = new Command(value=11000)  // Altitude command
+  speed = new Command(value=0.0)  // Delta airspeed from nominal Va_eq (230)
+
+  p_h = new PrintToFile(filename="altitudeRetry.data")
+  p_Va = new PrintToFile(filename="airspeedRetry.data")
+
+  a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
+  altitude.c -> c.c
+  speed.c -> c.s
+
+  c.delta_ec -> a.delta_ec
+  c.delta_thc -> a.delta_thc
+
+  a.h -> p_h.y                    // Print connections.
+  a.Va -> p_Va.y
+}
