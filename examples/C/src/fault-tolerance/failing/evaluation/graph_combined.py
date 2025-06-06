@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_pdf import PdfPages
 
 # Load and clean CSV
@@ -62,15 +63,119 @@ def plot_single_metric(ax, y_data, title, ylabel, value_format='int'):
     ax.grid(axis='y', linestyle='--', alpha=0.5)
     # ax.set_title(title, fontsize=18)
 
+def plot_single_metric_split3(ax, y_data):
+    break_high = 5000
+    break_mid_high = 2100
+    break_mid_low = 2000
+    break_low = 1020
+    gs = gridspec.GridSpecFromSubplotSpec(3, 1, subplot_spec=ax, height_ratios=[5, 2, 10], hspace=0.2)
+    ax_upper = fig.add_subplot(gs[0])
+    ax_mid = fig.add_subplot(gs[1])
+    ax_lower = fig.add_subplot(gs[2], sharex=ax_upper)
+
+    for i in range(len(x)):
+        ax_upper.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+        ax_mid.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+        ax_lower.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+        val = f'{int(y_data[i])}'
+        if y_data[i] > break_mid_high:
+            ax_upper.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+            ax_upper.text(x[i], y_data[i] + 1, val, ha='center', va='bottom', fontsize=16, rotation=90)
+        elif y_data[i] > break_low:
+            ax_mid.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+            ax_mid.text(x[i], y_data[i] + 1, val, ha='center', va='bottom', fontsize=16, rotation=90)
+        else:
+            ax_lower.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+            ax_lower.text(x[i], y_data[i] + 1, val, ha='center', va='bottom', fontsize=16, rotation=90)
+
+    ax_upper.set_xticks([])
+    ax_mid.set_xticks([])
+    ax_lower.set_xticks([])
+
+    # Group labels
+    group_positions = [np.mean(x[i:i + 3]) for i in range(0, len(x), 3)]
+    for pos, label in zip(group_positions, failure_rate_labels):
+        ax_lower.text(pos, -0.05 * break_low, label, ha='center', va='top', fontsize=18)
+    ax_upper.set_ylim(break_high, max(y_data) + 450)
+    ax_mid.set_ylim(break_mid_low, break_mid_high)
+    ax_lower.set_ylim(0, break_low)
+    ax_upper.spines['bottom'].set_visible(False)
+    ax_mid.spines['top'].set_visible(False)
+    ax_mid.spines['bottom'].set_visible(False)
+    ax_lower.spines['top'].set_visible(False)
+    ax_upper.tick_params(labeltop=False)
+    ax_lower.tick_params(axis='y', labelsize=15)
+    ax_mid.tick_params(axis='y', labelsize=15)
+    ax_upper.tick_params(axis='y', labelsize=15)
+
+    # Break indicators
+    d = .5
+    kwargs = dict(marker=[(-1, -d), (1, d)], markersize=10,
+                  linestyle="none", color='k', mec='k', mew=1, clip_on=False)
+    # Between ax_upper and ax_mid
+    ax_upper.plot([0, 1], [0, 0], transform=ax_upper.transAxes, **kwargs)
+    ax_mid.plot([0, 1], [1, 1], transform=ax_mid.transAxes, **kwargs)
+
+    # Between ax_mid and ax_lower
+    ax_mid.plot([0, 1], [0, 0], transform=ax_mid.transAxes, **kwargs)
+    ax_lower.plot([0, 1], [1, 1], transform=ax_lower.transAxes, **kwargs)
+    return ax_lower
+
+def plot_single_metric_split2(ax, y_data):
+    break_high = 58
+    break_low = 10
+    gs = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=ax, height_ratios=[9, 1], hspace=0.2)
+    ax_upper = fig.add_subplot(gs[0])
+    ax_lower = fig.add_subplot(gs[1], sharex=ax_upper)
+    for i in range(len(x)):
+        val = f'{y_data[i]:.2f}'
+        ax_upper.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+        ax_lower.bar(x[i], y_data[i], width=bar_width, color=legend_colors[i], edgecolor='black', alpha=0.85)
+        ax_upper.text(x[i], y_data[i]+0.1, val, ha='center', va='bottom', fontsize=16, rotation=(90))
+
+    # Remove xticks
+    ax_upper.set_xticks([])
+    ax_lower.set_xticks([])
+
+    # Group labels
+    group_positions = [np.mean(x[i:i + 3]) for i in range(0, len(x), 3)]
+    for pos, label in zip(group_positions, failure_rate_labels):
+        ax_lower.text(pos, -0.05 * break_low, label, ha='center', va='top', fontsize=18)
+    ax_upper.set_ylim(break_high, max(y_data) + 3)
+    ax_lower.set_ylim(0, break_low)
+    ax_upper.spines['bottom'].set_visible(False)
+    ax_lower.spines['top'].set_visible(False)
+    ax_upper.tick_params(labeltop=False)
+    ax_lower.tick_params(axis='y', labelsize=15)
+    ax_upper.tick_params(axis='y', labelsize=15)
+
+    # Break indicators
+    d = .5
+    kwargs = dict(marker=[(-1, -d), (1, d)], markersize=10,
+                  linestyle="none", color='k', mec='k', mew=1, clip_on=False)
+    ax_upper.plot([0, 1], [0, 0], transform=ax_upper.transAxes, **kwargs)
+    ax_lower.plot([0, 1], [1, 1], transform=ax_lower.transAxes, **kwargs)
+
+    return ax_lower
+
 # Create a single PDF with all plots side by side
-with PdfPages("res420/graph.pdf") as pdf, \
+with PdfPages("res100k/graph.pdf") as pdf, \
      PdfPages("/Users/dkim314/project/TCRS2025/graph.pdf") as pdf2:
-    fig, axs = plt.subplots(1, 4, figsize=(20, 4))
+    # fig, axs = plt.subplots(1, 4, figsize=(20, 4))
+    fig = plt.figure(figsize=(20, 4))
+    outer = gridspec.GridSpec(1, 4, wspace=0.2)
+
     total_failure = combined_df['Deadline_miss'] + combined_df['Execution_failed']
-    plot_single_metric(axs[0], total_failure, 'Total Failures', 'Total Task Failure Count')
-    plot_single_metric(axs[1], combined_df['Execution_failed'], 'Execution Failures', 'Execution Fail Count')
-    plot_single_metric(axs[2], combined_df['Deadline_miss'], 'Deadline Misses', 'Deadline Miss Count')
-    plot_single_metric(axs[3], combined_df['Utilization'], 'CPU Utilization', 'CPU Utilization (%)', value_format='float')
+    # ax0 = fig.add_subplot(outer[0])
+    ax0 = plot_single_metric_split3(outer[0], total_failure)
+    # ax1 = fig.add_subplot(outer[1])
+    ax1 = plot_single_metric_split3(outer[1], combined_df['Execution_failed'])
+    ax2 = fig.add_subplot(outer[2])
+    plot_single_metric(ax2, combined_df['Deadline_miss'], 'Deadline Misses', 'Deadline Miss Count')
+    # ax3 = fig.add_subplot(outer[3])
+    ax3 = plot_single_metric_split2(outer[3], combined_df['Utilization'])
+
+    axs= [ax0, ax1, ax2, ax3]
 
     # Add colored legend with hatching in one line above all plots
     from matplotlib.patches import Patch
@@ -98,7 +203,7 @@ with PdfPages("res420/graph.pdf") as pdf, \
                  ha='center',
                  va='top',
                  fontsize=24)
-    fig.text(0.11, 0.172, 'Fault Rate', ha='center', va='top', fontsize=16)
+    fig.text(0.11, 0.18, 'Fault Rate', ha='center', va='top', fontsize=16)
     pdf.savefig(fig, bbox_inches='tight')
     pdf2.savefig(fig, bbox_inches='tight')
     plt.close()
