@@ -2,7 +2,7 @@
 
 The following examples demonstrate modeling and simulation of fault-tolerant real-time software tasks in Lingua Franca.
 
-## CheckpointRestore/RetryOneTask.lf
+## RetryOneTask.lf
 
 ### Checkpoint-Based Retry
 - Each task is split into multiple segments, and execution resumes from the last failed segment (checkpoint) on retry.
@@ -14,25 +14,25 @@ The following examples demonstrate modeling and simulation of fault-tolerant rea
 ### Predictive Task Dropping
 - Before retrying a failed segment, the system predicts whether the task can finish within its deadline.
 - If the prediction exceeds the deadline, the task is dropped.
-<img width="855" alt="image" src="https://github.com/user-attachments/assets/1f6b8ca2-6969-44a5-8d81-1eb3b34755ee" />
+<img width="855" alt="image" src="img/RetryOneTask.png" />
 
 
 ---
 
-## CheckpointRestore/RetryParallelTask.lf
+## RetryParallelTask.lf
 
 ### Parallel Execution of Tasks
 - Adds a second `Task` instance that runs **concurrently** with the first.
 - Both tasks perform checkpointed retries, LET advancement, and predictive dropping independently.
 - It has different number of segments, WCET, optWCET.
-<img width="742" alt="image" src="https://github.com/user-attachments/assets/58604432-2f76-4976-acbf-4d38d8bcf007" />
+<img width="742" alt="image" src="img/RetryParallelTask.png" />
 
 ---
-## CheckpointRestore/RetrySequentialTask.lf
+## RetrySequentialTask.lf
 ### Sequential Execution of Tasks
 - Adds a second `Task` that runs **after** the first task finishes.
 - The deadline of the second task is computed from the _start of the second task_.
-<img width="1127" alt="image" src="https://github.com/user-attachments/assets/5523546f-a570-4923-b9f4-d239c0220152" />
+<img width="1127" alt="image" src="img/RetrySequentialTask.png" />
 ---
 ## Implementation Details
 
