@@ -24,7 +24,7 @@ target C {
   // timeout: 5 secs
 }
 
-import CheckDeadlineAndRetry from "TaskRetryTemplate.lf"
+import Coordinator from "TaskRetryTemplate.lf"
 import Task3, TaskScheduler from "TaskExampleEval05.lf"
 
 main reactor {
@@ -34,7 +34,7 @@ main reactor {
       num_of_segs=3,
       wcet = {11, 11, 11},
       optwcet = {10, 10, 10})
-  retry = new CheckDeadlineAndRetry()
+  retry = new Coordinator()
   scheduler = new TaskScheduler(period = 42 msec)
 
   scheduler.trigger -> task.new_instance

@@ -1,6 +1,6 @@
 target C
 
-import TaskRetryTemplate, TaskBody, CheckDeadlineAndRetry from "../lib/TaskRetryTemplate.lf"
+import TaskRetryTemplate, TaskBody, Coordinator from "../lib/TaskRetryTemplate.lf"
 
 preamble {=
   #define REAL_TYPE double
@@ -318,7 +318,7 @@ reactor VaControl50Retry {
       num_of_segs=2,
       wcet = {2, 2},
       optwcet = {1, 1})
-  retry = new CheckDeadlineAndRetry()
+  retry = new Coordinator()
 
   Va_ct_Retry.task_info_update -> retry.task_info_update
   Va_ct_Retry.instance_start_time -> retry.instance_start_time_update
@@ -349,7 +349,7 @@ reactor VzControl50Retry {
       num_of_segs=2,
       wcet = {2, 2},
       optwcet = {1, 1})
-  retry = new CheckDeadlineAndRetry()
+  retry = new Coordinator()
 
   Vz_ct_Retry.task_info_update -> retry.task_info_update
   Vz_ct_Retry.instance_start_time -> retry.instance_start_time_update

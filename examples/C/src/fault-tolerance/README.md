@@ -37,7 +37,7 @@ The following examples demonstrate modeling and simulation of fault-tolerant rea
 ## Implementation Details
 
 ### Modular design
-The user needs to `import TaskTemplate, CheckDeadlineAndRetry, TaskScheduler from "lib/RetryTask.lf"`.
+The user needs to `import TaskTemplate, Coordinator, TaskScheduler from "lib/RetryTask.lf"`.
 The user then creates a reactor `extend`ing the `TaskTemplate` reactor, and add their task inside the preamble.
 Finally, the user should configure the parameters when instantiating the `new Task()`.
 
@@ -50,7 +50,7 @@ Finally, the user should configure the parameters when instantiating the `new Ta
   - `optwcet`: Array of optimized execution times in msecs.
 
 ### Parameter Sending
-- On startup, the `Task` reactor sends its configuration to the corresponding `CheckDeadlineAndRetry` reactor.
+- On startup, the `Task` reactor sends its configuration to the corresponding `Coordinator` reactor.
 
 ## Limitation
 One limitation is that LF does not support (or maybe cannot) passing function pointers as a `Reactor` input parameter.
