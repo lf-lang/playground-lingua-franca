@@ -25,7 +25,7 @@ Note: Please restart the CARLA Server before running each of the examples below.
 
 ### **Compiling LF**
 
-Compile the `carla_sync.lf` and `carla_async.lf` using the `lfc` command. Make sure that `carla_client.py` is in the include folder.
+Compile the `CarlaSync.lf` and `CarlaAsync.lf` using the `lfc` command. Make sure that `carla_client.py` is in the include folder.
 
 ### Synchronous Example - Manual Control
 
@@ -72,3 +72,16 @@ settings = world.get_settings()
 settings.fixed_delta_seconds = None # Set a variable time-step
 world.apply_settings(settings)
 ```
+
+## Programs
+
+<table>
+<tr>
+<td> <img src="img/CarlaAsync.png" alt="CarlaAsync" width="400">
+<td> <a href="CarlaAsync.lf">CarlaAsync.lf</a>: Asynchronous CARLA interaction.</td>
+</tr>
+<tr>
+<td> <img src="img/CarlaSync.png" alt="CarlaSync" width="400">
+<td> <a href="CarlaSync.lf">CarlaSync.lf</a>: Synchronous CARLA interaction.</td>
+</tr>
+</table>

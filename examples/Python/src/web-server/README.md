@@ -4,28 +4,28 @@ This example shows how to create an HTTP web server backend in Lingua Franca pyt
 
 ## Application
 
-In this example, we will build a distributed logging service with two replicated databases, each database with an HTTP web server that handles add log and get log requests from frontend. The HTTP web server backend is `logging.lf`, and the frontend is `logging.html`. Valid requests are the following three kinds:
+In this example, we will build a distributed logging service with two replicated databases, each database with an HTTP web server that handles add log and get log requests from frontend. The HTTP web server backend is `Logging.lf`, and the frontend is `logging.html`. Valid requests are of the following three kinds:
 
 - Add log: adds a log to the distributed database. The add log request is broadcast to all database replicas.
 - Get log: get all historical logs from a single database. This returns without waiting for consistency, so the logs could be out of order and inconsistent with each other.
-- Get log consistent: get consistent historical logs from a single database. This request will respond slower but with consistency, meaning requests to different replicas will return identical logs if the requests have the same timestamp.
+- Get log consistent: get consistent historical logs from a single database. This request will respond more slowly but with consistency, meaning requests to different replicas will return identical logs if the requests have the same timestamp.
 
 ## HTTP Server
 
-Building an HTTP server in Lingua Franca python target is a nontrivial task for several reasons:
+Building an HTTP server in the Lingua Franca Python target is a nontrivial task for several reasons:
 
-- The HTTP server in python is a blocking operation that prevents a reaction from finishing.
-- Typical python web frameworks use a decorator style and require you to return the response in the handler function, but to utilize the full potential of Lingua Franca, we often need to implement logic in different reactions.
+- The HTTP server in Python involves blocking operations that prevent a reaction from finishing.
+- Typical Python web frameworks use a decorator style and require you to return the response in the handler function, but to utilize the full potential of Lingua Franca, we often need to implement logic in different reactions.
 
-To tackle the issues above, we can:
+To tackle these issues, we can:
 
 - Start the HTTP server in a separate thread, so it doesn't block the execution of reactions. Handlers act as external triggers to the Lingua Franca program.
-- The `WebServer` reactor has a state `events` that is a dictionary of `event_id`->[asyncio event](https://docs.python.org/3/library/asyncio.html)
+- The `WebServer` reactor has a state variable `events` that is a dictionary of `event_id`->[asyncio event](https://docs.python.org/3/library/asyncio.html)
 - The handler will add an event to the state `events` when a request comes in, trigger an action in Lingua Franca, and complete the request when the event is unblocked.
 
 ## Minimal +1 Example
 
-First, let's build a minimal web server that adds one to the number in the request. The backend is in `minimal.lf`, and frontend is `minimal.html`.
+First, let's build a minimal web server that adds one to the number in the request. The backend is in `Minimal.lf`, and frontend is `minimal.html`.
 
 The handler is as follows:
 
@@ -66,7 +66,7 @@ When a request is processed by a handler, a response is generated in the followi
 
 ## Minimal +1 Example with WebServer Library
 
-We can also build the +1 example with the prebuilt `WebServer` library at `../lib/WebServer.lf` that modularizes the web server. You only have to implement the following code to accomplish the same functionality, as demonstrated in `minimal_with_lib.lf`:
+We can also build the +1 example with the prebuilt `WebServer` library at `../lib/WebServer.lf` that modularizes the web server. You only have to implement the following code to accomplish the same functionality, as demonstrated in `MinimalWithLib.lf`:
 
 ```python
 target Python {
@@ -88,7 +88,7 @@ reactor Handler {
   =}
 }
 
-federated reactor {
+main reactor {
   server = new WebServer(path="/addone")
   handler = new Handler()
   server.request -> handler.request
