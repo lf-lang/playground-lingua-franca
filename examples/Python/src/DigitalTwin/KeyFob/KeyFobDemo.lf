@@ -6,6 +6,8 @@
  * @author Hou Seng Wong (housengw@berkeley.edu)
  */
 target Python {
+  coordination-options: {advance-message-interval: 10 ms}, # To suppress warnings.
+  DNET: false, # To suppress warning.
   docker: true,
   files: ["../utils.py"]
 }
