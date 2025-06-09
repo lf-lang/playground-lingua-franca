@@ -171,7 +171,7 @@ main reactor {
             button_pressed = 1; // Set button_pressed to true, check that it is still being pressed the next time it is polled
         }
         else button_pressed = 0;
-        
+
         return 0;
     }
   =}
@@ -196,7 +196,6 @@ main reactor {
         lf_set(led.change_mode, 1); // Trigger mode change
     }
   =}
-
 
   reaction(iterator) -> led.frame {=
     if (self->next_frame < 760) self->next_frame++;

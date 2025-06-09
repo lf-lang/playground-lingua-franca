@@ -66,6 +66,12 @@ reactor Database(bank_index=0, portwidth=2, STA = 0 s) {
   =}
 }
 
+reactor PrintInstructions {
+  reaction(startup) {=
+    print("**** Open the front end at " + lf.source_directory() + "/logging.html")
+  =}
+}
+
 federated reactor(ReplicaCount=2) {
   server = new[ReplicaCount] WebServerRouter()
   db = new[ReplicaCount] Database(portwidth=ReplicaCount)
@@ -76,4 +82,6 @@ federated reactor(ReplicaCount=2) {
   (server.newlog)+ -> dbc.addlog
   server.getlog_consistent -> dbc.getlog
   db.sendlogs, dbc.sendlogs ~> interleaved(server.response)
+
+  print_instructions = new PrintInstructions()
 }
