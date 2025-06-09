@@ -2,14 +2,6 @@
 
 This example shows how to create an HTTP web server backend in Lingua Franca python target.
 
-## Application
-
-In this example, we will build a distributed logging service with two replicated databases, each database with an HTTP web server that handles add log and get log requests from frontend. The HTTP web server backend is `Logging.lf`, and the frontend is `logging.html`. Valid requests are of the following three kinds:
-
-- Add log: adds a log to the distributed database. The add log request is broadcast to all database replicas.
-- Get log: get all historical logs from a single database. This returns without waiting for consistency, so the logs could be out of order and inconsistent with each other.
-- Get log consistent: get consistent historical logs from a single database. This request will respond more slowly but with consistency, meaning requests to different replicas will return identical logs if the requests have the same timestamp.
-
 ## HTTP Server
 
 Building an HTTP server in the Lingua Franca Python target is a nontrivial task for several reasons:
@@ -101,6 +93,12 @@ Note that the `request_id` has to be sent to and from the `Handler` reactor so t
 
 ## Distributed Logging
 
+In this example, we will build a distributed logging service with two replicated databases, each database with an HTTP web server that handles add log and get log requests from frontend. The HTTP web server backend is `Logging.lf`, and the frontend is `logging.html`. Valid requests are of the following three kinds:
+
+- Add log: adds a log to the distributed database. The add log request is broadcast to all database replicas.
+- Get log: get all historical logs from a single database. This returns without waiting for consistency, so the logs could be out of order and inconsistent with each other.
+- Get log consistent: get consistent historical logs from a single database. This request will respond more slowly but with consistency, meaning requests to different replicas will return identical logs if the requests have the same timestamp.
+
 ![logging](logging.svg)
 
 To implement our distributed logging application, we need to respond to three distinct operations, but the reusable `WebServer` reactor has only one API path. We can solve this by introducing a new `Router` reactor and [composing reactors](https://www.lf-lang.org/docs/writing-reactors/composing-reactors), as shown in the diagram above. Each HTTP request body now carries an additional `operation` field that allows the router to route the request to different reactions through connections.
@@ -111,3 +109,20 @@ Now we can implement a distributed logging system by instantiating several `WebS
 * Another `Database` reactor has an STA offset of 3s (this can be changed) and is connected by logical connections. This will guarantee that the logs in this `Database` reactor will be consistent as long as out-of-order messages arrive within 3s.
 
 Note that this is implemented with banks and multiports. When sending logs, we want the `WebServer` to send logs to all `Database` reactors, so the `newlog` connection is implemented with broadcasts; but when getting logs, we want to know the log state of the single corresponding `Database` reactor, hence there is no broadcast here. In the last line, `db.sendlogs, dbc.sendlogs ~> interleaved(server.response)` uses interleaved connections because each `WebServer` corresponds to two `Database`, one consistent and one not, and we need to avoid having a `WebServer` connecting to two inconsistent databases and another connecting to two consistent databases.
+
+## Programs
+
+<table>
+<tr>
+<td> <img src="img/Minimal.pdf" alt="Minimal" width="400">
+<td> <a href="Minimal.lf">Minimal.lf</a>: Minimal web server.</td>
+</tr>
+<tr>
+<td> <img src="img/MinimalWithLib.pdf" alt="MinimalWithLib" width="400">
+<td> <a href="MinimalWithLib.lf">MinimalWithLib.lf</a>: Minimal web server using library reactor.</td>
+</tr>
+<tr>
+<td> <img src="img/Logging.pdf" alt="Logging" width="400">
+<td> <a href="Logging.lf">Logging.lf</a>: Distributed logging using a web server.</td>
+</tr>
+</table>
