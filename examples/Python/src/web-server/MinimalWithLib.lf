@@ -22,7 +22,7 @@ main reactor {
   handler = new Handler()
   server.request -> handler.request
   handler.response ~> server.response
-  
+
   reaction(startup) {=
     print("**** Open the front end at " + lf.source_directory() + "/minimal.html")
   =}

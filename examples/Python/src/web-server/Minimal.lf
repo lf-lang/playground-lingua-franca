@@ -55,6 +55,7 @@ reactor WebServer(bank_index=0, STA=0) {
 
 main reactor {
   server = new WebServer()
+
   reaction(startup) {=
     print("**** Open the front end at " + lf.source_directory() + "/minimal.html")
   =}
