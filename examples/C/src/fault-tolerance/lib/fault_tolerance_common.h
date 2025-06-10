@@ -19,3 +19,23 @@ float rand_double_range(float min, float max) {
     // Scale the value to the desired range and add the minimum offset
     return min + scale * (max - min);
 }
+
+/**
+ * @brief Implements busy wait for the given milliseconds in a floating point number.
+ *
+ * @param milliseconds Time for busy wait given in milliseconds.
+ */
+void busy_wait(float milliseconds) {
+    struct timespec start, current;
+    
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    unsigned long long elapsed;
+    unsigned long long wait_ns = (unsigned long long)(milliseconds * 1000000.0f); // Convert milliseconds to nanoseconds
+
+    do {
+        clock_gettime(CLOCK_MONOTONIC, &current);
+        elapsed = (current.tv_sec - start.tv_sec) * 1000000000ULL;
+        elapsed += current.tv_nsec - start.tv_nsec;
+    } while (elapsed < wait_ns);
+}
