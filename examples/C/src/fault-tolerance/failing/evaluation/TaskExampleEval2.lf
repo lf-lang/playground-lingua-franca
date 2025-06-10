@@ -1,4 +1,6 @@
-target C
+target C {
+  files: ["../../lib/fault_tolerance_common.h"],
+}
 
 import TaskRetryTemplate, TaskBody, TaskRetryWorstCaseTemplate from "TaskRetryTemplate.lf"
 
@@ -31,6 +33,7 @@ reactor TaskScheduler(period: time = 0 msec) {
 reactor Task1Body extends TaskBody {
   preamble {=
     #include <time.h>
+    #include "fault_tolerance_common.h"
     #define TASK_SEG_WCET_MSEC  10
     #define FT_RATE 1.1
     #define TASK_SEG_WCET_FT_MSEC  TASK_SEG_WCET_MSEC * FT_RATE
@@ -38,17 +41,9 @@ reactor Task1Body extends TaskBody {
     #define FAILURE_RATE 0.02 // 2% chance
     #define FAILURE_THRESHOLD (int)(((double)(RAND_MAX)) * FAILURE_RATE)
 
-    void busy_wait(int ms) {
-      struct timespec start, now;
-      clock_gettime(CLOCK_MONOTONIC, &start);
-      do {
-          clock_gettime(CLOCK_MONOTONIC, &now);
-      } while ((now.tv_sec - start.tv_sec) * 1000 + (now.tv_nsec - start.tv_nsec) / 1e6 < ms);
-    }
-
     int random_sleep() {
       // Generate a random float between 0.6 and 1.0
-      float factor = ((float)(rand() % 41) / 100.0f) + 0.6f;
+      float factor = rand_double_range(0.6f, 1.0f);
       if (rand() < FAILURE_THRESHOLD) {
         // lf_sleep(MSEC(TASK_SEG_WCET_FT_MSEC * factor));
         busy_wait(TASK_SEG_WCET_FT_MSEC * factor);
