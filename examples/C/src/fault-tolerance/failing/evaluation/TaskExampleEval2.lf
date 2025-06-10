@@ -42,8 +42,7 @@ reactor Task1Body extends TaskBody {
     #define FAILURE_THRESHOLD (int)(((double)(RAND_MAX)) * FAILURE_RATE)
 
     int random_sleep() {
-      // Generate a random float between 0.6 and 1.0
-      float factor = rand_double_range(0.6f, 1.0f);
+      float factor = get_wcet_factor();
       if (rand() < FAILURE_THRESHOLD) {
         // lf_sleep(MSEC(TASK_SEG_WCET_FT_MSEC * factor));
         busy_wait(TASK_SEG_WCET_FT_MSEC * factor);

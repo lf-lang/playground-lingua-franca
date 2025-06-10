@@ -20,6 +20,11 @@ float rand_double_range(float min, float max) {
     return min + scale * (max - min);
 }
 
+float get_wcet_factor() {
+    // Generate a random float between 0.6 and 1.0
+    return rand_double_range(0.6f, 1.0f);
+}
+
 /**
  * @brief Implements busy wait for the given milliseconds in a floating point number.
  *
