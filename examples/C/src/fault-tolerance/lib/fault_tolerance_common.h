@@ -44,3 +44,32 @@ void busy_wait(float milliseconds) {
         elapsed += current.tv_nsec - start.tv_nsec;
     } while (elapsed < wait_ns);
 }
+
+int random_sleep(int failure_threashold) {
+    float factor = get_wcet_factor();
+
+    const static int SUCCESS_SEG_WCET_MSEC = 10;
+    const static int FAILED_SEG_PENALTY_MSEC = 1;
+
+    if (rand() < failure_threashold) {
+        // Failed case.
+        busy_wait(SUCCESS_SEG_WCET_MSEC * factor + FAILED_SEG_PENALTY_MSEC);
+        return 1;
+    } else {
+        // Success case.
+        busy_wait(SUCCESS_SEG_WCET_MSEC * factor);
+        return 0;
+    }
+}
+
+int task1_seg1(int failure_threashold) {
+    return random_sleep(failure_threashold);
+}
+
+int task1_seg2(int failure_threashold) {
+    return random_sleep(failure_threashold);
+}
+
+int task1_seg3(int failure_threashold) {
+    return random_sleep(failure_threashold);
+}

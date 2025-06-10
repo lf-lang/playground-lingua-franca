@@ -38,37 +38,19 @@ reactor Task1Body extends TaskBody {
     #define FT_RATE 1.1
     #define TASK_SEG_WCET_FT_MSEC  TASK_SEG_WCET_MSEC * FT_RATE
 
-    #define FAILURE_RATE 0.005 // 0.5% chance
-    #define FAILURE_THRESHOLD (int)(((double)(RAND_MAX)) * FAILURE_RATE)
-
-    int random_sleep() {
-      float factor = get_wcet_factor();
-      if (rand() < FAILURE_THRESHOLD) {
-        // lf_sleep(MSEC(TASK_SEG_WCET_FT_MSEC * factor));
-        busy_wait(TASK_SEG_WCET_FT_MSEC * factor);
-        return 1;
-      } else {
-        // lf_sleep(MSEC(TASK_SEG_WCET_MSEC * factor));
-        busy_wait(TASK_SEG_WCET_FT_MSEC * factor);
-        return 0;
-      }
-    }
-    int task1_seg1() {
-      return random_sleep();
-    }
-
-    int task1_seg2() {
-      return random_sleep();
-    }
-
-    int task1_seg3() {
-      return random_sleep();
-    }
-
     int total_task1(int checkpoint) {
-      if (checkpoint <= 1 && task1_seg1()) return 1;
-      if (checkpoint <= 2 && task1_seg2()) return 2;
-      if (checkpoint <= 3 && task1_seg3()) return 3;
+      const static double FAILURE_RATE = 0.005; // 0.5% chance
+      const static int FAILURE_THRESHOLD = (int)(((double)(RAND_MAX)) * FAILURE_RATE);
+
+      if (checkpoint <= 1 && task1_seg1(FAILURE_THRESHOLD)) {
+        return 1;
+      }
+      if (checkpoint <= 2 && task1_seg2(FAILURE_THRESHOLD)) {
+        return 2;
+      }
+      if (checkpoint <= 3 && task1_seg3(FAILURE_THRESHOLD)) {
+        return 3;
+      }
       return 0;
     }
   =}
