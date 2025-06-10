@@ -159,8 +159,7 @@ def plot_single_metric_split2(ax, y_data):
     return ax_lower
 
 # Create a single PDF with all plots side by side
-with PdfPages("res100k/graph.pdf") as pdf, \
-     PdfPages("/Users/dkim314/project/TCRS2025/graph.pdf") as pdf2:
+with PdfPages("res100k/graph.pdf") as pdf:
     # fig, axs = plt.subplots(1, 4, figsize=(20, 4))
     fig = plt.figure(figsize=(20, 4))
     outer = gridspec.GridSpec(1, 4, wspace=0.2)
@@ -205,5 +204,4 @@ with PdfPages("res100k/graph.pdf") as pdf, \
                  fontsize=24)
     fig.text(0.11, 0.18, 'Fault Rate', ha='center', va='top', fontsize=16)
     pdf.savefig(fig, bbox_inches='tight')
-    pdf2.savefig(fig, bbox_inches='tight')
     plt.close()
