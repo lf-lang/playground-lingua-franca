@@ -17,6 +17,9 @@ lfc-dev examples/C/src/fault-tolerance/failing/evaluation/EvalApproach5.lf
 lfc-dev examples/C/src/fault-tolerance/failing/evaluation/EvalNoAdvance5.lf
 lfc-dev examples/C/src/fault-tolerance/failing/evaluation/EvalWorstCase5.lf
 
+# Create result directory if not exists
+mkdir -p examples/C/src/fault-tolerance/failing/evaluation/res100k
+
 # Run the binaries and save their output
 
 #### Ubuntu
