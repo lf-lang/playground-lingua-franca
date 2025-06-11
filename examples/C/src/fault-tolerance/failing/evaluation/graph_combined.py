@@ -166,10 +166,10 @@ with PdfPages("res100k/graph.pdf") as pdf:
 
     total_failure = combined_df['Deadline_miss'] + combined_df['Execution_failed']
     # ax0 = fig.add_subplot(outer[0])
-    ax0 = plot_single_metric_split3(outer[0], total_failure)
+    ax0 = plot_single_metric_split3(outer[2], total_failure)
     # ax1 = fig.add_subplot(outer[1])
     ax1 = plot_single_metric_split3(outer[1], combined_df['Execution_failed'])
-    ax2 = fig.add_subplot(outer[2])
+    ax2 = fig.add_subplot(outer[0])
     plot_single_metric(ax2, combined_df['Deadline_miss'], 'Deadline Misses', 'Deadline Miss Count')
     # ax3 = fig.add_subplot(outer[3])
     ax3 = plot_single_metric_split2(outer[3], combined_df['Utilization'])
