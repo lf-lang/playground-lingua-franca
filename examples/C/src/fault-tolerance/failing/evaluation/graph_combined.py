@@ -187,9 +187,9 @@ with PdfPages("res100k/graph.pdf") as pdf:
     fig.subplots_adjust(wspace=0.15, top=0.85, bottom=0.2)
     # Add subfigure labels below each subplot
     subfigure_labels = [
-        "(a) Total task failures.",
+        "(a) Deadline misses.",
         "(b) Execution failures.",
-        "(c) Deadline misses.",
+        "(c) Total task failures.",
         "(d) CPU utilization (%)."
     ]
 
