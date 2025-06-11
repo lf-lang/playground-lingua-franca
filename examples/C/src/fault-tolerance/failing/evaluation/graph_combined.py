@@ -174,7 +174,7 @@ with PdfPages("res100k/graph.pdf") as pdf:
     # ax3 = fig.add_subplot(outer[3])
     ax3 = plot_single_metric_split2(outer[3], combined_df['Utilization'])
 
-    axs= [ax0, ax1, ax2, ax3]
+    axs= [ax2, ax1, ax0, ax3]
 
     # Add colored legend with hatching in one line above all plots
     from matplotlib.patches import Patch
@@ -202,6 +202,6 @@ with PdfPages("res100k/graph.pdf") as pdf:
                  ha='center',
                  va='top',
                  fontsize=24)
-    fig.text(0.11, 0.18, 'Fault Rate', ha='center', va='top', fontsize=16)
+    fig.text(0.11, 0.22, 'Failure Rate', ha='center', va='top', fontsize=16)
     pdf.savefig(fig, bbox_inches='tight')
     plt.close()
