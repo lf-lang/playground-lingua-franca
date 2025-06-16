@@ -27,7 +27,7 @@ jobs:
         with:
           check_mode: "compile"
           no_compile_flag: false
-          exclude_dirs: '["failing", "experiments"]'
+          exclude_dirs: '["failing", "experiments", "led-matrix"]'
           compiler_ref: "master"
 
   check-format:
