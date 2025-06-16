@@ -8,7 +8,7 @@ To view, edit, and run the programs, you can either run locally on your computer
 Quick start:
 
 1. Clone this repo (`git clone git@github.com:lf-lang/playground-lingua-franca.git`)
-2. Open with [VS Code](https://code.visualstudio.com) (`code playground-lingua-franca`)
+2. Open with [VS Code](https://code.visualstudio.com) (`code playground-lingua-franca`) or [Cursor](https://cursor.com).
 3. Install the [Lingua Franca extension](https://github.com/lf-lang/vscode-lingua-franca) (<kbd>Ctrl</kbd>+<kbd>P</kbd> and enter `ext install lf-lang.vscode-lingua-franca`).
 
 Once in VSCode, navigate to [./examples](./examples) and click on any of the `.lf` files to open them into your editor. To build and run, use <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> and select `Lingua Franca: Build and Run`. Note: You might need to install additional dependencies in order to successfully build some of the code you find in this repository. For more information, see the [setup-env.bash](./utils/scripts/setup-env.bash) script that we use to configure our Docker-based environments.

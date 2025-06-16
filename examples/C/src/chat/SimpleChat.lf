@@ -9,11 +9,19 @@
  * the received message. This process creates a two-way communication where `a` and `b` can send and
  * receive messages from each other.
  *
+ * @note: This example needs to be run manually with each federate run from its own terminal window.
+ * After compiling with `lfc`, create three terminal windows and run the following commands in each
+ * window:
+ * 1. `fed-gen/SimpleChat/bin/RTI -n 2`
+ * 2. `fed-gen/SimpleChat/bin/federate_a`
+ * 3. `fed-gen/SimpleChat/bin/federate_b`
+ *
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
  */
 target C {
   keepalive: true,
+  DNET: false,
   coordination-options: {
     advance-message-interval: 10 msec
   }
@@ -32,7 +40,7 @@ reactor InputHandler {
       int c;
       int i = 0;
       while(1) {
-        printf("Press Enter a message.\n");
+        printf("Enter a message:\n");
         while((c = getchar()) != '\n') {
           buf[i++] = c;
           if (c == EOF) {
@@ -64,7 +72,6 @@ reactor InputHandler {
   =}
 
   reaction(response) -> out {=
-    printf("Reacting to physical action at %lld\n", lf_time_logical_elapsed());
     lf_set(out, response->value);
   =}
 }
@@ -83,18 +90,12 @@ reactor ChatHandler {
   u = new InputHandler()
   r = new Printer()
 
-  reaction(u.out) -> send {=
-    lf_set(send, u.out->value);
-  =}
-
-  reaction(receive) -> r.in {=
-    lf_set(r.in, receive->value);
-  =}
+  u.out -> send
+  receive -> r.in
 }
 
 federated reactor SimpleChat {
   a = new ChatHandler()
-
   b = new ChatHandler()
   b.send -> a.receive
   a.send -> b.receive
