@@ -11,10 +11,8 @@
  *
  * @note: This example needs to be run manually with each federate run from its own terminal window.
  * After compiling with `lfc`, create three terminal windows and run the following commands in each
- * window:
- * 1. `fed-gen/SimpleChat/bin/RTI -n 2`
- * 2. `fed-gen/SimpleChat/bin/federate_a`
- * 3. `fed-gen/SimpleChat/bin/federate_b`
+ * window: 1. `fed-gen/SimpleChat/bin/RTI -n 2` 2. `fed-gen/SimpleChat/bin/federate_a` 3.
+ * `fed-gen/SimpleChat/bin/federate_b`
  *
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
