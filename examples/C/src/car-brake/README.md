@@ -26,6 +26,6 @@ In the third version, a measured amount of inconsistency is permitted using the 
 </tr>
 <tr>
 <td> <img src="img/CarBrake3.png" alt="CarBrake3" width="400">
-<td> <a href="CarBrake3.lf">CarBrake3.lf</a>: Sketch of an ADAS implementation that emphasizes strong consistency at the expense of availability and therefore will miss deadlines when the brake pedal is pushed while image analysis is being performed.</td>
+<td> <a href="CarBrake3.lf">CarBrake3.lf</a>: This version of the CarBreak example decouples the Vision analysis using a physical connection, which gives up consistency (and determinacy). The execution is federated, so the Vision component has no effect on the ability to meet deadlines in the response to brake pedal actions. This version is far less likely to experience deadline violations.</td>
 </tr>
 </table>
