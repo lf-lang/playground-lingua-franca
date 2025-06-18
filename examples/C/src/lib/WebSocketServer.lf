@@ -4,17 +4,9 @@
  * create a client in an HTML/JavaScript file that connects to this server and provides a
  * browser-based user interface.
  *
- * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified path to
- * a file that this server will serve upon receiving an HTTP request. This can be used to provide
- * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
- * the running LF program. To specify a file located in the same directory as your source LF file,
- * you can use a syntax like this:
- * ```
- * s = new WebSocketServer(
- *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
- * )  
- * ```
-
+ * If an `initial_file` parameter value is provided, it is expected to be a path relative to your
+ * source `.lf` file. This can be used to provide the initial HTML (with embedded JavaScript) that
+ * will then establish a web socket connection to the running LF program.
  *
  * When a connection is established with a client, an output is produced on the `connected` port
  * that is a struct with a unique `wsi` (web socket interface) for the client and a boolean
@@ -67,6 +59,8 @@ target C {
   keepalive: true,
   cmake-include: ["WebSocketCmake.txt"]
 }
+
+import FileReader from "FileReader.lf"
 
 preamble {=
   #ifndef WEBSOCKET_H
@@ -125,7 +119,7 @@ preamble {=
 reactor WebSocketServer(
     hostport: int = 8080,
     initial_file: string = {= NULL =},
-    max_clients: int = 0) {
+    max_clients: int = 0) extends FileReader {
   output connected: web_socket_instance_t
   output received: web_socket_message_t*
 
@@ -168,7 +162,23 @@ reactor WebSocketServer(
           // HTTP request that is not asking for an upgrade.
           // If the initial_file parameter is non-empty, serve that file.
           if (status->initial_file != NULL && strlen(status->initial_file) > 0) {
-            lws_serve_http_file(wsi, status->initial_file, "text/html", NULL, 0);
+            // Manually serve the file with proper headers for Safari compatibility
+            char* file_contents = read_file(status->initial_file);
+            long file_size = strlen(file_contents);
+
+            // Send HTTP headers
+            const char* headers = "HTTP/1.1 200 OK\r\n"
+                                  "Content-Type: text/html; charset=UTF-8\r\n"
+                                  "Content-Length: %ld\r\n"
+                                  "Cache-Control: no-cache\r\n\r\n";
+
+            char header_buffer[512];
+            snprintf(header_buffer, sizeof(header_buffer), headers, file_size);
+
+            lws_write(wsi, (unsigned char*)header_buffer, strlen(header_buffer), LWS_WRITE_HTTP_HEADERS);
+            lws_write(wsi, (unsigned char*)file_contents, file_size, LWS_WRITE_HTTP);
+
+            free(file_contents);
           }
           break;
         case LWS_CALLBACK_WSI_CREATE:
