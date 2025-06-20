@@ -366,7 +366,7 @@ reactor VzControl50Retry {
   =}
 }
 
-reactor NewController(filter_period: time = 10 ms) {
+reactor FaultTolerantController(filter_period: time = 10 ms) {
   // Sensor inputs from aircraft
   // Vertical speed
   input Vz: double
