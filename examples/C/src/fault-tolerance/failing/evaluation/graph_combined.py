@@ -41,7 +41,7 @@ legend_colors = [
 
 bar_colors = legend_colors
 
-def plot_single_metric(ax, y_data, title, ylabel, value_format='int'):
+def plot_single_metric(ax, y_data, value_format='int'):
     for i in range(len(x)):
         ax.bar(x[i], y_data[i], width=bar_width, color=bar_colors[i], alpha=0.85,
                 edgecolor='black')
@@ -57,7 +57,7 @@ def plot_single_metric(ax, y_data, title, ylabel, value_format='int'):
         ax.text(pos, -0.05 * max(y_data), label, ha='center', va='top', fontsize=18)
 
     ax.set_xlim(-0.7, 12)
-    ax.set_ylim(bottom=0, top=max(y_data) + (20 if value_format == 'float' else 220))
+    ax.set_ylim(bottom=0, top=(max(y_data) * 1.25))
     # ax.set_ylabel(ylabel, fontsize=21, labelpad=-3)
     ax.tick_params(axis='y', labelsize=17)
     ax.grid(axis='y', linestyle='--', alpha=0.5)
@@ -141,7 +141,7 @@ def plot_single_metric_split2(ax, y_data):
     group_positions = [np.mean(x[i:i + 3]) for i in range(0, len(x), 3)]
     for pos, label in zip(group_positions, failure_rate_labels):
         ax_lower.text(pos, -0.05 * break_low, label, ha='center', va='top', fontsize=18)
-    ax_upper.set_ylim(break_high, max(y_data) + 3)
+    ax_upper.set_ylim(break_high, max(y_data) + 5)
     ax_lower.set_ylim(0, break_low)
     ax_upper.spines['bottom'].set_visible(False)
     ax_lower.spines['top'].set_visible(False)
@@ -166,11 +166,12 @@ with PdfPages("res100k/graph.pdf") as pdf:
 
     total_failure = combined_df['Deadline_miss'] + combined_df['Execution_failed']
     # ax0 = fig.add_subplot(outer[0])
-    ax0 = plot_single_metric_split3(outer[2], total_failure)
-    # ax1 = fig.add_subplot(outer[1])
-    ax1 = plot_single_metric_split3(outer[1], combined_df['Execution_failed'])
+    ax0 = fig.add_subplot(outer[2])
+    plot_single_metric(ax0, total_failure)
+    ax1 = fig.add_subplot(outer[1])
+    plot_single_metric(ax1, combined_df['Execution_failed'])
     ax2 = fig.add_subplot(outer[0])
-    plot_single_metric(ax2, combined_df['Deadline_miss'], 'Deadline Misses', 'Deadline Miss Count')
+    plot_single_metric(ax2, combined_df['Deadline_miss'])
     # ax3 = fig.add_subplot(outer[3])
     ax3 = plot_single_metric_split2(outer[3], combined_df['Utilization'])
 
@@ -202,6 +203,6 @@ with PdfPages("res100k/graph.pdf") as pdf:
                  ha='center',
                  va='top',
                  fontsize=24)
-    fig.text(0.11, 0.22, 'Failure Rate', ha='center', va='top', fontsize=16)
+    fig.text(0.05, 0.18, 'Failure Rate', ha='center', va='top', fontsize=16)
     pdf.savefig(fig, bbox_inches='tight')
     plt.close()
