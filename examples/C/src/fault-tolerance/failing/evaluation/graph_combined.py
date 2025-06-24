@@ -198,11 +198,11 @@ with PdfPages("res100k/graph.pdf") as pdf:
     for ax, label in zip(axs, subfigure_labels):
         ax_pos = ax.get_position()
         fig.text(x=ax_pos.x0 + ax_pos.width / 2,
-                 y=ax_pos.y0 - 0.08,
+                 y=ax_pos.y0 - 0.10,
                  s=label,
                  ha='center',
                  va='top',
-                 fontsize=24)
-    fig.text(0.1, 0.18, 'Failure Rate', ha='center', va='top', fontsize=16)
+                 fontsize=20)
+    fig.text(0.08, 0.18, 'Failure Rate', ha='center', va='top', fontsize=20)
     pdf.savefig(fig, bbox_inches='tight')
     plt.close()
