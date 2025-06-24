@@ -140,7 +140,7 @@ def plot_single_metric_split2(ax, y_data):
     # Group labels
     group_positions = [np.mean(x[i:i + 3]) for i in range(0, len(x), 3)]
     for pos, label in zip(group_positions, failure_rate_labels):
-        ax_lower.text(pos, -0.05 * break_low, label, ha='center', va='top', fontsize=18)
+        ax_lower.text(pos, -0.5 * break_low, label, ha='center', va='top', fontsize=18)
     ax_upper.set_ylim(break_high, max(y_data) + 5)
     ax_lower.set_ylim(0, break_low)
     ax_upper.spines['bottom'].set_visible(False)
@@ -190,7 +190,7 @@ with PdfPages("res100k/graph.pdf") as pdf:
     subfigure_labels = [
         "(a) Deadline misses.",
         "(b) Execution failures.",
-        "(c) Total task failures.",
+        "(c) Sum of deadline misses \nand execution failures.",
         "(d) CPU utilization (%)."
     ]
 
@@ -203,6 +203,6 @@ with PdfPages("res100k/graph.pdf") as pdf:
                  ha='center',
                  va='top',
                  fontsize=24)
-    fig.text(0.05, 0.18, 'Failure Rate', ha='center', va='top', fontsize=16)
+    fig.text(0.1, 0.18, 'Failure Rate', ha='center', va='top', fontsize=16)
     pdf.savefig(fig, bbox_inches='tight')
     plt.close()
