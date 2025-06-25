@@ -15,6 +15,7 @@ The examples are grouped into unfederated, federated, and embedded and listed in
 * [Rosace](src/rosace/README.md): Aircraft controller illustrating periodic systems with multiple periods.
 * [SDV](src/sdv/README.md): Software defined vehicle sketch integrating user input, a web display, and sound.
 * [Simulation](src/simulation/README.md): Using Lingua Franca for simulation.
+* [Synchrophasors](src/synchrophasors/README.md): Illustration of the value of timestamp semantics.
 * [Train Door](src/train-door/README.md): Train door controller from a verification paper.
 
 ## Federated
