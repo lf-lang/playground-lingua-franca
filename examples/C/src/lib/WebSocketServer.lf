@@ -447,6 +447,14 @@ reactor WebSocketServer(
     }
   =}
 
+  reaction(received_action) -> received {=
+    lf_set_token(received, received_action->token);
+  =}
+
+  reaction(connected_action) -> connected {=
+    lf_set(connected, connected_action->value);
+  =}
+
   reaction(startup) send -> connected_action, received_action {=
     // The receiving thread dynamically allocates memory for messages.
     // Set the destructor and copy constructor.
@@ -503,14 +511,6 @@ reactor WebSocketServer(
     if (self->initial_file != NULL) {
       lf_print("**** Point your browser to http://localhost:%d", self->hostport);
     }
-  =}
-
-  reaction(received_action) -> received {=
-    lf_set_token(received, received_action->token);
-  =}
-
-  reaction(connected_action) -> connected {=
-    lf_set(connected, connected_action->value);
   =}
 
   reaction(send) {=

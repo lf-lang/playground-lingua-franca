@@ -1,12 +1,13 @@
 /**
- * Demo of a use of WebSocketServerString enabling a user interface realized in the browser. Compile
+ * Demo of a use of WebSocketServerInt enabling a user interface realized in the browser. Compile
  * and run this program, then point your browser to http://localhost:8080. This example program
- * sends to the web page a counting sequence. It also accepts text messages from the web page and
- * prints them on standard output.
+ * sends to the web page a counting sequence. It also accepts numbers from the web page and prints
+ * them on standard output. If the web page sends a string that is not a number, then the output
+ * will be zero.
  *
  * This example limits the number of connections to just one. Its purpose is to show how to use the
- * simpler WebSocketServerString when you need just one connection and the data exchanged is always
- * a string.
+ * simpler WebSocketServerInt when you need just one connection and the data exchanged is always an
+ * integer.
  *
  * @author Edward A. Lee
  */
@@ -14,7 +15,7 @@ target C {
   keepalive: true
 }
 
-import WebSocketServerString from "../lib/WebSocketServerString.lf"
+import WebSocketServerInt from "../lib/WebSocketServerInt.lf"
 
 main reactor {
   state count: int = 0
@@ -22,18 +23,14 @@ main reactor {
 
   logical action send_action
 
-  s = new WebSocketServerString(initial_file="WebSocket.html")
+  s = new WebSocketServerInt(initial_file="WebSocket.html")
 
-  reaction(send_action) -> s.in_dynamic, send_action {=
+  reaction(send_action) -> s.response, send_action {=
     // Send using the `in_dynamic` port because the string sent is dynamically allocated.
     // If the web socket is no longer connected, do nothing.
     if (self->connected) {
-      // Create the message.
-      char* message;
-      asprintf(&message, "Count is: %d", self->count++);
-
       // Send the message.
-      lf_set(s.in_dynamic, message);
+      lf_set(s.response, self->count++);
 
       // Schedule the next send.
       lf_schedule(send_action, SEC(1));
@@ -54,7 +51,6 @@ main reactor {
   =}
 
   reaction(s.received) {=
-    // NOTE: The WebSocketServerString ensures that the received message is null terminated.
-    lf_print("======== Application received: %s", (char*)s.received->value);
+    lf_print("======== Application received: %d", s.received->value);
   =}
 }
