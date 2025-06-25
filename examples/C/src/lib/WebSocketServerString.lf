@@ -58,6 +58,7 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
       lf_print("**** Point your browser to http://localhost:%d", self->hostport);
     }
   =}
+
   reaction(server.connected) -> connected {=
     if (server.connected->value.connected) {
       self->ws = server.connected->value;
