@@ -1,0 +1,39 @@
+/**
+ * Version of HelloWorldDecentralized that uses decentralized coordination with an STA (safe to
+ * advance) offset instead of an `after` delay. In this version, the timestamps at the receiving
+ * federate `print` are the same as the timestamps at the sender `source`.
+ *
+ * The `STA` parameter on the `print` federate tells the runtime system to wait (at most) the amount
+ * of time specified before processing events. That is, before processing an event with timestamp
+ * *t*, the federate waits until physical time *T* exceeds *t* + `STA`. If the inputs become known
+ * before that time, then the wait is shortened.
+ *
+ * If the `STA` is too small, then the `print` receiving federate will report tardy messages, which
+ * are messages where the intended timestamp cannot be assigned because the message arrived too
+ * late.
+ *
+ * If the sender and receiver are running in the same machine then there is no clock synchronization
+ * error and the communication latency should be well less than 10msec, so an `offset` of 10 msec
+ * should be plenty adequate to avoid any tardy messages. If you change the offset to 10 usec, then
+ * tardy messages will likely occur, unless, on your machine, communication between two processes
+ * can reliably occur within 10 microseconds.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  timeout: 10 secs,
+  coordination: decentralized
+}
+
+import MessageGenerator from "HelloWorld.lf"
+import PrintMessageWithDetector from "HelloWorldDecentralized.lf"
+
+/** Subclass that simply adds an `STA` parameter, nothing more. */
+reactor PrintMessageWithSTA(STA: time = 10 ms) extends PrintMessageWithDetector {
+}
+
+federated reactor {
+  source = new MessageGenerator(prefix = "Hello World")
+  print = new PrintMessageWithSTA(offset=0, STA = 10 ms)
+  source.message -> print.message
+}

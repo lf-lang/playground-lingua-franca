@@ -1,0 +1,102 @@
+/**
+ * This example corrects the flaw in LET_Late_Deadline.lf. It adds a second reaction to the Actuator
+ * that reacts to a timer to check whether the data arrived on time. If not, it invokes an early
+ * deadline violation handler, one that does not have to wait for the input to arrive. This could,
+ * for example, perform a backup actuation.
+ *
+ * If data arrives on time, the normal handler (reaction 1) is invoked. After it completes, the
+ * checker reaction (reaction 2) is invoked. The checker reaction itself also has a deadline. This
+ * deadline can be used to detect excessive runtime in the normal handler (reaction 1). The second
+ * reaction uses the `is_present` field of the input to check whether the data arrived on time.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  coordination: decentralized,
+  timeout: 1 s,
+  workers: 8
+}
+
+reactor Sensor {
+  output out: int
+  timer t(0, 100 ms)
+  state counter: int = 0
+
+  @label("10 ms delay")
+  reaction(t) -> out {=
+    self->counter++;
+    lf_sleep(MSEC(10));
+    lf_set(out, self->counter);
+    lf_print("Sensor " PRINTF_TIME ": Sensing... (counter=%d)",
+        lf_time_logical_elapsed(), self->counter);
+  =}
+}
+
+reactor Compute {
+  input in: int
+  output out: int
+  state counter: int = 0
+
+  @label("10 or 50 ms delay")
+  reaction(in) -> out {=
+    if (self->counter % 2 == 0) {
+        lf_print("Compute " PRINTF_TIME " : Normal processing(10ms)... (in=%d)",
+            lf_time_logical_elapsed(), in->value);
+        lf_sleep(MSEC(10));
+    } else {
+        lf_print("Compute " PRINTF_TIME ": Excessive delay processing(50ms)... (in=%d)",
+            lf_time_logical_elapsed(), in->value);
+        lf_sleep(MSEC(50));
+    }
+    lf_set(out, in->value);
+    self->counter++;
+  =}
+}
+
+reactor Actuator(STA: time = 0) {
+  input in: int
+  timer t(30 ms, 100 ms)
+
+  @label("normal")
+  reaction(in) {=
+    lf_print("Actuator " PRINTF_TIME ": Actuating with sensor value (in=%d) at physical time " PRINTF_TIME,
+        lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
+  =} STAA(5 ms) {=
+    lf_print("Actuator " PRINTF_TIME ": *** STAA violation on sensor data (in=%d) at physical time " PRINTF_TIME ". Dropping data.",
+        lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
+  =} deadline(5 ms) {=
+    lf_print("Actuator " PRINTF_TIME ": *** Deadline missed on sensor data (in=%d) at physical time " PRINTF_TIME " ***",
+        lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
+  =}
+
+  @label("checker")
+  reaction(t, in) {=
+    if (in->is_present) {
+        lf_print("Actuator Checker " PRINTF_TIME ": Data arrived on time.",
+            lf_time_logical_elapsed());
+    } else {
+        lf_print("Actuator Checker " PRINTF_TIME ": *** Data late. Actuating backup at physical time " PRINTF_TIME,
+            lf_time_logical_elapsed(), lf_time_physical_elapsed());
+    }
+  =} STAA(5 ms) {=
+    // Ignore STAA violation because the previous reaction already handled it.
+  =} deadline(20 ms) {=
+    if (in->is_present) {
+      // Data arrived on time, but normal handler (reaction 1) took too long.
+      lf_print("Actuator Checker " PRINTF_TIME ": *** Normal handler took too long. Reacting at physical time " PRINTF_TIME,
+          lf_time_logical_elapsed(), lf_time_physical_elapsed());
+    } else {
+      lf_print("Actuator " PRINTF_TIME ": ************** Deadline missed. Backup actuation is late at physical time " PRINTF_TIME,
+          lf_time_logical_elapsed(), lf_time_physical_elapsed());
+    }
+  =}
+}
+
+federated reactor {
+  s = new Sensor()
+  c = new Compute()
+  a = new Actuator()
+
+  s.out -> c.in after 15 ms
+  c.out -> a.in after 15 ms
+}

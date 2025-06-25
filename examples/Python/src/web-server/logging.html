@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Send and Get Logs</title>
+  </head>
+
+  <body>
+    <h1>Send and Get Logs</h1>
+
+    <label for="portInput">Backend Port:</label>
+    <input
+      type="number"
+      id="portInput"
+      value="5000"
+      placeholder="Enter backend port here"
+    /><br /><br />
+
+    <textarea id="logInput" rows="4" cols="50"></textarea><br />
+
+    <button onclick="sendLog()">Send Log</button>
+    <br /><br />
+
+    <button onclick="getLogs()">Get Logs</button>
+    <button onclick="getConsistentLogs()">Get Consistent Logs</button>
+
+    <h2>Stored Logs:</h2>
+    <div id="logOutput"></div>
+
+    <script>
+      let logCounter = 1;
+
+      function sendLog() {
+        const logMessage = document.getElementById("logInput").value;
+        const port = document.getElementById("portInput").value || 5000;
+        const fullLogMessage = `Log from ${port}: ${logMessage}`;
+        const logData = {
+          operation: "newlog",
+          log: fullLogMessage,
+        };
+
+        fetch(`http://127.0.0.1:${port}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(logData),
+        }).catch((error) => console.error("Error:", error));
+        incrementLogValue();
+      }
+
+      function incrementLogValue() {
+        document.getElementById("logInput").value = logCounter;
+        logCounter++;
+      }
+
+      function getLogs() {
+        const port = document.getElementById("portInput").value || 5000;
+        const startTime = performance.now();
+
+        fetch(`http://127.0.0.1:${port}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ operation: "getlog" }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const logOutput = document.getElementById("logOutput");
+            logOutput.innerHTML = "";
+
+            if (data.logs.length === 0) {
+              logOutput.innerHTML = "No logs available";
+            } else {
+              data.logs.forEach((log, index) => {
+                const logElement = document.createElement("p");
+                logElement.textContent = `${index + 1}: ${log}`;
+                logOutput.appendChild(logElement);
+              });
+            }
+
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            const timeElement = document.createElement("p");
+            timeElement.textContent = `Time taken to fetch logs: ${duration.toFixed(
+              2
+            )} ms`;
+            logOutput.appendChild(timeElement);
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      function getConsistentLogs() {
+        const port = document.getElementById("portInput").value || 5000;
+        const startTime = performance.now();
+
+        fetch(`http://127.0.0.1:${port}/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ operation: "getlog_consistent" }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const logOutput = document.getElementById("logOutput");
+            logOutput.innerHTML = "";
+
+            if (data.logs.length === 0) {
+              logOutput.innerHTML = "No logs available";
+            } else {
+              data.logs.forEach((log, index) => {
+                const logElement = document.createElement("p");
+                logElement.textContent = `${index + 1}: ${log}`;
+                logOutput.appendChild(logElement);
+              });
+            }
+
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            const timeElement = document.createElement("p");
+            timeElement.textContent = `Time taken to fetch consistent logs: ${duration.toFixed(
+              2
+            )} ms`;
+            logOutput.appendChild(timeElement);
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      window.onload = function () {
+        incrementLogValue();
+      };
+    </script>
+  </body>
+</html>

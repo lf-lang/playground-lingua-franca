@@ -4,10 +4,6 @@ When intead of a **main reactor** you defined a **federated reactor**, a Lingua 
 
 This directory includes a series of very simple "Hello World" examples.
 
-## Prerequisite
-
-To run these programs, you are required to first [install the RTI](https://www.lf-lang.org/docs/handbook/distributed-execution?target=c#installation-of-the-rti) (the Run-Time Infrastructure), which handles the coordination.
-
 ## Examples
 
 <table>
@@ -24,8 +20,8 @@ To run these programs, you are required to first [install the RTI](https://www.l
 <td> <a href="HelloWorldDecentralized.lf"> HelloWorldDecentralized.lf </a>: A variant that uses decentralized coordination, which relies and clock synchronization. This version uses an **after** delay.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldDecentralizedSTP.png" alt="HelloWorldDecentralizedSTP" width="100%"> </td>
-<td> <a href="HelloWorldDecentralizedSTP.lf"> HelloWorldDecentralizedSTP.lf </a>: A decentralized variant that uses a safe-to-process (STP) offset instead of an **after** delay.</td>
+<td> <img src="img/HelloWorldDecentralizedSTA.png" alt="HelloWorldDecentralizedSTA" width="100%"> </td>
+<td> <a href="HelloWorldDecentralizedSTA.lf"> HelloWorldDecentralizedSTA.lf </a>: A decentralized variant that uses a safe-to-advance (STA) offset instead of an **after** delay.</td>
 </tr>
 <tr>
 <td> <img src="img/HelloWorldPhysical.png" alt="HelloWorldPhysical" width="100%"> </td>

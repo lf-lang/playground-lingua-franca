@@ -43,7 +43,7 @@ reactor Actuate(STP_offset: time = 20 ms) {
 
   reaction(in1) {=
     lf_print(PRINTF_TIME ": Received on in1: %d", lf_time_logical_elapsed(), in1->value);
-  =} STP(0) {=
+  =} STAA(0) {=
     // No _additional_ STP offset (STAA) is needed here.
     lf_print(PRINTF_TIME ": *** Consistency violation! Received on in1: %d", lf_time_logical_elapsed(), in1->value);
   =}

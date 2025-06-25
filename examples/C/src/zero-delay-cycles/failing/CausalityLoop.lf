@@ -1,0 +1,37 @@
+/** This test has two coupled cycles. In this variant, both are a zero-delay cycles (ZDC). */
+target C {
+  timeout: 1 sec,
+  tracing: true
+}
+
+import PhysicalPlant, Planner from "Feedback.lf"
+
+reactor Controller {
+  input sensor: double
+  output control: double
+
+  state plan: double = 0.0
+
+  output request_for_planning: double
+  input planning: double
+
+  reaction a1(planning) {=
+    self->plan = planning->value;
+  =}
+
+  reaction a2(sensor) -> request_for_planning, control {=
+    lf_set(request_for_planning, sensor->value);
+    lf_set(control, self->plan);
+  =}
+}
+
+federated reactor {
+  p = new PhysicalPlant()
+  c = new Controller()
+  pl = new Planner()
+
+  p.sensor -> c.sensor
+  c.request_for_planning -> pl.request
+  pl.response -> c.planning
+  c.control -> p.control
+}
