@@ -54,9 +54,6 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
 
   reaction(startup) {=
     self->ws.connected = false;
-    if (self->initial_file != NULL) {
-      lf_print("**** Point your browser to http://localhost:%d", self->hostport);
-    }
   =}
 
   reaction(server.connected) -> connected {=
