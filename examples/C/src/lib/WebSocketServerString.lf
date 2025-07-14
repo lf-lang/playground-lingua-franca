@@ -7,17 +7,9 @@
  * This version is simpler to use than WebSocketServer. It is limited to a single connection at a
  * time and to string-valued messages.
  *
- * If an `initial_file` parameter value is provided, it is expected to be a fully-qualified path to
- * a file that this server will serve upon receiving an HTTP request. This can be used to provide
- * the initial HTML (with embedded JavaScript) that will then establish a web socket connection to
- * the running LF program. To specify a file located in the same directory as your source LF file,
- * you can use a syntax like this:
- * ```
- * s = new WebSocketServerString(
- *    initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "filename.html" =}
- * )  
- * ```
-
+ * If an `initial_file` parameter value is provided, it is expected to be a path relative to your
+ * source `.lf` file. This can be used to provide the initial HTML (with embedded JavaScript) that
+ * will then establish a web socket connection to the running LF program.
  *
  * When a connection is established with a client, an output with value `true` is produced on the
  * `connected` port. A value `false` is produced when the client disconnects.
@@ -62,9 +54,24 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
 
   reaction(startup) {=
     self->ws.connected = false;
-    if (self->initial_file != NULL) {
-      lf_print("**** Point your browser to http://localhost:%d", self->hostport);
+  =}
+
+  reaction(server.connected) -> connected {=
+    if (server.connected->value.connected) {
+      self->ws = server.connected->value;
     }
+    // Do not produce an output if the connected message is due to a denied connection.
+    if (self->ws.wsi == server.connected->value.wsi) {
+      lf_set(connected, server.connected->value.connected);
+    }
+  =}
+
+  reaction(server.received) -> received {=
+    // NOTE: WebSocketServer ensures that the message is null terminated.
+    size_t len = strlen(server.received->value->message) + 1;
+    char* message = (char*)malloc(len * sizeof(char));
+    strcpy(message, server.received->value->message);
+    lf_set_array(received, message, len);
   =}
 
   reaction(in_dynamic, in_static) -> server.send {=
@@ -87,23 +94,5 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
       // Web socket is not connected.
       lf_print_warning("Web socket is not connected. Dropping message to send.");
     }
-  =}
-
-  reaction(server.connected) -> connected {=
-    if (server.connected->value.connected) {
-      self->ws = server.connected->value;
-    }
-    // Do not produce an output if the connected message is due to a denied connection.
-    if (self->ws.wsi == server.connected->value.wsi) {
-      lf_set(connected, server.connected->value.connected);
-    }
-  =}
-
-  reaction(server.received) -> received {=
-    // NOTE: WebSocketServer ensures that the message is null terminated.
-    size_t len = strlen(server.received->value->message) + 1;
-    char* message = (char*)malloc(len * sizeof(char));
-    strcpy(message, server.received->value->message);
-    lf_set_array(received, message, len);
   =}
 }

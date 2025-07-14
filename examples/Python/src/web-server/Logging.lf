@@ -1,0 +1,87 @@
+target Python {
+  coordination: decentralized
+}
+
+import WebServer from "../lib/WebServer.lf"
+
+reactor Router {
+  input request
+  output newlog
+  output getlog
+  output getlog_consistent
+
+  reaction(request) -> newlog, getlog, getlog_consistent {=
+    # print(f"Router received request: {request.value}")
+    request_id, req_data = request.value
+    if req_data["operation"] == "newlog" and "log" in req_data.keys():
+        newlog.set([request_id, req_data["log"]])
+    elif req_data["operation"] == "getlog":
+        getlog.set(request_id)
+    elif req_data["operation"] == "getlog_consistent":
+        getlog_consistent.set(request_id)
+    else:
+        print("Invalid Request")
+        return
+  =}
+}
+
+reactor WebServerRouter(bank_index=0, STA=0) {
+  output newlog
+  output getlog
+  output getlog_consistent
+  webserver = new WebServer(port = {= 5000+self.bank_index =}, path="/")
+  router = new Router()
+  webserver.request -> router.request
+  router.newlog -> newlog
+  router.getlog -> getlog
+  router.getlog_consistent -> getlog_consistent
+  input[2] response
+
+  reaction(response) -> webserver.response {=
+    for port in response:
+        if port.is_present:
+            webserver.response.set(port.value)
+  =}
+}
+
+reactor Database(bank_index=0, portwidth=2, STA = 0 s) {
+  state logs = []
+  input[portwidth] addlog
+  input getlog
+  output sendlogs
+
+  reaction(startup) {=
+    self.logs = []
+  =}
+
+  reaction(addlog) -> sendlogs {=
+    for i, port in enumerate(addlog):
+        if port.is_present:
+            request_id, log_message = port.value
+            self.logs.append(log_message)
+  =}
+
+  reaction(getlog) -> sendlogs {=
+    sendlogs.set([getlog.value, {"status": "success", "logs": self.logs}])
+  =}
+}
+
+reactor PrintInstructions {
+  reaction(startup) {=
+    print("**** Open the front end at " + lf.source_directory() + "/logging.html")
+  =}
+}
+
+federated reactor(ReplicaCount=2) {
+  server = new[ReplicaCount] WebServerRouter()
+  db = new[ReplicaCount] Database(portwidth=ReplicaCount)
+  (server.newlog)+ ~> db.addlog
+  server.getlog ~> db.getlog
+
+  dbc = new[ReplicaCount] Database(portwidth=ReplicaCount, STA = 3 s)
+  (server.newlog)+ -> dbc.addlog
+  server.getlog_consistent -> dbc.getlog
+  db.sendlogs, dbc.sendlogs ~> interleaved(server.response)
+
+  print_instructions = new PrintInstructions()
+}

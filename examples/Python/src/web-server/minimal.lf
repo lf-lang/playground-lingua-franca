@@ -1,0 +1,62 @@
+target Python {
+  keepalive: true
+}
+
+preamble {=
+  from fastapi import FastAPI, Request, HTTPException
+  from fastapi.middleware.cors import CORSMiddleware
+  import threading
+  import uvicorn
+  import asyncio
+  import uuid
+=}
+
+reactor WebServer(bank_index=0, STA=0) {
+  state app
+  state events
+  physical action addone_action
+
+  reaction(startup) -> addone_action {=
+    self.events = {}
+    self.app = FastAPI()
+    self.app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    @self.app.post("/addone")
+    async def addone(request: Request):
+        event = asyncio.Event()
+        request_id = str(uuid.uuid4())
+        self.events[request_id] = event
+        num = int((await request.json())["data"])
+        addone_action.schedule(0, [request_id, num])
+        await event.wait()
+        num = self.events[request_id]
+        del self.events[request_id]
+        return {"status": "success", "num": num}
+
+    def run_fastapi_app():
+        print(f"[WebServer{self.bank_index}] FastAPI server starting")
+        uvicorn.run(self.app, host="127.0.0.1", port=5000+self.bank_index, log_level="warning")
+    fastapi_thread = threading.Thread(target=run_fastapi_app)
+    fastapi_thread.start()
+  =}
+
+  reaction(addone_action) {=
+    request_id, num = addone_action.value
+    event = self.events[request_id]
+    self.events[request_id] = num + 1
+    event.set()
+  =}
+}
+
+main reactor {
+  server = new WebServer()
+
+  reaction(startup) {=
+    print("**** Open the front end at " + lf.source_directory() + "/minimal.html")
+  =}
+}
