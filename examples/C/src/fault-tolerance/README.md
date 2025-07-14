@@ -2,7 +2,7 @@
 
 The following examples demonstrate modeling and simulation of fault-tolerant real-time software tasks in Lingua Franca.
 
-## RetryOneTask.lf
+## OneTask.lf
 
 ### Checkpoint-Based Retry
 - Each task is split into multiple segments, and execution resumes from the last failed segment (checkpoint) on retry.
