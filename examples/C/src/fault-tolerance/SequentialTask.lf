@@ -1,7 +1,7 @@
 /**
- * Add a parallel task with different worst case execution times.
+ * This example shows two tasks running sequentially, and the Task1's output is passed to Task2's input.
  *
- * @author Dongha Kim
+ * @author Dongha Kim, Hokeun Kim
  */
 target C {
   timeout: 9900 msec

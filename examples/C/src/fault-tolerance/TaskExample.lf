@@ -1,3 +1,13 @@
+/**
+ * This defines two task reactors, **Task1** and **Task2**, each composed of:
+ * - A segmented body reactor (`Task1Body`, `Task2Body`) with 3 retryable segments and a 70% failure
+ * rate, where each segment performs simple computation with artificial delay (sleep).
+ * - An output handler (`Task1OutHandler`, `Task2OutHandler`) that emits results only upon full task
+ * completion.
+ * - The top-level task reactors (`Task1`, `Task2`) extends `TaskRetryTemplate`.
+ 
+ * @author Dongha Kim, Hokeun Kim
+ */
 target C
 
 import TaskRetryTemplate, TaskBody from "lib/TaskRetryTemplate.lf"
@@ -64,39 +74,35 @@ reactor Task1Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   =}
 }
 
-reactor Task1Tail<OUT_T>{
+reactor Task1OutHandler<OUT_T> {
   input trigger_output: int
   input task_output: OUT_T
   output out: OUT_T
 
   reaction(trigger_output) task_output -> out {=
-  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
-    if (trigger_output->value == 0) {
-      lf_set(out, task_output->value);
-    }  
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+      if (trigger_output->value == 0) {
+        lf_set(out, task_output->value);
+      }
   =}
 }
 
 reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
-
   input task_input: IN_T
   output task_output: OUT_T
 
   task1body = new Task1Body<IN_T, OUT_T, CHECK_T>()
-  task1tail = new Task1Tail<OUT_T>()
+  task1OutHandler = new Task1OutHandler<OUT_T>()
 
-  task_input->task1body.task_input
+  task_input -> task1body.task_input
   trigger.start_seg -> task1body.start_seg
-  task1body.f_seg->advance.f_seg
-  advance.failed_seg->failed_seg
-  advance.failed_seg->task1tail.trigger_output
-  task1body.task_output->task1tail.task_output
-  task1tail.out->task_output
+  task1body.f_seg -> advance.f_seg
+  advance.failed_seg -> failed_seg
+  advance.failed_seg -> task1OutHandler.trigger_output
+  task1body.task_output -> task1OutHandler.task_output
+  task1OutHandler.out -> task_output
 }
-
-
-
 
 reactor Task2Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   preamble {=
@@ -160,33 +166,32 @@ reactor Task2Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   =}
 }
 
-reactor Task2Tail<OUT_T>{
+reactor Task2OutHandler<OUT_T> {
   input trigger_output: int
   input task_output: OUT_T
   output out: OUT_T
 
   reaction(trigger_output) task_output -> out {=
-  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
-    if (trigger_output->value == 0) {
-      lf_set(out, task_output->value);
-    }  
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+      if (trigger_output->value == 0) {
+        lf_set(out, task_output->value);
+      }
   =}
 }
 
 reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
-
   input task_input: IN_T
   output task_output: OUT_T
 
   task2body = new Task2Body<IN_T, OUT_T, CHECK_T>()
-  task2tail = new Task2Tail<OUT_T>()
+  task2OutHandler = new Task2OutHandler<OUT_T>()
 
-  task_input->task2body.task_input
+  task_input -> task2body.task_input
   trigger.start_seg -> task2body.start_seg
-  task2body.f_seg->advance.f_seg
-  advance.failed_seg->failed_seg
-  advance.failed_seg->task2tail.trigger_output
-  task2body.task_output->task2tail.task_output
-  task2tail.out->task_output
+  task2body.f_seg -> advance.f_seg
+  advance.failed_seg -> failed_seg
+  advance.failed_seg -> task2OutHandler.trigger_output
+  task2body.task_output -> task2OutHandler.task_output
+  task2OutHandler.out -> task_output
 }

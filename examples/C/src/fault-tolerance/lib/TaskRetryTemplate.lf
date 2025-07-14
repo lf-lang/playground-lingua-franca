@@ -1,4 +1,20 @@
-/** @author Dongha Kim */
+/**
+ * This template implements a fault-tolerant task execution model using checkpoint and retry
+ * mechanisms, and predictive task dropping. The system is designed to simulate execution of
+ * multi-segment tasks with faults using logical execution time.
+ *
+ * 1. Checkpointed Task Execution: Tasks are divided into segments, each with its own worst-case and
+ * optimistic execution time. Faults are simulated with probabilistic failures, and task is restored
+ * from the checkpoint when fails.
+ *
+ * 2. Predictive Task Dropping: Upon segment failure, the system evaluates whether retrying will
+ * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
+ *
+ * The purpose of this design is to investigate how logic-based scheduling and retry policies can
+ * improve reliability in real-time embedded systems.
+ *
+ * @author Dongha Kim, Hokeun Kim
+ */
 target C
 
 preamble {=
@@ -16,7 +32,8 @@ preamble {=
   #endif
 =}
 
-reactor Trigger (task_num: uint16_t = 0) {
+// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the retry port is triggered, it resumes from the indicated segment number passed by the port.
+reactor Trigger(task_num: uint16_t = 0) {
   input instantiate: int
   input retry: int
   output start_seg: int
@@ -48,12 +65,13 @@ reactor Trigger (task_num: uint16_t = 0) {
   =}
 }
 
-reactor AdvanceTime (
-  task_num: uint16_t = 0,
-  dead_line: uint16_t = 0,
-  num_of_segs: uint16_t = 0,
-  wcet: uint16_t[] = {},
-  optwcet: uint16_t[] = {}) {
+// This computes the logical execution time and advances the logical time.
+reactor AdvanceTime(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet: uint16_t[] = {},
+    optwcet: uint16_t[] = {}) {
   input f_seg: int
   input start_seg: int
 
@@ -108,8 +126,13 @@ reactor TaskRetryTemplate(
   output task_info_update: task_info_t
   state task_info: task_info_t
 
-  trigger = new Trigger(task_num = task_num)
-  advance = new AdvanceTime(task_num = task_num, dead_line = dead_line, num_of_segs = num_of_segs, wcet = wcet, optwcet = optwcet)
+  trigger = new Trigger(task_num=task_num)
+  advance = new AdvanceTime(
+      task_num=task_num,
+      dead_line=dead_line,
+      num_of_segs=num_of_segs,
+      wcet=wcet,
+      optwcet=optwcet)
   instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
@@ -126,12 +149,14 @@ reactor TaskRetryTemplate(
   =}
 }
 
-reactor TaskBody{
+// This is for user inheritance. Check TaskExample.lf.
+// The extended reactor contains user-defined C code for the task inside the preamble. Users can define taskspecific inputs and outputs here.
+reactor TaskBody {
   input start_seg: int
   output f_seg: int
 }
 
-// Naming? Timely retry?
+// This reactor reactor manages the predictable task dropping. It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
 reactor Coordinator {
   input instance_start_time_update: time
   input failed_seg: int
@@ -173,10 +198,6 @@ reactor Coordinator {
       if(min_instance_finish_time > self->instance_start_time + (self->task_info.dead_line * MSEC(1))) {
         lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
         lf_print("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
-        // *****This else if tests when there is no deadline prediction!
-        // Don't erase this part.
-        // } else if(self->task_info.dead_line * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
-      //   lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
       } else {
         // Did not violate predicted deadline.
         lf_set(out, failed_seg->value);
@@ -185,6 +206,7 @@ reactor Coordinator {
   =}
 }
 
+// This is an example task scheduler triggered by a timer.
 reactor TaskScheduler<IN_T>(period: time = 0 msec, in: IN_T = 0) {
   timer t(0, period)
   output trigger: int

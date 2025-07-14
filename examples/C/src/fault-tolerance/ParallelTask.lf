@@ -1,7 +1,9 @@
 /**
- * Add a parallel task with different worst case execution times.
- *
- * @author Dongha Kim
+ * This example runs two different task in parallel. The first task has 3 segments, and the second
+ * task has 4 segments. Each tasks have different numbers of segments, WCET, and optWCET, showing
+ * that the tasks are configurable.
+ 
+ * @author Dongha Kim, Hokeun Kim
  */
 target C {
   timeout: 9900 msec
