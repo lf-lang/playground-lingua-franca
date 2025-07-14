@@ -1,0 +1,43 @@
+/**
+ * Add a parallel task with different worst case execution times.
+ *
+ * @author Dongha Kim
+ */
+target C {
+  timeout: 9900 msec
+}
+
+import Coordinator, TaskScheduler from "lib/TaskRetryTemplate.lf"
+import Task1, Task2 from "TaskExample.lf"
+
+main reactor {
+  task1 = new Task1<int, int, int>(
+      task_num=1,
+      dead_line=3000,
+      num_of_segs=3,
+      wcet = {350, 350, 350},
+      optwcet = {300, 300, 300})
+  retry1 = new Coordinator()
+  task2 = new Task2<int, int, int>(
+      task_num=2,
+      dead_line=3000,
+      num_of_segs=4,
+      wcet = {300, 300, 300, 300},
+      optwcet = {250, 250, 250, 250})
+  retry2 = new Coordinator()
+  scheduler = new TaskScheduler<int>(period = 5000 msec, in=0)
+
+  scheduler.trigger -> task1.new_instance
+  scheduler.task_input -> task1.task_input
+  task1.task_info_update -> retry1.task_info_update
+  task1.instance_start_time -> retry1.instance_start_time_update
+  task1.failed_seg -> retry1.failed_seg
+  retry1.out -> task1.retry after 0
+
+  scheduler.trigger -> task2.new_instance
+  scheduler.task_input -> task2.task_input
+  task2.task_info_update -> retry2.task_info_update
+  task2.instance_start_time -> retry2.instance_start_time_update
+  task2.failed_seg -> retry2.failed_seg
+  retry2.out -> task2.retry after 0
+}
