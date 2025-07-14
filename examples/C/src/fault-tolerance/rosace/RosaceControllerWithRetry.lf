@@ -1,0 +1,346 @@
+/**
+ * This controller adds faults, and checkpointed retries. We try to keep the original C code of the rosace controller, such as the `Va_control_50()` function.
+ *
+ * @author Dongha Kim
+ * @author Hokeun Kim
+ */
+
+target C
+
+import Filter, Hold from "../../rosace/RosaceController.lf"
+import TaskRetryTemplate, TaskBody, Coordinator from "../lib/TaskRetryTemplate.lf"
+
+preamble {=
+  #define REAL_TYPE double
+
+  #define delta_th_eq (1.5868660794926)
+  #define delta_e_eq (0.012009615652468)
+
+  #define FAILURE_RATE 30 // % chance
+
+  #ifndef TASK_INFO_T_DEFINED
+  #define TASK_INFO_T_DEFINED
+  typedef struct task_info_t {
+    uint16_t task_num;
+    uint16_t dead_line;
+    uint16_t num_of_segs;
+    uint16_t* wcet;
+    uint16_t* optwcet;
+  } task_info_t;
+  #endif
+=}
+
+reactor VaControl50Body extends TaskBody {
+  preamble {=
+    const REAL_TYPE K1_intVa =   0.049802610664357;
+    const REAL_TYPE K1_Va     = -0.486813084356079;
+    const REAL_TYPE K1_Vz     = -0.077603095495388;
+    const REAL_TYPE K1_q      = 21.692383376322041;
+    const REAL_TYPE Va_eq       = 230.0;
+
+    int Va_control_50(REAL_TYPE Va_f, REAL_TYPE Vz_f, REAL_TYPE q_f, REAL_TYPE Va_c, REAL_TYPE* output, REAL_TYPE* saved_y, REAL_TYPE* saved_integrator,int seg_start_num){
+    	static REAL_TYPE y = 0.0;
+    	static REAL_TYPE Ts_K1 = 1.0/50.0;
+    	static REAL_TYPE integrator = 0.0;
+
+      // Output
+      if (seg_start_num <= 1) {
+        // Check if input is correct.
+    	  y = K1_intVa * integrator + K1_Va * (Va_f - Va_eq) + K1_Vz * Vz_f + K1_q * q_f + delta_th_eq;
+        if (rand() % 100 < FAILURE_RATE) {
+          return 1;
+        } else {
+          *saved_y = y;
+          *saved_integrator = integrator;
+        }
+      }
+      if (seg_start_num <= 2) {
+        // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
+        integrator = *saved_integrator;
+        // State
+    	  integrator += Ts_K1 * (Va_c - Va_f + Va_eq);
+        if (rand() % 100 < FAILURE_RATE) {
+          return 2;
+        } else {
+        *output = *saved_y;
+        }
+        return 0;
+      }
+      return 0; // Just to avoid warnings.
+    }
+  =}
+  input Va_f: double  // filtered true airspeed
+  input Vz_f: double  // filtered vertical climb rate
+  input q_f: double   // filtered pitch rate
+  input Va_c: double  // Commanded true airspeed setpoint
+  output delta_th_c: double
+
+  state delta_th_c: double
+
+  state saved_y: double
+  state saved_integrator: double
+
+reaction(start_seg) Va_f, Vz_f, q_f, Va_c -> f_seg, delta_th_c {=
+  int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, start_seg->value);
+  lf_set(f_seg, result);
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  if (result == 0) {
+    lf_set(delta_th_c, self->delta_th_c);
+  }
+=}
+}
+
+reactor VaControl50OutHandler{
+  input trigger_output: int
+  input delta_th_c: double
+  output delta_thc: double
+
+  reaction(trigger_output) delta_th_c -> delta_thc {=
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+    if (trigger_output->value == 0) {
+      lf_set(delta_thc, delta_th_c->value);
+    }  
+  =}
+}
+
+reactor VaControl50 extends TaskRetryTemplate {
+
+  input Va_f: double  // filtered true airspeed
+  input Vz_f: double  // filtered vertical climb rate
+  input q_f: double   // filtered pitch rate
+  input Va_c: double  // Commanded true airspeed setpoint
+  output delta_thc: double
+
+  va_body = new VaControl50Body()
+  va_tail = new VaControl50OutHandler()
+
+  Va_f, Vz_f, q_f, Va_c -> va_body.Va_f, va_body.Vz_f, va_body.q_f, va_body.Va_c
+
+  trigger.start_seg -> va_body.start_seg
+  va_body.f_seg->advance.f_seg
+  advance.failed_seg->failed_seg
+  advance.failed_seg->va_tail.trigger_output
+  va_body.delta_th_c->va_tail.delta_th_c
+  va_tail.delta_thc->delta_thc
+}
+
+reactor VzControl50Body extends TaskBody {
+  preamble {=
+      const REAL_TYPE K2_intVz   = 0.000627342822264;
+      const REAL_TYPE K2_Vz     = -0.003252836726554;
+      const REAL_TYPE K2_q       = 0.376071446897134;
+      const REAL_TYPE K2_az     = -0.001566907423747;
+
+      int Vz_control_50(REAL_TYPE Vz_f, REAL_TYPE Vz_c, REAL_TYPE q_f, REAL_TYPE az_f, REAL_TYPE* output, REAL_TYPE* saved_y, REAL_TYPE* saved_integrator, int seg_start_num){
+        static REAL_TYPE y = 0.0;
+        static REAL_TYPE Ts_K2 = 1.0/50.0;
+        static REAL_TYPE integrator = 0.0;
+
+        // Output
+        if (seg_start_num <= 1) {
+          // Check if input is correct.
+          y = K2_intVz * integrator + K2_Vz * Vz_f + K2_q * q_f + K2_az * az_f + delta_e_eq;
+          if (rand() % 100 < FAILURE_RATE) {
+            return 1;
+          } else {
+            *saved_y = y;
+            *saved_integrator = integrator;
+          }
+        }
+        if (seg_start_num <= 2) {
+          // Load the saved value. However, inefficient when no failures between checkpoint 1 and 2.
+          integrator = *saved_integrator;
+          // State
+          integrator += Ts_K2 * (Vz_c - Vz_f);
+          if (rand() % 100 < FAILURE_RATE) {
+            return 2;
+          } else {
+          *output = *saved_y;
+          }
+        return 0;
+      }
+    }
+  =}
+  input Vz_f: double
+  input Vz_c: double
+  input q_f: double
+  input az_f: double
+  output delta_e_c: double
+
+  state delta_e_c: double
+
+  state saved_y: double
+  state saved_integrator: double
+
+  reaction(start_seg) Vz_f, Vz_c, q_f, az_f -> f_seg, delta_e_c {=
+    int result = Vz_control_50(Vz_f->value, Vz_c->value, q_f->value, az_f->value, &self->delta_e_c, &self->saved_y, &self->saved_integrator, start_seg->value);
+    lf_set(f_seg, result);
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (result == 0) {
+      lf_set(delta_e_c, self->delta_e_c);
+    }
+  =}
+}
+
+reactor VzControl50OutHandler{
+  input trigger_output: int
+  input delta_e_c: double
+  output delta_ec: double
+
+  reaction(trigger_output) delta_e_c -> delta_ec {=
+  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+    if (trigger_output->value == 0) {
+      lf_set(delta_ec, delta_e_c->value);
+    }  
+  =}
+}
+
+reactor VzControl50 extends TaskRetryTemplate {
+
+  input Vz_f: double
+  input Vz_c: double
+  input q_f: double 
+  input az_f: double 
+  output delta_ec: double
+
+  vz_body = new VzControl50Body()
+  vz_tail = new VzControl50OutHandler()
+
+  Vz_f, Vz_c, q_f,  az_f -> vz_body.Vz_f, vz_body.Vz_c, vz_body.q_f, vz_body.az_f
+  trigger.start_seg -> vz_body.start_seg
+  vz_body.f_seg->advance.f_seg
+  advance.failed_seg->failed_seg
+  advance.failed_seg->vz_tail.trigger_output
+  vz_body.delta_e_c->vz_tail.delta_e_c
+  vz_tail.delta_ec->delta_ec
+}
+
+
+reactor VaControl50Retry {
+  input Va_f: double
+  input Vz_f: double
+  input q_f: double
+  input Va_c: double
+  output delta_thc: double
+  timer t(0, 20 msec)
+
+  Va_ct_Retry = new VaControl50(
+      task_num=2,
+      dead_line=20,
+      num_of_segs=2,
+      wcet = {2, 2},
+      optwcet = {1, 1})
+  retry = new Coordinator()
+
+  Va_ct_Retry.task_info_update -> retry.task_info_update
+  Va_ct_Retry.instance_start_time -> retry.instance_start_time_update
+  Va_ct_Retry.failed_seg -> retry.failed_seg
+  retry.out -> Va_ct_Retry.retry after 0
+  Va_f -> Va_ct_Retry.Va_f
+  Vz_f -> Va_ct_Retry.Vz_f
+  q_f -> Va_ct_Retry.q_f
+  Va_c -> Va_ct_Retry.Va_c
+  Va_ct_Retry.delta_thc -> delta_thc
+
+  reaction(t) -> Va_ct_Retry.instantiate {=
+    lf_set(Va_ct_Retry.instantiate, 0);
+  =}
+}
+
+reactor VzControl50Retry {
+  input Vz_f: double
+  input Vz_c: double
+  input q_f: double
+  input az_f: double
+  output delta_ec: double
+  timer t(0, 20 msec)
+
+  Vz_ct_Retry = new VzControl50(
+      task_num=1,
+      dead_line=20,
+      num_of_segs=2,
+      wcet = {2, 2},
+      optwcet = {1, 1})
+  retry = new Coordinator()
+
+  Vz_ct_Retry.task_info_update -> retry.task_info_update
+  Vz_ct_Retry.instance_start_time -> retry.instance_start_time_update
+  Vz_ct_Retry.failed_seg -> retry.failed_seg
+  retry.out -> Vz_ct_Retry.retry after 0
+  Vz_f -> Vz_ct_Retry.Vz_f
+  Vz_c -> Vz_ct_Retry.Vz_c
+  q_f -> Vz_ct_Retry.q_f
+  az_f -> Vz_ct_Retry.az_f
+  Vz_ct_Retry.delta_ec -> delta_ec
+
+  reaction(t) -> Vz_ct_Retry.instantiate {=
+    lf_set(Vz_ct_Retry.instantiate, 0);
+  =}
+}
+
+reactor FaultTolerantController(filter_period: time = 10 ms) {
+  // Sensor inputs from aircraft
+  // Vertical speed
+  input Vz: double
+  input Va: double          // True airspeed
+  input h: double           // Altitude measurement
+  input az: double          // Vertical acceleration
+  input q: double           // Pitch rate
+
+  // Command inputs
+  // Altitude command
+  input c: double
+  input s: double           // Speed command
+
+  output delta_thc: double  // Engine control
+  output delta_ec: double   // Elevator control
+
+  h_c = new Hold()
+
+  h_f = new Filter(
+      period = 100 ms,
+      init_x1 = {= h_eq * (1.0 - 1.477888930110354 /*a[1]*/ - 0.049596808318647 /*b1*/) =},
+      init_x2 = {= h_eq =},
+      a = {0.586756156020839, -1.477888930110354},
+      b = {0.049596808318647, 0.059270417591839})
+  az_f = new Filter(
+      period=filter_period,
+      init_x1=0.0,
+      init_x2=0.0,
+      a = {0.169118914523145, -0.518588903229759},
+      b = {0.229019233988375, 0.421510777305010})
+  Vz_f = new Filter(
+      period=filter_period,
+      init_x1=0.0,
+      init_x2=0.0,
+      a = {0.914975803093201, -1.911199519984605},
+      b = {0.001860178914816, 0.001916104193780})
+  q_f = new Filter(
+      period=filter_period,
+      init_x1=0.0,
+      init_x2=0.0,
+      a = {0.586756156020839, -1.477888930110354},
+      b = {0.049596808318647, 0.059270417591839})
+  Va_f = new Filter(
+      period=filter_period,
+      init_x1 = {= Va_eq * (1.0 - 1.911199519984605 /*a[1]*/ - 0.001916104193780 /*b[1]*/) =},
+      init_x2 = {= Va_eq =},
+      a = {0.914975803093201, -1.911199519984605},
+      b = {0.001860178914816, 0.001916104193780})
+
+  Va_ct = new VaControl50Retry()
+  Vz_ct = new VzControl50Retry()
+
+  h, az, Vz, q, Va -> h_f.x, az_f.x, Vz_f.x, q_f.x, Va_f.x
+  c -> h_c.s
+  h_f.y -> h_c.x
+
+  Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Va_f, Va_ct.Vz_f, Va_ct.Va_c, Va_ct.q_f
+  Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vz_f, Vz_ct.az_f, Vz_ct.Vz_c, Vz_ct.q_f
+
+  // Without Stabilizer  
+  Va_ct.delta_thc -> delta_thc
+  Vz_ct.delta_ec -> delta_ec
+}

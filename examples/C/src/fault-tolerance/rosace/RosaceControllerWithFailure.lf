@@ -1,0 +1,156 @@
+/**
+ * This controller is a fixed version from examples/C/src/rosace/RosaceController.lf. It adds a failure rate inside the VzControl and VaControl reactors.
+ *
+ * @author Edward A. Lee
+ * @author David Saussie
+ * @author Claire Pagetti
+ * @author Dongha Kim
+ * @author Hokeun Kim
+ */
+target C
+
+import Filter, Hold from "../../rosace/RosaceController.lf"
+
+preamble {=
+  // Trimming parameters
+  // These may be overridden in the top-level .lf file.
+  #ifndef Va_eq
+  #define Va_eq (230.0)   // Nominal airspeed?
+  #define h_eq (10000.0)
+
+  #define delta_th_eq (1.5868660794926)
+  #define delta_e_eq (0.012009615652468)
+  #endif
+
+  #define FAILURE_RATE 30 // % chance
+=}
+
+reactor VzControl(
+    period: time = 20 ms,
+    K2_intVz: double = 0.000627342822264,
+    K2_Vz: double = -0.003252836726554,
+    K2_q: double = 0.376071446897134,
+    K2_az: double = -0.001566907423747) {
+  timer t(0, period)
+
+  input Vzc: double
+  input azf: double
+  input Vzf: double
+  input qf: double
+
+  output delta_ec: double
+
+  state integrator: double = 0.0
+
+  reaction(t) Vzc, azf, Vzf, qf -> delta_ec {=
+    if (rand() % 100 < FAILURE_RATE) {
+    } else {
+      double Ts_K2 = ((double)self->period)/1e9; // Period in seconds. (1.0/50.0)
+
+      // Output
+      double y = self->K2_intVz * self->integrator
+          + self->K2_Vz * Vzf->value
+          + self->K2_q * qf->value
+          + self->K2_az * azf->value + delta_e_eq;
+
+      self->integrator += Ts_K2 * (Vzc->value - Vzf->value);
+      lf_set(delta_ec, y);
+    }
+  =}
+}
+
+reactor VaControl(
+    period: time = 20 ms,
+    K1_intVa: double = 0.049802610664357,
+    K1_Va: double = -0.486813084356079,
+    K1_Vz: double = -0.077603095495388,
+    K1_q: double = 21.692383376322041) {
+  timer t(0, period)
+
+  input Vzf: double
+  input Vaf: double
+  input Vac: double
+  input qf: double
+
+  output delta_thc: double
+
+  state integrator: double = 0.0
+
+  reaction(t) Vzf, Vaf, Vac, qf -> delta_thc {=
+    if (rand() % 100 < FAILURE_RATE) {
+    } else {
+      double Ts_K1 = ((double)self->period)/1e9; // Period in seconds. (1.0/50.0)
+
+      // Output
+      double y = self->K1_intVa * self->integrator
+          + self->K1_Va * (Vaf->value - Va_eq)
+          + self->K1_Vz * Vzf->value + self->K1_q * qf->value + delta_th_eq;
+      self->integrator += Ts_K1 * (Vac->value - Vaf->value + Va_eq);
+      lf_set(delta_thc, y);
+    }
+  =}
+}
+
+reactor RosaceController(filter_period: time = 10 ms) {
+  // Sensor inputs from aircraft
+  // Vertical speed
+  input Vz: double
+  input Va: double          // True airspeed
+  input h: double           // Altitude measurement
+  input az: double          // Vertical acceleration
+  input q: double           // Pitch rate
+
+  // Command inputs
+  // Altitude command
+  input c: double
+  input s: double           // Speed command
+
+  output delta_thc: double  // Engine control
+  output delta_ec: double   // Elevator control
+
+  h_c = new Hold()
+
+  h_f = new Filter(
+      period = 100 ms,
+      init_x1 = {= h_eq * (1.0 - 1.477888930110354 /*a[1]*/ - 0.049596808318647 /*b1*/) =},
+      init_x2 = {= h_eq =},
+      a = {0.586756156020839, -1.477888930110354},
+      b = {0.049596808318647, 0.059270417591839})
+  az_f = new Filter(
+      period=filter_period,
+      init_x1=0.0,
+      init_x2=0.0,
+      a = {0.169118914523145, -0.518588903229759},
+      b = {0.229019233988375, 0.421510777305010})
+  Vz_f = new Filter(
+      period=filter_period,
+      init_x1=0.0,
+      init_x2=0.0,
+      a = {0.914975803093201, -1.911199519984605},
+      b = {0.001860178914816, 0.001916104193780})
+  q_f = new Filter(
+      period=filter_period,
+      init_x1=0.0,
+      init_x2=0.0,
+      a = {0.586756156020839, -1.477888930110354},
+      b = {0.049596808318647, 0.059270417591839})
+  Va_f = new Filter(
+      period=filter_period,
+      init_x1 = {= Va_eq * (1.0 - 1.911199519984605 /*a[1]*/ - 0.001916104193780 /*b[1]*/) =},
+      init_x2 = {= Va_eq =},
+      a = {0.914975803093201, -1.911199519984605},
+      b = {0.001860178914816, 0.001916104193780})
+
+  Vz_ct = new VzControl()
+  Va_ct = new VaControl()
+
+  h, az, Vz, q, Va -> h_f.x, az_f.x, Vz_f.x, q_f.x, Va_f.x
+  c -> h_c.s
+  h_f.y -> h_c.x
+
+  Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vzf, Vz_ct.azf, Vz_ct.Vzc, Vz_ct.qf
+  Vz_ct.delta_ec -> delta_ec
+
+  Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Vaf, Va_ct.Vzf, Va_ct.Vac, Va_ct.qf
+  Va_ct.delta_thc -> delta_thc
+}

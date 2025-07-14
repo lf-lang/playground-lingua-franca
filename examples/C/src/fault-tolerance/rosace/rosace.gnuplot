@@ -9,6 +9,6 @@ set output 'rosace.pdf'         # Set output file.
 
 set label "altitude" at 0.2, -1.2
 
-plot 'altitudeRetry.data' using 1:2 with lines linetype 1 linewidth 2 title 'altitude'
+plot 'altitude.data' using 1:2 with lines linetype 1 linewidth 2 title 'altitude'
 
-plot 'airspeedRetry.data' using 1:2 with lines linetype 1 linewidth 2 title 'airspeed'
+plot 'airspeed.data' using 1:2 with lines linetype 1 linewidth 2 title 'airspeed'
