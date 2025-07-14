@@ -27,7 +27,7 @@ main reactor {
   retry2 = new Coordinator()
   scheduler = new TaskScheduler<int>(period = 5000 msec, in=0)
 
-  scheduler.trigger -> task1.new_instance
+  scheduler.trigger -> task1.instantiate
   scheduler.task_input -> task1.task_input
   task1.task_info_update -> retry1.task_info_update
   task1.instance_start_time -> retry1.instance_start_time_update
@@ -36,7 +36,7 @@ main reactor {
 
   task1.task_output -> task2.task_input
 
-  retry1.out -> task2.new_instance
+  retry1.out -> task2.instantiate
   task2.task_info_update -> retry2.task_info_update
   task2.instance_start_time -> retry2.instance_start_time_update
   task2.failed_seg -> retry2.failed_seg

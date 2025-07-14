@@ -53,9 +53,9 @@ reactor Task1Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   state saved_output: OUT_T
   state saved_value: CHECK_T
 
-  reaction(trigger_task) task_input -> calculate_lt, task_output {=
-    int result = total_task1(task_input->value, &self->saved_output, &self->saved_value, trigger_task->value);
-    lf_set(calculate_lt, result);
+  reaction(start_seg) task_input -> f_seg, task_output {=
+    int result = total_task1(task_input->value, &self->saved_output, &self->saved_value, start_seg->value);
+    lf_set(f_seg, result);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
     if (result == 0) {
       lf_set(task_output, self->saved_output);
@@ -87,8 +87,8 @@ reactor Task1<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
   task1tail = new Task1Tail<OUT_T>()
 
   task_input->task1body.task_input
-  trigger.trigger_task -> task1body.trigger_task
-  task1body.calculate_lt->advance.calculate_lt
+  trigger.start_seg -> task1body.start_seg
+  task1body.f_seg->advance.f_seg
   advance.failed_seg->failed_seg
   advance.failed_seg->task1tail.trigger_output
   task1body.task_output->task1tail.task_output
@@ -149,9 +149,9 @@ reactor Task2Body<IN_T, OUT_T, CHECK_T> extends TaskBody {
   state saved_output: OUT_T
   state saved_value: CHECK_T
 
-  reaction(trigger_task) task_input -> calculate_lt, task_output {=
-    int result = total_task2(task_input->value, &self->saved_output, &self->saved_value, trigger_task->value);
-    lf_set(calculate_lt, result);
+  reaction(start_seg) task_input -> f_seg, task_output {=
+    int result = total_task2(task_input->value, &self->saved_output, &self->saved_value, start_seg->value);
+    lf_set(f_seg, result);
     // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
     if (result == 0) {
       lf_set(task_output, self->saved_output);
@@ -183,8 +183,8 @@ reactor Task2<IN_T, OUT_T, CHECK_T> extends TaskRetryTemplate {
   task2tail = new Task2Tail<OUT_T>()
 
   task_input->task2body.task_input
-  trigger.trigger_task -> task2body.trigger_task
-  task2body.calculate_lt->advance.calculate_lt
+  trigger.start_seg -> task2body.start_seg
+  task2body.f_seg->advance.f_seg
   advance.failed_seg->failed_seg
   advance.failed_seg->task2tail.trigger_output
   task2body.task_output->task2tail.task_output
