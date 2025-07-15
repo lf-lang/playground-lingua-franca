@@ -55,33 +55,33 @@ reactor Task1Body extends TaskBody {
     }
   =}
 
-  reaction(trigger_task) -> calculate_lt {=
-    int result = total_task1(trigger_task->value);
-    lf_set(calculate_lt, result);
+  reaction(start_seg) -> f_seg {=
+    int result = total_task1(start_seg->value);
+    lf_set(f_seg, result);
   =}
 }
 
 reactor Task1 extends TaskRetryTemplate {
   task1body = new Task1Body()
 
-  trigger.trigger_task -> task1body.trigger_task
-  trigger.trigger_task -> advance.seg_start_num
-  task1body.calculate_lt->advance.calculate_lt
+  trigger.start_seg -> task1body.start_seg
+  trigger.start_seg -> advance.seg_start_num
+  task1body.f_seg->advance.f_seg
   advance.failed_seg->failed_seg
 }
 
 // With no advancing logical time.
 reactor Task2 extends TaskRetryNoAdvance{
   task2body = new Task1Body()
-  trigger.trigger_task -> task2body.trigger_task
-  task2body.calculate_lt->failed_seg
+  trigger.start_seg -> task2body.start_seg
+  task2body.f_seg->failed_seg
 }
 
 reactor Task3 extends TaskRetryWorstCaseTemplate {
   task1body = new Task1Body()
 
-  trigger.trigger_task -> task1body.trigger_task
-  trigger.trigger_task -> advance.seg_start_num
-  task1body.calculate_lt->advance.calculate_lt
+  trigger.start_seg -> task1body.start_seg
+  trigger.start_seg -> advance.seg_start_num
+  task1body.f_seg->advance.f_seg
   advance.failed_seg->failed_seg
 }

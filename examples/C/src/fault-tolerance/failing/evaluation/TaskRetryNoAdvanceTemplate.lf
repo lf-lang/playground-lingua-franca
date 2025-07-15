@@ -16,13 +16,13 @@ preamble {=
   #endif
 =}
 
-reactor TriggerTask (task_num: uint16_t = 0) {
-  input new_instance: int
+reactor Trigger (task_num: uint16_t = 0) {
+  input instantiate: int
   input retry: int
-  output trigger_task: int
+  output start_seg: int
   output instance_start_time: time
 
-  reaction(new_instance, retry) -> trigger_task, instance_start_time {=
+  reaction(instantiate, retry) -> start_seg, instance_start_time {=
     int segment_start_num;
     if(retry->is_present) {
       // When Retry was triggered. retry->value should not be 0.
@@ -32,9 +32,9 @@ reactor TriggerTask (task_num: uint16_t = 0) {
         // Don't trigger retry. 0 means the segment was completed.
         return;
       }
-    } else { // When new_instance is triggered.
+    } else { // When instantiate is triggered.
       // Can be triggered by the timer or anything. However, only start when the value is 0.
-      if(new_instance->value == 0){
+      if(instantiate->value == 0){
         segment_start_num = 1; // Start from segment 1.
         lf_set(instance_start_time, lf_time_logical_elapsed());
         // When timer triggers.
@@ -44,7 +44,7 @@ reactor TriggerTask (task_num: uint16_t = 0) {
         return;
       }
     }
-    lf_set(trigger_task, segment_start_num);
+    lf_set(start_seg, segment_start_num);
   =}
 }
 
@@ -55,7 +55,7 @@ reactor TaskRetryNoAdvance(
     // wcet: uint16_t[] = {},
     // optwcet: uint16_t[] = {},
   ) {
-  input new_instance: int
+  input instantiate: int
   input retry: int
 
   
@@ -65,8 +65,8 @@ reactor TaskRetryNoAdvance(
   // output task_info_update: task_info_t
   // state task_info: task_info_t
 
-  trigger = new TriggerTask(task_num = task_num)
-  new_instance -> trigger.new_instance
+  trigger = new Trigger(task_num = task_num)
+  instantiate -> trigger.instantiate
   retry -> trigger.retry
   // trigger.instance_start_time -> instance_start_time
 
@@ -81,8 +81,8 @@ reactor TaskRetryNoAdvance(
 }
 
 reactor TaskBody{
-  input trigger_task: int
-  output calculate_lt: int
+  input start_seg: int
+  output f_seg: int
 }
 
 reactor NoTaskDrop (dead_line: time = 0 msec){

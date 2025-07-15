@@ -16,13 +16,13 @@ preamble {=
   #endif
 =}
 
-reactor TriggerTask (task_num: uint16_t = 0) {
-  input new_instance: int
+reactor Trigger (task_num: uint16_t = 0) {
+  input instantiate: int
   input retry: int
-  output trigger_task: int
+  output start_seg: int
   output instance_start_time: time
 
-  reaction(new_instance, retry) -> trigger_task, instance_start_time {=
+  reaction(instantiate, retry) -> start_seg, instance_start_time {=
     int segment_start_num;
     if(retry->is_present) {
       // When Retry was triggered. retry->value should not be 0.
@@ -32,9 +32,9 @@ reactor TriggerTask (task_num: uint16_t = 0) {
         // Don't trigger retry. 0 means the segment was completed.
         return;
       }
-    } else { // When new_instance is triggered.
+    } else { // When instantiate is triggered.
       // Can be triggered by the timer or anything. However, only start when the value is 0.
-      if(new_instance->value == 0){
+      if(instantiate->value == 0){
         segment_start_num = 1; // Start from segment 1.
         lf_set(instance_start_time, lf_time_logical_elapsed());
         // When timer triggers.
@@ -44,7 +44,7 @@ reactor TriggerTask (task_num: uint16_t = 0) {
         return;
       }
     }
-    lf_set(trigger_task, segment_start_num);
+    lf_set(start_seg, segment_start_num);
   =}
 }
 
@@ -54,15 +54,15 @@ reactor AdvanceTime (
   num_of_segs: uint16_t = 0,
   wcet: uint16_t[] = {},
   optwcet: uint16_t[] = {}) {
-  input calculate_lt: int
+  input f_seg: int
   input seg_start_num: int
 
   logical action advance_lt: int
   output failed_seg: int
 
-  reaction(calculate_lt) seg_start_num -> advance_lt {=
+  reaction(f_seg) seg_start_num -> advance_lt {=
     // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
-    int failed_seg_num = calculate_lt->value;
+    int failed_seg_num = f_seg->value;
     int num_of_success = failed_seg_num - seg_start_num->value;
     if (num_of_success < 0) {
       // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
@@ -100,15 +100,15 @@ reactor AdvanceTimeWorstCase (
   num_of_segs: uint16_t = 0,
   wcet: uint16_t[] = {},
   optwcet: uint16_t[] = {}) {
-  input calculate_lt: int
+  input f_seg: int
   input seg_start_num: int
 
   logical action advance_lt: int
   output failed_seg: int
 
-  reaction(calculate_lt) seg_start_num -> advance_lt {=
+  reaction(f_seg) seg_start_num -> advance_lt {=
     // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
-    int failed_seg_num = calculate_lt->value;
+    int failed_seg_num = f_seg->value;
     int num_of_success = failed_seg_num - seg_start_num->value;
     if (num_of_success < 0) {
       // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
@@ -146,7 +146,7 @@ reactor TaskRetryTemplate(
     num_of_segs: uint16_t = 0,
     wcet: uint16_t[] = {},
     optwcet: uint16_t[] = {}) {
-  input new_instance: int
+  input instantiate: int
   input retry: int
 
   output failed_seg: int
@@ -154,12 +154,12 @@ reactor TaskRetryTemplate(
   output task_info_update: task_info_t
   state task_info: task_info_t
 
-  trigger = new TriggerTask(task_num = task_num)
+  trigger = new Trigger(task_num = task_num)
   advance = new AdvanceTime(task_num = task_num, dead_line = dead_line, num_of_segs = num_of_segs, wcet = wcet, optwcet = optwcet)
-  new_instance -> trigger.new_instance
+  instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
-  trigger.trigger_task -> advance.seg_start_num
+  trigger.start_seg -> advance.seg_start_num
   advance.failed_seg -> failed_seg
 
   reaction(startup) -> task_info_update {=
@@ -178,7 +178,7 @@ reactor TaskRetryWorstCaseTemplate(
     num_of_segs: uint16_t = 0,
     wcet: uint16_t[] = {},
     optwcet: uint16_t[] = {}) {
-  input new_instance: int
+  input instantiate: int
   input retry: int
 
   output failed_seg: int
@@ -186,12 +186,12 @@ reactor TaskRetryWorstCaseTemplate(
   output task_info_update: task_info_t
   state task_info: task_info_t
 
-  trigger = new TriggerTask(task_num = task_num)
+  trigger = new Trigger(task_num = task_num)
   advance = new AdvanceTimeWorstCase(task_num = task_num, dead_line = dead_line, num_of_segs = num_of_segs, wcet = wcet, optwcet = optwcet)
-  new_instance -> trigger.new_instance
+  instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
-  trigger.trigger_task -> advance.seg_start_num
+  trigger.start_seg -> advance.seg_start_num
   advance.failed_seg -> failed_seg
 
   reaction(startup) -> task_info_update {=
@@ -205,8 +205,8 @@ reactor TaskRetryWorstCaseTemplate(
 }
 
 reactor TaskBody{
-  input trigger_task: int
-  output calculate_lt: int
+  input start_seg: int
+  output f_seg: int
 }
 
 // Naming? Timely retry?
@@ -238,7 +238,7 @@ reactor Coordinator {
       // 0 means, all segments are finished.
       // Still need to signal output with 0.
       // If the task's retry port gets 0, does nothing.
-      // If the task's new_instance port gets 0, it starts a new instance.
+      // If the task's instantiate port gets 0, it starts a new instance.
       lf_set(out, 0);
     } else {
       // Check deadline in logical time. Does not schedule next retry, when deadline violation.
