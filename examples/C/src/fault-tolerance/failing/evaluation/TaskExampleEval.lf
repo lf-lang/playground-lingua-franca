@@ -30,22 +30,22 @@ reactor TaskScheduler(period: time = 0 msec) {
   =}
 }
 
-reactor Task1Body extends TaskBody {
+reactor Task1Body(failure_rate: double = 0.01) extends TaskBody {
   preamble {=
     #include <time.h>
     #include "fault_tolerance_common.h"
 
-    int total_task1(int checkpoint) {
-      const static double FAILURE_RATE = 0.01 ;// 1% chance
-      const static int FAILURE_THRESHOLD = (int)(((double)(RAND_MAX)) * FAILURE_RATE);
+    int total_task1(int checkpoint, double fail_rate) {
 
-      if (checkpoint <= 1 && task1_seg1(FAILURE_THRESHOLD)) {
+      int fail_threshold = (int)(((double)(RAND_MAX)) * fail_rate);
+
+      if (checkpoint <= 1 && task1_seg1(fail_threshold)) {
         return 1;
       }
-      if (checkpoint <= 2 && task1_seg2(FAILURE_THRESHOLD)) {
+      if (checkpoint <= 2 && task1_seg2(fail_threshold)) {
         return 2;
       }
-      if (checkpoint <= 3 && task1_seg3(FAILURE_THRESHOLD)) {
+      if (checkpoint <= 3 && task1_seg3(fail_threshold)) {
         return 3;
       }
       return 0;
@@ -53,13 +53,14 @@ reactor Task1Body extends TaskBody {
   =}
 
   reaction(start_seg) -> f_seg {=
-    int result = total_task1(start_seg->value);
+    int result = total_task1(start_seg->value, self->failure_rate);
     lf_set(f_seg, result);
+    lf_print("self->failure_rate: %lf",self->failure_rate);
   =}
 }
 
-reactor Task1 extends TaskRetryTemplate {
-  task1body = new Task1Body()
+reactor Task1(failure_rate: double = 0.01) extends TaskRetryTemplate {
+  task1body = new Task1Body(failure_rate=failure_rate)
 
   trigger.start_seg -> task1body.start_seg
   trigger.start_seg -> advance.seg_start_num
@@ -68,14 +69,14 @@ reactor Task1 extends TaskRetryTemplate {
 }
 
 // With no advancing logical time.
-reactor Task2 extends TaskRetryNoAdvance{
-  task2body = new Task1Body()
+reactor Task2(failure_rate: double = 0.01) extends TaskRetryNoAdvance{
+  task2body = new Task1Body(failure_rate=failure_rate)
   trigger.start_seg -> task2body.start_seg
   task2body.f_seg->failed_seg
 }
 
-reactor Task3 extends TaskRetryWorstCaseTemplate {
-  task1body = new Task1Body()
+reactor Task3(failure_rate: double = 0.01) extends TaskRetryWorstCaseTemplate {
+  task1body = new Task1Body(failure_rate=failure_rate)
 
   trigger.start_seg -> task1body.start_seg
   trigger.start_seg -> advance.seg_start_num

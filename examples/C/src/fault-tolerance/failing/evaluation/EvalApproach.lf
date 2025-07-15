@@ -16,19 +16,16 @@
  * @author Dongha Kim
  */
 target C {
-  // fast: true,
-  // timeout: 10 min
-  // 50 secs:
-  // timeout: 5 secs
   single-threaded: true,
   timeout: 420 secs
 }
 
 import Coordinator from "TaskRetryTemplate.lf"
-import Task1, TaskScheduler from "TaskExampleEval1.lf"
+import Task1, TaskScheduler from "TaskExampleEval.lf"
 
 main reactor {
   task = new Task1(
+      failure_rate = 0.01, // 1% chance
       task_num=1,
       dead_line=42,
       num_of_segs=3,
