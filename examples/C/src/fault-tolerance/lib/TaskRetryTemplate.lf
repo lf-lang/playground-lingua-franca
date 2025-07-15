@@ -55,7 +55,7 @@ reactor Trigger(task_num: uint16_t = 0) {
         segment_start_num = 1; // Start from segment 1.
         lf_set(instance_start_time, lf_time_logical_elapsed());
         // When timer triggers.
-        lf_print("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+        lf_print_log("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
       } else {
         // New instance should only be triggered when value is 0. Don't schedule to trigger task.
         return;
@@ -88,7 +88,7 @@ reactor AdvanceTime(
     }
 
     // Schedule logical action to advance time.
-    lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+    lf_print_log("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
 
     // Caluculate the time of the total successed segments.
     int total_success_time = 0; // msecs
@@ -99,11 +99,11 @@ reactor AdvanceTime(
     if(failed_seg_num == 0) {
       // Task is finished. Advance as much as the sucessed segments.
       lf_schedule_int(advance_lt, total_success_time * MSEC(1), 0);
-      lf_print("TASK%d: All segments finished. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, num_of_success, total_success_time);
+      lf_print_log("TASK%d: All segments finished. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, num_of_success, total_success_time);
     } else {
       // Segment failed. Advance as much as successed segments + 1 failed segment.
       lf_schedule_int(advance_lt, total_success_time * MSEC(1) + self->wcet_f[failed_seg_num - 1] * MSEC(1), failed_seg_num);
-      lf_print("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_seg_num, num_of_success, total_success_time + self->wcet_f[failed_seg_num - 1]);
+      lf_print_log("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_seg_num, num_of_success, total_success_time + self->wcet_f[failed_seg_num - 1]);
     }
   =}
 
@@ -196,8 +196,8 @@ reactor Coordinator {
 
       instant_t min_instance_finish_time = lf_time_logical_elapsed() + total_success_time * MSEC(1);
       if(min_instance_finish_time > self->instance_start_time + (self->task_info.dead_line * MSEC(1))) {
-        lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
-        lf_print("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
+        lf_print_log("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+        lf_print_log("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
       } else {
         // Did not violate predicted deadline.
         lf_set(out, failed_seg->value);
