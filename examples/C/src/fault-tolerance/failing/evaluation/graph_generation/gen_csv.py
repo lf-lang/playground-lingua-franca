@@ -1,10 +1,9 @@
 import os
 import csv
 import re
-from datetime import timedelta
 
-input_dir = 'res100k'
-output_csv = 'res100k/res100k.csv'
+input_dir = 'res100'
+output_csv = 'res100/res100.csv'
 
 def parse_time_to_seconds(time_str):
     # Handles formats like '7:00.26' (m:ss.xx) and '7:07:31.26' (h:mm:ss.xx)
