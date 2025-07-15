@@ -50,34 +50,15 @@ reactor Trigger (task_num: uint16_t = 0) {
 
 reactor TaskRetryNoAdvance(
     task_num: uint16_t = 0,
-    // dead_line: uint16_t = 0,
     num_of_segs: uint16_t = 0
-    // wcet: uint16_t[] = {},
-    // optwcet: uint16_t[] = {},
   ) {
   input instantiate: int
   input retry: int
-
-  
-
   output failed_seg: int
-  // output instance_start_time: time
-  // output task_info_update: task_info_t
-  // state task_info: task_info_t
 
   trigger = new Trigger(task_num = task_num)
   instantiate -> trigger.instantiate
   retry -> trigger.retry
-  // trigger.instance_start_time -> instance_start_time
-
-  // reaction(startup) -> task_info_update {=
-  //   self->task_info.task_num = self->task_num;
-  //   self->task_info.num_of_segs = self->num_of_segs;
-  //   self->task_info.wcet = self->wcet;
-  //   self->task_info.optwcet = self->optwcet;
-  //   self->task_info.dead_line = self->dead_line;
-  //   lf_set(task_info_update, self->task_info);
-  // =}
 }
 
 reactor TaskBody{
