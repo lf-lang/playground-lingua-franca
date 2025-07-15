@@ -1,5 +1,6 @@
 /**
- * This example shows two tasks running sequentially, and the Task1's output is passed to Task2's input.
+ * This example shows two tasks running sequentially, and the Task1's output is passed to Task2's
+ * input.
  *
  * @author Dongha Kim, Hokeun Kim
  */

@@ -25,7 +25,7 @@ import Task3, TaskScheduler from "TaskExampleEval.lf"
 
 main reactor {
   task = new Task3(
-      failure_rate = 0.01, // 1% chance
+      failure_rate=0.01,  // 1% chance
       task_num=1,
       dead_line=42,
       num_of_segs=3,

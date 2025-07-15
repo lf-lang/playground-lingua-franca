@@ -1,10 +1,10 @@
 /**
- * This controller adds faults, and checkpointed retries. We try to keep the original C code of the rosace controller, such as the `Va_control_50()` function.
+ * This controller adds faults, and checkpointed retries. We try to keep the original C code of the
+ * rosace controller, such as the `Va_control_50()` function.
  *
  * @author Dongha Kim
  * @author Hokeun Kim
  */
-
 target C
 
 import Filter, Hold from "../../rosace/RosaceController.lf"
@@ -80,32 +80,31 @@ reactor VaControl50Body extends TaskBody {
   state saved_y: double
   state saved_integrator: double
 
-reaction(start_seg) Va_f, Vz_f, q_f, Va_c -> f_seg, delta_th_c {=
-  int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, start_seg->value);
-  lf_set(f_seg, result);
-  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-  if (result == 0) {
-    lf_set(delta_th_c, self->delta_th_c);
-  }
-=}
+  reaction(start_seg) Va_f, Vz_f, q_f, Va_c -> f_seg, delta_th_c {=
+    int result = Va_control_50(Va_f->value, Vz_f->value, q_f->value, Va_c->value, &self->delta_th_c, &self->saved_y, &self->saved_integrator, start_seg->value);
+    lf_set(f_seg, result);
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    if (result == 0) {
+      lf_set(delta_th_c, self->delta_th_c);
+    }
+  =}
 }
 
-reactor VaControl50OutHandler{
+reactor VaControl50OutHandler {
   input trigger_output: int
   input delta_th_c: double
   output delta_thc: double
 
   reaction(trigger_output) delta_th_c -> delta_thc {=
-  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
-    if (trigger_output->value == 0) {
-      lf_set(delta_thc, delta_th_c->value);
-    }  
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+      if (trigger_output->value == 0) {
+        lf_set(delta_thc, delta_th_c->value);
+      }
   =}
 }
 
 reactor VaControl50 extends TaskRetryTemplate {
-
   input Va_f: double  // filtered true airspeed
   input Vz_f: double  // filtered vertical climb rate
   input q_f: double   // filtered pitch rate
@@ -118,11 +117,11 @@ reactor VaControl50 extends TaskRetryTemplate {
   Va_f, Vz_f, q_f, Va_c -> va_body.Va_f, va_body.Vz_f, va_body.q_f, va_body.Va_c
 
   trigger.start_seg -> va_body.start_seg
-  va_body.f_seg->advance.f_seg
-  advance.failed_seg->failed_seg
-  advance.failed_seg->va_tail.trigger_output
-  va_body.delta_th_c->va_tail.delta_th_c
-  va_tail.delta_thc->delta_thc
+  va_body.f_seg -> advance.f_seg
+  advance.failed_seg -> failed_seg
+  advance.failed_seg -> va_tail.trigger_output
+  va_body.delta_th_c -> va_tail.delta_th_c
+  va_tail.delta_thc -> delta_thc
 }
 
 reactor VzControl50Body extends TaskBody {
@@ -183,40 +182,38 @@ reactor VzControl50Body extends TaskBody {
   =}
 }
 
-reactor VzControl50OutHandler{
+reactor VzControl50OutHandler {
   input trigger_output: int
   input delta_e_c: double
   output delta_ec: double
 
   reaction(trigger_output) delta_e_c -> delta_ec {=
-  // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
-  // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
-    if (trigger_output->value == 0) {
-      lf_set(delta_ec, delta_e_c->value);
-    }  
+    // If the failed_seg signal is 0, the Task was finished. Trigger the output value.
+    // Already checked when sent from TaskBody, but check again to not trigger uninitialized values.
+      if (trigger_output->value == 0) {
+        lf_set(delta_ec, delta_e_c->value);
+      }
   =}
 }
 
 reactor VzControl50 extends TaskRetryTemplate {
-
   input Vz_f: double
   input Vz_c: double
-  input q_f: double 
-  input az_f: double 
+  input q_f: double
+  input az_f: double
   output delta_ec: double
 
   vz_body = new VzControl50Body()
   vz_tail = new VzControl50OutHandler()
 
-  Vz_f, Vz_c, q_f,  az_f -> vz_body.Vz_f, vz_body.Vz_c, vz_body.q_f, vz_body.az_f
+  Vz_f, Vz_c, q_f, az_f -> vz_body.Vz_f, vz_body.Vz_c, vz_body.q_f, vz_body.az_f
   trigger.start_seg -> vz_body.start_seg
-  vz_body.f_seg->advance.f_seg
-  advance.failed_seg->failed_seg
-  advance.failed_seg->vz_tail.trigger_output
-  vz_body.delta_e_c->vz_tail.delta_e_c
-  vz_tail.delta_ec->delta_ec
+  vz_body.f_seg -> advance.f_seg
+  advance.failed_seg -> failed_seg
+  advance.failed_seg -> vz_tail.trigger_output
+  vz_body.delta_e_c -> vz_tail.delta_e_c
+  vz_tail.delta_ec -> delta_ec
 }
-
 
 reactor VaControl50Retry {
   input Va_f: double
@@ -284,18 +281,18 @@ reactor FaultTolerantController(filter_period: time = 10 ms) {
   // Sensor inputs from aircraft
   // Vertical speed
   input Vz: double
-  input Va: double          // True airspeed
-  input h: double           // Altitude measurement
-  input az: double          // Vertical acceleration
-  input q: double           // Pitch rate
+  input Va: double              // True airspeed
+  input h: double               // Altitude measurement
+  input az: double              // Vertical acceleration
+  input q: double               // Pitch rate
 
   // Command inputs
   // Altitude command
   input c: double
-  input s: double           // Speed command
+  input s: double               // Speed command
 
-  output delta_thc: double  // Engine control
-  output delta_ec: double   // Elevator control
+  output delta_thc: double      // Engine control
+  output delta_ec: double       // Elevator control
 
   h_c = new Hold()
 
@@ -340,7 +337,6 @@ reactor FaultTolerantController(filter_period: time = 10 ms) {
   Va_f.y, Vz_f.y, s, q_f.y -> Va_ct.Va_f, Va_ct.Vz_f, Va_ct.Va_c, Va_ct.q_f
   Vz_f.y, az_f.y, h_c.c, q_f.y -> Vz_ct.Vz_f, Vz_ct.az_f, Vz_ct.Vz_c, Vz_ct.q_f
 
-  // Without Stabilizer  
-  Va_ct.delta_thc -> delta_thc
+  Va_ct.delta_thc -> delta_thc  // Without Stabilizer
   Vz_ct.delta_ec -> delta_ec
 }

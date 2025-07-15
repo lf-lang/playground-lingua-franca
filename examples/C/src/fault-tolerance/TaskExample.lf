@@ -5,7 +5,7 @@
  * - An output handler (`Task1OutHandler`, `Task2OutHandler`) that emits results only upon full task
  * completion.
  * - The top-level task reactors (`Task1`, `Task2`) extends `TaskRetryTemplate`.
- 
+ *
  * @author Dongha Kim, Hokeun Kim
  */
 target C

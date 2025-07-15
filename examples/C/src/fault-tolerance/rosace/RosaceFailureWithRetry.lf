@@ -1,14 +1,13 @@
 /**
- * This example runs the Aircraft Simulator with a faulty RosaceController from "RosaceControllerWithRetry.lf".
- * Additionally, when it fails, it retries from the checkpoint.
-
+ * This example runs the Aircraft Simulator with a faulty RosaceController from
+ * "RosaceControllerWithRetry.lf". Additionally, when it fails, it retries from the checkpoint.
+ *
  * @author Edward A. Lee
  * @author David Saussie
  * @author Claire Pagetti
  * @author Dongha Kim
  * @author Hokeun Kim
  */
-
 target C {
   fast: true,
   build: "./build_run_plot.sh RosaceFailureWithRetry",
@@ -24,7 +23,6 @@ preamble {=
   // Trimming parameters
   #define Va_eq (230.0)   // Nominal airspeed?
   #define h_eq (10000.0)
-
 =}
 
 reactor Command(period: time = 100 ms, value: double = 0.0) {
@@ -36,7 +34,7 @@ reactor Command(period: time = 100 ms, value: double = 0.0) {
   =}
 }
 
-main reactor (filter_period: time = 10 ms) {  
+main reactor(filter_period: time = 10 ms) {
   a = new Aircraft()
   c = new FaultTolerantController(filter_period=filter_period)
   altitude = new Command(value=11000)  // Altitude command

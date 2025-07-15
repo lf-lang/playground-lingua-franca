@@ -1,8 +1,8 @@
 /**
- * This example runs the Aircraft Simulator with a faulty "RosaceControllerWithFailure.lf".
- * Check original implementation from examples/C/src/rosace/Rosace.lf
- * The only change is importing the "RosaceControllerWithFailure.lf"
-
+ * This example runs the Aircraft Simulator with a faulty "RosaceControllerWithFailure.lf". Check
+ * original implementation from examples/C/src/rosace/Rosace.lf The only change is importing the
+ * "RosaceControllerWithFailure.lf"
+ *
  * @author Edward A. Lee
  * @author David Saussie
  * @author Claire Pagetti

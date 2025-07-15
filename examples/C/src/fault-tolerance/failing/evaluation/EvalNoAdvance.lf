@@ -25,10 +25,9 @@ import Task2, TaskScheduler from "TaskExampleEval.lf"
 
 main reactor {
   task = new Task2(
-      failure_rate = 0.01, // 1% chance
+      failure_rate=0.01,  // 1% chance
       task_num=2,
-      num_of_segs=3
-    )
+      num_of_segs=3)
   retry = new NoTaskDrop(dead_line = 42 msec)
   scheduler = new TaskScheduler(period = 42 msec)
 

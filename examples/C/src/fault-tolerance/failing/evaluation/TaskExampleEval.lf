@@ -1,10 +1,9 @@
 /** @author Dongha Kim */
 target C {
-  files: ["lib/fault_tolerance_common.h"],
+  files: ["lib/fault_tolerance_common.h"]
 }
 
 import TaskRetryTemplate, TaskBody, TaskRetryWorstCaseTemplate from "lib/TaskRetryTemplate.lf"
-
 import TaskRetryNoAdvance from "lib/TaskRetryNoAdvanceTemplate.lf"
 
 reactor TaskScheduler(period: time = 0 msec) {
@@ -21,7 +20,7 @@ reactor TaskScheduler(period: time = 0 msec) {
     // Even using same seed, our approach differs with just re-executing because after task dropping they don't have same behavior..
   =}
 
-  reaction(t) -> trigger{=
+  reaction(t) -> trigger {=
     lf_set(trigger, 0);
     self->total_tasks ++;
   =}
@@ -65,15 +64,15 @@ reactor Task1(failure_rate: double = 0.01) extends TaskRetryTemplate {
 
   trigger.start_seg -> task1body.start_seg
   trigger.start_seg -> advance.seg_start_num
-  task1body.f_seg->advance.f_seg
-  advance.failed_seg->failed_seg
+  task1body.f_seg -> advance.f_seg
+  advance.failed_seg -> failed_seg
 }
 
 // With no advancing logical time.
-reactor Task2(failure_rate: double = 0.01) extends TaskRetryNoAdvance{
+reactor Task2(failure_rate: double = 0.01) extends TaskRetryNoAdvance {
   task2body = new Task1Body(failure_rate=failure_rate)
   trigger.start_seg -> task2body.start_seg
-  task2body.f_seg->failed_seg
+  task2body.f_seg -> failed_seg
 }
 
 reactor Task3(failure_rate: double = 0.01) extends TaskRetryWorstCaseTemplate {
@@ -81,6 +80,6 @@ reactor Task3(failure_rate: double = 0.01) extends TaskRetryWorstCaseTemplate {
 
   trigger.start_seg -> task1body.start_seg
   trigger.start_seg -> advance.seg_start_num
-  task1body.f_seg->advance.f_seg
-  advance.failed_seg->failed_seg
+  task1body.f_seg -> advance.f_seg
+  advance.failed_seg -> failed_seg
 }

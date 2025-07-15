@@ -1,5 +1,6 @@
 /**
- * This controller is a fixed version from examples/C/src/rosace/RosaceController.lf. It adds a failure rate inside the VzControl and VaControl reactors.
+ * This controller is a fixed version from examples/C/src/rosace/RosaceController.lf. It adds a
+ * failure rate inside the VzControl and VaControl reactors.
  *
  * @author Edward A. Lee
  * @author David Saussie

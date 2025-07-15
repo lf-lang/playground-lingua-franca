@@ -16,7 +16,7 @@ preamble {=
   #endif
 =}
 
-reactor Trigger (task_num: uint16_t = 0) {
+reactor Trigger(task_num: uint16_t = 0) {
   input instantiate: int
   input retry: int
   output start_seg: int
@@ -48,12 +48,12 @@ reactor Trigger (task_num: uint16_t = 0) {
   =}
 }
 
-reactor AdvanceTime (
-  task_num: uint16_t = 0,
-  dead_line: uint16_t = 0,
-  num_of_segs: uint16_t = 0,
-  wcet: uint16_t[] = {},
-  optwcet: uint16_t[] = {}) {
+reactor AdvanceTime(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet: uint16_t[] = {},
+    optwcet: uint16_t[] = {}) {
   input f_seg: int
   input seg_start_num: int
 
@@ -94,12 +94,12 @@ reactor AdvanceTime (
   =}
 }
 
-reactor AdvanceTimeWorstCase (
-  task_num: uint16_t = 0,
-  dead_line: uint16_t = 0,
-  num_of_segs: uint16_t = 0,
-  wcet: uint16_t[] = {},
-  optwcet: uint16_t[] = {}) {
+reactor AdvanceTimeWorstCase(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet: uint16_t[] = {},
+    optwcet: uint16_t[] = {}) {
   input f_seg: int
   input seg_start_num: int
 
@@ -154,8 +154,13 @@ reactor TaskRetryTemplate(
   output task_info_update: task_info_t
   state task_info: task_info_t
 
-  trigger = new Trigger(task_num = task_num)
-  advance = new AdvanceTime(task_num = task_num, dead_line = dead_line, num_of_segs = num_of_segs, wcet = wcet, optwcet = optwcet)
+  trigger = new Trigger(task_num=task_num)
+  advance = new AdvanceTime(
+      task_num=task_num,
+      dead_line=dead_line,
+      num_of_segs=num_of_segs,
+      wcet=wcet,
+      optwcet=optwcet)
   instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
@@ -186,8 +191,13 @@ reactor TaskRetryWorstCaseTemplate(
   output task_info_update: task_info_t
   state task_info: task_info_t
 
-  trigger = new Trigger(task_num = task_num)
-  advance = new AdvanceTimeWorstCase(task_num = task_num, dead_line = dead_line, num_of_segs = num_of_segs, wcet = wcet, optwcet = optwcet)
+  trigger = new Trigger(task_num=task_num)
+  advance = new AdvanceTimeWorstCase(
+      task_num=task_num,
+      dead_line=dead_line,
+      num_of_segs=num_of_segs,
+      wcet=wcet,
+      optwcet=optwcet)
   instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
@@ -204,7 +214,7 @@ reactor TaskRetryWorstCaseTemplate(
   =}
 }
 
-reactor TaskBody{
+reactor TaskBody {
   input start_seg: int
   output f_seg: int
 }
@@ -214,7 +224,7 @@ reactor Coordinator {
   input failed_seg: int
   output out: int
   state instance_start_time: time
-  state deadline_missed: int=0
+  state deadline_missed: int = 0
   state task_dropped: int = 0
   input task_info_update: task_info_t
   state task_info: task_info_t
