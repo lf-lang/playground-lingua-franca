@@ -20,7 +20,7 @@ target C {
   timeout: 420 secs
 }
 
-import NoTaskDrop from "TaskRetryNoAdvanceTemplate.lf"
+import NoTaskDrop from "lib/TaskRetryNoAdvanceTemplate.lf"
 import Task2, TaskScheduler from "TaskExampleEval.lf"
 
 main reactor {

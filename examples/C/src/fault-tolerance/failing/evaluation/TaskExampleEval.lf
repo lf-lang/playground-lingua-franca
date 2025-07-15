@@ -1,10 +1,11 @@
+/** @author Dongha Kim */
 target C {
-  files: ["../../lib/fault_tolerance_common.h"],
+  files: ["lib/fault_tolerance_common.h"],
 }
 
-import TaskRetryTemplate, TaskBody, TaskRetryWorstCaseTemplate from "TaskRetryTemplate.lf"
+import TaskRetryTemplate, TaskBody, TaskRetryWorstCaseTemplate from "lib/TaskRetryTemplate.lf"
 
-import TaskRetryNoAdvance from "TaskRetryNoAdvanceTemplate.lf"
+import TaskRetryNoAdvance from "lib/TaskRetryNoAdvanceTemplate.lf"
 
 reactor TaskScheduler(period: time = 0 msec) {
   timer t(0, period)

@@ -20,7 +20,7 @@ target C {
   timeout: 420 secs
 }
 
-import Coordinator from "TaskRetryTemplate.lf"
+import Coordinator from "lib/TaskRetryTemplate.lf"
 import Task3, TaskScheduler from "TaskExampleEval.lf"
 
 main reactor {
