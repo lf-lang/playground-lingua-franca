@@ -34,9 +34,6 @@ reactor Task1Body extends TaskBody {
   preamble {=
     #include <time.h>
     #include "fault_tolerance_common.h"
-    #define TASK_SEG_WCET_MSEC  10
-    #define FT_RATE 1.1
-    #define TASK_SEG_WCET_FT_MSEC  TASK_SEG_WCET_MSEC * FT_RATE
 
     int total_task1(int checkpoint) {
       const static double FAILURE_RATE = 0.05; // 5% chance

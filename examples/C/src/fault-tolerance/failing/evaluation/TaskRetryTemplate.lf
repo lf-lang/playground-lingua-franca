@@ -209,7 +209,6 @@ reactor TaskBody{
   output f_seg: int
 }
 
-// Naming? Timely retry?
 reactor Coordinator {
   input instance_start_time_update: time
   input failed_seg: int
