@@ -24,8 +24,8 @@ preamble {=
     uint16_t task_num;
     uint16_t dead_line;
     uint16_t num_of_segs;
-    uint16_t* wcet;
-    uint16_t* optwcet;
+    uint16_t* wcet_f;
+    uint16_t* wcet_s;
   } task_info_t;
   #endif
 =}
@@ -227,8 +227,8 @@ reactor VaControl50Retry {
       task_num=2,
       dead_line=20,
       num_of_segs=2,
-      wcet = {2, 2},
-      optwcet = {1, 1})
+      wcet_f = {2, 2},
+      wcet_s = {1, 1})
   retry = new Coordinator()
 
   Va_ct_Retry.task_info_update -> retry.task_info_update
@@ -258,8 +258,8 @@ reactor VzControl50Retry {
       task_num=1,
       dead_line=20,
       num_of_segs=2,
-      wcet = {2, 2},
-      optwcet = {1, 1})
+      wcet_f = {2, 2},
+      wcet_s = {1, 1})
   retry = new Coordinator()
 
   Vz_ct_Retry.task_info_update -> retry.task_info_update

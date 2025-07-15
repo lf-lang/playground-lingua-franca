@@ -10,8 +10,8 @@ preamble {=
     uint16_t task_num;
     uint16_t dead_line;
     uint16_t num_of_segs;
-    uint16_t* wcet;
-    uint16_t* optwcet;
+    uint16_t* wcet_f;
+    uint16_t* wcet_s;
   } task_info_t;
   #endif
 =}

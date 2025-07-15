@@ -16,8 +16,8 @@ main reactor {
       task_num=1,
       dead_line=3000,
       num_of_segs=3,
-      wcet = {300, 300, 300},
-      optwcet = {250, 250, 250})
+      wcet_f = {300, 300, 300},
+      wcet_s = {250, 250, 250})
   retry = new Coordinator()
   scheduler = new TaskScheduler<int>(period = 5000 msec, in=0)
 

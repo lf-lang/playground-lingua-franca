@@ -46,8 +46,8 @@ Finally, the user should configure the parameters when instantiating the `new Ta
   - `task_num`: Task identifier.
   - `dead_line`: Logical time deadline. Different from the LF's deadline as a lag.
   - `num_of_segs`: Number of task segments.
-  - `wcet`: Array of worst-case execution times in msecs.
-  - `optwcet`: Array of optimized execution times in msecs.
+  - `wcet_f`: Array of worst-case execution times in msecs.
+  - `wcet_s`: Array of optimized execution times in msecs.
 
 ### Parameter Sending
 - On startup, the `Task` reactor sends its configuration to the corresponding `Coordinator` reactor.
