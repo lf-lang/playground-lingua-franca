@@ -1,8 +1,13 @@
-1. Change lfc path in `eval100k.sh` script.
-2. Comment out `gtime` or `time` depending on OS.
-3. `mkdir res100k`
-4. Run `eval100k.sh` at playground home.
+### Evaulation
+This creates evaluation results with configurable failure rates and number of executions.
+
+0. Make sure lfc is in PATH, and install gtime or time depending on OS.
+1. Fix the configurations in `eval.sh` top, (NUM, failure_rates)
+2. Run `eval.sh` in current directory.
+
 
 ### Graph generation.
+Check graph_generation/README.md for graph generation.
+
 1. `python3 gen_csv.py` in current directory.
 2. `python3 graph_combined.py` in current directory.

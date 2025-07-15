@@ -1,7 +1,6 @@
 # Setup experiment.
-NUM=100
-failure_rates=(0.005 0.01)
-# failure_rates=(0.005 0.01 0.02 0.05)
+NUM=10000
+failure_rates=(0.005 0.01 0.02 0.05)
 
 # Make directory named res$NUM (e.g., res100000)
 mkdir -p res$NUM

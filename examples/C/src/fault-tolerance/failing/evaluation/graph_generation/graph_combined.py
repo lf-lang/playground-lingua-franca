@@ -4,8 +4,11 @@ import numpy as np
 import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_pdf import PdfPages
 
+input_csv = '../res10000/res10000.csv'
+output_pdf = '../res10000/graph.pdf'
+
 # Load and clean CSV
-df = pd.read_csv("res100k/res100k.csv")
+df = pd.read_csv(input_csv)
 df.columns = df.columns.str.strip()
 
 # Organize data by strategy
@@ -159,7 +162,7 @@ def plot_single_metric_split2(ax, y_data):
     return ax_lower
 
 # Create a single PDF with all plots side by side
-with PdfPages("res100k/graph.pdf") as pdf:
+with PdfPages(output_pdf) as pdf:
     # fig, axs = plt.subplots(1, 4, figsize=(20, 4))
     fig = plt.figure(figsize=(20, 4))
     outer = gridspec.GridSpec(1, 4, wspace=0.2)
