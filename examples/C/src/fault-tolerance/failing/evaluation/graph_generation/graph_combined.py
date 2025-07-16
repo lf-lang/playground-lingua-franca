@@ -209,3 +209,4 @@ with PdfPages(output_pdf) as pdf:
     fig.text(0.08, 0.18, 'Failure Rate', ha='center', va='top', fontsize=20)
     pdf.savefig(fig, bbox_inches='tight')
     plt.close()
+    
