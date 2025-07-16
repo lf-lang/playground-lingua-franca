@@ -113,3 +113,17 @@ The current implementation of this task just uses the `task_number` to link a pr
 ```
 
 Without this, we cannot use different tasks (with different implementations), or else it will give a duplicate definition error on the task.
+
+## Evaluation
+There is a directory for evaluation, inside `failing/evaluation`. The `eval.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
+It compares three cases, 
+- No LET advance, only retrying until deadline misses.
+- Advance LET as much as `wcet_f` even if segment succeeds, and do proactive task abortion.
+- Advance LET as much as `wcet_f`when segment fails, and `wcet_s` when segment succeeds, and do proactive task abortion.
+
+We compare the Deadline misses, Execution failures, and the Sum of deadline misses and execution failures, and finally CPU utilization.
+
+Graph generation is also possible in the `failing/evaluation/graph_generation` directory.
+
+The Rosace implementation also includes a directory named `rosace/graph_generation`.
+It compares the results with and without re-execution based fault-tolerance.
