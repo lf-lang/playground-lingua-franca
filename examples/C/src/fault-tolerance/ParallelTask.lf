@@ -1,6 +1,6 @@
 /**
  * This example runs two different task in parallel. The first task has 3 segments, and the second
- * task has 4 segments. Each tasks have different numbers of segments, WCET, and optWCET, showing
+ * task has 4 segments. Each tasks have different numbers of segments, wcet_f, and wcet_s, showing
  * that the tasks are configurable.
  *
  * @author Dongha Kim, Hokeun Kim

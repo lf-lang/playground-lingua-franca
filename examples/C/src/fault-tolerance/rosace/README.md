@@ -6,8 +6,10 @@ We execute the ROSACE benchmark including failures and using retries.
 
 ### Adding failures and checkpointed retries.
 `RosaceFailureWithRetry.lf` adds failures, and checkpointed retries. The controller is imported from `RosaceControllerWithRetry.lf`.
-We try to use the original C code from the rosace benchmark, such as the `Va_control_50()` function.
-
+We try to use the original C code implementation from the rosace benchmark, such as the `Va_control_50()` function.
 
 ### Note
 `build_run_plot.sh` and `rosace.gnuplot` is same as in `examples/C/src/rosace/`, however copied here due to path problems when executing.
+
+### Graph generation
+The `graph_generation` creates a graph comparing the results.

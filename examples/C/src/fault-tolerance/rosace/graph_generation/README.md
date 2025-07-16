@@ -1,5 +1,5 @@
 ### Graph Generation.
-This graph compares the code with checkpoint and restores vs with no retries, just failures.
+This graph compares using checkpoint and restores, to no retries only including failures.
 
 1. Running the `RosaceFailureWithRetry.lf` will create `altitudeRetry.data` and `airspeedRetry.data`.
 

@@ -7,7 +7,7 @@
  * optimistic execution time. Faults are simulated with probabilistic failures, and task is restored
  * from the checkpoint when fails.
  *
- * 2. Predictive Task Dropping: Upon segment failure, the system evaluates whether retrying will
+ * 2. Proactive Task Abortion: Upon segment failure, the system evaluates whether retrying will
  * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
  *
  * The purpose of this design is to investigate how logic-based scheduling and retry policies can
@@ -150,13 +150,15 @@ reactor TaskRetryTemplate(
 }
 
 // This is for user inheritance. Check TaskExample.lf.
-// The extended reactor contains user-defined C code for the task inside the preamble. Users can define taskspecific inputs and outputs here.
+// The extended reactor contains user-defined C code for the task inside the preamble. Users can define task-specific inputs and outputs here.
 reactor TaskBody {
   input start_seg: int
   output f_seg: int
 }
 
-// This reactor reactor manages the predictable task dropping. It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
+// This reactor reactor manages the proactive task abortion. 
+// It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline. 
+// If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
 reactor Coordinator {
   input instance_start_time_update: time
   input failed_seg: int
