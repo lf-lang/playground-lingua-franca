@@ -1,9 +1,9 @@
 ### Evaulation
 This creates evaluation results with configurable failure rates and number of executions.
 
-0. Make sure lfc is in PATH, and install gtime or time depending on OS.
-1. Fix the configurations in `eval.sh` top, (NUM, failure_rates)
-2. Run `eval.sh` in current directory.
+1. Make sure lfc is in PATH, and install gtime or time depending on OS.
+2. Fix the configurations in `eval.sh` top, (NUM, failure_rates)
+3. Run `eval.sh` in current directory.
 
 
 ### Graph generation.
