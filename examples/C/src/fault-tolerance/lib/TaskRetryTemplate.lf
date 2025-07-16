@@ -156,8 +156,8 @@ reactor TaskBody {
   output f_seg: int
 }
 
-// This reactor reactor manages the proactive task abortion. 
-// It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline. 
+// This reactor reactor manages the proactive task abortion.
+// It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline.
 // If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
 reactor Coordinator {
   input instance_start_time_update: time
