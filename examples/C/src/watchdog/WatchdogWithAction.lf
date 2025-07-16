@@ -44,14 +44,22 @@ reactor Watcher {
   input in: int
   output out: int
   state count: int = 1
+  logical action a
 
-  watchdog dog(0 ms) {=
+  watchdog dog(0 ms) -> a {=
     instant_t p = lf_time_physical_elapsed();
     lf_print("******** Watchdog timed out at elapsed physical time: " PRINTF_TIME, p);
+    lf_schedule(a, 0);
   =}
 
-  reaction(startup) -> dog {=
-    lf_watchdog_start(dog, MSEC(250));
+reaction(startup) -> dog {=
+  lf_watchdog_start(dog, MSEC(250));
+=}
+
+  reaction(a) {=
+    tag_t now = lf_tag();
+    lf_print(">>>>> Earliest possible reaction to watchdog timeout: " PRINTF_TAG,
+        now.time - lf_time_start(), now.microstep);
   =}
 
   reaction(in) -> dog, out {=
@@ -75,7 +83,7 @@ reactor Watcher {
     // will be one microstep later than the most recent input.
     tag_t tag = lf_tag();
     instant_t start = lf_time_start();
-    lf_print("******** Watchdog triggered reaction at " PRINTF_TAG ". Producing backup output %d." PRINTF_TIME,
+    lf_print("******** Watchdog triggered reaction at " PRINTF_TAG ". Producing backup output %d.",
         tag.time - start, tag.microstep, self->count);
     lf_set(out, self->count++);
     // Start another watchdog cycle in case the very next input is also delayed.
