@@ -2,6 +2,16 @@
 
 This PR introduces a deterministic execution model of fault-tolerant real-time software in Lingua Franca.
 
+## Motivation
+For fault tolerance, time redundancy techniques such as re-execution is widely used. 
+However, this approach introduces non-determinism due to unpredictable timing of failures, which leads to inconsistent behavior and makes analysis and repeatable testing unreliable.
+
+This PR introduces a deterministic execution model for fault-tolerant real-time software within LF.
+The key idea is to re-execute failed tasks, while advancing logical execution time (LET) deterministically, regardless of actual failure timing.
+This ensures that the same sequence of task failures always results in the same outcome.
+
+We achieve this by advancing logical time using worst-case execution times (WCETs).
+Furthermore, we propose an enhanced LET advancement mechanism that distinguishes between successful and failed segments.
 ## Key Features
 ### Checkpoint-Based Retry
 - Each task is split into multiple segments and saves a checkpoint while execution.
@@ -42,9 +52,10 @@ This PR introduces a deterministic execution model of fault-tolerant real-time s
 To show that this template can be used in real tasks, we implement the ROSACE benchmark.
 There is already a [current ROSACE implementation](https://github.com/lf-lang/playground-lingua-franca/tree/main/examples/C/src/rosace).
 We add two more versions based on the current implementation:
-- Adding random failures.
-- Adding random failures, and retrying from checkpoints when failed. 
+- `RosaceFailureWithNoRetry.lf` : Adding random failures.
+- `RosaceFailureWithRetry.lf` : Adding random failures, and retrying from checkpoints when failed. 
 To show that our template can be easily used by using the exact C code as a task, we bring the original C implementation from the [original code](https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/).
+
 
 # Implementation Details
 
@@ -92,36 +103,14 @@ This is an example how it looks.
       wcet_s = {250, 250, 250})
 ```
 
-## Limitation
-One limitation is that LF does not support (or maybe cannot) passing function pointers as a `Reactor` input parameter.
-The current implementation of this task just uses the `task_number` to link a predefined empty function `total_task'n'`, to the user's implementation.
-
-```
-// TaskRetryTemplate.lf
-  preamble {=
-    int total_task1(int checkpoint);
-    int total_task2(int checkpoint);
-  =}
-
-  method set_fn_ptr() {=
-    if(self->task_num == 1) {
-      self->task_fn = total_task1;
-    } else if(self->task_num == 2) {
-    self->task_fn = total_task2;
-    }
-  =}
-```
-
-Without this, we cannot use different tasks (with different implementations), or else it will give a duplicate definition error on the task.
-
 ## Evaluation
-There is a directory for evaluation, inside `failing/evaluation`. The `eval.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
+There is a directory for evaluation, inside `failing/evaluation`. The `evaluation.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
 It compares three cases, 
-- No LET advance, only retrying until deadline misses.
-- Advance LET as much as `wcet_f` even if segment succeeds, and do proactive task abortion.
-- Advance LET as much as `wcet_f`when segment fails, and `wcet_s` when segment succeeds, and do proactive task abortion.
+- Baseline: No LET advance, only retrying until deadline misses.
+- Proposed1: Advance LET as much as `wcet_f` even if the segment succeeds, and do proactive task abortion.
+- Proposed2: Advance LET as much as `wcet_f`when segment fails, and `wcet_s` when segment succeeds, and do proactive task abortion.
 
-We compare the Deadline misses, Execution failures, and the Sum of deadline misses and execution failures, and finally CPU utilization.
+We compare the Deadline misses, Execution failures, and the Sum of deadline misses and execution failures, and CPU utilization.
 
 Graph generation is also possible in the `failing/evaluation/graph_generation` directory.
 
