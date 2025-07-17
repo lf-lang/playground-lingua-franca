@@ -63,7 +63,7 @@ reactor Task1(failure_rate: double = 0.01) extends TaskRetryTemplate {
   task1body = new Task1Body(failure_rate=failure_rate)
 
   trigger.start_seg -> task1body.start_seg
-  trigger.start_seg -> advance.seg_start_num
+  trigger.start_seg -> advance.start_seg
   task1body.f_seg -> advance.f_seg
   advance.failed_seg -> failed_seg
 }
@@ -79,7 +79,7 @@ reactor Task3(failure_rate: double = 0.01) extends TaskRetryWorstCaseTemplate {
   task1body = new Task1Body(failure_rate=failure_rate)
 
   trigger.start_seg -> task1body.start_seg
-  trigger.start_seg -> advance.seg_start_num
+  trigger.start_seg -> advance.start_seg
   task1body.f_seg -> advance.f_seg
   advance.failed_seg -> failed_seg
 }

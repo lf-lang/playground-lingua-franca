@@ -1,4 +1,20 @@
-/** @author Dongha Kim */
+/**
+ * This template implements a fault-tolerant task execution model using checkpoint and retry
+ * mechanisms, and predictive task dropping. The system is designed to simulate execution of
+ * multi-segment tasks with faults using logical execution time.
+ *
+ * 1. Checkpointed Task Execution: Tasks are divided into segments, each with its own worst-case and
+ * optimistic execution time. Faults are simulated with probabilistic failures, and task is restored
+ * from the checkpoint when fails.
+ *
+ * 2. Proactive Task Abortion: Upon segment failure, the system evaluates whether retrying will
+ * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
+ *
+ * The purpose of this design is to investigate how logic-based scheduling and retry policies can
+ * improve reliability in real-time embedded systems.
+ *
+ * @author Dongha Kim, Hokeun Kim
+ */
 target C
 
 preamble {=
@@ -16,6 +32,7 @@ preamble {=
   #endif
 =}
 
+// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the retry port is triggered, it resumes from the indicated segment number passed by the port.
 reactor Trigger(task_num: uint16_t = 0) {
   input instantiate: int
   input retry: int
@@ -48,6 +65,7 @@ reactor Trigger(task_num: uint16_t = 0) {
   =}
 }
 
+// This computes the logical execution time and advances the logical time.
 reactor AdvanceTime(
     task_num: uint16_t = 0,
     dead_line: uint16_t = 0,
@@ -55,15 +73,15 @@ reactor AdvanceTime(
     wcet_f: uint16_t[] = {},
     wcet_s: uint16_t[] = {}) {
   input f_seg: int
-  input seg_start_num: int
+  input start_seg: int
 
   logical action advance_lt: int
   output failed_seg: int
 
-  reaction(f_seg) seg_start_num -> advance_lt {=
-    // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
+  reaction(f_seg) start_seg -> advance_lt {=
+    // Calculate the number of successed segments. If failed_seg_num=3 and in start_seg=1, 2 segments success.
     int failed_seg_num = f_seg->value;
-    int num_of_success = failed_seg_num - seg_start_num->value;
+    int num_of_success = failed_seg_num - start_seg->value;
     if (num_of_success < 0) {
       // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
       num_of_success +=  self->num_of_segs + 1;
@@ -75,7 +93,7 @@ reactor AdvanceTime(
     // Caluculate the time of the total successed segments.
     int total_success_time = 0; // msecs
     for (int i=0; i < num_of_success; i++){
-      total_success_time += self->wcet_s[seg_start_num->value + i -1];
+      total_success_time += self->wcet_s[start_seg->value + i -1];
     }
 
     if(failed_seg_num == 0) {
@@ -101,15 +119,15 @@ reactor AdvanceTimeWorstCase(
     wcet_f: uint16_t[] = {},
     wcet_s: uint16_t[] = {}) {
   input f_seg: int
-  input seg_start_num: int
+  input start_seg: int
 
   logical action advance_lt: int
   output failed_seg: int
 
-  reaction(f_seg) seg_start_num -> advance_lt {=
-    // Calculate the number of successed segments. If failed_seg_num=3 and in seg_start_num=1, 2 segments success.
+  reaction(f_seg) start_seg -> advance_lt {=
+    // Calculate the number of successed segments. If failed_seg_num=3 and in start_seg=1, 2 segments success.
     int failed_seg_num = f_seg->value;
-    int num_of_success = failed_seg_num - seg_start_num->value;
+    int num_of_success = failed_seg_num - start_seg->value;
     if (num_of_success < 0) {
       // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
       num_of_success +=  self->num_of_segs + 1;
@@ -121,7 +139,7 @@ reactor AdvanceTimeWorstCase(
     // Caluculate the time of the total successed segments.
     int total_success_time = 0; // msecs
     for (int i=0; i < num_of_success; i++){
-      total_success_time += self->wcet_f[seg_start_num->value + i -1];
+      total_success_time += self->wcet_f[start_seg->value + i -1];
     }
 
     if(failed_seg_num == 0) {
@@ -164,7 +182,7 @@ reactor TaskRetryTemplate(
   instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
-  trigger.start_seg -> advance.seg_start_num
+  trigger.start_seg -> advance.start_seg
   advance.failed_seg -> failed_seg
 
   reaction(startup) -> task_info_update {=
@@ -201,7 +219,7 @@ reactor TaskRetryWorstCaseTemplate(
   instantiate -> trigger.instantiate
   retry -> trigger.retry
   trigger.instance_start_time -> instance_start_time
-  trigger.start_seg -> advance.seg_start_num
+  trigger.start_seg -> advance.start_seg
   advance.failed_seg -> failed_seg
 
   reaction(startup) -> task_info_update {=
@@ -214,11 +232,16 @@ reactor TaskRetryWorstCaseTemplate(
   =}
 }
 
+// This is for user inheritance. Check TaskExample.lf.
+// The extended reactor contains user-defined C code for the task inside the preamble. Users can define task-specific inputs and outputs here.
 reactor TaskBody {
   input start_seg: int
   output f_seg: int
 }
 
+// This reactor reactor manages the proactive task abortion.
+// It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline.
+// If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
 reactor Coordinator {
   input instance_start_time_update: time
   input failed_seg: int
