@@ -80,7 +80,7 @@ do
   for base in "${base_names[@]}"
   do
     binary="./bin/${base}${rate_str}"
-    output="src/fault-tolerance/failing/evaluation/res$NUM/${base}_fail${rate_str}.txt"
+    output="src/fault-tolerance/evaluation/res$NUM/${base}_fail${rate_str}.txt"
 
     echo "Running $binary ..."
 

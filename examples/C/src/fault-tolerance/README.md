@@ -104,7 +104,7 @@ This is an example how it looks.
 ```
 
 ## Evaluation
-There is a directory for evaluation, inside `failing/evaluation`. The `evaluation.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
+There is a directory for evaluation, inside `evaluation`. The `evaluation.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
 It compares three cases, 
 - Baseline: No LET advance, only retrying until deadline misses.
 - Proposed1: Advance LET as much as `wcet_f` even if the segment succeeds, and do proactive task abortion.
@@ -112,7 +112,7 @@ It compares three cases,
 
 We compare the Deadline misses, Execution failures, and the Sum of deadline misses and execution failures, and CPU utilization.
 
-Graph generation is also possible in the `failing/evaluation/graph_generation` directory.
+Graph generation is also possible in the `evaluation/graph_generation` directory.
 
 The Rosace implementation also includes a directory named `rosace/graph_generation`.
 It compares the results with and without re-execution based fault-tolerance.
