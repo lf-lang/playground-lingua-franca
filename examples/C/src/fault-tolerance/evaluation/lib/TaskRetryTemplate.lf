@@ -300,19 +300,6 @@ reactor Coordinator {
         lf_set(out, failed_seg->value);
       }
     }
-  // // Test if there are any deadline misses in terms of Physical time - logical time.
-  // // Should never pass here.
-  // =} deadline(self->task_info.dead_line * MSEC(1)) {=
-  //   lf_print("Deadline violated! Dropping task.");
-  //   lf_print("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
-  //   if (failed_seg->value != 0) {
-  //     self->execution_failed++;
-  //     lf_print("Deadline: Segment %d failed.", failed_seg->value);
-  //   } else {
-  //     self->execution_success ++;
-  //     lf_print("Deadline missed, but execution success.");
-  //   }
-  //   self->deadline_missed++;
   =}
 
   reaction(shutdown) {=
