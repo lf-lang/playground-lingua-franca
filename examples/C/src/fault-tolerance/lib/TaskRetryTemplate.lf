@@ -200,11 +200,25 @@ reactor Coordinator {
       if(min_instance_finish_time > self->instance_start_time + (self->task_info.dead_line * MSEC(1))) {
         lf_print_log("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
         lf_print_log("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
+      // Checks if there are any logical time deadline misses.
+      // Should never pass here.
+      } else if(self->task_info.dead_line * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
+        lf_print_log("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
       } else {
         // Did not violate predicted deadline.
         lf_set(out, failed_seg->value);
       }
     }
+  //   // Test if there are any deadline misses in terms of Physical time - logical time.
+  //   // Should never pass here.
+  // =} deadline(task_info.dead_line * MSEC(1)) {=
+  //   lf_print_log("Deadline violated! Dropping task.");
+  //   lf_print_log("Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+  //   if (failed_seg->value != 0) {
+  //     lf_print_log("Deadline: Segment %d failed.", failed_seg->value);
+  //   } else {
+  //     lf_print_log("Deadline missed, but execution success.");
+  //   }
   =}
 }
 
