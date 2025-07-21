@@ -79,9 +79,9 @@ The `Coordinator` is not part of the `Task`. This reactor manages the proactive 
 On startup, the `Task` reactor sends its configuration as a struct of `task_info_t` to the corresponding `Coordinator` reactor. This includes the `task_num`, `dead_line`, `num_of_segs`, `wcet_f`, and `wcet_s`. This is for the modular design to separate the `Task` and the `Coordinator`, and not duplicate the input parameters of the `Task`.
 
 ## Usage
-To use this, the user needs to `import TaskRetryTemplate, Coordinator from "lib/TaskRetryTemplate.lf"`.
+To use this, the user needs to `import FaultTolerantTaskTemplate, Coordinator from "lib/FaultTolerantTaskTemplate.lf"`.
 The user then creates a `TaskBody`, and adds their task inside the `preamble`.
-The user finally creates a reactor `extend`ing the `TaskRetryTemplate` reactor, and instantiates the `TaskBody`.
+The user finally creates a reactor `extend`ing the `FaultTolerantTaskTemplate` reactor, and instantiates the `TaskBody`.
 Finally, the user should configure the parameters when instantiating the `new Task()`.
 
 ### Task Parameters

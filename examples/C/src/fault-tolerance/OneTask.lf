@@ -9,7 +9,7 @@ target C {
   logging: LOG
 }
 
-import Coordinator, TaskScheduler from "lib/TaskRetryTemplate.lf"
+import Coordinator, TaskScheduler from "lib/FaultTolerantTaskTemplate.lf"
 import Task1 from "TaskExample.lf"
 
 main reactor {

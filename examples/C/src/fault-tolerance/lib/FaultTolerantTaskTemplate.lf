@@ -112,7 +112,7 @@ reactor AdvanceTime(
   =}
 }
 
-reactor TaskRetryTemplate(
+reactor FaultTolerantTaskTemplate(
     task_num: uint16_t = 0,
     dead_line: uint16_t = 0,
     num_of_segs: uint16_t = 0,

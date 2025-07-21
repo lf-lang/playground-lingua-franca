@@ -8,7 +8,7 @@
 target C
 
 import Filter, Hold from "../../rosace/RosaceController.lf"
-import TaskRetryTemplate, TaskBody, Coordinator from "../lib/TaskRetryTemplate.lf"
+import FaultTolerantTaskTemplate, TaskBody, Coordinator from "../lib/FaultTolerantTaskTemplate.lf"
 
 preamble {=
   #define REAL_TYPE double
@@ -104,7 +104,7 @@ reactor VaControl50OutHandler {
   =}
 }
 
-reactor VaControl50 extends TaskRetryTemplate {
+reactor VaControl50 extends FaultTolerantTaskTemplate {
   input Va_f: double  // filtered true airspeed
   input Vz_f: double  // filtered vertical climb rate
   input q_f: double   // filtered pitch rate
@@ -196,7 +196,7 @@ reactor VzControl50OutHandler {
   =}
 }
 
-reactor VzControl50 extends TaskRetryTemplate {
+reactor VzControl50 extends FaultTolerantTaskTemplate {
   input Vz_f: double
   input Vz_c: double
   input q_f: double

@@ -3,7 +3,7 @@ target C {
   files: ["lib/fault_tolerance_common.h"]
 }
 
-import TaskRetryTemplate, TaskBody, TaskRetryWorstCaseTemplate from "lib/TaskRetryTemplate.lf"
+import FaultTolerantTaskTemplate, TaskBody, TaskRetryWorstCaseTemplate from "lib/FaultTolerantTaskTemplate.lf"
 import TaskRetryNoAdvance from "lib/TaskRetryNoAdvanceTemplate.lf"
 
 reactor TaskScheduler(period: time = 0 msec) {
@@ -59,7 +59,7 @@ reactor Task1Body(failure_rate: double = 0.01) extends TaskBody {
   =}
 }
 
-reactor Task1(failure_rate: double = 0.01) extends TaskRetryTemplate {
+reactor Task1(failure_rate: double = 0.01) extends FaultTolerantTaskTemplate {
   task1body = new Task1Body(failure_rate=failure_rate)
 
   trigger.start_seg -> task1body.start_seg

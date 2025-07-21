@@ -38,7 +38,7 @@ do
     sed -i '' "s/timeout: 420 secs/timeout: ${timeout_value}/g" "$new_file"
     sed -i '' "s/failure_rate *= *[0-9.]*, *\/\/.*/failure_rate = ${rate}, \/\/ ${percent_fmt}% chance/g" "$new_file"
 
-    sed -i '' 's#import Coordinator from "lib/TaskRetryTemplate.lf"#import Coordinator from "../lib/TaskRetryTemplate.lf"#' "$new_file"
+    sed -i '' 's#import Coordinator from "lib/FaultTolerantTaskTemplate.lf.lf"#import Coordinator from "../lib/FaultTolerantTaskTemplate.lf.lf"#' "$new_file"
     sed -i '' 's#import Task1, TaskScheduler from "TaskExampleEval.lf"#import Task1, TaskScheduler from "../TaskExampleEval.lf"#' "$new_file"
     sed -i '' 's#import Task2, TaskScheduler from "TaskExampleEval.lf"#import Task2, TaskScheduler from "../TaskExampleEval.lf"#' "$new_file"
     sed -i '' 's#import Task3, TaskScheduler from "TaskExampleEval.lf"#import Task3, TaskScheduler from "../TaskExampleEval.lf"#' "$new_file"
