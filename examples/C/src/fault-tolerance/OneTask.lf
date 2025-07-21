@@ -5,7 +5,8 @@
  * @author Dongha Kim, Hokeun Kim
  */
 target C {
-  timeout: 9900 msec
+  timeout: 9900 msec,
+  logging: LOG
 }
 
 import Coordinator, TaskScheduler from "lib/TaskRetryTemplate.lf"
