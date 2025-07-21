@@ -269,6 +269,10 @@ reactor Coordinator {
   =}
 
   reaction(failed_seg) -> out {=
+    // MSEC(self->task_info.dead_line) - (lf_time_logical_elapsed() - MSEC(self->instance_start_time))
+    lf_set_deadline(self, MSEC(self->task_info.dead_line) - (lf_time_logical_elapsed() - MSEC(self->instance_start_time)));
+    lf_check_deadline(self, true);
+
     if(failed_seg->value == 0) {
       // 0 means, all segments are finished.
       // Still need to signal output with 0.
@@ -289,10 +293,10 @@ reactor Coordinator {
         lf_print("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
         lf_print("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
         self->task_dropped++;
-
-      // Checks if there are any logical time deadline misses.
-      // Should never pass here.
       } else if(self->task_info.dead_line * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
+
+              // Checks if there are any logical time deadline misses.
+              // Should never pass here.
         lf_print("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
         self->deadline_missed++;
       } else {
@@ -300,6 +304,10 @@ reactor Coordinator {
         lf_set(out, failed_seg->value);
       }
     }
+  =} deadline(3 sec) {=
+    // Checks if there are any Physical time - Logical start time of task deadline misses.
+    // Should never pass here.
+    lf_print("Deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
   =}
 
   reaction(shutdown) {=
