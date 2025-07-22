@@ -55,7 +55,6 @@ reactor Task1Body(failure_rate: double = 0.01) extends TaskBody {
   reaction(start_seg) -> f_seg {=
     int result = total_task1(start_seg->value, self->failure_rate);
     lf_set(f_seg, result);
-    lf_print("self->failure_rate: %lf",self->failure_rate);
   =}
 }
 
