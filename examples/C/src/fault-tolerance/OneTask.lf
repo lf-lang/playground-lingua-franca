@@ -1,5 +1,5 @@
 /**
- * This example executes only one task, and retries from the checkpoint when it fails. It is
+ * This example executes only one task, and re-executes from the checkpoint when it fails. It is
  * triggered by the TaskScheduler's timer.
  *
  * @author Dongha Kim, Hokeun Kim

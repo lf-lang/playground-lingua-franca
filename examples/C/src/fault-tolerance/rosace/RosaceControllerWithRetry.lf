@@ -1,5 +1,5 @@
 /**
- * This controller adds faults, and checkpointed retries. We try to keep the original C code of the
+ * This controller adds faults, and checkpointed re-executions. We try to keep the original C code of the
  * rosace controller, such as the `Va_control_50()` function.
  *
  * @author Dongha Kim

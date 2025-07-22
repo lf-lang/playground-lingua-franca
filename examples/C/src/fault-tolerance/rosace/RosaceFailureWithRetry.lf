@@ -1,6 +1,6 @@
 /**
  * This example runs the Aircraft Simulator with a faulty RosaceController from
- * "RosaceControllerWithRetry.lf". Additionally, when it fails, it retries from the checkpoint.
+ * "RosaceControllerWithRetry.lf". Additionally, when it fails, it re-executes from the checkpoint.
  *
  * @author Edward A. Lee
  * @author David Saussie

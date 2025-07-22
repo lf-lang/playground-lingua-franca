@@ -27,7 +27,7 @@ Furthermore, we propose an enhanced LET advancement mechanism that distinguishes
 
 ## Examples
 ### `OneTask.lf` - Execution of a single Task
-- This example runs a single task, performing checkpointed retries, LET advancement, and proactive abortion.
+- This example runs a single task, performing checkpointed re-executions, LET advancement, and proactive abortion.
 - The `TaskScheduler` periodically sends a signal to start a task, the `Task` executes, and if the Task fails, the `Coordinator` determines whether to re-execute the task, depending on the deadline, and signals to re-execute from which segment to start.
 
 <img width="855" alt="image" src="img/OneTask.png" />
@@ -36,7 +36,7 @@ Furthermore, we propose an enhanced LET advancement mechanism that distinguishes
 
 ### `ParallelTask.lf` -  Parallel Execution of Tasks
 - Adds a second `Task` instance that runs **concurrently** with the first.
-- Both tasks perform checkpointed retries, LET advancement, and proactive abortion independently.
+- Both tasks perform checkpointed re-executions, LET advancement, and proactive abortion independently.
 - It has different number of segments, WCET, optWCET.
 <img width="742" alt="image" src="img/ParallelTask.png" />
 
