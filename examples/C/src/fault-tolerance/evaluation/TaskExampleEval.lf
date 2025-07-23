@@ -1,4 +1,10 @@
-/** @author Dongha Kim */
+/**
+ * This file defines tasks used for experiment.
+ *
+ * Task 1 is the approach with advancing logical time depending on success and failure. Task 2 does
+ * not advance logical time in any case. Task 3 always advances logical time as much as wcet_f.
+ * @author Dongha Kim
+ */
 target C {
   files: ["lib/fault_tolerance_common.h"]
 }
