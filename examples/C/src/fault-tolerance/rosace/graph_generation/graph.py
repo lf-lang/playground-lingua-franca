@@ -7,8 +7,8 @@ plt.rcParams['font.family'] = 'Times New Roman'
 # Load data
 airspeed_noretry = pd.read_csv("../airspeed.data", delim_whitespace=True, header=None, names=["time", "airspeed"])
 altitude_noretry = pd.read_csv("../altitude.data", delim_whitespace=True, header=None, names=["time", "altitude"])
-airspeed_retry = pd.read_csv("../airspeedRetry.data", delim_whitespace=True, header=None, names=["time", "airspeed"])
-altitude_retry = pd.read_csv("../altitudeRetry.data", delim_whitespace=True, header=None, names=["time", "altitude"])
+airspeed_retry = pd.read_csv("../airspeedRe-execution.data", delim_whitespace=True, header=None, names=["time", "airspeed"])
+altitude_retry = pd.read_csv("../altitudeRe-execution.data", delim_whitespace=True, header=None, names=["time", "altitude"])
 
 # Filter to time >= 40s
 airspeed_noretry = airspeed_noretry[airspeed_noretry['time'] >= 40]

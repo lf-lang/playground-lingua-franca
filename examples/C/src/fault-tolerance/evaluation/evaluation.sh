@@ -62,10 +62,10 @@ done
 
 ########### Execution
 
-# Save original directory
+# Save current directory
 START_DIR=$(pwd)
 
-# Move to project root
+# Move to playground root
 cd ../../../../
 
 # Detect OS
@@ -97,5 +97,5 @@ do
   done
 done
 
-# Return to original directory
+# Return to current directory
 cd "$START_DIR"

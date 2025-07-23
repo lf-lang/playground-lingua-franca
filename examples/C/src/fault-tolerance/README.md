@@ -13,16 +13,16 @@ This ensures that the same sequence of task failures always results in the same 
 We achieve this by advancing logical time using worst-case execution times (WCETs).
 Furthermore, we propose an enhanced LET advancement mechanism that distinguishes between successful and failed segments.
 ## Key Features
-### Checkpoint-Based Retry
+### Checkpoint-Based Reexecution
 - Each task is split into multiple segments and saves a checkpoint while execution.
-- When the execution fails, it resumes from the last failed segment (checkpoint) on retry.
+- When the execution fails, it resumes from the last failed segment (checkpoint) on reexecution.
 
 ### Logical Execution Time (LET) Advancement
 - Advances logical time by the **wcet_s** for successful segments.
 - If a segment fails, LET is advanced by the **wcet_f** of the failed segment.
 
 ### Proactive Task Instance Abortion
-- Before retrying a failed segment, the system predicts whether the task can finish within its deadline, based on the logical time.
+- Before re-executing a failed segment, the system predicts whether the task can finish within its deadline, based on the logical time.
 - If the prediction exceeds the deadline, the task is dropped.
 
 ## Examples
@@ -52,8 +52,8 @@ Furthermore, we propose an enhanced LET advancement mechanism that distinguishes
 To show that this template can be used in real tasks, we implement the ROSACE benchmark.
 There is already a [current ROSACE implementation](https://github.com/lf-lang/playground-lingua-franca/tree/main/examples/C/src/rosace).
 We add two more versions based on the current implementation:
-- `RosaceFailureWithNoRetry.lf` : Adding random failures.
-- `RosaceFailureWithRetry.lf` : Adding random failures, and retrying from checkpoints when failed. 
+- `RosaceFailureWithNoReexecution.lf` : Adding random failures.
+- `RosaceFailureWithReexecution.lf` : Adding random failures, and re-executing from checkpoints when failed. 
 To show that our template can be easily used by using the exact C code as a task, we bring the original C implementation from the [original code](https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/).
 
 
@@ -106,7 +106,7 @@ This is an example how it looks.
 ## Evaluation
 There is a directory for evaluation, inside `evaluation`. The `evaluation.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
 It compares three cases, 
-- Baseline: No LET advance, only retrying until deadline misses.
+- Baseline: No LET advance, only re-executing until deadline misses.
 - Proposed1: Advance LET as much as `wcet_f` even if the segment succeeds, and do proactive task abortion.
 - Proposed2: Advance LET as much as `wcet_f`when segment fails, and `wcet_s` when segment succeeds, and do proactive task abortion.
 
