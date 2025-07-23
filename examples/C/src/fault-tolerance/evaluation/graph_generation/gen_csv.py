@@ -2,8 +2,8 @@ import os
 import csv
 import re
 
-input_dir = '../res10000'
-output_csv = '../res10000/res10000.csv'
+input_dir = '../result_dir10000'
+output_csv = '../result_dir10000/result_dir10000.csv'
 
 def parse_time_to_seconds(time_str):
     # Handles formats like '7:00.26' (m:ss.xx) and '7:07:31.26' (h:mm:ss.xx)

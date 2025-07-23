@@ -2,8 +2,8 @@
 NUM=10000
 failure_rates=(0.005 0.01 0.02 0.05)
 
-# Make directory named res$NUM (e.g., res100000)
-mkdir -p res$NUM
+# Make directory named result_dir$NUM (e.g., result_dir100000)
+mkdir -p result_dir$NUM
 
 # Determine the timeout value based on NUM
 if [ "$NUM" -eq 100000 ]; then
@@ -32,7 +32,7 @@ do
 
   for base in "${base_names[@]}"
   do
-    new_file="res$NUM/${base}${rate_str}.lf"
+    new_file="result_dir$NUM/${base}${rate_str}.lf"
     cp "${base}.lf" "$new_file"
 
     sed -i '' "s/timeout: 420 secs/timeout: ${timeout_value}/g" "$new_file"
@@ -54,7 +54,7 @@ do
 
   for base in "${base_names[@]}"
   do
-    file_path="res$NUM/${base}${rate_str}.lf"
+    file_path="result_dir$NUM/${base}${rate_str}.lf"
     echo "Compiling $file_path ..."
     lfc "$file_path"
   done
@@ -80,7 +80,7 @@ do
   for base in "${base_names[@]}"
   do
     binary="./bin/${base}${rate_str}"
-    output="src/fault-tolerance/evaluation/res$NUM/${base}_fail${rate_str}.txt"
+    output="src/fault-tolerance/evaluation/result_dir$NUM/${base}_fail${rate_str}.txt"
 
     echo "Running $binary ..."
 

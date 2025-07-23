@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_pdf import PdfPages
 
-input_csv = '../res10000/res10000.csv'
-output_pdf = '../res10000/graph.pdf'
+input_csv = '.result_dir10000/result_dir10000.csv'
+output_pdf = '../result_dir10000/graph.pdf'
 
 # Load and clean CSV
 df = pd.read_csv(input_csv)
