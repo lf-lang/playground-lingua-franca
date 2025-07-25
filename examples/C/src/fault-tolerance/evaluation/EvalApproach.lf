@@ -9,22 +9,23 @@ target C {
 }
 
 import Coordinator from "lib/FaultTolerantTaskTemplate.lf"
-import Task1, TaskScheduler from "TaskExampleEval.lf"
+import Task1, TaskScheduler3 from "TaskExampleEval.lf"
 
 main reactor {
   task = new Task1(
-      failure_rate=0.01,  // 1% chance
+      failure_rate=0.3,  // 1% chance
       task_num=1,
       dead_line=42,
       num_of_segs=3,
       wcet_f = {11, 11, 11},
       wcet_s = {10, 10, 10})
   retry = new Coordinator()
-  scheduler = new TaskScheduler(period = 42 msec)
+  scheduler = new TaskScheduler3(period = 42 msec)
 
   scheduler.trigger -> task.instantiate
   task.task_info_update -> retry.task_info_update
   task.instance_start_time -> retry.instance_start_time_update
   task.failed_seg -> retry.failed_seg
   retry.out -> task.retry after 0
+  retry.out -> scheduler.finished after 0
 }
