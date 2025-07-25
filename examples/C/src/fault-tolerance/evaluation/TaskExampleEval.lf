@@ -36,67 +36,6 @@ reactor TaskScheduler(period: time = 0 msec) {
   =}
 }
 
-
-// This is an example task scheduler triggered by a timer.
-reactor TaskScheduler3(period: time = 0 msec) {
-  input finished: int
-  output trigger: int
-
-  state last_tick_triggered: int
-  state total_tasks: int = 0
-  logical action time_trigger: int
-
-  reaction(startup) -> trigger, time_trigger {=
-    // Setup rand() function.
-    // Fix seed.
-    srand(16);
-    // Seed 16 fails on failure_rate 1%. Around 6600.
-
-    // Even using same seed, our approach differs with just re-executing because after task dropping they don't have same behavior.
-
-    self->last_tick_triggered = 1;
-    // Initial trigger.
-    lf_set(trigger, 0);
-    lf_schedule(time_trigger, self->period);
-  =}
-
-  reaction(time_trigger) finished -> trigger, time_trigger {=
-    self->total_tasks ++;
-    if (finished->value == 0) {
-      lf_print("Task finished triggered by logical action.");
-      lf_set(trigger, 0);
-      self->last_tick_triggered = 1;
-      lf_schedule(time_trigger, self->period);
-    } else {
-      // Don't trigger new instance. Wait until finished == 0.
-      self->last_tick_triggered = 0;
-    }
-  =}
-
-  reaction(finished) -> trigger, time_trigger {=
-    if (finished->value == 0) {
-      // Wait until timer...
-      if(self->last_tick_triggered == 1) {
-        // Wait until next tick. Do nothing.
-        lf_print("Waiting for next tick.");
-      } else {
-        // Trigger new instance.
-        lf_print("Task finished triggered by input.");
-        lf_set(trigger, 0);
-        self->last_tick_triggered = 1;
-        lf_schedule(time_trigger, self->period);
-      }
-    } else {
-      // Do nothing.
-    }
-  =}
-  reaction(shutdown) {=
-    lf_print("Total_tasks: %d.", self->total_tasks - 1);
-  =}
-}
-
-
-
 reactor Task1Body(failure_rate: double = 0.01) extends TaskBody {
   preamble {=
     #include <time.h>
