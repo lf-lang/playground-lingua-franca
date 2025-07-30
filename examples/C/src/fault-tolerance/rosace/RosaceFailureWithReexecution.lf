@@ -10,12 +10,12 @@
  */
 target C {
   fast: true,
-  build: "./build_run_plot.sh RosaceFailureWithRetry",
+  build: "./build_run_plot.sh RosaceFailureWithReexecution",
   timeout: 10 min
 }
 
 import Aircraft from "../../rosace/AircraftSimulator.lf"
-import FaultTolerantController from "RosaceControllerWithRetry.lf"
+import FaultTolerantController from "RosaceControllerWithReexecution.lf"
 import PrintToFile from "../../lib/PrintToFile.lf"
 
 preamble {=
