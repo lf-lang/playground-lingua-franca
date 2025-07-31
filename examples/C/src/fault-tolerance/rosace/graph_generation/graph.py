@@ -37,7 +37,7 @@ ax2.tick_params(axis='y', labelsize=13, colors='black')
 ax2.ticklabel_format(style='plain', axis='y', useOffset=False)
 
 # Subfigure label
-ax1.text(0.5, -0.55, "(a) Fault-injected ROSACE software \nwithout fault tolerance (no re-execution).", fontsize=18, ha='center', transform=ax1.transAxes)
+ax1.text(0.5, -0.55, "(a) Original ROSACE software \nwith failure injection.", fontsize=18, ha='center', transform=ax1.transAxes)
 
 # --- Right plot: Retry ---
 ax3 = axs[1]
@@ -55,7 +55,7 @@ ax4.tick_params(axis='y', labelsize=13, colors='black')
 ax4.ticklabel_format(style='plain', axis='y', useOffset=False)
 
 # Subfigure label
-ax3.text(0.5, -0.55, "(b) Fault-injected ROSACE software with \nfault tolerance (re-execution with Proposed2).", fontsize=18, ha='center', transform=ax3.transAxes)
+ax3.text(0.5, -0.55, "(b) Modified ROSACE for fault tolerance\n simulation with failure injection and Proposed2.", fontsize=18, ha='center', transform=ax3.transAxes)
 
 # Remove top/right spines and add axis arrows
 for ax in [ax1, ax2, ax3, ax4]:
