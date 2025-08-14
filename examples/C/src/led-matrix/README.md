@@ -42,11 +42,12 @@ To build this project, you will need the following components:
 This project requires the pico-sdk to access the hardware/pio/timers on the RP2040 microcontroller. If the pico-sdk isn't in your path, it will be cloned into the /lib directory on build. If there are problems accessing this dependency, ensure that the path exists:
 
 ```base
+    git clone -b master https://github.com/raspberrypi/pico-sdk.git
+    export PICO_SDK_PATH="/path/to/pico-sdk"
     echo $PICO_SDK_PATH
 ```
 
 --- 
-
 
 ## 2. **Hardware Setup**
 
@@ -81,7 +82,7 @@ $ cd playground-lingua-franca/examples/C
 $ lfc src/led-matrix/LedMatrix.lf
 
 # Run the program
-$ bin/LedMatrix.elf
+$ picotool load -x bin/LedMatrix.elf
 ```
 
 > **Note:**
