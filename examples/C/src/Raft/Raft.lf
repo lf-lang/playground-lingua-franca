@@ -1,0 +1,319 @@
+/**
+ * An LF implementation of the Raft protocol
+ *
+ * @author Shaokai Lin<shaokai@berkeley.edu>
+ */
+target C {
+  coordination: decentralized
+}
+
+// FIXME: Moving this preamble into the reactor definition causes errors.
+preamble {=
+  typedef struct raft_msg_t {
+    int  type;            // Message type: HEART, ACK, ELECTION, VOTE, LEADER
+    int  term;            // Current term number
+    int  leader_id;       // So follower can redirect clients
+    int  prev_log_index;  // Index of log entry immediately preceding new ones
+    int  prev_log_term;   // Term of prev_log_index entry
+    int  leader_commit;   // Leader's commit index—index of highest log entry known to be committed
+    bool empty;           // If true, this AppendEntries message has no payload and is considered a heartbeat.
+  } raft_msg_t;
+
+  // Temporary workaround as structs in generics do not seem to work.
+  typedef struct app_msg_t {
+    raft_msg_t base;
+  } app_msg_t;
+=}
+
+// FIXME: Generics might not work with structs.
+reactor RaftNode(bank_index: int = 0, num_nodes: size_t = 1, heartbeat_period: time = 100 msec, verbose: bool = false) {
+  
+  preamble {=
+    #define MSG_HEART       -1
+    #define MSG_ACK         -2
+    #define MSG_ELECTION    -3
+    #define MSG_VOTE        -4
+    #define MSG_LEADER      -5
+
+    #define TIMEOUT_MS_LOW  150
+    #define TIMEOUT_MS_HIGH 300  
+
+    #define ROLE_FOLLOWER   0
+    #define ROLE_CANDIDATE  1
+    #define ROLE_LEADER     2
+  =}
+  
+  input[num_nodes] in: app_msg_t
+  output[num_nodes] out: app_msg_t
+
+  state leader: int                 // A node who this node believes is the current leader
+  state election_timeout: time      // A randomized election timeout for this node
+  state term: int = 0               // Current term number
+  state voted_for: int = -1         // Whom this node votes for in the current term
+
+  // Having an explicit role variable makes it easy to extend role-specific logic
+  // in a reactor extending this base node.
+  state role: int = 0
+
+  // The follower schedules a timeout action in case a heartbeat
+  // does not arrive. When the heartbeat does arrive, the pending
+  // action will be replaced by a new action with a later expiry.
+  // The minimum spacing of "forever" ensure that only one
+  // election_timeout_reached event can stay on the event queue.
+  // This is an implementation of a watchdog.
+  //
+  // FIXME: Not for this case, but it would be nice to be able to
+  // use state variables in action parameters.
+  logical action election_timeout_reached(0 sec, forever, "update")
+  logical action start_election
+
+  method random_int_in_range(min: int, max: int): int {=
+    srand(lf_time_physical()); // Choose a random seed.
+    return rand() % ((max + 1) - min) + min;
+  =}
+
+  method _create_msg(type: int, empty: bool): raft_msg_t {=
+    return (raft_msg_t){.type=type, .term=self->term, .empty=empty};
+  =}
+
+  method create_msg(type: int, empty: bool): app_msg_t {=
+    return (app_msg_t){.base=_create_msg(type, empty)};
+  =}
+
+  // FIXME: Cannot use ports in methods.
+  /**
+   * method broadcast_message(out : port, type : int) {= Broadcast a heartbeat message to all
+   * nodes. for (int i = 0; i < self->num_nodes; i++) { lf_set(out[i], type); }
+   * =}
+   */
+  reaction(in) {=
+    if (self->verbose) {
+      for (int i = 0; i < in_width; i++) {
+        if (in[i]->is_present) {
+          lf_print("(%lld, term=%d) Received from reactor %d: {type=%d, term=%d}", lf_time_logical_elapsed(), self->term, i, in[i]->value.base.type, in[i]->value.base.term);
+        }
+      }
+    }
+  =}
+
+  initial mode Follower {
+    reaction(startup) -> election_timeout_reached {=
+      if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Hello", lf_time_logical_elapsed(), self->term, self->leader);
+      // Choose a random election timeout between 150~300ms.
+      // In practice, this seems way too small.
+      self->election_timeout = MSEC(random_int_in_range(TIMEOUT_MS_LOW, TIMEOUT_MS_HIGH));
+      if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) election timeout = %lld", lf_time_logical_elapsed(), self->term, self->leader, self->election_timeout);
+      // Schedule the first timeout action.
+      lf_schedule(election_timeout_reached, self->election_timeout);
+    =}
+
+    reaction(in) -> out, election_timeout_reached {=
+      for (int sender = 0; sender < in_width; sender++) {
+        int incoming_type = in[sender]->value.base.type;
+        int incoming_term = in[sender]->value.base.term;
+        if (in[sender]->is_present && sender != self->bank_index) {
+          if (sender == self->leader
+              && incoming_type == MSG_HEART) {
+            if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Received MSG_HEART from %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+            // Make sure its term is the same as the leader's term.
+            self->term = incoming_term;
+            // Send back an ack.
+            lf_set(out[sender], create_msg(MSG_ACK, true));
+            if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Sent MSG_ACK to %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+            // Renew the pending timeout action's expiry time.
+            lf_schedule(election_timeout_reached, self->election_timeout);
+          }
+          else if (incoming_type == MSG_ELECTION) {
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Received MSG_ELECTION from %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+              // Prepare to vote in the new term.
+              // Ignore if the incoming term is smaller than the current term.
+              if (incoming_term > self->term) {
+                self->term = incoming_term;
+                self->voted_for = -1;
+                self->role = ROLE_FOLLOWER;
+              }
+              // If it has not voted for this incoming term, send back a vote.
+              // If the sender asks again because the pervious vote message is lost,
+              // send back another message.
+              if (incoming_term == self->term &&
+                (self->voted_for == -1 || self->voted_for == sender)) {
+                self->voted_for = sender;
+                lf_set(out[sender], create_msg(MSG_VOTE, true));
+                if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Sent MSG_VOTE to %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+                // Renew the pending timeout action's expiry time.
+                lf_schedule(election_timeout_reached, self->election_timeout);
+              }
+          }
+          else if (sender != self->leader
+                  && (incoming_type == MSG_LEADER || incoming_type == MSG_HEART)
+                  && incoming_term >= self->term   // Only accept a new leader if its term is greater or equal.
+          ) {
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Received MSG_LEADER from %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+              // A new leader has been declared.
+              self->leader = sender;
+              // Update its term to the leader's term.
+              self->term = incoming_term;
+              // Send back an ack.
+              lf_set(out[sender], create_msg(MSG_ACK, true));
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Sent MSG_ACK to %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+              // Renew the pending timeout action's expiry time.
+              lf_schedule(election_timeout_reached, self->election_timeout);
+          }
+        }
+      }
+    =}
+
+    reaction(election_timeout_reached) -> start_election, reset(Candidate) {=
+      if (self->verbose) lf_print("(%lld, Follower) Timeout! Starting an election...", lf_time_logical_elapsed());
+      lf_schedule(start_election, 0);
+      self->role = ROLE_CANDIDATE;
+      lf_set_mode(Candidate);
+    =}
+  }
+
+  mode Leader {
+    // The leader periodically sends out a heartbeat message to all
+    // follower nodes to maintain authority.
+    timer heartbeat(0, heartbeat_period)
+    reaction(heartbeat) -> out {=
+      // Broadcast a heartbeat message to all nodes.
+      for (int i = 0; i < self->num_nodes; i++) {
+        lf_set(out[i], create_msg(MSG_HEART, true));
+      }
+      if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Leader) Broadcast MSG_HEART", lf_time_logical_elapsed(), self->term, self->leader);
+    =}
+
+    reaction(in) -> out, election_timeout_reached, reset(Follower) {=
+      // Receive acks from followers.
+      for (int sender = 0; sender < self->num_nodes; sender++) {
+        int incoming_type = in[sender]->value.base.type;
+        int incoming_term = in[sender]->value.base.term;
+        if (in[sender]->is_present && sender != self->bank_index) {
+          if (incoming_type == MSG_HEART) {
+            // Compare the term id, if they are equal, compare bank_index.
+            if (incoming_term > self->term
+              || (incoming_term == self->term && sender > self->bank_index)) {
+              // Another node has declared itself to be the leader.
+              self->leader = sender;
+              // Send back an ack.
+              lf_set(out[sender], create_msg(MSG_ACK, true));
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Leader) Acknowledge %d as the supreme leader", lf_time_logical_elapsed(), self->term, self->leader, sender);
+              // Update its term to the leader's term.
+              self->term = incoming_term;
+              // Renew the pending timeout action's expiry time.
+              lf_schedule(election_timeout_reached, self->election_timeout);
+              // Become a follower.
+              self->role = ROLE_FOLLOWER;
+              lf_set_mode(Follower);
+            }
+          }
+          else if (incoming_type == MSG_ACK) {
+            if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Leader) Received ack from follower node %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+          }
+        }
+      }
+    =}
+  }
+
+  mode Candidate {
+    reset state votes_received: int = 0
+    reaction(start_election) -> out, election_timeout_reached {=
+      // Increment its term id.
+      self->term++;
+      // Reset the vote count to 0.
+      // NOTE: This was a real bug, which could be a good test case for model checking.
+      self->votes_received = 0;
+      // Vote for itself.
+      self->voted_for = self->bank_index;
+      self->votes_received++;
+      // Broadcast an election start message.
+      for (int i = 0; i < self->num_nodes; i++) {
+          lf_set(out[i], create_msg(MSG_ELECTION, true));
+      }
+      if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Candidate) Broadcast MSG_ELECTION", lf_time_logical_elapsed(), self->term, self->leader);
+      // Schedule a timeout action to collect votes.
+      lf_schedule(election_timeout_reached, self->election_timeout);
+    =}
+
+    reaction(in) -> out, election_timeout_reached, reset(Leader), reset(Follower) {=
+      // Receive votes from followers.
+      for (int sender = 0; sender < in_width; sender++) {
+        int incoming_type = in[sender]->value.base.type;
+        int incoming_term = in[sender]->value.base.term;
+        if (in[sender]->is_present && sender != self->bank_index) {
+          if (incoming_type == MSG_VOTE
+            && incoming_term == self->term) {
+            if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Candidate) Received a vote from follower node %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+            self->votes_received++;
+            // Check if a majority of votes is received, if so,
+            // declare to be the leader.
+            if (self->votes_received > self->num_nodes / 2) {
+              // Broadcast a leader message to all nodes.
+              for (int i = 0; i < self->num_nodes; i++) {
+                lf_set(out[i], create_msg(MSG_LEADER, true));
+              }
+              // Mark itself as the leader.
+              self->leader = self->bank_index;
+              // Transition to leader mode.
+              self->role = ROLE_LEADER;
+              lf_set_mode(Leader);
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Candidate) Votes received: %d / %zu. Declaring leader!", lf_time_logical_elapsed(), self->term, self->leader, self->votes_received, self->num_nodes);
+            }
+          }
+          else if (incoming_type == MSG_LEADER
+              || incoming_type == MSG_HEART) {
+            // Compare the term id, if they are equal, compare bank_index.
+            if (incoming_term > self->term
+              || (incoming_term == self->term && sender > self->bank_index)) {
+              // Another node has declared itself to be the leader.
+              self->leader = sender;
+              // Send back an ack.
+              lf_set(out[sender], create_msg(MSG_ACK, true));
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Candidate) Acknowledge %d as leader", lf_time_logical_elapsed(), self->term, self->leader, sender);
+              // Update its term to the leader's term.
+              self->term = incoming_term;
+              // Renew the pending timeout action's expiry time.
+              lf_schedule(election_timeout_reached, self->election_timeout);
+              // Become a follower.
+              self->role = ROLE_FOLLOWER;
+              lf_set_mode(Follower);
+            }
+          }
+          else if (incoming_type == MSG_ELECTION) {
+            // Prepare to vote in the new term.
+            // Ignore if the incoming term is smaller than the current term.
+            if (incoming_term > self->term) {
+              self->term = incoming_term;
+              self->voted_for = -1;
+              self->role = ROLE_FOLLOWER;
+              lf_set_mode(Follower);
+            }
+            // If it has not voted for this incoming term, send back a vote.
+            // If the sender asks again because the pervious vote message is lost,
+            // send back another message.
+            if (incoming_term == self->term &&
+              (self->voted_for == -1 || self->voted_for == sender)) {
+              self->voted_for = sender;
+              lf_set(out[sender], create_msg(MSG_VOTE, true));
+              if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Follower) Sent MSG_VOTE to %d", lf_time_logical_elapsed(), self->term, self->leader, sender);
+              // Renew the pending timeout action's expiry time.
+              lf_schedule(election_timeout_reached, self->election_timeout);
+            }
+          }
+        }
+      }
+    =}
+
+    // If timeout is reached and no leader has been declared, then
+    // we do not have a winner. Restart the election.
+    reaction(election_timeout_reached) -> start_election {=
+      if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Candidate) No winner! Restart election.", lf_time_logical_elapsed(), self->term, self->leader);
+      lf_schedule(start_election, 0);
+    =}
+  }
+}
+
+federated reactor(num_nodes: size_t = 5) {
+  nodes = new[num_nodes] RaftNode(num_nodes=num_nodes, verbose=true)
+  nodes.out ~> interleaved(nodes.in)
+}
