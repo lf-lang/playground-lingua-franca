@@ -1,0 +1,110 @@
+target Cpp
+
+public preamble {=
+  #include "snake.hh"
+=}
+
+reactor SnakeController(size: unsigned = 32, initial_interval = 500 ms) {
+  output move_snake: Board
+  output draw_board: Board
+  input updated_board_from_snake: Board
+  input updated_board_from_apple: Board
+  input ate_apple: void
+
+  logical action next_move: void
+
+  state interval: time = initial_interval
+  state current_board: Board{size}
+  state apple_count: unsigned = 0
+
+  reaction(startup, next_move) -> next_move, move_snake {=
+    move_snake.set(std::move(current_board));
+          next_move.schedule(interval);
+  =}
+
+  reaction(updated_board_from_snake) -> draw_board {=
+    current_board = std::move(*updated_board_from_snake.get());
+    draw_board.set(current_board);
+  =}
+
+  reaction(updated_board_from_apple) -> draw_board {=
+    current_board = std::move(*updated_board_from_apple.get());
+    draw_board.set(current_board);
+  =}
+
+  reaction(ate_apple) {=
+    apple_count++;
+    if (apple_count % 5 == 0) {
+      interval = std::chrono::duration_cast<reactor::Duration>(interval * 0.8);
+    }
+  =}
+}
+
+reactor KeyController {
+  private preamble {=
+    #include <ncurses.h>
+  =}
+
+  input key_pressed: int
+  output update_direction: Direction
+  output quit: void
+
+  reaction handle_user_input(key_pressed) -> update_direction, quit {=
+    switch(*key_pressed.get()) {
+      case KEY_UP:
+      case 'w':
+        update_direction.set(Direction::UP);
+        break;
+      case KEY_DOWN:
+      case 's':
+        update_direction.set(Direction::DOWN);
+        break;
+      case KEY_RIGHT:
+      case 'd':
+        update_direction.set(Direction::RIGHT);
+        break;
+      case KEY_LEFT:
+      case 'a':
+        update_direction.set(Direction::LEFT);
+        break;
+      case 'q':
+        quit.set();
+        break;
+      default:
+        break;
+    }
+  =}
+}
+
+reactor AppleController {
+  input board_from_snake: Board
+  input ate_apple: void
+  output add_apple: Board
+
+  reaction(startup, ate_apple) board_from_snake -> add_apple {=
+    add_apple.set(std::move(board_from_snake.get()));
+  =}
+}
+
+reactor ScoreController {
+  input game_over: void
+  input quit: void
+  input increment_score: void
+  output draw_score: unsigned
+  output print_final_score: unsigned
+
+  state score: unsigned = 0
+
+  reaction(quit, game_over) {=
+    environment()->sync_shutdown();
+  =}
+
+  reaction(increment_score) -> draw_score {=
+    score += 10;
+    draw_score.set(score);
+  =}
+
+  reaction(shutdown) -> print_final_score {=
+    print_final_score.set(score);
+  =}
+}
