@@ -155,10 +155,11 @@ reactor VzControl50Body extends TaskBody {
           if (rand() % 100 < FAILURE_RATE) {
             return 2;
           } else {
-          *output = *saved_y;
+            *output = *saved_y;
           }
         return 0;
       }
+      return -1; // Should not enter here.
     }
   =}
   input Vz_f: double
