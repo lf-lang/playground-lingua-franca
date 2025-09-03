@@ -39,14 +39,23 @@ To build this project, you will need the following components:
 
 ## 1b. **Software Requirements***
 
-This project requires the pico-sdk to access the hardware/pio/timers on the RP2040 microcontroller. If the pico-sdk isn't in your path, it will be cloned into the /lib directory on build. If there are problems accessing this dependency, ensure that the path exists:
+This project requires the following dependencies:
+- **pico-sdk**
+- **picotool**
+- **cmake**
+- **standard C library**
+- **arm cross-compiler**
 
-```base
-    echo $PICO_SDK_PATH
+To install these dependencies follow the walkthrough at: [`lf embedded systems lab non-nix setup`](https://www.lf-lang.org/embedded-lab/Non-Nix.html#install-cmake-standard-c-library-arm-cross-compiler).
+
+To avoid issues with the arm cross compiler on Mac run the following or install gcc-arm-embedded instead of arm-none-eabi-gcc:
+```$bash
+  brew uninstall --force arm-none-eabi-gcc
+  brew uninstall --force arm-none-eabi-binutils
+  brew install gcc-arm-embedded
 ```
 
 --- 
-
 
 ## 2. **Hardware Setup**
 
