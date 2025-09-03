@@ -60,7 +60,6 @@ if [ $SETUP_NETWORK = true ]; then
     cmake ..
     make
     popd
-    # test
     # Install crow
     curl --proto '=https' --tlsv1.2 -L -o ./crow.deb "${CROW_URL}"
     sudo apt-get install --assume-yes ./crow.deb
