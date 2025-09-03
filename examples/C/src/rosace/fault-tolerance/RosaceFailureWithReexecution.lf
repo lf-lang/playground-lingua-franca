@@ -14,7 +14,7 @@ target C {
   timeout: 10 min
 }
 
-import Aircraft from "../../rosace/AircraftSimulator.lf"
+import Aircraft from "../AircraftSimulator.lf"
 import FaultTolerantController from "RosaceControllerWithReexecution.lf"
 import PrintToFile from "../../lib/PrintToFile.lf"
 

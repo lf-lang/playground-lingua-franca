@@ -7,8 +7,8 @@
  */
 target C
 
-import Filter, Hold from "../../rosace/RosaceController.lf"
-import FaultTolerantTaskTemplate, TaskBody, Coordinator from "../lib/FaultTolerantTaskTemplate.lf"
+import Filter, Hold from "../RosaceController.lf"
+import FaultTolerantTaskTemplate, TaskBody, Coordinator from "../../fault-tolerance/lib/FaultTolerantTaskTemplate.lf"
 
 preamble {=
   #define REAL_TYPE double
