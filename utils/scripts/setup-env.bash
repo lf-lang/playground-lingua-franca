@@ -53,13 +53,14 @@ if [ $SETUP_NETWORK = true ]; then
         libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler \
         python3-protobuf protobuf-compiler-grpc libgrpc-dev libgrpc++-dev
     # Install libwebsockets library
-    git clone https://github.com/warmcat/libwebsockets.git
-    pushd libwebsockets
-    mkdir build
-    cd build
-    cmake ..
-    make
-    popd
+    sudo apt-get install -y libwebsockets-dev
+    # git clone https://github.com/warmcat/libwebsockets.git
+    # pushd libwebsockets
+    # mkdir build
+    # cd build
+    # cmake ..
+    # make
+    # popd
     # Install crow
     curl --proto '=https' --tlsv1.2 -L -o ./crow.deb "${CROW_URL}"
     sudo apt-get install --assume-yes ./crow.deb
