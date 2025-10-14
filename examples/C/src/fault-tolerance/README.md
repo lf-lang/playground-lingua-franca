@@ -7,7 +7,7 @@ For more details, please check our [**paper**](https://ieeexplore.ieee.org/stamp
 For fault tolerance, time redundancy techniques such as re-execution is widely used. 
 However, this approach introduces non-determinism due to unpredictable timing of failures, which leads to inconsistent behavior and makes analysis and repeatable testing unreliable.
 
-This PR introduces a deterministic execution model for fault-tolerant real-time software within LF.
+This example introduces a deterministic execution model for fault-tolerant real-time software within LF.
 The key idea is to re-execute failed tasks, while advancing logical execution time (LET) deterministically, regardless of actual failure timing.
 This ensures that the same sequence of task failures always results in the same outcome.
 
