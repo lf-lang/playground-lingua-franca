@@ -13,6 +13,7 @@ This ensures that the same sequence of task failures always results in the same 
 
 We achieve this by advancing logical time using worst-case execution times (WCETs).
 Furthermore, we propose an enhanced LET advancement mechanism that distinguishes between successful and failed segments.
+
 ## Key Features
 ### Checkpoint-Based Reexecution
 - Each task is split into multiple segments and saves a checkpoint while execution.
@@ -52,10 +53,10 @@ Furthermore, we propose an enhanced LET advancement mechanism that distinguishes
 ## ROSACE implementation
 To show that this template can be used in real tasks, we implement the ROSACE benchmark.
 There is already a [current ROSACE implementation](https://github.com/lf-lang/playground-lingua-franca/tree/main/examples/C/src/rosace).
-We add two more versions based on the current implementation:
-- `RosaceFailureWithNoReexecution.lf` : Adding random failures.
-- `RosaceFailureWithReexecution.lf` : Adding random failures, and re-executing from checkpoints when failed. 
+We add another versions based on the current implementation:
+- `RosaceWithReexecution.lf` : Adding random failures, and re-executing from checkpoints when failed. 
 To show that our template can be easily used by using the exact C code as a task, we bring the original C implementation from the [original code](https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/).
+Another version only adding random failures without reexecution is implemented [here](https://github.com/asu-kim/fault-tolerant-real-time/blob/main/fault-tolerance/rosace/RosaceFailureWithNoReexecution.lf).
 
 
 # Implementation Details
@@ -103,17 +104,3 @@ This is an example how it looks.
       wcet_f = {300, 300, 300},
       wcet_s = {250, 250, 250})
 ```
-
-## Evaluation
-There is a directory for evaluation, inside `evaluation`. The `evaluation.sh` will create `.lf` files for evaluation, compile and execute, and log the results.
-It compares three cases, 
-- Baseline: No LET advance, only re-executing until deadline misses.
-- Proposed1: Advance LET as much as `wcet_f` even if the segment succeeds, and do proactive task abortion.
-- Proposed2: Advance LET as much as `wcet_f`when segment fails, and `wcet_s` when segment succeeds, and do proactive task abortion.
-
-We compare the Deadline misses, Execution failures, and the Sum of deadline misses and execution failures, and CPU utilization.
-
-Graph generation is also possible in the `evaluation/graph_generation` directory.
-
-The Rosace implementation also includes a directory named `rosace/graph_generation`.
-It compares the results with and without re-execution based fault-tolerance.
