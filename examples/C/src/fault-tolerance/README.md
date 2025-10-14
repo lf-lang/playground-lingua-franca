@@ -1,6 +1,7 @@
 # Fault Tolerant Real-Time Software Examples
 
-This PR introduces a deterministic execution model of fault-tolerant real-time software in Lingua Franca.
+This example introduces a deterministic execution model of fault-tolerant real-time software in Lingua Franca.
+For more details, please check our [**paper**](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=11112709) published in **TCRS 2025** at **ESWEEK**.
 
 ## Motivation
 For fault tolerance, time redundancy techniques such as re-execution is widely used. 
