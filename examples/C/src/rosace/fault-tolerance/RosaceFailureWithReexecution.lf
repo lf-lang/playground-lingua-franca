@@ -10,7 +10,7 @@
  */
 target C {
   fast: true,
-  build: "./build_run_plot.sh RosaceFailureWithReexecution",
+  build: "../build_run_plot.sh RosaceFailureWithReexecution ../rosace.gnuplot",
   timeout: 10 min
 }
 
