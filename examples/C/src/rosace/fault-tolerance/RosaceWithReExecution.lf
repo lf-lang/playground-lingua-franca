@@ -1,6 +1,7 @@
 /**
  * This example runs the Aircraft Simulator with a faulty RosaceController from
- * "RosaceControllerWithReExecution.lf". Additionally, when it fails, it re-executes from the checkpoint.
+ * "RosaceControllerWithReExecution.lf". Additionally, when it fails, it re-executes from the
+ * checkpoint.
  *
  * @author Edward A. Lee
  * @author David Saussie

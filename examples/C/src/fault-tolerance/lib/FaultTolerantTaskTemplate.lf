@@ -10,8 +10,8 @@
  * 2. Proactive Task Abortion: Upon segment failure, the system evaluates whether re-executing will
  * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
  *
- * The purpose of this design is to investigate how logic-based scheduling and re-execution policies can
- * improve reliability in real-time embedded systems.
+ * The purpose of this design is to investigate how logic-based scheduling and re-execution policies
+ * can improve reliability in real-time embedded systems.
  *
  * @author Dongha Kim, Hokeun Kim
  */
