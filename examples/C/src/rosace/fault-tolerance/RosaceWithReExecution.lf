@@ -1,6 +1,6 @@
 /**
  * This example runs the Aircraft Simulator with a faulty RosaceController from
- * "RosaceControllerWithRetry.lf". Additionally, when it fails, it re-executes from the checkpoint.
+ * "RosaceControllerWithReExecution.lf". Additionally, when it fails, it re-executes from the checkpoint.
  *
  * @author Edward A. Lee
  * @author David Saussie
@@ -10,13 +10,13 @@
  */
 target C {
   fast: true,
-  build: "../build_run_plot.sh RosaceWithReexecution ../rosace.gnuplot",
+  build: "../build_run_plot.sh RosaceWithReExecution ../rosace.gnuplot",
   timeout: 10 min
 }
 
 import Aircraft from "../AircraftSimulator.lf"
 import Command from "../Rosace.lf"
-import FaultTolerantController from "RosaceControllerWithReexecution.lf"
+import FaultTolerantController from "RosaceControllerWithReExecution.lf"
 import PrintToFile from "../../lib/PrintToFile.lf"
 
 preamble {=

@@ -216,7 +216,7 @@ reactor VzControl50 extends FaultTolerantTaskTemplate {
   vz_tail.delta_ec -> delta_ec
 }
 
-reactor VaControl50Retry {
+reactor VaControl50ReExecute {
   input Va_f: double
   input Vz_f: double
   input q_f: double
@@ -224,30 +224,30 @@ reactor VaControl50Retry {
   output delta_thc: double
   timer t(0, 20 msec)
 
-  Va_ct_Retry = new VaControl50(
+  Va_ct_ReExecute = new VaControl50(
       task_num=2,
       dead_line=20,
       num_of_segs=2,
       wcet_f = {2, 2},
       wcet_s = {1, 1})
-  retry = new Coordinator()
+  coordinator = new Coordinator()
 
-  Va_ct_Retry.task_info_update -> retry.task_info_update
-  Va_ct_Retry.instance_start_time -> retry.instance_start_time_update
-  Va_ct_Retry.failed_seg -> retry.failed_seg
-  retry.out -> Va_ct_Retry.retry after 0
-  Va_f -> Va_ct_Retry.Va_f
-  Vz_f -> Va_ct_Retry.Vz_f
-  q_f -> Va_ct_Retry.q_f
-  Va_c -> Va_ct_Retry.Va_c
-  Va_ct_Retry.delta_thc -> delta_thc
+  Va_ct_ReExecute.task_info_update -> coordinator.task_info_update
+  Va_ct_ReExecute.instance_start_time -> coordinator.instance_start_time_update
+  Va_ct_ReExecute.failed_seg -> coordinator.failed_seg
+  coordinator.out -> Va_ct_ReExecute.reexecute after 0
+  Va_f -> Va_ct_ReExecute.Va_f
+  Vz_f -> Va_ct_ReExecute.Vz_f
+  q_f -> Va_ct_ReExecute.q_f
+  Va_c -> Va_ct_ReExecute.Va_c
+  Va_ct_ReExecute.delta_thc -> delta_thc
 
-  reaction(t) -> Va_ct_Retry.instantiate {=
-    lf_set(Va_ct_Retry.instantiate, 0);
+  reaction(t) -> Va_ct_ReExecute.instantiate {=
+    lf_set(Va_ct_ReExecute.instantiate, 0);
   =}
 }
 
-reactor VzControl50Retry {
+reactor VzControl50ReExecute {
   input Vz_f: double
   input Vz_c: double
   input q_f: double
@@ -255,26 +255,26 @@ reactor VzControl50Retry {
   output delta_ec: double
   timer t(0, 20 msec)
 
-  Vz_ct_Retry = new VzControl50(
+  Vz_ct_ReExecute = new VzControl50(
       task_num=1,
       dead_line=20,
       num_of_segs=2,
       wcet_f = {2, 2},
       wcet_s = {1, 1})
-  retry = new Coordinator()
+  coordinator = new Coordinator()
 
-  Vz_ct_Retry.task_info_update -> retry.task_info_update
-  Vz_ct_Retry.instance_start_time -> retry.instance_start_time_update
-  Vz_ct_Retry.failed_seg -> retry.failed_seg
-  retry.out -> Vz_ct_Retry.retry after 0
-  Vz_f -> Vz_ct_Retry.Vz_f
-  Vz_c -> Vz_ct_Retry.Vz_c
-  q_f -> Vz_ct_Retry.q_f
-  az_f -> Vz_ct_Retry.az_f
-  Vz_ct_Retry.delta_ec -> delta_ec
+  Vz_ct_ReExecute.task_info_update -> coordinator.task_info_update
+  Vz_ct_ReExecute.instance_start_time -> coordinator.instance_start_time_update
+  Vz_ct_ReExecute.failed_seg -> coordinator.failed_seg
+  coordinator.out -> Vz_ct_ReExecute.reexecute after 0
+  Vz_f -> Vz_ct_ReExecute.Vz_f
+  Vz_c -> Vz_ct_ReExecute.Vz_c
+  q_f -> Vz_ct_ReExecute.q_f
+  az_f -> Vz_ct_ReExecute.az_f
+  Vz_ct_ReExecute.delta_ec -> delta_ec
 
-  reaction(t) -> Vz_ct_Retry.instantiate {=
-    lf_set(Vz_ct_Retry.instantiate, 0);
+  reaction(t) -> Vz_ct_ReExecute.instantiate {=
+    lf_set(Vz_ct_ReExecute.instantiate, 0);
   =}
 }
 
@@ -328,8 +328,8 @@ reactor FaultTolerantController(filter_period: time = 10 ms) {
       a = {0.914975803093201, -1.911199519984605},
       b = {0.001860178914816, 0.001916104193780})
 
-  Va_ct = new VaControl50Retry()
-  Vz_ct = new VzControl50Retry()
+  Va_ct = new VaControl50ReExecute()
+  Vz_ct = new VzControl50ReExecute()
 
   h, az, Vz, q, Va -> h_f.x, az_f.x, Vz_f.x, q_f.x, Va_f.x
   c -> h_c.s

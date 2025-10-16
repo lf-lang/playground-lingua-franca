@@ -19,28 +19,28 @@ main reactor {
       num_of_segs=3,
       wcet_f = {350, 350, 350},
       wcet_s = {300, 300, 300})
-  retry1 = new Coordinator()
+  coordinator1 = new Coordinator()
   task2 = new Task2<int, int, int>(
       task_num=2,
       dead_line=3000,
       num_of_segs=4,
       wcet_f = {300, 300, 300, 300},
       wcet_s = {250, 250, 250, 250})
-  retry2 = new Coordinator()
+  coordinator2 = new Coordinator()
   scheduler = new TaskScheduler<int>(period = 5000 msec, in=0)
 
   scheduler.trigger -> task1.instantiate
   scheduler.task_input -> task1.task_input
-  task1.task_info_update -> retry1.task_info_update
-  task1.instance_start_time -> retry1.instance_start_time_update
-  task1.failed_seg -> retry1.failed_seg
-  retry1.out -> task1.retry after 0
+  task1.task_info_update -> coordinator1.task_info_update
+  task1.instance_start_time -> coordinator1.instance_start_time_update
+  task1.failed_seg -> coordinator1.failed_seg
+  coordinator1.out -> task1.reexecute after 0
 
   task1.task_output -> task2.task_input
 
-  retry1.out -> task2.instantiate
-  task2.task_info_update -> retry2.task_info_update
-  task2.instance_start_time -> retry2.instance_start_time_update
-  task2.failed_seg -> retry2.failed_seg
-  retry2.out -> task2.retry after 0
+  coordinator1.out -> task2.instantiate
+  task2.task_info_update -> coordinator2.task_info_update
+  task2.instance_start_time -> coordinator2.instance_start_time_update
+  task2.failed_seg -> coordinator2.failed_seg
+  coordinator2.out -> task2.reexecute after 0
 }

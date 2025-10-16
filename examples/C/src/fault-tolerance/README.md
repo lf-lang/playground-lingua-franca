@@ -54,7 +54,7 @@ Furthermore, we propose an enhanced LET advancement mechanism that distinguishes
 To show that this template can be used in real tasks, we implement the ROSACE benchmark.
 There is already a [current ROSACE implementation](https://github.com/lf-lang/playground-lingua-franca/tree/main/examples/C/src/rosace).
 We add another versions based on the current implementation:
-- `RosaceWithReexecution.lf` : Adding random failures, and re-executing from checkpoints when failed. 
+- `RosaceWithReExecution.lf` : Adding random failures, and re-executing from checkpoints when failed. 
 To show that our template can be easily used by using the exact C code as a task, we bring the original C implementation from the [original code](https://svn.onera.fr/schedmcore/branches/ROSACE_CaseStudy/).
 Another version only adding random failures without reexecution is implemented [here](https://github.com/asu-kim/fault-tolerant-real-time/blob/main/fault-tolerance/rosace/RosaceFailureWithNoReexecution.lf).
 
@@ -65,7 +65,7 @@ Another version only adding random failures without reexecution is implemented [
 <img width="1127" alt="image" src="img/TaskExample.png" />
 
 - `Trigger` :
-This triggers the segment to execute. If the `instantiate` port is triggered, execution starts from the first segment. If the `retry` port is triggered, it resumes from the indicated segment number passed by the port.
+This triggers the segment to execute. If the `instantiate` port is triggered, execution starts from the first segment. If the `reexecute` port is triggered, it resumes from the indicated segment number passed by the port.
 
 - `TaskBody` :
 This reactor contains user-defined C code for the task inside the preamble. Users can define task-specific inputs and outputs here.
@@ -77,7 +77,7 @@ This computes the logical execution time and advances the logical time.
 This can be added when the task output exists. This ensures that the task output is emitted only when the task succeeds.
 
 - `Coordinator` (not part of the `Task`) :
-The `Coordinator` is not part of the `Task`. This reactor manages the proactive task abortion. It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
+The `Coordinator` is not part of the `Task`. This reactor manages the proactive task abortion. It receives the segment number to reexecute from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a reexecution through the Task reactor.
 On startup, the `Task` reactor sends its configuration as a struct of `task_info_t` to the corresponding `Coordinator` reactor. This includes the `task_num`, `dead_line`, `num_of_segs`, `wcet_f`, and `wcet_s`. This is for the modular design to separate the `Task` and the `Coordinator`, and not duplicate the input parameters of the `Task`.
 
 ## Usage

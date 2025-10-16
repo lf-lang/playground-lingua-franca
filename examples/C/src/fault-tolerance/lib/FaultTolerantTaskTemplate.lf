@@ -1,5 +1,5 @@
 /**
- * This template implements a fault-tolerant task execution model using checkpoint and retry
+ * This template implements a fault-tolerant task execution model using checkpoint and re-execution
  * mechanisms, and predictive task dropping. The system is designed to simulate execution of
  * multi-segment tasks with faults using logical execution time.
  *
@@ -10,7 +10,7 @@
  * 2. Proactive Task Abortion: Upon segment failure, the system evaluates whether re-executing will
  * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
  *
- * The purpose of this design is to investigate how logic-based scheduling and retry policies can
+ * The purpose of this design is to investigate how logic-based scheduling and re-execution policies can
  * improve reliability in real-time embedded systems.
  *
  * @author Dongha Kim, Hokeun Kim
@@ -32,21 +32,21 @@ preamble {=
   #endif
 =}
 
-// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the retry port is triggered, it resumes from the indicated segment number passed by the port.
+// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the reexecute port is triggered, it resumes from the indicated segment number passed by the port.
 reactor Trigger(task_num: uint16_t = 0) {
   input instantiate: int
-  input retry: int
+  input reexecute: int
   output start_seg: int
   output instance_start_time: time
 
-  reaction(instantiate, retry) -> start_seg, instance_start_time {=
+  reaction(instantiate, reexecute) -> start_seg, instance_start_time {=
     int segment_start_num;
-    if(retry->is_present) {
-      // When Retry was triggered. retry->value should not be 0.
-      if (retry->value != 0) {
-        segment_start_num = retry->value;
+    if(reexecute->is_present) {
+      // When reexecute was triggered. reexecute->value should not be 0.
+      if (reexecute->value != 0) {
+        segment_start_num = reexecute->value;
       } else {
-        // Don't trigger retry. 0 means the segment was completed.
+        // Don't trigger reexecute. 0 means the segment was completed.
         return;
       }
     } else { // When instantiate is triggered.
@@ -119,7 +119,7 @@ reactor FaultTolerantTaskTemplate(
     wcet_f: uint16_t[] = {},
     wcet_s: uint16_t[] = {}) {
   input instantiate: int
-  input retry: int
+  input reexecute: int
 
   output failed_seg: int
   output instance_start_time: time
@@ -134,7 +134,7 @@ reactor FaultTolerantTaskTemplate(
       wcet_f=wcet_f,
       wcet_s=wcet_s)
   instantiate -> trigger.instantiate
-  retry -> trigger.retry
+  reexecute -> trigger.reexecute
   trigger.instance_start_time -> instance_start_time
   trigger.start_seg -> advance.start_seg
   advance.failed_seg -> failed_seg
@@ -157,8 +157,8 @@ reactor TaskBody {
 }
 
 // This reactor reactor manages the proactive task abortion.
-// It receives the segment number to retry from the Task reactor, and determines whether the remaining segments can still meet the deadline.
-// If not, it halts execution early, otherwise, it triggers a retry through the Task reactor.
+// It receives the segment number from which segement to re-execute the Task reactor, and determines whether the remaining segments can still meet the deadline.
+// If not, it halts execution early, otherwise, it triggers a re-execution through the Task reactor.
 reactor Coordinator {
   input instance_start_time_update: time
   input failed_seg: int
@@ -187,11 +187,11 @@ reactor Coordinator {
     if(failed_seg->value == 0) {
       // 0 means, all segments are finished.
       // Still need to signal output with 0.
-      // If the task's retry port gets 0, does nothing.
+      // If the task's reexecute port gets 0, does nothing.
       // If the task's instantiate port gets 0, it starts a new instance.
       lf_set(out, 0);
     } else {
-      // Check deadline in logical time. Does not schedule next retry, when deadline violation.
+      // Check deadline in logical time. Does not schedule next reexecution, when deadline violation.
 
       // Caluculate the additional time required to finish task.
       int total_success_time = 0; // msecs

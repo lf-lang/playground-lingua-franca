@@ -1,6 +1,6 @@
 /**
  * This defines two task reactors, **Task1** and **Task2**, each composed of:
- * - A segmented body reactor (`Task1Body`, `Task2Body`) with 3 retryable segments and some failure
+ * - A segmented body reactor (`Task1Body`, `Task2Body`) with 3 re-executable segments and some failure
  * rate, where each segment performs simple computation with artificial delay (sleep).
  * - An output handler (`Task1OutHandler`, `Task2OutHandler`) that emits results only upon full task
  * completion.

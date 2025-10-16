@@ -19,13 +19,13 @@ main reactor {
       num_of_segs=3,
       wcet_f = {300, 300, 300},
       wcet_s = {250, 250, 250})
-  retry = new Coordinator()
+  coordinator = new Coordinator()
   scheduler = new TaskScheduler<int>(period = 5000 msec, in=0)
 
   scheduler.trigger -> task.instantiate
   scheduler.task_input -> task.task_input
-  task.task_info_update -> retry.task_info_update
-  task.instance_start_time -> retry.instance_start_time_update
-  task.failed_seg -> retry.failed_seg
-  retry.out -> task.retry after 0
+  task.task_info_update -> coordinator.task_info_update
+  task.instance_start_time -> coordinator.instance_start_time_update
+  task.failed_seg -> coordinator.failed_seg
+  coordinator.out -> task.reexecute after 0
 }
