@@ -54,9 +54,24 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
 
   reaction(startup) {=
     self->ws.connected = false;
-    if (self->initial_file != NULL) {
-      lf_print("**** Point your browser to http://localhost:%d", self->hostport);
+  =}
+
+  reaction(server.connected) -> connected {=
+    if (server.connected->value.connected) {
+      self->ws = server.connected->value;
     }
+    // Do not produce an output if the connected message is due to a denied connection.
+    if (self->ws.wsi == server.connected->value.wsi) {
+      lf_set(connected, server.connected->value.connected);
+    }
+  =}
+
+  reaction(server.received) -> received {=
+    // NOTE: WebSocketServer ensures that the message is null terminated.
+    size_t len = strlen(server.received->value->message) + 1;
+    char* message = (char*)malloc(len * sizeof(char));
+    strcpy(message, server.received->value->message);
+    lf_set_array(received, message, len);
   =}
 
   reaction(in_dynamic, in_static) -> server.send {=
@@ -79,23 +94,5 @@ reactor WebSocketServerString(hostport: int = 8080, initial_file: string = {= NU
       // Web socket is not connected.
       lf_print_warning("Web socket is not connected. Dropping message to send.");
     }
-  =}
-
-  reaction(server.connected) -> connected {=
-    if (server.connected->value.connected) {
-      self->ws = server.connected->value;
-    }
-    // Do not produce an output if the connected message is due to a denied connection.
-    if (self->ws.wsi == server.connected->value.wsi) {
-      lf_set(connected, server.connected->value.connected);
-    }
-  =}
-
-  reaction(server.received) -> received {=
-    // NOTE: WebSocketServer ensures that the message is null terminated.
-    size_t len = strlen(server.received->value->message) + 1;
-    char* message = (char*)malloc(len * sizeof(char));
-    strcpy(message, server.received->value->message);
-    lf_set_array(received, message, len);
   =}
 }
