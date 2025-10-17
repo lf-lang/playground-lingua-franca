@@ -1,0 +1,237 @@
+/**
+ * This template implements a fault-tolerant task execution model using checkpoint and re-execution
+ * mechanisms, and predictive task dropping. The system is designed to simulate execution of
+ * multi-segment tasks with faults using logical execution time.
+ *
+ * 1. Checkpointed Task Execution: Tasks are divided into segments, each with its own worst-case and
+ * optimistic execution time. Faults are simulated with probabilistic failures, and task is restored
+ * from the checkpoint when fails.
+ *
+ * 2. Proactive Task Abortion: Upon segment failure, the system evaluates whether re-executing will
+ * still meet the task's deadline and only proceeds if the deadline constraint is preserved.
+ *
+ * The purpose of this design is to investigate how logic-based scheduling and re-execution policies
+ * can improve reliability in real-time embedded systems.
+ *
+ * @author Dongha Kim, Hokeun Kim
+ */
+target C
+
+preamble {=
+  #include <stdlib.h> // rand()
+  #include "platform.h" // lf_sleep()
+  #ifndef TASK_INFO_T_DEFINED
+  #define TASK_INFO_T_DEFINED
+  typedef struct task_info_t {
+    uint16_t task_num;
+    uint16_t dead_line;
+    uint16_t num_of_segs;
+    uint16_t* wcet_f;
+    uint16_t* wcet_s;
+  } task_info_t;
+  #endif
+=}
+
+// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the re-execute port is triggered, it resumes from the indicated segment number passed by the port.
+reactor Trigger(task_num: uint16_t = 0) {
+  input instantiate: int
+  input re_execute: int
+  output start_seg: int
+  output instance_start_time: time
+
+  reaction(instantiate, re_execute) -> start_seg, instance_start_time {=
+    int segment_start_num;
+    if(re_execute->is_present) {
+      // When re-execution was triggered. re_execute->value should not be 0.
+      if (re_execute->value != 0) {
+        segment_start_num = re_execute->value;
+      } else {
+        // Don't trigger re-execution. 0 means the segment was completed.
+        return;
+      }
+    } else { // When instantiate is triggered.
+      // Can be triggered by the timer or anything. However, only start when the value is 0.
+      if(instantiate->value == 0){
+        segment_start_num = 1; // Start from segment 1.
+        lf_set(instance_start_time, lf_time_logical_elapsed());
+        // When timer triggers.
+        lf_print_log("**** New instance of task %d starting. Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\n", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+      } else {
+        // New instance should only be triggered when value is 0. Don't schedule to trigger task.
+        return;
+      }
+    }
+    lf_set(start_seg, segment_start_num);
+  =}
+}
+
+// This computes the logical execution time and advances the logical time.
+reactor AdvanceTime(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet_f: uint16_t[] = {},
+    wcet_s: uint16_t[] = {}) {
+  input f_seg: int
+  input start_seg: int
+
+  logical action advance_lt: int
+  output failed_seg: int
+
+  reaction(f_seg) start_seg -> advance_lt {=
+    // Calculate the number of successed segments. If failed_seg_num=3 and in start_seg=1, 2 segments success.
+    int failed_seg_num = f_seg->value;
+    int num_of_success = failed_seg_num - start_seg->value;
+    if (num_of_success < 0) {
+      // This means failed_seg_num was 0 and successed to end of task. Recalculate the number of successed segments.
+      num_of_success +=  self->num_of_segs + 1;
+    }
+
+    // Schedule logical action to advance time.
+    lf_print_log("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+
+    // Caluculate the time of the total successed segments.
+    int total_success_time = 0; // msecs
+    for (int i=0; i < num_of_success; i++){
+      total_success_time += self->wcet_s[start_seg->value + i -1];
+    }
+
+    if(failed_seg_num == 0) {
+      // Task is finished. Advance as much as the sucessed segments.
+      lf_schedule_int(advance_lt, total_success_time * MSEC(1), 0);
+      lf_print_log("TASK%d: All segments finished. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, num_of_success, total_success_time);
+    } else {
+      // Segment failed. Advance as much as successed segments + 1 failed segment.
+      lf_schedule_int(advance_lt, total_success_time * MSEC(1) + self->wcet_f[failed_seg_num - 1] * MSEC(1), failed_seg_num);
+      lf_print_log("TASK%d: Segment %d failed. %d task(s) success. Advancing logical time by %d msecs. \n", self->task_num, failed_seg_num, num_of_success, total_success_time + self->wcet_f[failed_seg_num - 1]);
+    }
+  =}
+
+  reaction(advance_lt) -> failed_seg {=
+    lf_set(failed_seg, advance_lt->value);
+  =}
+}
+
+reactor FaultTolerantTaskTemplate(
+    task_num: uint16_t = 0,
+    dead_line: uint16_t = 0,
+    num_of_segs: uint16_t = 0,
+    wcet_f: uint16_t[] = {},
+    wcet_s: uint16_t[] = {}) {
+  input instantiate: int
+  input re_execute: int
+
+  output failed_seg: int
+  output instance_start_time: time
+  output task_info_update: task_info_t
+  state task_info: task_info_t
+
+  trigger = new Trigger(task_num=task_num)
+  advance = new AdvanceTime(
+      task_num=task_num,
+      dead_line=dead_line,
+      num_of_segs=num_of_segs,
+      wcet_f=wcet_f,
+      wcet_s=wcet_s)
+  instantiate -> trigger.instantiate
+  re_execute -> trigger.re_execute
+  trigger.instance_start_time -> instance_start_time
+  trigger.start_seg -> advance.start_seg
+  advance.failed_seg -> failed_seg
+
+  reaction(startup) -> task_info_update {=
+    self->task_info.task_num = self->task_num;
+    self->task_info.num_of_segs = self->num_of_segs;
+    self->task_info.wcet_f = self->wcet_f;
+    self->task_info.wcet_s = self->wcet_s;
+    self->task_info.dead_line = self->dead_line;
+    lf_set(task_info_update, self->task_info);
+  =}
+}
+
+// This is for user inheritance. Check TaskExample.lf.
+// The extended reactor contains user-defined C code for the task inside the preamble. Users can define task-specific inputs and outputs here.
+reactor TaskBody {
+  input start_seg: int
+  output f_seg: int
+}
+
+// This reactor reactor manages the proactive task abortion.
+// It receives the segment number from which segement to re-execute the Task reactor, and determines whether the remaining segments can still meet the deadline.
+// If not, it halts execution early, otherwise, it triggers a re-execution through the Task reactor.
+reactor Coordinator {
+  input instance_start_time_update: time
+  input failed_seg: int
+  output out: int
+  state instance_start_time: time
+  input task_info_update: task_info_t
+  state task_info: task_info_t
+
+  reaction(task_info_update) {=
+    self->task_info.task_num = task_info_update->value.task_num;
+    self->task_info.num_of_segs = task_info_update->value.num_of_segs;
+    self->task_info.wcet_f = task_info_update->value.wcet_f;
+    self->task_info.wcet_s = task_info_update->value.wcet_s;
+    self->task_info.dead_line = task_info_update->value.dead_line;
+  =}
+
+  reaction(instance_start_time_update) {=
+    // Update the instance start time. This can also be implemented by a message by the Task reactor.
+    self->instance_start_time = lf_time_logical_elapsed();
+  =}
+
+  reaction(failed_seg) -> out {=
+    lf_update_deadline(self, MSEC(self->task_info.dead_line) - (lf_time_logical_elapsed() - self->instance_start_time));
+    lf_check_deadline(self, true);
+
+    if(failed_seg->value == 0) {
+      // 0 means, all segments are finished.
+      // Still need to signal output with 0.
+      // If the task's re_execute port gets 0, does nothing.
+      // If the task's instantiate port gets 0, it starts a new instance.
+      lf_set(out, 0);
+    } else {
+      // Check deadline in logical time. Does not schedule next reexecution, when deadline violation.
+
+      // Caluculate the additional time required to finish task.
+      int total_success_time = 0; // msecs
+      for (int i=failed_seg->value; i <=  self->task_info.num_of_segs; i++){
+        total_success_time += self->task_info.wcet_s[i - 1];
+      }
+
+      instant_t min_instance_finish_time = lf_time_logical_elapsed() + total_success_time * MSEC(1);
+      if(min_instance_finish_time > self->instance_start_time + (self->task_info.dead_line * MSEC(1))) {
+        lf_print_log("TASK%d: Current Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.", self->task_info.task_num, lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1));
+        lf_print_log("TASK%d: ****Logical time deadline violation predicted.\nDeadline is: %lld msecs, while minimum predicted instance finish time is %lld msecs.\nDropping left over tasks, and giving up instance.\n", self->task_info.task_num, (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1), min_instance_finish_time / MSEC(1));
+      } else if(self->task_info.dead_line * MSEC(1) < lf_time_logical_elapsed() - self->instance_start_time) {
+        // Checks if there are any logical time deadline misses.
+        // Should never pass here.
+        lf_print_log("\nLogical time deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
+      } else {
+        // Did not violate predicted deadline.
+        lf_set(out, failed_seg->value);
+      }
+    }
+  =} deadline(3 sec) {=
+    // Checks if there are any Physical time - Logical start time of task deadline misses.
+    // Should never pass here.
+    lf_print("Deadline violation detected on Logical time: %lld msecs, microstep: %d, Physical time: %lld msecs.\nDeadline was: %lld msecs.\n", lf_time_logical_elapsed() / MSEC(1), lf_tag().microstep, lf_time_physical_elapsed() / MSEC(1), (self->task_info.dead_line * MSEC(1) + self->instance_start_time)/ MSEC(1));
+  =}
+}
+
+// This is an example task scheduler triggered by a timer.
+reactor TaskScheduler<IN_T>(period: time = 0 msec, in: IN_T = 0) {
+  timer t(0, period)
+  output trigger: int
+  output task_input: IN_T
+
+  reaction(startup) {=
+    // Setup rand() function.
+    srand(time(NULL));
+  =}
+
+  reaction(t) -> trigger, task_input {=
+    lf_set(trigger, 0);
+    lf_set(task_input, self->in);
+  =}
+}

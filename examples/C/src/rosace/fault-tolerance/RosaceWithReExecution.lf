@@ -1,0 +1,47 @@
+/**
+ * This example runs the Aircraft Simulator with a faulty RosaceController from
+ * "RosaceControllerWithReExecution.lf". Additionally, when it fails, it re-executes from the
+ * checkpoint.
+ *
+ * @author Edward A. Lee
+ * @author David Saussie
+ * @author Claire Pagetti
+ * @author Dongha Kim
+ * @author Hokeun Kim
+ */
+target C {
+  fast: true,
+  build: "../build_run_plot.sh RosaceWithReExecution ../rosace.gnuplot",
+  timeout: 10 min
+}
+
+import Aircraft from "../AircraftSimulator.lf"
+import Command from "../Rosace.lf"
+import FaultTolerantController from "RosaceControllerWithReExecution.lf"
+import PrintToFile from "../../lib/PrintToFile.lf"
+
+preamble {=
+  // Trimming parameters: define the reference flight condition of the aircraft.
+  #define Va_eq (230.0)   // Nominal airspeed
+  #define h_eq (10000.0)  // Nominal altitude
+=}
+
+main reactor(filter_period: time = 10 ms) {
+  a = new Aircraft()
+  c = new FaultTolerantController(filter_period=filter_period)
+  altitude = new Command(value=11000)  // Altitude command
+  speed = new Command(value=0.0)  // Delta airspeed from nominal Va_eq (230)
+
+  p_h = new PrintToFile(filename="altitude.data")
+  p_Va = new PrintToFile(filename="airspeed.data")
+
+  a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
+  altitude.c -> c.c
+  speed.c -> c.s
+
+  c.delta_ec -> a.delta_ec
+  c.delta_thc -> a.delta_thc
+
+  a.h -> p_h.y                    // Print connections.
+  a.Va -> p_Va.y
+}
