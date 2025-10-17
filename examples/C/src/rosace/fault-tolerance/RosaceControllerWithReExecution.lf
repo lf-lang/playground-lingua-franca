@@ -235,7 +235,7 @@ reactor VaControl50ReExecute {
   Va_ct_ReExecute.task_info_update -> coordinator.task_info_update
   Va_ct_ReExecute.instance_start_time -> coordinator.instance_start_time_update
   Va_ct_ReExecute.failed_seg -> coordinator.failed_seg
-  coordinator.out -> Va_ct_ReExecute.reexecute after 0
+  coordinator.out -> Va_ct_ReExecute.re_execute after 0
   Va_f -> Va_ct_ReExecute.Va_f
   Vz_f -> Va_ct_ReExecute.Vz_f
   q_f -> Va_ct_ReExecute.q_f
@@ -266,7 +266,7 @@ reactor VzControl50ReExecute {
   Vz_ct_ReExecute.task_info_update -> coordinator.task_info_update
   Vz_ct_ReExecute.instance_start_time -> coordinator.instance_start_time_update
   Vz_ct_ReExecute.failed_seg -> coordinator.failed_seg
-  coordinator.out -> Vz_ct_ReExecute.reexecute after 0
+  coordinator.out -> Vz_ct_ReExecute.re_execute after 0
   Vz_f -> Vz_ct_ReExecute.Vz_f
   Vz_c -> Vz_ct_ReExecute.Vz_c
   q_f -> Vz_ct_ReExecute.q_f

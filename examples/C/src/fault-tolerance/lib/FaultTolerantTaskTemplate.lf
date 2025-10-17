@@ -32,21 +32,21 @@ preamble {=
   #endif
 =}
 
-// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the reexecute port is triggered, it resumes from the indicated segment number passed by the port.
+// This triggers the segment to execute. If the instantiate port is triggered, execution starts from the first segment. If the re-execute port is triggered, it resumes from the indicated segment number passed by the port.
 reactor Trigger(task_num: uint16_t = 0) {
   input instantiate: int
-  input reexecute: int
+  input re_execute: int
   output start_seg: int
   output instance_start_time: time
 
-  reaction(instantiate, reexecute) -> start_seg, instance_start_time {=
+  reaction(instantiate, re_execute) -> start_seg, instance_start_time {=
     int segment_start_num;
-    if(reexecute->is_present) {
-      // When reexecute was triggered. reexecute->value should not be 0.
-      if (reexecute->value != 0) {
-        segment_start_num = reexecute->value;
+    if(re_execute->is_present) {
+      // When re-execution was triggered. re_execute->value should not be 0.
+      if (re_execute->value != 0) {
+        segment_start_num = re_execute->value;
       } else {
-        // Don't trigger reexecute. 0 means the segment was completed.
+        // Don't trigger re-execution. 0 means the segment was completed.
         return;
       }
     } else { // When instantiate is triggered.
@@ -119,7 +119,7 @@ reactor FaultTolerantTaskTemplate(
     wcet_f: uint16_t[] = {},
     wcet_s: uint16_t[] = {}) {
   input instantiate: int
-  input reexecute: int
+  input re_execute: int
 
   output failed_seg: int
   output instance_start_time: time
@@ -134,7 +134,7 @@ reactor FaultTolerantTaskTemplate(
       wcet_f=wcet_f,
       wcet_s=wcet_s)
   instantiate -> trigger.instantiate
-  reexecute -> trigger.reexecute
+  re_execute -> trigger.re_execute
   trigger.instance_start_time -> instance_start_time
   trigger.start_seg -> advance.start_seg
   advance.failed_seg -> failed_seg
@@ -187,7 +187,7 @@ reactor Coordinator {
     if(failed_seg->value == 0) {
       // 0 means, all segments are finished.
       // Still need to signal output with 0.
-      // If the task's reexecute port gets 0, does nothing.
+      // If the task's re_execute port gets 0, does nothing.
       // If the task's instantiate port gets 0, it starts a new instance.
       lf_set(out, 0);
     } else {
