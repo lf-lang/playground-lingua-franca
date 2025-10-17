@@ -16,7 +16,7 @@ preamble {=
   #define delta_th_eq (1.5868660794926)
   #define delta_e_eq (0.012009615652468)
 
-  #define FAILURE_RATE 30 // % chance
+  #define FAILURE_RATE 30		// Probability of failure in terms of percentage.
 
   #ifndef TASK_INFO_T_DEFINED
   #define TASK_INFO_T_DEFINED
