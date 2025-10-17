@@ -78,6 +78,7 @@ This can be added when the task output exists. This ensures that the task output
 
 - `Coordinator` (not part of the `Task`) :
 The `Coordinator` is not part of the `Task`. This reactor manages the proactive task abortion. It receives the segment number to re_execute from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a reexecution through the Task reactor.
+
 On startup, the `Task` reactor sends its configuration as a struct of `task_info_t` to the corresponding `Coordinator` reactor. This includes the `task_num`, `dead_line`, `num_of_segs`, `wcet_f`, and `wcet_s`. This is for the modular design to separate the `Task` and the `Coordinator`, and not duplicate the input parameters of the `Task`.
 
 ## Usage
