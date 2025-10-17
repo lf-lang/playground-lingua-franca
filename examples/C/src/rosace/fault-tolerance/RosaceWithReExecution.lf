@@ -21,10 +21,9 @@ import FaultTolerantController from "RosaceControllerWithReExecution.lf"
 import PrintToFile from "../../lib/PrintToFile.lf"
 
 preamble {=
-  // Shared constants.
-  // Trimming parameters
-  #define Va_eq (230.0)   // Nominal airspeed?
-  #define h_eq (10000.0)
+  // Trimming parameters: define the reference flight condition of the aircraft.
+  #define Va_eq (230.0)   // Nominal airspeed
+  #define h_eq (10000.0)  // Nominal altitude
 =}
 
 main reactor(filter_period: time = 10 ms) {
