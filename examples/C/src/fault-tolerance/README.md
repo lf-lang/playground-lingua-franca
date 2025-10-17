@@ -8,7 +8,7 @@ For fault tolerance, time redundancy techniques such as re-execution is widely u
 However, this approach introduces non-determinism due to unpredictable timing of failures, which leads to inconsistent behavior and makes analysis and repeatable testing unreliable.
 
 This example introduces a deterministic execution model for fault-tolerant real-time software within LF.
-The key idea is to re-execute failed tasks, while advancing logical execution time (LET) deterministically, regardless of actual failure timing.
+The key idea is to re-execute failed task segments, while advancing logical execution time (LET) deterministically, regardless of actual failure timing.
 This ensures that the same sequence of task failures always results in the same outcome.
 
 We achieve this by advancing logical time using worst-case execution times (WCETs).
@@ -77,7 +77,7 @@ This computes the logical execution time and advances the logical time.
 This can be added when the task output exists. This ensures that the task output is emitted only when the task succeeds.
 
 - `Coordinator` (not part of the `Task`) :
-The `Coordinator` is not part of the `Task`. This reactor manages the proactive task abortion. It receives the segment number to re_execute from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a reexecution through the Task reactor.
+The `Coordinator` is not part of the `Task`. This reactor manages the proactive task abortion. It receives the segment number to re-execute from the Task reactor, and determines whether the remaining segments can still meet the deadline. If not, it halts execution early, otherwise, it triggers a reexecution through the Task reactor.
 
 On startup, the `Task` reactor sends its configuration as a struct of `task_info_t` to the corresponding `Coordinator` reactor. This includes the `task_num`, `dead_line`, `num_of_segs`, `wcet_f`, and `wcet_s`. This is for the modular design to separate the `Task` and the `Coordinator`, and not duplicate the input parameters of the `Task`.
 
