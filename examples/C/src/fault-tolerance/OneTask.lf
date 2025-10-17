@@ -27,5 +27,5 @@ main reactor {
   task.task_info_update -> coordinator.task_info_update
   task.instance_start_time -> coordinator.instance_start_time_update
   task.failed_seg -> coordinator.failed_seg
-  coordinator.out -> task.reexecute after 0
+  coordinator.out -> task.re_execute after 0
 }

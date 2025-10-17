@@ -34,7 +34,7 @@ main reactor {
   task1.task_info_update -> coordinator1.task_info_update
   task1.instance_start_time -> coordinator1.instance_start_time_update
   task1.failed_seg -> coordinator1.failed_seg
-  coordinator1.out -> task1.reexecute after 0
+  coordinator1.out -> task1.re_execute after 0
 
   task1.task_output -> task2.task_input
 
@@ -42,5 +42,5 @@ main reactor {
   task2.task_info_update -> coordinator2.task_info_update
   task2.instance_start_time -> coordinator2.instance_start_time_update
   task2.failed_seg -> coordinator2.failed_seg
-  coordinator2.out -> task2.reexecute after 0
+  coordinator2.out -> task2.re_execute after 0
 }
