@@ -1,0 +1,13 @@
+target C 
+
+import BMESensor from "lib/Bme280.lf"
+
+main reactor SamplePad {
+    
+  bme280_sensor = new BMESensor()
+
+  reaction(bme280_sensor.temperature, bme280_sensor.pressure, bme280_sensor.humidity) {=
+    printf("Temp: %.2f °C | Pressure: %.2f Pa | Humidity: %.2f %%\n",
+           bme280_sensor.temperature, bme280_sensor.pressure, bme280_sensor.humidity);
+  =}
+}
