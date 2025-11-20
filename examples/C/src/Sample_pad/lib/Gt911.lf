@@ -1,0 +1,32 @@
+target C {
+    cmake-include: ["../c_lib/sensor.cmake"],
+    files: ["../c_lib/gt_utils.c", "../c_lib/gt_utils.h"]
+}
+
+preamble {=
+    #include "gt_utils.h"
+=}
+
+reactor GTSensor {
+    output x: int
+    output y: int
+
+    state ts: GT911
+
+    timer poll(0, 50 msec)
+
+    reaction(startup) {=
+        if (gt911_init(&self->ts, "/dev/i2c-1") == 0) {
+            printf("GT911 ready\n");
+        }
+    =}
+
+    reaction(poll) -> x, y {=
+        int n = gt911_read_touch(&self->ts);
+
+        if (n > 0) {
+            lf_set(x, self->ts.x[0]);
+            lf_set(y, self->ts.y[0]);
+        }
+    =}
+}

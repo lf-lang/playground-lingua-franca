@@ -15,6 +15,8 @@ target_sources(${LF_MAIN_TARGET} PRIVATE
     ${BME280_SRC}
     bh_utils.h
     bh_utils.c
+    gt_utils.h
+    gt_utils.c
 )
 
 target_include_directories(${LF_MAIN_TARGET} PRIVATE

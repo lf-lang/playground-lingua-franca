@@ -2,10 +2,12 @@ target C
 
 import BMESensor from "lib/Bme280.lf"
 import BHSensor from "lib/Bh1750.lf"
+import GTSensor from "lib/Gt911.lf"
 main reactor SamplePad {
     
   bme280_sensor = new BMESensor()
   bh1750_sensor = new BHSensor()
+  gt911_sensor = new GTSensor()
 
   reaction(bme280_sensor.temperature, bme280_sensor.pressure, bme280_sensor.humidity) {=
     printf("Temp: %.2lf °C | Pressure: %.2lf Pa | Humidity: %.lf %%\n",
@@ -13,6 +15,10 @@ main reactor SamplePad {
   =}
 
   reaction(bh1750_sensor.lux) {=
+    printf("Lux: %.2f lx\n", lux->value);
+  =}
+
+  reaction(gt911_sensor.x, gt911_sensor.y) {=
     printf("Lux: %.2f lx\n", lux->value);
   =}
 
