@@ -8,6 +8,7 @@
 
 
 int i2c_fd;
+uint32_t period;
 struct bme280_dev dev;
 struct bme280_settings settings;
 

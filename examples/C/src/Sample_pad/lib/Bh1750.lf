@@ -1,0 +1,29 @@
+target C {
+    cmake-include: ["../c_lib/sensor.cmake"],
+    files: ["../c_lib/bh_utils.h","../c_lib/bh_utils.c"]
+}
+
+preamble {=
+    #include "bh_utils.h"
+=}
+
+reactor BHSensor{
+    output lux: double
+
+    state sensor: BH1750*
+
+    timer t(0, 5 sec)
+
+    reaction(startup) {=
+        sensor = new BH1750("/dev/i2c-1");
+        printf("BH1750 Light Sensor Initialized\n");
+    =}
+
+    reaction(t) -> lux {=
+        auto value = sensor->readLux();
+        lux.set(value);
+    =}
+
+}
+
+

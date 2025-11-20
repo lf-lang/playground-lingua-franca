@@ -1,6 +1,6 @@
 target C {
   cmake-include: ["../c_lib/sensor.cmake"],
-  files: ["../c_lib/bme_utils.h",  "../c_lib/BME280_SensorAPI/"]
+  files: ["../c_lib/bme_utils.h","../c_lib/bme_utils.c",  "../c_lib/BME280_SensorAPI/"]
 }
 
 preamble {=
@@ -22,7 +22,7 @@ reactor BMESensor {
   output pressure: double
   output humidity: double
 
-  timer t(0, 200 msec)
+  timer t(0, 5 sec)
 
   reaction(startup) {=
     i2c_fd = open(I2C_DEV_PATH, O_RDWR);
@@ -46,26 +46,49 @@ reactor BMESensor {
         printf("BME280 initialization failed!\n");
         return;
     }
+    
+    bme280_get_sensor_settings(&settings, &dev);
 
     settings.osr_h = BME280_OVERSAMPLING_1X;
-    settings.osr_p = BME280_OVERSAMPLING_16X;
-    settings.osr_t = BME280_OVERSAMPLING_2X;
-    settings.filter = BME280_FILTER_COEFF_16;
+    settings.osr_p = BME280_OVERSAMPLING_1X;
+    settings.osr_t = BME280_OVERSAMPLING_1X;
+    settings.filter = BME280_FILTER_COEFF_OFF ;
+    settings.standby_time = BME280_STANDBY_TIME_1000_MS;
 
     uint8_t settings_sel = BME280_SEL_ALL_SETTINGS;
 
     bme280_set_sensor_settings(settings_sel, &settings, &dev);
     bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
+    bme280_cal_meas_delay(&period, &settings);
 
     printf("BME280 initialized successfully.\n");
   =}
 
   reaction(t) -> temperature, pressure, humidity {=
     struct bme280_data comp_data;
-    if (bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) == BME280_OK) {
-        lf_set(temperature, comp_data.temperature);
-        lf_set(pressure, comp_data.pressure);
-        lf_set(humidity, comp_data.humidity);
-    }
+    printf("=== BME280 Device Debug ===\n");
+
+    // printf("I2C Address:         0x%02X\n", *(uint8_t*)dev.intf_ptr);
+    printf("Interface:           %s\n",
+          dev.intf == BME280_I2C_INTF ? "I2C" : "SPI");
+
+    // Function pointers
+    printf("Read function:       %p\n", dev.read);
+    printf("Write function:      %p\n", dev.write);
+    printf("Delay function:      %p\n", dev.delay_us);
+
+    // Settings
+    printf("Temp oversampling:   %u\n", settings.osr_t);
+    printf("Press oversampling:  %u\n", settings.osr_p);
+    printf("Hum oversampling:    %u\n", settings.osr_h);
+    printf("IIR filter coeff:    %u\n", settings.filter);
+    printf("Standby time:        %u\n", settings.standby_time);
+
+    printf("============================\n");
+      if (bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) == BME280_OK) {
+          lf_set(temperature, comp_data.temperature);
+          lf_set(pressure, comp_data.pressure);
+          lf_set(humidity, comp_data.humidity);
+      }
   =}
 }

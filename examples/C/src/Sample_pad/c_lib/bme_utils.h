@@ -4,11 +4,13 @@
 #include "bme280.h"
 
 #define I2C_DEV_PATH "/dev/i2c-1"
-#define BME280_I2C_ADDR BME280_I2C_ADDR_PRIM
+#define BME280_I2C_ADDR BME280_I2C_ADDR_SEC
 
 extern int i2c_fd;
+extern uint32_t period;
 extern struct bme280_dev dev;
 extern struct bme280_settings settings;
+
 
 BME280_INTF_RET_TYPE user_i2c_read(uint8_t reg_addr, uint8_t *reg_data,
                                    uint32_t len, void *intf_ptr);
