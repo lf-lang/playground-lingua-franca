@@ -7,23 +7,31 @@ preamble {=
     #include "bh_utils.h"
 =}
 
-reactor BHSensor{
+
+reactor BHSensor {
     output lux: double
 
-    state sensor: BH1750*
+    state sensor: BH1750   // NOT a pointer, this is a C struct
 
     timer t(0, 5 sec)
 
     reaction(startup) {=
-        sensor = new BH1750("/dev/i2c-1");
-        printf("BH1750 Light Sensor Initialized\n");
+        if (bh1750_init(&self->sensor, "/dev/i2c-1") < 0) {
+            printf("BH1750 init failed!\n");
+        } else {
+            printf("BH1750 Light Sensor Initialized\n");
+        }
     =}
 
     reaction(t) -> lux {=
-        auto value = sensor->readLux();
-        lux.set(value);
+        float value = bh1750_read_lux(&self->sensor);
+        lf_set(lux, value);
     =}
 
+    reaction(shutdown) {=
+        bh1750_close(&self->sensor);
+    =}
 }
+
 
 
