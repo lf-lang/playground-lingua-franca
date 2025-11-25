@@ -24,6 +24,8 @@ federated reactor(query_period: time = 1 sec, num_remote_inputs: int = 1) {
       update_amount=-20,
       name="Berkeley",
       num_remote_inputs=num_remote_inputs)
+  @absent_after(4 ms)
   b.publish -> a.update
+  @absent_after(4 ms)
   a.publish -> b.update
 }

@@ -61,7 +61,7 @@ reactor Actuator(STA: time = 0) {
   reaction(in) {=
     lf_print("Actuator " PRINTF_TIME ": Actuating with sensor value (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
-  =} STAA(5 ms) {=
+  =} tardy {=
     lf_print("Actuator " PRINTF_TIME ": *** STAA violation on sensor data (in=%d) at physical time " PRINTF_TIME ". Dropping data.",
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
   =} deadline(5 ms) {=
@@ -78,7 +78,7 @@ reactor Actuator(STA: time = 0) {
         lf_print("Actuator Checker " PRINTF_TIME ": *** Data late. Actuating backup at physical time " PRINTF_TIME,
             lf_time_logical_elapsed(), lf_time_physical_elapsed());
     }
-  =} STAA(5 ms) {=
+  =} tardy {=
     // Ignore STAA violation because the previous reaction already handled it.
   =} deadline(20 ms) {=
     if (in->is_present) {
@@ -98,5 +98,7 @@ federated reactor {
   a = new Actuator()
 
   s.out -> c.in after 15 ms
+  // If an input does not arrive within 5 ms, react to its tardiness now.
+  @absent_after(5 ms)
   c.out -> a.in after 15 ms
 }
