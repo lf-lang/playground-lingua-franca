@@ -40,7 +40,7 @@ reactor BMESensor {
     dev.read = user_i2c_read;
     dev.write = user_i2c_write;
     dev.delay_us = user_delay_us;
-    dev.intf_ptr = NULL;
+    dev.intf_ptr = &i2c_fd;
 
     if (bme280_init(&dev) != BME280_OK) {
         printf("BME280 initialization failed!\n");
@@ -69,20 +69,9 @@ reactor BMESensor {
     printf("=== BME280 Device Debug ===\n");
 
     // printf("I2C Address:         0x%02X\n", *(uint8_t*)dev.intf_ptr);
-    printf("Interface:           %s\n",
-          dev.intf == BME280_I2C_INTF ? "I2C" : "SPI");
+   // printf("Interface:           %s\n",
+   //       dev.intf == BME280_I2C_INTF ? "I2C" : "SPI");
 
-    // Function pointers
-    printf("Read function:       %p\n", dev.read);
-    printf("Write function:      %p\n", dev.write);
-    printf("Delay function:      %p\n", dev.delay_us);
-
-    // Settings
-    printf("Temp oversampling:   %u\n", settings.osr_t);
-    printf("Press oversampling:  %u\n", settings.osr_p);
-    printf("Hum oversampling:    %u\n", settings.osr_h);
-    printf("IIR filter coeff:    %u\n", settings.filter);
-    printf("Standby time:        %u\n", settings.standby_time);
 
     printf("============================\n");
       if (bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) == BME280_OK) {

@@ -21,4 +21,7 @@ target_sources(${LF_MAIN_TARGET} PRIVATE
 
 target_include_directories(${LF_MAIN_TARGET} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/BME280_SensorAPI
+    /usr/include
 )
+
+target_link_libraries(${LF_MAIN_TARGET} PRIVATE gpiod)

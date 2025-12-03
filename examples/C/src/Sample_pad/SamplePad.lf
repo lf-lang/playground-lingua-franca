@@ -13,13 +13,23 @@ main reactor SamplePad {
     printf("Temp: %.2lf °C | Pressure: %.2lf Pa | Humidity: %.lf %%\n",
            bme280_sensor.temperature, bme280_sensor.pressure, bme280_sensor.humidity);
   =}
-
+  /*
   reaction(bh1750_sensor.lux) {=
-    printf("Lux: %.2f lx\n", lux->value);
+    printf("Lux: %.2f lx\n", bh1750_sensor.lux->value);
   =}
 
-  reaction(gt911_sensor.x, gt911_sensor.y) {=
-    printf("Lux: %.2f lx\n", lux->value);
-  =}
+  reaction(gt911_sensor.touches) {=
+    GTTouchPacket_t pkt = gt911_sensor.touches->value;
 
+    for (unsigned i = 0; i < pkt.count; i++) {
+        printf("Touch %u: x=%u y=%u id=%u size=%u\n",
+               i,
+               pkt.x[i],
+               pkt.y[i],
+               pkt.track_id[i],
+               pkt.size[i]);
+    }
+
+  =}
+ */
 }
