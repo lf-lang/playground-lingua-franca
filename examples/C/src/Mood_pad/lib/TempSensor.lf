@@ -1,0 +1,76 @@
+target C {
+  cmake-include: ["../c_lib/sensor.cmake"],
+  files: [
+    "../c_lib/temp_utils.c",
+    "../c_lib/temp_utils.h",
+    "../c_lib/BME280_SensorAPI/bme280.c",
+    "../c_lib/BME280_SensorAPI/bme280.h",
+    "../c_lib/BME280_SensorAPI/bme280_defs.h",
+  ]
+}
+
+preamble {=
+  #include <time.h>
+  #include <stdbool.h>
+  #include <stdlib.h>
+  #include <unistd.h>
+  #include <fcntl.h>
+  #include <linux/i2c-dev.h>
+  #include <sys/ioctl.h>
+  #include <string.h>
+  #include "temp_utils.h"
+  #include "bme280.h"
+  
+=}
+
+reactor TempSensor {
+  output temperature: double
+  output pressure: double
+  output humidity: double
+  
+  timer t(1 sec, 30 sec)
+
+  reaction(startup)-> temperature, pressure, humidity {=
+
+    fd = open_i2c("/dev/i2c-1", BME280_I2C_ADDR);
+
+    dev.intf = BME280_I2C_INTF;
+    dev.read = user_i2c_read;
+    dev.write = user_i2c_write;
+    dev.delay_us = user_delay_us;
+    dev.intf_ptr = &fd;
+
+
+    if (bme280_init(&dev) != BME280_OK) {
+        printf("Failed to initialize BME280\n");
+        
+    }
+
+
+    settings.osr_h = BME280_OVERSAMPLING_1X;
+    settings.osr_p = BME280_OVERSAMPLING_1X;
+    settings.osr_t = BME280_OVERSAMPLING_1X;
+    settings.filter = BME280_FILTER_COEFF_2;
+
+
+    bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS,&settings, &dev);
+    bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
+
+    sleep(1);     
+  
+  =}
+
+  reaction(t) -> temperature, pressure, humidity {=
+    struct bme280_data comp_data;
+    
+    if (bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) != BME280_OK) {
+        printf("Failed to read data\n");
+    }
+      
+    lf_set(temperature, comp_data.temperature);
+    lf_set(pressure, comp_data.pressure);
+    lf_set(humidity, comp_data.humidity);
+      
+  
+  =}
+}
