@@ -20,7 +20,7 @@ reactor Midi {
         self->settings = new_fluid_settings();
 
         fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:0,0"); 
-        fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:1,0"); 
+       // fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:1,0"); 
 	fluid_settings_setnum(self->settings, "synth.gain", 0.8);
 
         self->synth = new_fluid_synth(self->settings);
