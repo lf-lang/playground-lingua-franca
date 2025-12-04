@@ -1,0 +1,46 @@
+target C
+
+preamble {=
+    #include <fluidsynth.h>
+    #include <unistd.h> 
+=}
+
+reactor Midi {
+
+    input note_on:int
+    input note_off:int
+    input velocity:int
+
+    state settings: fluid_settings_t*
+    state synth: fluid_synth_t*
+    state audio_driver: fluid_audio_driver_t*
+
+
+    reaction(startup) {=
+        self->settings = new_fluid_settings();
+        fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:0,0"); 
+        fluid_settings_setnum(self->settings, "synth.gain", 0.8);
+
+        self->synth = new_fluid_synth(self->settings);
+        self->audio_driver = new_fluid_audio_driver(self->settings, self->synth);
+
+        // Load a SoundFont
+        fluid_synth_sfload(self->synth, "/home/elisemacabou/GeneralUser-GS-v1.471.sf2", 1);
+    =}
+
+
+    reaction(note_on, velocity) {=
+        fluid_synth_noteon(self->synth, 0, note_on->value, velocity->value);
+    =}
+
+    reaction(note_off) {=
+        fluid_synth_noteoff(self->synth, 0, note_off->value);
+    =}
+
+    reaction(shutdown) {=
+    delete_fluid_audio_driver(self->audio_driver);
+    delete_fluid_synth(self->synth);
+    delete_fluid_settings(self->settings);
+    =}
+
+}
