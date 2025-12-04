@@ -1,0 +1,64 @@
+target C {
+    cmake-include: ["../c_lib/sensor.cmake"],
+    files: ["../c_lib/capacitive_utils.c", "../c_lib/capacitive_utils.h"]
+}
+
+preamble {=
+    #include "capacitive_utils.h"
+    typedef struct {
+        unsigned count;          
+        unsigned x[5];
+        unsigned y[5];
+        unsigned track_id[5];
+        unsigned size[5];
+    } GTTouchPacket_t;
+
+=}
+
+reactor CapacitiveTouchSensor {
+    output x: unsigned
+    output y: unsigned
+
+    output touches: GTTouchPacket_t
+    output track_id: unsigned
+    output size: unsigned
+
+    timer poll(0, 10 msec)
+
+    reaction(startup) {=
+	GT911_Config_t cfg = {
+	   .X_Resolution = 800,
+	   .Y_Resolution = 480,
+	   .Number_Of_Touch_Support = 5,
+	   .ReverseX = true,
+	   .ReverseY = true,
+	   .SwitchX2Y = false,
+	   .SoftwareNoiseReduction = true  
+        };
+
+        if (GT911_Init(cfg) == 0) {
+            printf("GT911 ready\n");
+        }
+    =}
+
+    reaction(poll) -> touches {=
+        uint8_t n = 0;
+        TouchCordinate_t pts[5] = {0};
+
+        GTTouchPacket_t packet = {0};
+
+        int ret = GT911_ReadTouch(pts, &n);
+        if (ret != 0) return;
+
+        packet.count = n;
+
+        for (int i = 0; i < n; i++) {
+            packet.x[i]        = pts[i].x;
+            packet.y[i]        = pts[i].y;
+            packet.track_id[i] = pts[i].track_id;
+            packet.size[i]     = pts[i].size;
+        }
+        lf_set(touches, packet);
+    =}
+
+}

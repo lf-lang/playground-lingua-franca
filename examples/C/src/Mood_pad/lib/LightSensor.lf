@@ -1,0 +1,36 @@
+target C {
+    cmake-include: ["../c_lib/sensor.cmake"],
+    files: ["../c_lib/light_utils.c","../c_lib/light_utils.h"]
+}
+
+preamble {=
+    #include "light_utils.h"
+=}
+
+reactor LightSensor {
+    output lux: double
+
+    state sensor: BH1750   
+
+    timer t(0, 30 sec)
+
+    reaction(startup) {=
+        if (bh1750_init(&self->sensor, "/dev/i2c-1") < 0) {
+            printf("BH1750 init failed!\n");
+        } else {
+            printf("BH1750 Light Sensor Initialized\n");
+        }
+    =}
+
+    reaction(t) -> lux {=
+        float value = bh1750_read_lux(&self->sensor);
+        lf_set(lux, value);
+    =}
+
+    reaction(shutdown) {=
+        bh1750_close(&self->sensor);
+    =}
+}
+
+
+
