@@ -3,7 +3,7 @@ target C {
   files: [
     "../c_lib/temp_utils.c",
     "../c_lib/temp_utils.h",
-    "../c_lib/BME280_SensorAPI/",
+    "../c_lib/BME280_SensorAPI/"
   ]
 }
 
