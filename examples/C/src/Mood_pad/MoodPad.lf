@@ -30,8 +30,8 @@ main reactor MoodPad {
   =}
 
   //temperature pick letter key
-  reaction(temp_sensor.temperature) {=
-    float t = temp_sensor.temperature->value;
+  reaction(light_sensor.lux) {=
+    float t = light_sensor.lux->value;
     float t_min = 15.0; 
     float t_max = 35.0; 
 
@@ -43,17 +43,18 @@ main reactor MoodPad {
     int octave_max = 5;  // C5 (can't hear past that)
     int octave = octave_min + (int)((octave_max - octave_min) * (t - t_min) / (t_max - t_min));
 
-    int index = ((int)t / 5) % 7;
+    int index = ((int)t / 50) % 7;
     self->root_note = ROOT_NOTES[index] + 12 * octave;
-    printf("[KEY] Root = %d (temp %.1fC)\n", self->root_note, t);
+    printf("[KEY] Root = %d (lux %.1f)\n", self->root_note, t);
   =}
   
   //light pick minor or major
-  reaction(light_sensor.lux) {=
-    float lx = light_sensor.lux->value;
-    self->is_major = lx > 300;
-    printf("[MODE] %s (lux %.1f)\n", self->is_major ? "MAJOR" : "MINOR", lx);
+  reaction(temp_sensor.temperature) {=
+    float lx = temp_sensor.temperature->value;
+    self->is_major = lx > 25;
+    printf("[MODE] %s (temp %.1f)\n", self->is_major ? "MAJOR" : "MINOR", lx);
   =}
+  
 
   reaction(ct_sensor.touches) -> midi.note_on, midi.velocity, midi.note_off {=
     GTTouchPacket_t pkt = ct_sensor.touches->value;
