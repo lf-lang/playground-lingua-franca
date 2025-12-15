@@ -24,6 +24,14 @@ The goal is a **sensor-driven musical instrument** where the environment directl
 
 ---
 
+## Submodule Requirements
+
+This demo depends on the following submodule:
+
+- [BME280_SensorAPI](https://github.com/boschsensortec/BME280_SensorAPI)
+
+---
+
 ## Hardware Requirements
 
 - [Raspberry Pi (tested on Pi 3B+)](https://www.digikey.com/en/products/detail/raspberry-pi/SC0073/8571724?gclsrc=aw.ds&gad_source=1&gad_campaignid=20228387720&gbraid=0AAAAADrbLli9GnIE8yvimHJOwvN2NmGPy&gclid=CjwKCAiA3fnJBhAgEiwAyqmY5cdtQ73Fm_pR7ht6KIIG0o8OEyC0vPacOd7sQgWMNwt7QzOIJpq96BoCRJEQAvD_BwE)
