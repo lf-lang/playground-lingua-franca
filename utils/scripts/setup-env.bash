@@ -40,7 +40,7 @@ sudo apt-get install --assume-yes \
     python3.10 python3.10-dev \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
-    protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot
+    protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot libasound2-dev fluidsynth gpiod
     
 python3.10 -m pip install --upgrade pip
 # Install python dependencies and
