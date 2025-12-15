@@ -49,6 +49,7 @@ The goal is a **sensor-driven musical instrument** where the environment directl
 ```bash
 sudo apt update
 sudo apt install -y build-essential libasound2-dev fluidsynth gpiod
+```
 
 ### 2. Compile LFC
 ```bash
