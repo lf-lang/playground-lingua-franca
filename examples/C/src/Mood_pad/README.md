@@ -35,9 +35,10 @@ The goal is a **sensor-driven musical instrument** where the environment directl
 
 - **Lingua Franca compiler** (`lfc`)  
 - GCC toolchain (`gcc`) for C target  
-- **ALSA** libraries (`libasound2-dev`)  
-- **FluidSynth** (`fluidsynth`) for MIDI synthesis  
-- **FluidSynth** (`gpiod`) for gpio interactions  
+- [**ALSA** libraries](https://github.com/alsa-project/alsa-lib) (`libasound2-dev`)
+- [**FluidSynth** libraries](https://www.fluidsynth.org/)
+  - **FluidSynth** (`fluidsynth`) for MIDI synthesis  
+  - **FluidSynth** (`gpiod`) for gpio interactions  
 
 
 ---
