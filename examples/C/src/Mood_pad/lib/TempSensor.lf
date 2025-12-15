@@ -1,10 +1,6 @@
 target C {
   cmake-include: ["../c_lib/sensor.cmake"],
-  files: [
-    "../c_lib/temp_utils.c",
-    "../c_lib/temp_utils.h",
-    "../c_lib/BME280_SensorAPI/"
-  ]
+  files: ["../c_lib/temp_utils.c", "../c_lib/temp_utils.h", "../c_lib/BME280_SensorAPI/"]
 }
 
 preamble {=
@@ -18,7 +14,6 @@ preamble {=
   #include <string.h>
   #include "temp_utils.h"
   #include "bme280.h"
-  
 =}
 
 reactor TempSensor {
@@ -29,8 +24,7 @@ reactor TempSensor {
   // Start the timer after 1 second in order to give the sensor time to fully initialize.
   timer t(1 sec, 5 sec)
 
-  reaction(startup)-> temperature, pressure, humidity {=
-
+  reaction(startup) -> temperature, pressure, humidity {=
     fd = open_i2c("/dev/i2c-1", BME280_I2C_ADDR);
 
     dev.intf = BME280_I2C_INTF;
@@ -42,7 +36,7 @@ reactor TempSensor {
 
     if (bme280_init(&dev) != BME280_OK) {
         printf("Failed to initialize BME280\n");
-        
+
     }
 
 
@@ -55,21 +49,18 @@ reactor TempSensor {
     bme280_set_sensor_settings(BME280_SEL_ALL_SETTINGS,&settings, &dev);
     bme280_set_sensor_mode(BME280_POWERMODE_NORMAL, &dev);
 
-    sleep(1);     
-  
+    sleep(1);
   =}
 
   reaction(t) -> temperature, pressure, humidity {=
     struct bme280_data comp_data;
-    
+
     if (bme280_get_sensor_data(BME280_ALL, &comp_data, &dev) != BME280_OK) {
         printf("Failed to read data\n");
     }
-      
+
     lf_set(temperature, comp_data.temperature);
     lf_set(pressure, comp_data.pressure);
     lf_set(humidity, comp_data.humidity);
-      
-  
   =}
 }
