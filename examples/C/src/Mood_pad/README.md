@@ -1,5 +1,7 @@
 # MoodPad – Interactive Sensor-Driven MIDI Synth
 
+## Overview
+
 MoodPad is an interactive MIDI synthesizer project built with **Lingua Franca (LF) targeting C**, designed to run on a Raspberry Pi. The system uses environmental sensors to dynamically control musical output:
 
 - **BME280**: Temperature, pressure, and humidity – used to select root notes and octaves.  
@@ -7,7 +9,9 @@ MoodPad is an interactive MIDI synthesizer project built with **Lingua Franca (L
 - **GT911**: Capacitive touch panel – triggers notes based on touch position.  
 - **FluidSynth**: MIDI synthesis for generating piano sounds.
 
-The goal is a **sensor-driven musical instrument** where the environment directly influences the pitch, key, and dynamics of the generated notes.
+The goal is a **sensor-driven musical instrument** where the environment directly influences the pitch, key, and dynamics of the generated notes, as shown below:
+
+<img width="613" height="562" alt="Screenshot 2025-12-15 at 9 54 19 AM" src="https://github.com/user-attachments/assets/c498cca0-86e0-41c2-a4bc-eaa1d78bf38a" />
 
 ---
 
@@ -55,5 +59,12 @@ sudo apt install -y build-essential libasound2-dev fluidsynth gpiod
 ### 2. Compile LFC
 ```bash
 lfc Moodpad.lfc
+```
 
+---
 
+## Contributor
+
+[Elise Macabou](https://github.com/elisemacabou)
+
+---
