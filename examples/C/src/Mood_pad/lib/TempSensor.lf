@@ -25,7 +25,8 @@ reactor TempSensor {
   output temperature: double
   output pressure: double
   output humidity: double
-  
+
+  // Start the timer after 1 second in order to give the sensor time to fully initialize.
   timer t(1 sec, 5 sec)
 
   reaction(startup)-> temperature, pressure, humidity {=
