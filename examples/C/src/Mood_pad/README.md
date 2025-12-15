@@ -22,10 +22,10 @@ The goal is a **sensor-driven musical instrument** where the environment directl
 
 ## Hardware Requirements
 
-- Raspberry Pi (tested on Pi 3B+)  
-- BME280 temperature/humidity sensor  
-- BH1750 light sensor  
-- GT911 capacitive touch sensor (or compatible touchscreen)  
+- Raspberry Pi (tested on Pi 3B+)  https://www.digikey.com/en/products/detail/raspberry-pi/SC0073/8571724?gclsrc=aw.ds&gad_source=1&gad_campaignid=20228387720&gbraid=0AAAAADrbLli9GnIE8yvimHJOwvN2NmGPy&gclid=CjwKCAiA3fnJBhAgEiwAyqmY5cdtQ73Fm_pR7ht6KIIG0o8OEyC0vPacOd7sQgWMNwt7QzOIJpq96BoCRJEQAvD_BwE
+- BME280 temperature/humidity sensor  https://www.adafruit.com/product/2652?gad_source=1&gad_campaignid=21079227318&gbraid=0AAAAADx9JvS43_-m5zEAgJ2DoWPzZ7wdL&gclid=Cj0KCQjw8eTFBhCXARIsAIkiuOydzZ0Ovo-drdjscpSFsik74wdNou4V4kaXOjs-ulsvpnLHNiQrwF8aAujtEALw_wcB
+- BH1750 light sensor  https://www.adafruit.com/product/4681?gad_source=1&gad_campaignid=21079227318&gbraid=0AAAAADx9JvS43_-m5zEAgJ2DoWPzZ7wdL&gclid=Cj0KCQjw8eTFBhCXARIsAIkiuOzbuVQEqIr4v3gIOZK4EqyDz-LWlgPaNhcWKOFixgmkw9fUHa_NuQcaArHiEALw_wcB
+- GT911 capacitive touch sensor (or compatible touchscreen)  https://www.buydisplay.com/8-inch-capacitive-touch-panel-with-controller-gt911-5-point-multi-touch?srsltid=AfmBOop_zEfzfRkqseXNPjFCipHO50TSfBZCrgrjhLCAnY2NmrBodM-jIqk
 - Audio output device (headphones or HDMI audio)  
 - SoundFont `.sf2` file for FluidSynth
 

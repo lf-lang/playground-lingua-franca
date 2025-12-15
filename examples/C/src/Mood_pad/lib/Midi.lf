@@ -18,10 +18,11 @@ reactor Midi {
 
     reaction(startup) {=
         self->settings = new_fluid_settings();
-
+        // Set the audio driver to ALSA and specify the device
+        // The commented line below is for the external audio interface based on the user's setup
         fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:0,0"); 
-       // fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:1,0"); 
-	fluid_settings_setnum(self->settings, "synth.gain", 0.8);
+        // fluid_settings_setstr(self->settings, "audio.alsa.device", "hw:1,0"); 
+	    fluid_settings_setnum(self->settings, "synth.gain", 0.8);
 
         self->synth = new_fluid_synth(self->settings);
         self->audio_driver = new_fluid_audio_driver(self->settings, self->synth);
