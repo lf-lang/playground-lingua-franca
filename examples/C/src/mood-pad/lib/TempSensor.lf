@@ -1,10 +1,11 @@
 target C {
   cmake-include: ["../c_lib/sensor.cmake"],
-  files: ["../c_lib/temp_utils.c",
-    "../c_lib/temp_utils.h",
-    "../c_lib/BME280_SensorAPI/bme280.h",
-    "../c_lib/BME280_SensorAPI/bme280.c",
-    "../c_lib/BME280_SensorAPI/bme280_defs.h"]
+  files: [
+      "../c_lib/temp_utils.c",
+      "../c_lib/temp_utils.h",
+      "../c_lib/BME280_SensorAPI/bme280.h",
+      "../c_lib/BME280_SensorAPI/bme280.c",
+      "../c_lib/BME280_SensorAPI/bme280_defs.h"]
 }
 
 preamble {=
