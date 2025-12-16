@@ -9,9 +9,14 @@ MoodPad is an interactive MIDI synthesizer project built with **Lingua Franca (L
 - **GT911**: Capacitive touch panel – triggers notes based on touch position.  
 - **FluidSynth**: MIDI synthesis for generating piano sounds.
 
-The goal is a **sensor-driven musical instrument** where the environment directly influences the pitch, key, and dynamics of the generated notes, as shown below:
+The goal is a **sensor-driven musical instrument** where the environment (light and temperature) directly influences the pitch, key, and dynamics of the generated notes, as shown below:
 
 <img width="613" height="562" alt="Screenshot 2025-12-15 at 9 54 19 AM" src="https://github.com/user-attachments/assets/c498cca0-86e0-41c2-a4bc-eaa1d78bf38a" />
+
+A demo video showing the differences in pitch under dark vs. bright light is below:
+
+https://github.com/user-attachments/assets/462af1f4-0e89-48a0-9aef-58806e20a2cf
+
 
 ---
 
