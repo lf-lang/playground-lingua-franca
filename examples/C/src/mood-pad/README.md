@@ -32,6 +32,12 @@ This demo depends on the following submodule:
 
 ---
 
+## Platform Requirements
+
+This demo only compiles on Linux environment, due to the dependence on I2C (linux/i2c-dev.h).
+
+---
+
 ## Hardware Requirements
 
 - [Raspberry Pi (tested on Pi 3B+)](https://www.digikey.com/en/products/detail/raspberry-pi/SC0073/8571724?gclsrc=aw.ds&gad_source=1&gad_campaignid=20228387720&gbraid=0AAAAADrbLli9GnIE8yvimHJOwvN2NmGPy&gclid=CjwKCAiA3fnJBhAgEiwAyqmY5cdtQ73Fm_pR7ht6KIIG0o8OEyC0vPacOd7sQgWMNwt7QzOIJpq96BoCRJEQAvD_BwE)
