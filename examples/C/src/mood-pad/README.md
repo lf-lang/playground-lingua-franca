@@ -72,7 +72,7 @@ This demo only compiles on Linux environment, due to the dependence on I2C (linu
 
 ```bash
 sudo apt update
-sudo apt install -y build-essential libasound2-dev fluidsynth gpiod
+sudo apt install -y build-essential libasound2-dev libfluidsynth-dev libgpiod-dev
 ```
 
 ### 2. Compile LFC
