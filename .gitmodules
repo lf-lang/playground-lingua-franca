@@ -1,0 +1,3 @@
+[submodule "examples/C/src/mood-pad/c_lib/BME280_SensorAPI"]
+	path = examples/C/src/mood-pad/c_lib/BME280_SensorAPI
+	url = https://github.com/boschsensortec/BME280_SensorAPI.git
