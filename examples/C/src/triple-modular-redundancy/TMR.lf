@@ -1,0 +1,61 @@
+target C;
+
+reactor SerialTMR {
+    timer periodic_timer(0, 200 msec);
+    logical action re_execution;
+    state count: int = 0;
+    reaction(periodic_timer, re_execution) -> re_execution {=
+        // Trigger task execution.
+
+    =}
+}
+
+reactor SingleExecution {
+    input trigger: int;
+    output result: int;
+    reaction(trigger) -> result {=
+        lf_set(result, trigger->value * trigger->value); // Example computation: square the input
+    =}
+}
+
+reactor ParallelTMR {
+    logical action majority_vote:int;
+
+    logical action trigger:int;
+
+    se1 = new SingleExecution();
+    se2 = new SingleExecution();
+    se3 = new SingleExecution();
+
+    reaction(startup) -> trigger {=
+        // Trigger all three tasks to start in parallel.
+        lf_print("startup\n");
+        lf_schedule_int(trigger, 0, 0);
+    =}
+
+    reaction(trigger) -> se1.trigger, se2.trigger, se3.trigger {=
+        lf_print("se1.trigger->value: %d\n", se1.trigger->value);
+        lf_set(se1.trigger, 5);
+        lf_set(se2.trigger, 5);
+        lf_set(se3.trigger, 5);
+    =}
+
+
+    reaction(se1.result, se2.result, se3.result) -> majority_vote {=
+        // Implement majority voting logic here.
+        lf_print("se1.result->value: %d\n", se1.result->value);
+        lf_schedule_int(majority_vote, MSEC(1000), se1.result->value);
+    =}
+
+    reaction(majority_vote) {=
+        // Handle the result of the majority vote.  
+        lf_print("here\n");
+        lf_print("Result after majority voting: %d\n", majority_vote->value);
+    =}
+    
+}
+
+main reactor {
+    // serialTMR = new SerialTMR();
+    parallelTMR = new ParallelTMR();
+}
