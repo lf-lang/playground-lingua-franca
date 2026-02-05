@@ -258,6 +258,10 @@ reactor RaftNode(bank_index: int = 0, num_nodes: size_t = 1, heartbeat_period: t
               self->role = ROLE_LEADER;
               lf_set_mode(Leader);
               if (self->verbose) lf_print("(%lld, term=%d, leader=%d, Candidate) Votes received: %d / %zu. Declaring leader!", lf_time_logical_elapsed(), self->term, self->leader, self->votes_received, self->num_nodes);
+            
+              // FIXME: Forgetting return might be a real bug revealed by Rebeca.
+              // The broadcast might be sent multiple times!
+              break;
             }
           }
           else if (incoming_type == MSG_LEADER
