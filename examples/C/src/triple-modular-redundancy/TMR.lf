@@ -87,7 +87,7 @@ reactor SerialTMR {
     output success: bool
 
     logical action majority_vote
-    logical action execute_once: int
+    logical action execute_once
 	logical action done_once: int
 	
 	state max_number_of_executions: int = 3
@@ -99,7 +99,7 @@ reactor SerialTMR {
 
     state finalOutput: int = -1
 	
-    se = new SingleExecWithFault();
+    se = new SingleExecWithFault()
 
     reaction(start) -> execute_once {=
 
@@ -114,7 +114,7 @@ reactor SerialTMR {
 
         self->finalOutput = -1;
 
-        lf_schedule_int(execute_once, 0, 0);
+        lf_schedule(execute_once, 0);
     =}
     
 	
@@ -204,7 +204,7 @@ main reactor {
     state total_iteration: int = 1000
     state success_cnt: int = 0
     
-    serialTMR = new SerialTMR();
+    serialTMR = new SerialTMR()
     
     logical action kick
 
