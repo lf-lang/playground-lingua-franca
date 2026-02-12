@@ -5,9 +5,10 @@ preamble {=
     #include <stdlib.h>
     #include <time.h>
 
-    static const double due_per_exec = 9.2e-17;    
-    //static const double sdc_per_exec = 0.3;    
-    static const double sdc_per_exec = 2.7e-15;
+    //static const double due_per_exec = 9.2e-17;    
+    static const double due_per_exec = 0.3;    
+    // static const double sdc_per_exec = 2.7e-15;
+    static const double sdc_per_exec = 0.3;
     
     static uint64_t rng_state = 10; //fixed seed
 
@@ -27,6 +28,7 @@ preamble {=
     static const uint64_t T_DUE = (uint64_t)((long double) due_per_exec * 18446744073709551616.0L);
     static const uint64_t T_SDC = (uint64_t)((long double) sdc_per_exec * 18446744073709551616.0L);
 
+    static int voting_results[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
 =}
 
 reactor SingleExecWithFault {
@@ -34,6 +36,7 @@ reactor SingleExecWithFault {
     output result: int;
     output completed: bool;
     reaction(trigger) -> result, completed {=
+
         int result_value = trigger->value * trigger->value; // Example computation: square the input
 
         //fault injection
@@ -54,157 +57,162 @@ reactor SingleExecWithFault {
 }
 
 
-reactor SerialTMR {
-    input start: bool;
-    
-    output done: bool;
-    output success: bool;
 
-    logical action majority_vote:int;
-    logical action trigger:int;
+
+// reactor MajorityVoter {
+//     input count_completed: int;
+//     input voting_results: int[9];
+//     input commit: bool;
+
+//     output finalOutput: int;
+//     output majority_agreed: bool;
+
+//     reaction(commit) -> finalOutput, majority_agreed {=
+//         lf_set(finalOutput, 25); //temp
+//         lf_set(majority_agreed, true); //temp
+//     =}
+// }
+
+
+reactor MajorityVoter {
+    input voting_results: int[9]
+}
+
+reactor SerialTMR {
+
+    
+    input start: bool
+    
+    output done: bool
+    output success: bool
+
+    logical action majority_vote
+    logical action execute_once: int
+	logical action done_once: int
+	
+	state max_number_of_executions: int = 3
     
     state expected: int = 25; // 5 * 5;
 
-    state se1_completed: bool = false;
-    state se2_completed: bool = false;
-    state se3_completed: bool = false;
+    state count_executions: int = 0
+	state count_completed: int = 0
 
-    state se1_result: int = 0;
-    state se2_result: int = 0;
-    state se3_result: int = 0;
+    state finalOutput: int = -1
+	
+    se = new SingleExecWithFault();
 
-    state numOfCompleted: int = 0; //For later implementation
-    state finalOutput: int = 0;
+    reaction(start) -> execute_once {=
 
-    se1 = new SingleExecWithFault();
-    se2 = new SingleExecWithFault();
-    se3 = new SingleExecWithFault();
-
-    
-    //reaction(startup) -> trigger {=
-    //    // Trigger all three tasks to start in parallel.
-    //    lf_print("startup\n");
-    //    lf_schedule_int(trigger, 0, 0);
-    //=}
-    
-    reaction(start) -> trigger {=
         if (!start->value) return;
 
-        // reset states for a new trial
-        self->se1_completed = false;
-        self->se2_completed = false;
-        self->se3_completed = false;
-        self->se1_result = 0;
-        self->se2_result = 0;
-        self->se3_result = 0;
-        self->numOfCompleted = 0;
-        self->finalOutput = 0;
+        for (int i = 0; i < self->max_number_of_executions; i++) {
+            voting_results[i] = -1;
+        }
 
-        // kick off the sequential chain
-        lf_schedule_int(trigger, 0, 0);
+        self->count_executions = 0;
+        self->count_completed = 0;
+
+        self->finalOutput = -1;
+
+        lf_schedule_int(execute_once, 0, 0);
     =}
     
-    reaction(trigger) -> se1.trigger {=
-        lf_set(se1.trigger, 5);
+	
+    reaction(execute_once) -> se.trigger {=
+        lf_set(se.trigger, 5);
+    =}
+	
+    reaction(se.result, se.completed) -> execute_once,  majority_vote{=
+		self->count_executions += 1;
+        if(se.completed->value) {
+			voting_results[self->count_completed] = se.result->value;
+			self->count_completed += 1;
+		}
+		
+		if(self->count_executions>=self->max_number_of_executions) {
+            lf_schedule(majority_vote, 0);
+		}
+			
+		else
+			lf_schedule(execute_once, 0);
     =}
 
-    reaction(se1.result, se1.completed) -> se2.trigger {=
-        if(se1.completed->value) {
-                    self->se1_completed = true;
-                    self->se1_result = se1.result->value;
-                    self->numOfCompleted+=1;
-            }
 
-            lf_set(se2.trigger, 5);
-    =}
-
-    reaction(se2.result, se2.completed) -> se3.trigger {=
-        if(se2.completed->value) {
-                    self->se2_completed = true;
-                    self->se2_result = se2.result->value;
-                    self->numOfCompleted+=1;
-            }
-
-            lf_set(se3.trigger, 5);
-    =}
-
-    reaction(se3.result, se3.completed) -> majority_vote {=
-        if(se3.completed->value) {
-                    self->se3_completed = true;
-                    self->se3_result = se3.result->value;
-                    self->numOfCompleted+=1;
-            }
-
-            lf_schedule_int(majority_vote, 0, 0);
-    =}
-        
     reaction(majority_vote) -> done, success {=
-        int count = 0;
-        int result_arr[3];
+		
+		if (self->count_completed == 0) {
+			//no completed execution			
+			self->finalOutput = -1;
+		}
+		
+		else if (self->count_completed == 1) {
+			self->finalOutput = voting_results[0];
+		}
+		
+		else {
+			int uniq_vals[9];
+			int uniq_counts[9];
+			int index = 0;   // number of unique values
 
-        if (self->se1_completed) {
-                result_arr[count]=self->se1_result;
-                count+=1;
-        }
+			// build histogram
+			for (int i = 0; i < self->count_completed; i++) {
+				int value = voting_results[i];
+				
+				bool found = false;
+				for (int j = 0; j < index; j++) {
+					if (uniq_vals[j] == value) {
+						uniq_counts[j]++;
+						found = true;
+						break;
+					}
+				}
+				
+				if (!found) {
+					uniq_vals[index] = value;
+					uniq_counts[index] = 1;
+					index++;
+				}
+			}
 
-        if (self->se2_completed) {
-                result_arr[count]=self->se2_result;
-                count+=1;
-        }
+			// find max
+			int best_idx = 0;
+			for (int i = 1; i < index; i++) {
+				if (uniq_counts[i] > uniq_counts[best_idx]) {
+					best_idx = i;
+				}
+			}
 
-        if (self->se3_completed) {
-                result_arr[count]=self->se3_result;
-                count+=1;
-        }
-
-        if (count==3) {
-            if (result_arr[0] == result_arr[1])
-                    self->finalOutput = result_arr[0];
-            else if (result_arr[0] == result_arr[2])
-                    self->finalOutput = result_arr[0];
-            else if (result_arr[1] == result_arr[2])
-                    self->finalOutput = result_arr[1];
-            
-			//else
-            //    lf_print("Warning: all three values in the majority voter have different values\n");    
-        }
-
-        else if (count==2) {
-                if (result_arr[0] == result_arr[1])
-                        self->finalOutput = result_arr[0];
-                //else
-                //    lf_print("Warning: two completed results are different\n");                             
-        }
-
-        else if (count==1) {
-                self->finalOutput = result_arr[0];
-        }
-
-        //else
-        //    lf_print("Warning: no completed executions\n");
-
-        //lf_print("Final Output: %d\n", self->finalOutput);
-        //lf_print("number of completed executions: %d\n", count);
-        
+			// majority check
+			if (2 * uniq_counts[best_idx] > self->count_completed) {
+				self->finalOutput = uniq_vals[best_idx];
+			} else {
+				//majority cannot be agreed
+				self->finalOutput = -1;
+			}
+		}
+		
         lf_set(done, true);
         lf_set(success, (self->finalOutput == self->expected));
     =}
+
 }
 
 
+
+
 main reactor {
-    state total_iteration: int = 100;
-    state success_cnt: int = 0;
+    state total_iteration: int = 1000
+    state success_cnt: int = 0
     
     serialTMR = new SerialTMR();
     
-    logical action kick: int;
+    logical action kick
 
-    state iter: int = 0;
+    state iter: int = 0
 
     reaction(startup) -> kick {=
         self->iter = 0;
-        lf_schedule_int(kick, 0, 1); 
+        lf_schedule(kick, 0); 
     =}
     
     reaction(kick) -> serialTMR.start {=
@@ -220,7 +228,7 @@ main reactor {
 
         self->iter++;
         if (self->iter < self->total_iteration) {
-            lf_schedule_int(kick, 0, 1); 
+            lf_schedule(kick, 0); 
         } else {
             lf_print("Finished. %d successed trials / %d total trials.\n", self->success_cnt, self->total_iteration);
         }
