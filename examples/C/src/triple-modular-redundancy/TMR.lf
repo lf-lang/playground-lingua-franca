@@ -141,7 +141,7 @@ reactor SerialTMR {
     mv.finalOutput -> finalOutput
     mv.agreed -> agreed
 
-    reaction(start) -> execute_once {=
+    reaction StartExecution(start) -> execute_once {=
 
         if (!start->value) return;
         for (int i = 0; i < self->max_number_of_executions; i++) {
@@ -155,11 +155,11 @@ reactor SerialTMR {
     =}
     
 	
-    reaction(execute_once) -> se.trigger {=
+    reaction ExecuteOnce(execute_once) -> se.trigger {=
         lf_set(se.trigger, 5);
     =}
 	
-    reaction(se.result, se.completed) -> execute_once,  mv.count_completed, mv.results{=
+    reaction DecideReexecution(se.result, se.completed) -> execute_once,  mv.count_completed, mv.results{=
 		self->count_executions += 1;
         if(se.completed->value) {
 			self->voting_results[self->count_completed] = se.result->value;
@@ -194,18 +194,18 @@ main reactor {
     state iter: int = 0
     state expected: int = 25 // 5 * 5;
 
-    reaction(startup) -> kick {=
+    reaction StartUp(startup) -> kick {=
         self->iter = 0;
         lf_schedule(kick, 0); 
     =}
     
-    reaction(kick) -> serialTMR.start {=
+    reaction Kick(kick) -> serialTMR.start {=
         if (self->iter < self->total_iteration) {
             lf_set(serialTMR.start, true);
         }
     =}
 
-    reaction(serialTMR.finalOutput, serialTMR.agreed) -> kick {=
+    reaction CheckOutput(serialTMR.finalOutput, serialTMR.agreed) -> kick {=
         if(serialTMR.agreed->value == false)
             self->cannot_agreed++;
         else if (serialTMR.finalOutput->value != self->expected)
