@@ -57,25 +57,19 @@ reactor SingleExecWithFault {
 reactor MajorityVoter {
     input count_completed: int
     input[9] results: int
-    output done: bool
-    output success: bool
+    output agreed: bool
+    output finalOutput: int
 
-    // state count_completed: int = 0
-
-    state finalOutput: int = -1
-    
-    state expected: int = 25 // 5 * 5;
-
-    reaction(count_completed, results) -> done, success {=
-        int finalOutput = -1;
-        int expected = 25;
+    reaction(count_completed, results) -> agreed, finalOutput {=
 		if (count_completed->value == 0) {
 			//no completed execution			
-			finalOutput = -1;
+            lf_set(agreed, false);
+			lf_set(finalOutput, -1);
 		}
 		
 		else if (count_completed->value == 1) {
-			finalOutput = results[0]->value;
+			lf_set(finalOutput, results[0]->value);
+            lf_set(agreed, true);
 		}
 		
 		else {
@@ -113,25 +107,22 @@ reactor MajorityVoter {
 
 			// majority check
 			if (2 * uniq_counts[best_idx] > count_completed->value) {
-				finalOutput = uniq_vals[best_idx];
+			    lf_set(finalOutput, uniq_vals[best_idx]);
+                lf_set(agreed, true);
 			} else {
 				//majority cannot be agreed
-				finalOutput = -1;
+                lf_set(agreed, false);
+			    lf_set(finalOutput, -1);
 			}
 		}
-		
-        lf_set(done, true);
-        lf_set(success, (finalOutput == expected));
     =}
 }
 
 reactor SerialTMR {
-
-    
     input start: bool
     
-    output done: bool
-    output success: bool
+    output finalOutput: int
+    output agreed: bool
 
     logical action execute_once
 	logical action done_once: int
@@ -142,15 +133,13 @@ reactor SerialTMR {
 
     state count_executions: int = 0
 
-    state finalOutput: int = -1
-
     state voting_results: int[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
 	
     se = new SingleExecWithFault()
     mv = new MajorityVoter()
 
-    mv.done -> done
-    mv.success -> success
+    mv.finalOutput -> finalOutput
+    mv.agreed -> agreed
 
     reaction(start) -> execute_once {=
 
@@ -161,8 +150,6 @@ reactor SerialTMR {
 
         self->count_executions = 0;
         self->count_completed = 0;
-
-        self->finalOutput = -1;
 
         lf_schedule(execute_once, 0);
     =}
@@ -195,14 +182,17 @@ reactor SerialTMR {
 
 
 main reactor {
-    state total_iteration: int = 1000
+    state total_iteration: int = 10000
     state success_cnt: int = 0
+    state cannot_agreed: int = 0
+    state agreed_sdc: int = 0
     
     serialTMR = new SerialTMR()
     
     logical action kick
 
     state iter: int = 0
+    state expected: int = 25 // 5 * 5;
 
     reaction(startup) -> kick {=
         self->iter = 0;
@@ -215,16 +205,24 @@ main reactor {
         }
     =}
 
-    reaction(serialTMR.done, serialTMR.success) -> kick {=
-        if (!serialTMR.done->value) return;
-
-        if (serialTMR.success->value) self->success_cnt++;
+    reaction(serialTMR.finalOutput, serialTMR.agreed) -> kick {=
+        if(serialTMR.agreed->value == false)
+            self->cannot_agreed++;
+        else if (serialTMR.finalOutput->value != self->expected)
+            self->agreed_sdc++;
+        else
+            self->success_cnt++;
 
         self->iter++;
         if (self->iter < self->total_iteration) {
             lf_schedule(kick, 0); 
         } else {
-            lf_print("Finished. %d successed trials / %d total trials.\n", self->success_cnt, self->total_iteration);
+            lf_print("Finished.\n");
+            lf_print("Total trials: %d", self->total_iteration);
+            lf_print("Successed trials: %d", self->success_cnt);
+            lf_print("Failures (Cannot agree majority): %d", self->cannot_agreed); // no completed execution + no majority among completed executions
+            lf_print("Failures (Agreed output is incorrect): %d", self->agreed_sdc); // Voted result is incorrect (including only 1 completed execution cases)
+
         }
     =}
 }    

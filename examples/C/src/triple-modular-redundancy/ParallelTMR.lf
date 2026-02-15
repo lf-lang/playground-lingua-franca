@@ -55,28 +55,31 @@ reactor SingleExecWithFault {
 }
 
 reactor ParallelMajorityVoter {
-    input[3] completed: bool
-    input[3] results: int
-    output done: bool
-    output success: bool
+    input[9] completed: bool
+    input[9] results: int
+    output agreed: bool
+    output finalOutput: int
 
-    // state count_completed: int = 0
+    reaction(completed, results) -> agreed, finalOutput {=
+        int results_completed[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
+        int count_completed = 0;
 
-    state finalOutput: int = -1
-    
-    state expected: int = 25 // 5 * 5;
-
-    reaction(completed, results) -> done, success {=
-        for ()
-        int finalOutput = -1;
-        int expected = 25;
-		if (count_completed->value == 0) {
-			//no completed execution			
-			finalOutput = -1;
+		for (int i=0; i<9; i++) {
+            if (!(completed[i]->is_present) )
+                break;
+			else if (completed[i]->value) {
+				results_completed[count_completed] = results[i]->value;
+				count_completed += 1;
+			}
 		}
-		
-		else if (count_completed->value == 1) {
-			finalOutput = results[0]->value;
+		if (count_completed == 0) {
+			//no completed execution			
+            lf_set(agreed, false);
+			lf_set(finalOutput, -1);
+		}
+		else if (count_completed == 1) {
+			lf_set(finalOutput, results_completed[0]);
+            lf_set(agreed, true);
 		}
 		
 		else {
@@ -85,8 +88,8 @@ reactor ParallelMajorityVoter {
 			int index = 0;   // number of unique values
 
 			// build histogram
-			for (int i = 0; i < count_completed->value; i++) {
-				int value = results[i]->value;
+			for (int i = 0; i < count_completed; i++) {
+				int value = results_completed[i];
 				
 				bool found = false;
 				for (int j = 0; j < index; j++) {
@@ -113,26 +116,23 @@ reactor ParallelMajorityVoter {
 			}
 
 			// majority check
-			if (2 * uniq_counts[best_idx] > count_completed->value) {
-				finalOutput = uniq_vals[best_idx];
+			if (2 * uniq_counts[best_idx] > count_completed) {
+			    lf_set(finalOutput, uniq_vals[best_idx]);
+                lf_set(agreed, true);
 			} else {
 				//majority cannot be agreed
-				finalOutput = -1;
+                lf_set(agreed, false);
+			    lf_set(finalOutput, -1);
 			}
 		}
-		
-        lf_set(done, true);
-        lf_set(success, (finalOutput == expected));
     =}
 }
 
 reactor ParallelTMR {
-
-    
     input start: bool
     
-    output done: bool
-    output success: bool
+    output finalOutput: int
+    output agreed: bool
 
     logical action execute_once
 	logical action done_once: int
@@ -146,18 +146,16 @@ reactor ParallelTMR {
     state finalOutput: int = -1
 
     state voting_results: int[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
-	
-    se1 = new SingleExecWithFault()
-    se2 = new SingleExecWithFault()
-    se3 = new SingleExecWithFault()
-    mv = new ParallelMajorityVoter()
 
-    mv.done -> done
-    mv.success -> success
+    se = new[9] SingleExecWithFault();   // bank. up ro 9
 
-    se1.completed, se2.completed,se3.completed -> mv.completed
-    se1.result, se2.result, se3.result -> mv.results
+    mv = new ParallelMajorityVoter();
 
+    mv.finalOutput -> finalOutput
+    mv.agreed -> agreed
+
+    se.completed -> mv.completed
+    se.result -> mv.results
 
     reaction(start) -> execute_once {=
 
@@ -175,43 +173,29 @@ reactor ParallelTMR {
     =}
     
 	
-    reaction(execute_once) -> se1.trigger, se2.trigger, se3.trigger {=
-        lf_set(se1.trigger, 5);
-        lf_set(se2.trigger, 5);
-        lf_set(se3.trigger, 5);
+    reaction(execute_once) -> se.trigger {=
+        for (int i = 0; i < self->max_number_of_executions; i++) {
+            lf_set(se[i].trigger, 5);
+        }
     =}
 	
-    // reaction(se1.result, se1.completed) -> execute_once,  mv.count_completed, mv.results{=
-	// 	self->count_executions += 1;
-    //     if(se.completed->value) {
-	// 		self->voting_results[self->count_completed] = se.result->value;
-	// 		self->count_completed += 1;
-	// 	}
-		
-	// 	if(self->count_executions>=self->max_number_of_executions) {
-    //         lf_set(mv.count_completed, self->count_completed);
-    //         for (int i = 0; i < 9; i++) {
-    //             lf_set(mv.results[i], self->voting_results[i]);
-    //         }
-	// 	}
-			
-	// 	else
-	// 		lf_schedule(execute_once, 0);
-    // =}
 }
 
 
 
 
 main reactor {
-    state total_iteration: int = 1000
+    state total_iteration: int = 10000
     state success_cnt: int = 0
+    state cannot_agreed: int = 0
+    state agreed_sdc: int = 0
     
     parallelTMR = new ParallelTMR()
     
     logical action kick
 
     state iter: int = 0
+    state expected: int = 25 // 5 * 5;
 
     reaction(startup) -> kick {=
         self->iter = 0;
@@ -220,20 +204,28 @@ main reactor {
     
     reaction(kick) -> parallelTMR.start {=
         if (self->iter < self->total_iteration) {
-            lf_set(serialTMR.start, true);
+            lf_set(parallelTMR.start, true);
         }
     =}
 
-    reaction(parallelTMR.done, parallelTMR.success) -> kick {=
-        if (!serialTMR.done->value) return;
-
-        if (serialTMR.success->value) self->success_cnt++;
+    reaction(parallelTMR.finalOutput, parallelTMR.agreed) -> kick {=
+        if(parallelTMR.agreed->value == false)
+            self->cannot_agreed++;
+        else if (parallelTMR.finalOutput->value != self->expected)
+            self->agreed_sdc++;
+        else
+            self->success_cnt++;
 
         self->iter++;
         if (self->iter < self->total_iteration) {
             lf_schedule(kick, 0); 
         } else {
-            lf_print("Finished. %d successed trials / %d total trials.\n", self->success_cnt, self->total_iteration);
+            lf_print("Finished.\n");
+            lf_print("Total trials: %d", self->total_iteration);
+            lf_print("Successed trials: %d", self->success_cnt);
+            lf_print("Failures (Cannot agree majority): %d", self->cannot_agreed); // no completed execution + no majority among completed executions
+            lf_print("Failures (Agreed output is incorrect): %d", self->agreed_sdc); // Voted result is incorrect (including only 1 completed execution cases)
+
         }
     =}
 }    
