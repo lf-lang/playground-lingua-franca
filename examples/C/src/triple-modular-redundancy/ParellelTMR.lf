@@ -1,0 +1,240 @@
+target C;
+
+
+preamble {=
+    #include <stdlib.h>
+    #include <time.h>
+
+    //static const double due_per_exec = 9.2e-17;    
+    static const double due_per_exec = 0.3;    
+    // static const double sdc_per_exec = 2.7e-15;
+    static const double sdc_per_exec = 0.3;
+    
+    static uint64_t rng_state = 10; //fixed seed
+
+    //https://github.com/lh3/hickit/blob/master/krng.h
+    static inline void rng_seed(uint64_t seed) {
+        rng_state = seed ? seed : 0xdeadbeefcafebabeULL;
+    }
+
+    //https://github.com/lh3/hickit/blob/master/krng.h
+    static inline uint64_t splitmix64_next(void) {
+        uint64_t z = (rng_state += 0x9e3779b97f4a7c15ULL);
+        z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+        z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+        return z ^ (z >> 31);
+    }
+
+    static const uint64_t T_DUE = (uint64_t)((long double) due_per_exec * 18446744073709551616.0L);
+    static const uint64_t T_SDC = (uint64_t)((long double) sdc_per_exec * 18446744073709551616.0L);
+=}
+
+reactor SingleExecWithFault {
+    input trigger: int;
+    output result: int;
+    output completed: bool;
+    reaction(trigger) -> result, completed {=
+
+        int result_value = trigger->value * trigger->value; // Example computation: square the input
+
+        //fault injection
+        uint64_t u = splitmix64_next();
+
+        if (u < T_DUE) { // DUE
+            lf_set(result, 0); // Garbage value
+            lf_set(completed, false);
+        } else if (u < T_DUE + T_SDC ) { // SDC
+            int flip_bit = (int)(1U << (splitmix64_next()%16)); // selecting bit from 0~15 to avoid too large value
+            lf_set(result, result_value ^ flip_bit);
+            lf_set(completed, true);
+        } else { // benign
+            lf_set(result, result_value);
+            lf_set(completed, true);
+        }
+    =}
+}
+
+reactor ParallelMajorityVoter {
+    input[3] completed: bool
+    input[3] results: int
+    output done: bool
+    output success: bool
+
+    // state count_completed: int = 0
+
+    state finalOutput: int = -1
+    
+    state expected: int = 25 // 5 * 5;
+
+    reaction(completed, results) -> done, success {=
+        for ()
+        int finalOutput = -1;
+        int expected = 25;
+		if (count_completed->value == 0) {
+			//no completed execution			
+			finalOutput = -1;
+		}
+		
+		else if (count_completed->value == 1) {
+			finalOutput = results[0]->value;
+		}
+		
+		else {
+			int uniq_vals[9];
+			int uniq_counts[9];
+			int index = 0;   // number of unique values
+
+			// build histogram
+			for (int i = 0; i < count_completed->value; i++) {
+				int value = results[i]->value;
+				
+				bool found = false;
+				for (int j = 0; j < index; j++) {
+					if (uniq_vals[j] == value) {
+						uniq_counts[j]++;
+						found = true;
+						break;
+					}
+				}
+				
+				if (!found) {
+					uniq_vals[index] = value;
+					uniq_counts[index] = 1;
+					index++;
+				}
+			}
+
+			// find max
+			int best_idx = 0;
+			for (int i = 1; i < index; i++) {
+				if (uniq_counts[i] > uniq_counts[best_idx]) {
+					best_idx = i;
+				}
+			}
+
+			// majority check
+			if (2 * uniq_counts[best_idx] > count_completed->value) {
+				finalOutput = uniq_vals[best_idx];
+			} else {
+				//majority cannot be agreed
+				finalOutput = -1;
+			}
+		}
+		
+        lf_set(done, true);
+        lf_set(success, (finalOutput == expected));
+    =}
+}
+
+reactor ParallelTMR {
+
+    
+    input start: bool
+    
+    output done: bool
+    output success: bool
+
+    logical action execute_once
+	logical action done_once: int
+	
+	state max_number_of_executions: int = 3
+
+	state count_completed: int = 0
+
+    state count_executions: int = 0
+
+    state finalOutput: int = -1
+
+    state voting_results: int[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
+	
+    se1 = new SingleExecWithFault()
+    se2 = new SingleExecWithFault()
+    se3 = new SingleExecWithFault()
+    mv = new ParallelMajorityVoter()
+
+    mv.done -> done
+    mv.success -> success
+
+    se1.completed, se2.completed,se3.completed -> mv.completed
+    se1.result, se2.result, se3.result -> mv.results
+
+
+    reaction(start) -> execute_once {=
+
+        if (!start->value) return;
+        for (int i = 0; i < self->max_number_of_executions; i++) {
+            self->voting_results[i] = -1;
+        }
+
+        self->count_executions = 0;
+        self->count_completed = 0;
+
+        self->finalOutput = -1;
+
+        lf_schedule(execute_once, 0);
+    =}
+    
+	
+    reaction(execute_once) -> se1.trigger, se2.trigger, se3.trigger {=
+        lf_set(se1.trigger, 5);
+        lf_set(se2.trigger, 5);
+        lf_set(se3.trigger, 5);
+    =}
+	
+    // reaction(se1.result, se1.completed) -> execute_once,  mv.count_completed, mv.results{=
+	// 	self->count_executions += 1;
+    //     if(se.completed->value) {
+	// 		self->voting_results[self->count_completed] = se.result->value;
+	// 		self->count_completed += 1;
+	// 	}
+		
+	// 	if(self->count_executions>=self->max_number_of_executions) {
+    //         lf_set(mv.count_completed, self->count_completed);
+    //         for (int i = 0; i < 9; i++) {
+    //             lf_set(mv.results[i], self->voting_results[i]);
+    //         }
+	// 	}
+			
+	// 	else
+	// 		lf_schedule(execute_once, 0);
+    // =}
+}
+
+
+
+
+main reactor {
+    state total_iteration: int = 1000
+    state success_cnt: int = 0
+    
+    parallelTMR = new ParallelTMR()
+    
+    logical action kick
+
+    state iter: int = 0
+
+    reaction(startup) -> kick {=
+        self->iter = 0;
+        lf_schedule(kick, 0); 
+    =}
+    
+    reaction(kick) -> parallelTMR.start {=
+        if (self->iter < self->total_iteration) {
+            lf_set(serialTMR.start, true);
+        }
+    =}
+
+    reaction(parallelTMR.done, parallelTMR.success) -> kick {=
+        if (!serialTMR.done->value) return;
+
+        if (serialTMR.success->value) self->success_cnt++;
+
+        self->iter++;
+        if (self->iter < self->total_iteration) {
+            lf_schedule(kick, 0); 
+        } else {
+            lf_print("Finished. %d successed trials / %d total trials.\n", self->success_cnt, self->total_iteration);
+        }
+    =}
+}    
+    
