@@ -3,6 +3,8 @@ on:
   # No need to run on main, because prebuild will trigger itself.
   pull_request:
   workflow_dispatch: 
+  schedule:
+    - cron: '0 0 * * 5'
 
 # https://how.wtf/run-workflow-step-or-job-based-on-file-changes-github-actions.html
 jobs:
@@ -27,7 +29,7 @@ jobs:
 
   build-devcontainer:
     needs: check-devcontainer-changed
-    if: ${{ needs.changes.outputs.devcontainer == 'true' || needs.changes.outputs.docker == 'true' || needs.changes.outputs.scripts == 'true' }}
+    if: ${{ needs.check-devcontainer-changed.outputs.devcontainer == 'true' || needs.check-devcontainer-changed.outputs.docker == 'true' || needs.check-devcontainer-changed.outputs.scripts == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (GitHub)
