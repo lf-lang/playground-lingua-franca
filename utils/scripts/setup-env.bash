@@ -30,6 +30,8 @@ done
 
 # Install dependencies
 
+# Make add-apt-repository available
+sudo apt-get install --assume-yes software-properties-common
 # We need python3.10 to use LF
 sudo add-apt-repository -y 'ppa:deadsnakes/ppa'
 sudo apt-get update
