@@ -1,0 +1,78 @@
+target C {
+  // coordination: decentralized
+}
+
+import RaftNode from "./Raft.lf"
+
+// FIXME: Generics do not seem to work. Use different preambles as a workaround.
+// When compiling this file, make sure to comment out the preamble in Raft.lf.
+preamble {=
+  typedef struct raft_msg_t {
+    int  type;            // Message type: HEART, ACK, ELECTION, VOTE, LEADER
+    int  term;            // Current term number
+    int  leader_id;       // So follower can redirect clients
+    int  prev_log_index;  // Index of log entry immediately preceding new ones
+    int  prev_log_term;   // Term of prev_log_index entry
+    int  leader_commit;   // Leader's commit index—index of highest log entry known to be committed
+    bool empty;           // If true, this AppendEntries message has no payload and is considered a heartbeat.
+  } raft_msg_t;
+
+  typedef struct app_msg_t {
+    raft_msg_t  base;
+    int         log;      // Extending the original raft_msg_t with log entry representing one transaction
+  } app_msg_t;
+=}
+
+// FIXME: Extending a modal reactor does not seem to work.
+// This reactor wraps application logic around the base node.
+reactor StockExchangeDatabase extends RaftNode {
+
+  input client_input: int
+  state shares: int = 0 // The number of shares a client owns
+
+  method create_app_msg(log: int): app_msg_t {=
+    raft_msg_t base = _create_msg(MSG_HEART, false);
+    return (app_msg_t){.base=base, .log=log};
+  =}
+
+  reaction(client_input) -> out {=
+    // Only the leader responds to the client.
+    if (self->role == ROLE_LEADER) {
+      self->shares += client_input->value;
+      lf_print("Leader %d deposits %d shares for the client. Total = %d", self->bank_index, client_input->value, self->shares);
+      // Leader broadcasts an AppendEntries RPC to all followers.
+      for (int i = 0; i < self->num_nodes; i++) {
+        lf_set(out[i], create_app_msg(client_input->value));
+      }
+    } 
+  =}
+
+  reaction(in) {=
+    if (self->role == ROLE_FOLLOWER) {
+      if (in[self->leader]->is_present
+        && self->leader != self->bank_index
+        && in[self->leader]->value.base.type == MSG_HEART
+        && !in[self->leader]->value.base.empty) {
+        // Cast the message to an application message.
+        app_msg_t* msg = (app_msg_t*)&in[self->leader]->value;
+        // Apply the transaction describe in log.
+        int shares_diff = msg->log;
+        self->shares += shares_diff;
+      }
+    }
+  =}
+}
+
+// FIXME: MODAL_REACTORS should be defined if it is used
+// in the parent reactors. A temporary workaround is to
+// declare a dummy mode.
+reactor Foo {
+  initial mode {}
+}
+
+main reactor(num_nodes: size_t = 5) {
+  nodes = new[num_nodes] StockExchangeDatabase(num_nodes=num_nodes, verbose=true)
+  nodes.out ~> interleaved(nodes.in)
+
+  foo = new Foo()
+}
