@@ -30,6 +30,9 @@ done
 
 # Install dependencies
 
+# Update package index first
+sudo apt-get update
+
 # Make add-apt-repository available
 sudo apt-get install --assume-yes software-properties-common
 # We need python3.10 to use LF
