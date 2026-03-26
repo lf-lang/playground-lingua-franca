@@ -1,0 +1,95 @@
+target C{
+    single-threaded: true,
+    cmake-include: ["../c_lib/hx711/scale.cmake"],
+    files: ["../c_lib/hx711/gb_common.c", "../c_lib/hx711/gb_common.h", "../c_lib/hx711/hx711.c", 
+            "../c_lib/hx711/hx711.h"]
+}
+//sudo ./hx711_test 5 6 1 0
+// data = 5
+// clock = 6
+
+/*******debug******/
+    // stuck @ 0
+
+preamble {=
+    #include "hx711.h"
+    #include "gb_common.h"
+    #include <stdio.h> //printf()
+    #include <stdlib.h> //exit()
+
+    static int gpio_initialized = 0;
+=}
+
+reactor LoadCell{
+    //(clock_pin: int = 6,
+    //data_pin: int = 5,
+    //samples: int = 10)
+
+    /*input clock_pin: int;
+    input data_pin: int;
+    input samples: int;*/
+
+    state hx: HX711; 
+
+    output weight: double; //grams
+    output low_food: bool;
+    timer t (1 sec, 1 sec);
+    
+    
+
+    reaction(startup)->weight {=
+        int priority = 10;
+        int err = setPriority(priority);
+        if (err)
+        {
+            printf("\n!!! Failed to set process priority to %d\n", priority);
+            //exit();
+        }
+        err = initHX711(&self->hx, 6, 5);
+        if (err)
+        {
+            printf("\n!!! Failed to init HX711 struct !!!\n");
+            //exit();
+        }
+        setupGPIO(&self->hx);
+        printf("\n!!! gpio setup is done !!!\n");
+        reset(&self->hx);
+        printf("\n!!! reset is done !!!\n");
+
+        getRawData(&self->hx);
+        err = zeroScale(&self->hx);
+        if (err)
+        {
+            printf("\n!!! Failed to zero the scale.\n");
+            //exit();
+        }
+        printf("\n!!! zero setup is done !!!\n");
+        //self->weight->value = 0.0; 
+        lf_set(weight, 0.0);
+
+    =}
+
+    reaction(t)->weight, low_food {=
+        // todo
+        //1) add calibration to convert raw data to grams
+        //2) add threshold for low food
+        usleep(50000);
+
+        int raw_data = getRawDataMean(&self->hx, 10);//self->samples);
+        printf("\n Current weight is: %ld", raw_data);// or weight->value?
+        lf_set(low_food, true);//placeholder
+        //raw_data = getRawData(&self->hx);
+        //printf("data pin state: %d\n", getPinState(self->hx.data_pin));
+        lf_set(weight, (double)raw_data);
+        //printf("gpio5: %d  gpio6: %d\n",
+          //  getPinState(5),
+            //getPinState(6));
+    =}
+
+    reaction(shutdown)  {=
+        printf("\nShutting down\n");
+        cleanGPIO(&self->hx);
+    =}
+
+
+}

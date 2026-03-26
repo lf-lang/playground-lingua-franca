@@ -1,0 +1,33 @@
+target C{
+    single-threaded: true
+}
+import StepperMotor from "lib/motor.lf";
+import LoadCell from "lib/loadcell.lf";
+//using boolean from loadcell, spin motor or leave be
+
+//email notif of feeding?
+main reactor{
+    state run: bool = false
+    motor = new StepperMotor();
+    balance = new LoadCell();
+    //balance = new LoadCell(clock_pin = 6, data_pin = 5)
+    
+    reaction(startup)-> motor.run {=
+
+        printf("Starting main reactor!\n");
+        lf_set(motor.run, true); //for testing
+    =}
+    
+    /*reaction(balance.weight) {=
+        printf("Weight= %f\n", balance.weight->value);
+        // spin motor
+    =}
+        
+    reaction(balance.low_food) {=
+        lf_set(motor.run, true);
+    =}
+    
+    */
+
+
+}
