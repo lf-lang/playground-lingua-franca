@@ -47,8 +47,8 @@ sudo apt-get install --assume-yes \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
     protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot libasound2-dev libfluidsynth-dev libgpiod-dev
     
-python3.10 -m ensurepip --upgrade
-python3.10 -m pip install --upgrade pip
+sudo python3.10 -m ensurepip --upgrade
+sudo python3.10 -m pip install --upgrade pip
 # Install python dependencies and
 # latest CMake; see https://www.kitware.com/cmake-python-wheels/ https://askubuntu.com/a/1070770
 sudo python3.10 -m pip install --exists-action i requests setuptools cmake
