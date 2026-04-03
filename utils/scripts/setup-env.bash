@@ -42,7 +42,7 @@ sudo apt-get update
 ## Setup C, C++, Python, Rust, protobuf, gRPC, gnuplot
 sudo apt-get install --assume-yes \
     build-essential \
-    python3.10 python3.10-dev python3.10-distutils \
+    python3.10 python3.10-dev python3.10-distutils python3.10-venv \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
     protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot libasound2-dev libfluidsynth-dev libgpiod-dev
