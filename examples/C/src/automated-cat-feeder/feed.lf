@@ -8,26 +8,26 @@ import LoadCell from "lib/loadcell.lf";
 //email notif of feeding?
 main reactor{
     state run: bool = false
-    motor = new StepperMotor();
+    //motor = new StepperMotor();
     balance = new LoadCell();
     //balance = new LoadCell(clock_pin = 6, data_pin = 5)
     
-    reaction(startup)-> motor.run {=
+    reaction(startup)/*-> motor.run*/ {=
 
         printf("Starting main reactor!\n");
-        lf_set(motor.run, true); //for testing
+        //printf("%d\n", balance.weight->value);
+        //lf_set(motor.run, true);
     =}
     
-    /*reaction(balance.weight) {=
-        printf("Weight= %f\n", balance.weight->value);
+    reaction(balance.weight) {=
+        //printf("Weight= %f\n", balance.weight->value);
+        printf("-----------------------------");
         // spin motor
     =}
-        
-    reaction(balance.low_food) {=
-        lf_set(motor.run, true);
+
+    reaction(shutdown){=
+        printf("Shutting down main reactor!\n");
     =}
-    
-    */
 
 
 }

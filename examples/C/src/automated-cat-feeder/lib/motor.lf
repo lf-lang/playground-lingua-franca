@@ -1,5 +1,6 @@
 target C{
     single-threaded: true,
+    keepalive:true, #?
     cmake-include: ["../c_lib/bcm2835/motor.cmake"],
     files: ["../c_lib/bcm2835/DEV_Config.h", "../c_lib/bcm2835/HR8825.h", "../c_lib/bcm2835/HR8825.c", 
             "../c_lib/bcm2835/DEV_Config.c", "../c_lib/bcm2835/Debug.h"]
@@ -12,10 +13,6 @@ preamble {=
     #include <stdio.h>      //printf()
     #include <stdlib.h>     //exit()
 =}
-
-/*******debug******/
-    // prompt exit
-    
 //modal
 // error signal + error mode.. timeout back to idle
 //idle, dispense, error
