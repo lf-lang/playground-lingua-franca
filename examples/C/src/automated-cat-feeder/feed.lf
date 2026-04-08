@@ -1,33 +1,34 @@
-target C{
-    single-threaded: true
+target C {
+  single-threaded: true
 }
-import StepperMotor from "lib/motor.lf";
-import LoadCell from "lib/loadcell.lf";
-//using boolean from loadcell, spin motor or leave be
 
-//email notif of feeding?
-main reactor{
-    state run: bool = false
-    //motor = new StepperMotor();
-    balance = new LoadCell();
-    //balance = new LoadCell(clock_pin = 6, data_pin = 5)
-    
-    reaction(startup)/*-> motor.run*/ {=
+import StepperMotor from "lib/motor.lf"
+import LoadCell from "lib/loadcell.lf"
 
-        printf("Starting main reactor!\n");
-        //printf("%d\n", balance.weight->value);
-        //lf_set(motor.run, true);
-    =}
-    
-    reaction(balance.weight) {=
-        //printf("Weight= %f\n", balance.weight->value);
-        printf("-----------------------------");
-        // spin motor
-    =}
+// using boolean from loadcell, spin motor or leave be
+// email notif of feeding?
+main reactor {
+  state run: bool = false
+  balance = new LoadCell()  // motor = new StepperMotor();
 
-    reaction(shutdown){=
-        printf("Shutting down main reactor!\n");
-    =}
+  // balance = new LoadCell(clock_pin = 6, data_pin = 5)
+  reaction(
+      /** -> motor.run */
+      startup) {=
+    /*-> motor.run*/
 
+            printf("Starting main reactor!\n");
+            //printf("%d\n", balance.weight->value);
+            //lf_set(motor.run, true);
+  =}
 
+  reaction(balance.weight) {=
+    //printf("Weight= %f\n", balance.weight->value);
+    printf("-----------------------------");
+    // spin motor
+  =}
+
+  reaction(shutdown) {=
+    printf("Shutting down main reactor!\n");
+  =}
 }

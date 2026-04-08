@@ -1,177 +1,173 @@
-target C{
-    single-threaded: true,
-    keepalive:true,
-    cmake-include: ["../c_lib/hx711/scale.cmake"],
-    files: ["../c_lib/hx711/gb_common.c", "../c_lib/hx711/gb_common.h", "../c_lib/hx711/hx711.c", 
-            "../c_lib/hx711/hx711.h"]
+target C {
+  single-threaded: true,
+  keepalive: true,
+  cmake-include: ["../c_lib/hx711/scale.cmake"],
+  files: [
+      "../c_lib/hx711/gb_common.c",
+      "../c_lib/hx711/gb_common.h",
+      "../c_lib/hx711/hx711.c",
+      "../c_lib/hx711/hx711.h"]
 }
-//sudo ./hx711_test 5 6 1 0
+
+// sudo ./hx711_test 5 6 1 0
 // data = 5
 // clock = 6
-
-//todo:
+// todo:
 // pass in read as double not int
-// calibration 
+// calibration
 // convert sort to median function
-
 // EMPTY BOWL = 44 GRAMS
-
 preamble {=
-    #include "hx711.h"
-    #include "gb_common.h"
-    #include <stdio.h> //printf()
-    #include <stdlib.h> //exit()
+  #include "hx711.h"
+  #include "gb_common.h"
+  #include <stdio.h> //printf()
+  #include <stdlib.h> //exit()
 
-    // change into median function
-    static void sort(int *arr, int n) {
-        for (int i = 1; i < n; i++) {
-            int key = arr[i];
-            int j = i - 1;
+  // change into median function
+  static void sort(int *arr, int n) {
+      for (int i = 1; i < n; i++) {
+          int key = arr[i];
+          int j = i - 1;
 
-            while (j >= 0 && arr[j] > key) {
-                arr[j + 1] = arr[j];
-                j--;
-            }
-            arr[j + 1] = key;
-        }
-    }
+          while (j >= 0 && arr[j] > key) {
+              arr[j + 1] = arr[j];
+              j--;
+          }
+          arr[j + 1] = key;
+      }
+  }
 =}
 
-reactor LoadCell{
-    /*input clock_pin: int;
-    input data_pin: int;
-    input samples: int;*/
+reactor LoadCell {
+  /** input clock_pin: int; input data_pin: int; input samples: int; */
+  state hx: HX711
+  // calibration states
+  // init?
+  state calibrated: bool
+  state offset: double    // init?
+  state calib_phase: int = 0
+  state scale: double
 
-    state hx: HX711; 
-    // calibration states
-    state calibrated: bool;//init?
-    state offset: double;// init?
-    state calib_phase: int=0;
-    state scale: double;
+  output weight: double   // grams
+  output low_food: bool
+  output calibration: int
 
-    output weight: double; //grams
-    output low_food: bool;
-    output calibration: int;
+  timer t(1 sec, 2 sec)
 
-    timer t (1 sec, 2 sec);
-    
-    reaction(startup)->weight, calibration {=
-        //printf("\nentering loadcell startup\n");
+  reaction(startup) -> weight, calibration {=
+    //printf("\nentering loadcell startup\n");
 
-        // set process priority
-        int err = setPriority(10);
-        if (err) {
-            printf("FAILURE: priority\n");
+    // set process priority
+    int err = setPriority(10);
+    if (err) {
+        printf("FAILURE: priority\n");
+    }
+
+    // init hx711 w/ clock=6 and data=5
+    // maybe later generalize as input parameter?(self->hx.clock_pin)
+    initHX711(&self->hx, 6, 5);
+
+    // setup gpio pins
+    setupGPIO(&self->hx);
+
+    // reset hx711
+    reset(&self->hx);
+    //printf("hx711 reset done\n");
+
+    // fuzzy calibration
+    usleep(500000);
+    printf("Calibrating load cell sensor for 5 seconds...");
+    for (int i = 0; i < 5; i++) {
+        int val = getRawData(&self->hx);
+        //printf("Fuzzy calib %d: %d\n", i, val);
+        usleep(100000);
+    }
+    //or use median func
+    // zero scale
+    err = zeroScale(&self->hx);
+    if (err) {
+        printf("FAILURE: zero scale\n");
+    }
+    //printf("exiting startup\n~~~~~~~~~~~~~~~~\n");
+    //set init weight to measured
+    //lf_set(weight, 0.0);
+  =}
+
+  reaction(t) -> weight, low_food {=
+    // 1) raw value read
+    // wait for pin to go low
+    int wait_count = 0;
+    while (getPinState(self->hx.data_pin) == 1) {
+        usleep(1000);
+        wait_count++;
+        if (wait_count % 1000 == 0) {
+            printf("waiting for low data pin (%d ms)\n", wait_count);
         }
+    }
 
-        // init hx711 w/ clock=6 and data=5
-        // maybe later generalize as input parameter?(self->hx.clock_pin)
-        initHX711(&self->hx, 6, 5);
+    // collect samples
+    int raw_vals[10];
+    for (int i = 0; i < 10; i++) {
+        raw_vals[i] = getRawData(&self->hx);
+        usleep(5000);
+    }
+    // single read
+    //int raw_single = getRawData(&self->hx);
+    //printf("RAW SINGLE READ: %d\n", raw_single);
 
-        // setup gpio pins
-        setupGPIO(&self->hx);
-        
-        // reset hx711
-        reset(&self->hx);
-        //printf("hx711 reset done\n");
+    // main read w/ 10 samples
+    //int raw_mean = getRawDataMean(&self->hx, 10);
+    //printf("\nRAW MEAN: %d\n", raw_mean);
 
-        // fuzzy calibration
-        usleep(500000);
-        printf("Calibrating load cell sensor for 5 seconds...");
-        for (int i = 0; i < 5; i++) {
-            int val = getRawData(&self->hx);
-            //printf("Fuzzy calib %d: %d\n", i, val);
-            usleep(100000);
+    // sort samples
+    sort(raw_vals, 10);
+    // median value
+    int raw_median = raw_vals[5];
+    printf("\nRAW MEDIAN: %d\n\n", raw_median);
+
+
+    // 2) calibration
+    // TO BE CHANGED-> bowl will always be on balance
+    // 0 is empty scale
+    if (self->calib_phase == 0) {
+        printf("Calibrating empty scale\n");
+        self->offset = raw;
+        self->calib_phase = 1;
+        return;
+    }
+    // 1 is scale w/ bowl
+    if (self->calib_phase == 1) {
+        printf("Place bowl (44g) on scale...\n");
+
+        // recalibrate bowl
+        if (raw > self->offset + 10000) {
+            double delta = raw - self->offset;
+            self->scale = 44.0 / delta;
+            self->calib_phase = 2;
+            self->calibrated = true;
+
+            printf("CALIBRATED!\n");
+            printf("offset = %f\n", self->offset);
+            printf("scale  = %f g/unit\n", self->scale);
         }
-        //or use median func
-        // zero scale
-        err = zeroScale(&self->hx);
-        if (err) {
-            printf("FAILURE: zero scale\n");
-        } 
-        //printf("exiting startup\n~~~~~~~~~~~~~~~~\n");
-        //set init weight to measured
-        //lf_set(weight, 0.0);
-    =}
+        return;
+    }
 
-    reaction(t)->weight, low_food {=
+    if (self->calibrated) {
+        double grams = (raw - self->offset) * self->scale;
 
-        // 1) raw value read
-        // wait for pin to go low
-        int wait_count = 0;
-        while (getPinState(self->hx.data_pin) == 1) {
-            usleep(1000);
-            wait_count++;
-            if (wait_count % 1000 == 0) {
-                printf("waiting for low data pin (%d ms)\n", wait_count);
-            }
-        }
+        printf("Weight (g): %.2f\n", grams);
 
-        // collect samples
-        int raw_vals[10];
-        for (int i = 0; i < 10; i++) {
-            raw_vals[i] = getRawData(&self->hx);
-            usleep(5000);
-        }
-        // single read
-        //int raw_single = getRawData(&self->hx);
-        //printf("RAW SINGLE READ: %d\n", raw_single);
+        lf_set(weight, grams);
+        lf_set(low_food, grams < 10.0);  // threshold in grams now!
+    }
 
-        // main read w/ 10 samples
-        //int raw_mean = getRawDataMean(&self->hx, 10);
-        //printf("\nRAW MEAN: %d\n", raw_mean);
+    lf_set(weight, (double)raw_median);
+    lf_set(low_food, raw_median < 10000);
+  =}
 
-        // sort samples
-        sort(raw_vals, 10);
-        // median value
-        int raw_median = raw_vals[5];
-        printf("\nRAW MEDIAN: %d\n\n", raw_median);
-
-
-        // 2) calibration
-        // TO BE CHANGED-> bowl will always be on balance
-        // 0 is empty scale
-        if (self->calib_phase == 0) {
-            printf("Calibrating empty scale\n");
-            self->offset = raw;
-            self->calib_phase = 1;
-            return;
-        }
-        // 1 is scale w/ bowl
-        if (self->calib_phase == 1) {
-            printf("Place bowl (44g) on scale...\n");
-
-            // recalibrate bowl
-            if (raw > self->offset + 10000) {
-                double delta = raw - self->offset;
-                self->scale = 44.0 / delta;
-                self->calib_phase = 2;
-                self->calibrated = true;
-
-                printf("CALIBRATED!\n");
-                printf("offset = %f\n", self->offset);
-                printf("scale  = %f g/unit\n", self->scale);
-            }
-            return;
-        }
-
-        if (self->calibrated) {
-            double grams = (raw - self->offset) * self->scale;
-
-            printf("Weight (g): %.2f\n", grams);
-
-            lf_set(weight, grams);
-            lf_set(low_food, grams < 10.0);  // threshold in grams now!
-        }
-
-        lf_set(weight, (double)raw_median);
-        lf_set(low_food, raw_median < 10000);
-    =}
-
-    reaction(shutdown)  {=
-        printf("\nShutting down\n");
-        cleanGPIO(&self->hx);
-    =}
-
-
+  reaction(shutdown) {=
+    printf("\nShutting down\n");
+    cleanGPIO(&self->hx);
+  =}
 }
