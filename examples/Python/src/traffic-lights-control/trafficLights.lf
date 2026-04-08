@@ -1,0 +1,1289 @@
+target Python {
+  timeout: 30 sec,
+  coordination: decentralized,
+  tracing: true
+}
+
+// ---------------------------------------------------------------------------
+// Rerun visualization preamble — shared across all reactors in every federate.
+// Each federate process has its own copy of these globals.
+// rr.init() is called in the startup reaction of each federate's top-level
+// composite reactor (IntersectionNode, AIPlanner), not here, because the
+// recording name differs per federate.
+// ---------------------------------------------------------------------------
+preamble {=
+  import rerun as rr
+  import sys
+  import re
+  _rr_initialized = False
+  # Parse the federate index from __file__ at module load time (before the LF
+  # runtime's start() can modify sys.argv).  __file__ is set by Python to the
+  # path of the script being executed, e.g. ".../federate__I__1.py", so the
+  # regex reliably captures the bank index for every intersection federate.
+  _m = re.search(r"federate__I__(\d+)", __file__)
+  _federate_idx = int(_m.group(1)) if _m else 0
+  print(f"[RERUN] __file__={__file__}  =>  _federate_idx={_federate_idx}")
+  # Lookup tables for scalar encoding of categorical values.
+  # Used by CommandArbiter to log phase_id, control_mode, and ai_used.
+  _PHASE_IDS   = {"NS_GREEN": 1, "EW_GREEN": 2, "EMERGENCY_ROUTE_GREEN": 3, "ALL_RED": 0}
+  _MODE_IDS    = {"AI_ASSIST": 1, "LOCAL_FALLBACK": 2, "EMERGENCY": 3, "MANUAL": 4}
+=}
+
+// Federated Lingua Franca demonstrator for an AI-enabled distributed CPS:
+//
+// - An intersection controller is a separate federate (extensible to multiple via banks).
+// - A centralized AI planner is a separate federate.
+// - Human oversight (HumanOversightConsole) is a separate federate.
+// - Health monitoring (HealthAggregator) is a separate federate.
+
+// ------------------------------------------------------------------------
+// Data structure conventions (passed as Python dicts)
+// ------------------------------------------------------------------------
+// In the Python target, ports are untyped. All messages are Python dicts
+// with the following field conventions:
+//
+// SensorData (detection/sensor data):
+//   {"q_ns": int, "q_ew": int, "emergency": bool}
+
+        // q_ns: queue length on the North-South approach (number of vehicles, toy metric)
+        // q_ew: queue length on the East-West approach (number of vehicles, toy metric)
+        // emergency: whether an emergency vehicle is detected on an approach
+//
+// Features (validated feature vector for AI):
+//   [float, float]
+//   A flat list: [q_ns, q_ew]
+//   Units: q_* are counts.
+//
+// PhasePlan (AI recommendation):
+//   {"phase": str, "duration_ms": int, "confidence": float, "rationale": str}
+
+        // phase: recommended signal phase string, e.g.:
+            // "NS_GREEN", "EW_GREEN", "ALL_RED"
+        // duration_ms: recommended duration for the phase (milliseconds) 
+        // confidence: AI confidence / certainty proxy in [0,1]. 
+        // rationale: optional explanation/metadata for transparency.  
+//
+// PhaseCmd (safe actuator command):
+//   {"phase": str, "duration_ms": int, "mode": str}
+
+        // phase: command phase to set on the controller/actuator side. 
+            // Same semantics as PhasePlan.phase.
+        // duration_ms: how long the phase should be held (milliseconds).
+            // Same semantics as PhasePlan.duration_ms.
+        // mode: which control mode produced this command.  
+            // Typical values in this demo:  
+            //   "AI_ASSIST"  -> AI plan accepted by command arbiter  
+            //   "LOCAL_FALLBACK" -> safe local fallback
+            //   "MANUAL"     -> operator override  
+            //   "EMERGENCY"  -> emergency preemption
+//
+// Heartbeat:
+//   int (bank index of the emitting intersection, 0 for single instance)
+//   The heartbeat's presence itself signals health; no additional payload needed.
+//
+// Alarm:
+//   {"severity": str, "msg": str}
+
+        // severity: alert importance, e.g. "INFO", "WARN", "CRIT"
+        // msg: human-readable alarm message.
+// ------------------------------------------------------------------------
+
+reactor TrafficSensors {
+  // Purpose:
+  //   Acquire raw perception/detection data from local sensors.
+  //   In a real deployment: loop detectors, cameras, radar, V2X, etc.
+  // In this demo:
+  //   Emit a synthetic sensor data message periodically.
+
+  output sensor_data
+  output emergency
+  timer t(0, 1000 msec)
+  state is_emergency = {=False=}
+  state emergency_test_done = {=False=}  // one-shot guard for emergency test case
+
+  state trace_sensor_tick = 0
+  state trace_emergency_detected = 0
+
+  reaction(startup) {=
+    self.trace_sensor_tick = self.register_user_trace_event("SENSOR_TICK")
+    if self.trace_sensor_tick == 0:
+      print("ERROR: Failed to register trace event SENSOR_TICK.")
+      exit(1)
+    self.trace_emergency_detected = self.register_user_trace_event("EMERGENCY_DETECTED")
+    if self.trace_emergency_detected == 0:
+      print("ERROR: Failed to register trace event EMERGENCY_DETECTED.")
+      exit(1)
+  =}
+
+  // Periodic sensor data emission.
+  reaction(t) -> sensor_data {=
+      import math
+      t_ms = lf.time.logical_elapsed() // 1_000_000
+      t_s = t_ms / 1000.0
+      # Each intersection gets a different phase offset so they oscillate out of sync
+      offset = self.bank_index * 2.1
+      q_ns = int(8 + 7 * math.sin(t_s / 4.0 + offset))
+      q_ew = int(8 + 7 * math.cos(t_s / 5.0 + offset))
+      d = {
+          "q_ns": max(0, q_ns),
+          "q_ew": max(0, q_ew),
+          "ped_wait": int(5 + 4 * math.sin(t_s / 7.0 + offset * 0.5)),
+          "emergency": False
+      }
+      sensor_data.set(d)
+      print("IntersectionNode-TrafficSensors-SENSOR_TICK")
+  =}
+
+  // Emergency detection — separate reaction so the emergency output is only
+  // present when an emergency is actually detected. When is_emergency is False
+  // the port is simply absent, preventing CommandArbiter from being triggered.
+  reaction(t) -> emergency {=
+    # TEST: simulate a one-shot emergency pulse after 3 seconds.
+    # Fires True once, then False on the next tick to clear it.
+    # Uses emergency_test_done to prevent re-triggering on subsequent ticks.
+    # Comment out if not needed.
+    if not self.is_emergency and not self.emergency_test_done and lf.time.logical_elapsed() > SEC(3):
+      self.is_emergency = True
+    elif self.is_emergency:
+      self.is_emergency = False
+      self.emergency_test_done = True
+    # end of test case logic
+
+    if self.is_emergency:
+      emergency.set(True)
+      self.tracepoint_user_event(self.trace_emergency_detected)
+      print("IntersectionNode-TrafficSensors-EMERGENCY_DETECTED")
+  =}
+}
+
+reactor DataValidatorGate {
+  // Purpose:
+  //   Data governance / quality gate for raw sensor data.
+  //   Checks validity of sensor readings and only forwards valid data.
+  //   Invalid data is silently dropped (gated), which means the AI receives
+  //   no input, produces no plan, and CommandArbiter executes the local fallback plan.
+  //
+  // Inputs:
+  //   sensor_data: raw sensor/detection data
+  //
+  // Outputs:
+  //   validated_data: sensor data that has passed all quality checks
+
+  input sensor_data
+  output validated_data
+
+  state trace_sensor_data_ok = 0
+
+  reaction(startup) {=
+    self.trace_sensor_data_ok = self.register_user_trace_event("SENSOR_DATA_OK")
+    if self.trace_sensor_data_ok == 0:
+      print("ERROR: Failed to register trace event SENSOR_DATA_OK.")
+      exit(1)
+  =}
+
+  reaction(sensor_data) -> validated_data {=
+    d = sensor_data.value
+
+    # Data quality gates (toy examples):
+    # - queue lengths should be non-negative
+    ok = (d["q_ns"] >= 0 and d["q_ew"] >= 0)
+
+    if not ok:
+      pass  # invalid data is silently dropped (gating behavior)
+    else:
+      validated_data.set(d)
+      self.tracepoint_user_event(self.trace_sensor_data_ok)
+      print("IntersectionNode-DataValidatorGate-SENSOR_DATA_OK")
+  =}
+}
+
+reactor FeatureExtractor {
+  // Purpose:
+  //   Transforms validated sensor data into a normalized feature vector
+  //   for the AI model. Separates feature engineering from data validation
+  //   so each can be modified independently.
+  //
+  // Inputs:
+  //   validated_data: sensor data that has passed quality checks
+  //
+  // Outputs:
+  //   features: flat float list [q_ns, q_ew] for the AI planner.
+  //   Emergency is not included; it is handled via a dedicated signal path
+  //   (TrafficSensors.emergency -> CommandArbiter -> Emergency mode).
+
+  input validated_data
+  output features
+
+  state trace_features_extracted = 0
+
+  reaction(startup) {=
+    self.trace_features_extracted = self.register_user_trace_event("FEATURES_EXTRACTED")
+    if self.trace_features_extracted == 0:
+      print("ERROR: Failed to register trace event FEATURES_EXTRACTED.")
+      exit(1)
+  =}
+
+  reaction(validated_data) -> features {=
+    d = validated_data.value
+
+    features.set([
+      float(d["q_ns"]),
+      float(d["q_ew"])
+    ])
+    self.tracepoint_user_event(self.trace_features_extracted)
+    print("IntersectionNode-FeatureExtractor-FEATURES_EXTRACTED")
+  =}
+}
+
+reactor LocalPlanner {
+  // Purpose:
+  //   Autonomous fixed-time cycle planner that runs locally at each intersection.
+  //   Provides a deterministic fallback phase sequence when the AI planner is
+  //   unavailable, its confidence is too low, or a data fault occurs.
+  //
+  //   Cycle: NS_GREEN -> EW_GREEN -> NS_GREEN -> ...
+  //   Ticks every 1 second, but only rotates phase every 10 ticks (10 seconds).
+  //   Each tick re-sends the current phase so CommandArbiter always has a
+  //   fresh local_plan available (important for the Local_Fallback trust counter).
+
+  output local_plan
+  // 1 sec initial delay to account for the AI planner's 1 sec 'after' delay, then 1 sec cycle.
+  timer cycle(1 sec, 1 sec)
+
+  state phases = {= ["NS_GREEN", "EW_GREEN"] =}
+  state phase_index = 0
+  state tick_count = 0
+  state trace_local_planner_tick = 0
+
+  reaction(startup) {=
+    self.trace_local_planner_tick = self.register_user_trace_event("LOCAL_PLANNER_TICK")
+    if self.trace_local_planner_tick == 0:
+      print("ERROR: Failed to register trace event LOCAL_PLANNER_TICK.")
+      exit(1)
+  =}
+
+  reaction(cycle) -> local_plan {=
+    phase = self.phases[self.phase_index]
+    local_plan.set({"phase": phase, "duration_ms": 7000, "mode": "LOCAL_FALLBACK"})
+    self.tick_count += 1
+    if self.tick_count >= 10:
+      self.tick_count = 0
+      self.phase_index = (self.phase_index + 1) % len(self.phases)
+    self.tracepoint_user_event(self.trace_local_planner_tick)
+    print(f"IntersectionNode-LocalPlanner-LOCAL_PLANNER_TICK (phase={phase}, tick={self.tick_count}/10)")
+  =}
+}
+
+reactor CommandArbiter {
+  // CommandArbiter is a stateful modal reactor with four modes representing
+  // the actual operating state of the intersection:
+  //   ┌───────────────────────────────────────────────────────────────┐
+  //   │  AI_Plan (initial/default) — AI-optimized control             │
+  //   │  Local_Fallback            — fixed-cycle fallback             │
+  //   │  Emergency                 — emergency vehicle preemption     │
+  //   │  Manual_Control            — human operator override          │
+  //   ├───────────────────────────────────────────────────────────────┤
+  //   │  Each mode reacts to all inputs. Phase timing gate is inline. │
+  //   │  Authority: Manual > Emergency > AI/Local                     │
+  //   │  Manual_Control can only be exited by operator EXIT_MANUAL.   │
+  //   └───────────────────────────────────────────────────────────────┘
+  // ------------------------------------------------------------------------
+  //   
+  //   A phase timing check (to avoid interrupting an ongoing traffic light phase) 
+  //   is done where appropriate:
+  //     - AI_Plan / Local_Fallback: phase timing gate for local_plan and ai_plan;
+  //       emergency bypasses phase check (immediate preemption)
+  //     - Emergency: phase timing gate for all inputs except manual_override
+  //     - Manual_Control: ignores local_plan, ai_plan, and emergency;
+  //       only reacts to manual_override (phase commands or exit)
+  //
+  //   Priority (when multiple inputs arrive at the same tag):
+  //     local_plan < ai_plan < emergency < manual_override
+  //     Enforced by declaration order — LF's "last set wins" for mode transitions.
+  //
+  //   Authority hierarchy:
+  //     Manual_Control > Emergency > AI_Plan / Local_Fallback
+  //     - Manual override can preempt any mode at any time (no phase check)
+  //     - Emergency preempts AI_Plan / Local_Fallback immediately (no phase check)
+  //     - Emergency respects its own phase timing for new emergencies / plan inputs
+  //     - Manual mode can only be exited by explicit operator EXIT_MANUAL command
+  //
+  //   Manual_Control protocol (via HumanOversightConsole):
+  //     ENTER_MANUAL  — operator enters manual mode for this intersection
+  //     PHASE         — operator issues a phase command (NS_GREEN, EW_GREEN, ALL_RED)
+  //     EXIT_MANUAL   — operator releases this intersection back to AI_Plan
+
+  input emergency
+  input ai_plan
+  input manual_override
+  input local_plan
+
+  output safe_cmd
+
+  // Global state (accessible from all modes):
+  //   phase_set_time_ms: logical time (ms) when current phase was accepted
+  //   phase_duration_ms: how long the current phase should be held (ms)
+  //                      -1 means indefinite (used by Manual_Control)
+  state phase_set_time_ms = 0
+  state phase_duration_ms = 0
+
+  // Trace event handles (registered at startup, used in all modes)
+  state trace_ai_plan_accepted = 0
+  state trace_local_fallback = 0
+  state trace_emergency_preempt = 0
+  state trace_manual_override = 0
+  state trace_phase_hold_active = 0
+
+  reaction(startup) {=
+    self.trace_ai_plan_accepted = self.register_user_trace_event("AI_PLAN_ACCEPTED")
+    if self.trace_ai_plan_accepted == 0:
+      print("ERROR: Failed to register trace event AI_PLAN_ACCEPTED.")
+      exit(1)
+    self.trace_local_fallback = self.register_user_trace_event("LOCAL_FALLBACK")
+    if self.trace_local_fallback == 0:
+      print("ERROR: Failed to register trace event LOCAL_FALLBACK.")
+      exit(1)
+    self.trace_emergency_preempt = self.register_user_trace_event("EMERGENCY_PREEMPT")
+    if self.trace_emergency_preempt == 0:
+      print("ERROR: Failed to register trace event EMERGENCY_PREEMPT.")
+      exit(1)
+    self.trace_manual_override = self.register_user_trace_event("MANUAL_OVERRIDE")
+    if self.trace_manual_override == 0:
+      print("ERROR: Failed to register trace event MANUAL_OVERRIDE.")
+      exit(1)
+    self.trace_phase_hold_active = self.register_user_trace_event("PHASE_HOLD_ACTIVE")
+    if self.trace_phase_hold_active == 0:
+      print("ERROR: Failed to register trace event PHASE_HOLD_ACTIVE.")
+      exit(1)
+  =}
+
+  // ---- phase check helper: returns True if the current phase is still active ----
+  // Used by AI_Plan, Local_Fallback, and Emergency to gate plan acceptance.
+  // phase_duration_ms == -1 means indefinite (Manual_Control), always active.
+  preamble {=
+    def _phase_active(self):
+      if self.phase_duration_ms < 0:
+        return True
+      now_ms = lf.time.logical() // MSEC(1)
+      elapsed_ms = now_ms - self.phase_set_time_ms
+      return elapsed_ms < self.phase_duration_ms
+
+    def _log_rerun(self, cmd, ai_used):
+      """Log to Rerun."""
+      rr.set_time("logical_time_ms", sequence=lf.time.logical_elapsed() // 1_000_000)
+      rr.log(f"intersection_{_federate_idx}/phase_id",     rr.Scalars(float(_PHASE_IDS.get(cmd["phase"], -1))))
+      rr.log(f"intersection_{_federate_idx}/control_mode", rr.Scalars(float(_MODE_IDS.get(cmd["mode"],  0))))
+      rr.log(f"intersection_{_federate_idx}/ai_used",      rr.Scalars(float(ai_used)))
+      rr.log(f"intersection_{_federate_idx}/phase_name",   rr.TextLog(cmd["phase"]))
+      rr.log(f"intersection_{_federate_idx}/mode_name",    rr.TextLog(cmd["mode"]))
+  =}
+
+  // ==================================================================
+  //  AI_Plan (initial mode) (intersection operating under AI-optimized control).
+  //  - local_plan / ai_plan: accepted only when current phase has expired;
+  //    ai_plan takes priority over local_plan when both are present
+  //  - emergency: immediate preemption (no phase check)
+  //  - manual_override ENTER_MANUAL: immediate transition to Manual_Control
+  // ==================================================================
+  initial mode AI_Plan {
+
+    // --- plan selection: ai_plan preferred over local_plan ---
+    // Both may arrive at the same logical time (LocalPlanner ticks every 1s, same as AIModel).
+    // When both are present, ai_plan wins.
+    reaction(local_plan, ai_plan) -> safe_cmd, reset(Local_Fallback) {=
+      if self._phase_active():
+        now_ms = lf.time.logical() // MSEC(1)
+        self.tracepoint_user_value(self.trace_phase_hold_active, now_ms - self.phase_set_time_ms)
+        print(f"IntersectionNode-CommandArbiter-AI_PLAN-PHASE_HOLD ({now_ms - self.phase_set_time_ms}ms / {self.phase_duration_ms}ms)")
+        return
+      if ai_plan.is_present:
+        p = ai_plan.value
+        cmd = {"phase": p["phase"], "duration_ms": p["duration_ms"], "mode": "AI_ASSIST"}
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_ai_plan_accepted, cmd["duration_ms"])
+        print(f"IntersectionNode-CommandArbiter-AI_PLAN_ACCEPTED (phase={cmd['phase']}, duration_ms={cmd['duration_ms']})")
+        self._log_rerun(cmd, ai_used=1)
+      elif local_plan.is_present:
+        cmd = local_plan.value
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_local_fallback, cmd["duration_ms"])
+        print(f"IntersectionNode-CommandArbiter-LOCAL_FALLBACK (phase={cmd['phase']}, duration_ms={cmd['duration_ms']})")
+        self._log_rerun(cmd, ai_used=0)
+        Local_Fallback.set()
+    =} tardy {=
+      print("IntersectionNode-CommandArbiter-AI_PLAN_TARDY (dropped)")
+    =}
+
+    // --- emergency: immediate preemption, no phase check ---
+    reaction(emergency) -> safe_cmd, reset(Emergency) {=
+      if not emergency.value:
+        return
+      cmd = {"phase": "EMERGENCY_ROUTE_GREEN", "duration_ms": 5000, "mode": "EMERGENCY"}
+      self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+      self.phase_duration_ms = cmd["duration_ms"]
+      safe_cmd.set(cmd)
+      self.tracepoint_user_value(self.trace_emergency_preempt, cmd["duration_ms"])
+      print(f"IntersectionNode-CommandArbiter-EMERGENCY_PREEMPT (phase={cmd['phase']}, duration_ms={cmd['duration_ms']})")
+      self._log_rerun(cmd, ai_used=0)
+      Emergency.set()
+    =}
+
+    // --- manual_override: ENTER_MANUAL transitions to Manual_Control ---
+    reaction(manual_override) -> safe_cmd, reset(Manual_Control) {=
+      cmd = manual_override.value
+      if cmd.get("action") == "ENTER_MANUAL":
+        self.tracepoint_user_value(self.trace_manual_override, 1)
+        print(f"IntersectionNode-CommandArbiter-MANUAL_OVERRIDE_ENTER")
+        Manual_Control.set()
+    =}
+  }
+
+  // ==================================================================
+  //  Local_Fallback (intersection using fixed-cycle local planner).
+  //  - local_plan / ai_plan: accepted when phase expired;
+  //    ai_plan only accepted after >= 7 arrivals within an active phase (trust rebuild);
+  //    local_plan accepted as fallback when ai not yet trusted
+  //  - emergency: immediate preemption (no phase check)
+  //  - manual_override ENTER_MANUAL: immediate transition to Manual_Control
+  //
+  //  Trust rebuild: when the intersection enters Local_Fallback, 
+  //  we require at least 7 AI plan arrivals within a 10 sec local planner interval
+  //  before trusting the AI planner again. The 1-second timer ensures the reaction fires
+  //  every second to track AI presence even without local_plan.
+  // ==================================================================
+  mode Local_Fallback {
+
+    // Timer to trigger the plan-selection reaction every 1 second,
+    // ensuring AI trust counter is updated even without local_plan.
+    // Not strictly needed because LocalPlanner ticks every second anyway,
+    // but keeping the timer makes the trust counting intent explicit and self-documenting. 
+    // It also provides a safety net: if for any reason local_plan stops arriving, 
+    // the timer still ensures the reaction fires and the trust counter keeps getting updated.
+    timer ai_trust_tick(1 sec, 1 sec)
+
+    // Counter: AI plan arrivals since entering Local_Fallback.
+    // reset state: automatically set to 0 when entering via reset() transition.
+    reset state ai_trust_count = 0
+
+    // --- plan selection with AI trust gating ---
+    // ai_plan presence is counted BEFORE the phase check (always).
+    // ai_plan is only accepted when trust counter >= 7 AND phase expired.
+    reaction(local_plan, ai_plan, ai_trust_tick) -> safe_cmd, reset(AI_Plan) {=
+      # Track AI presence regardless of phase state
+      if ai_plan.is_present:
+        self.ai_trust_count += 1
+        print(f"IntersectionNode-CommandArbiter-LOCAL_FALLBACK-AI_TRUST ({self.ai_trust_count}/7)")
+
+      # Phase timing gate
+      if self._phase_active():
+        now_ms = lf.time.logical() // MSEC(1)
+        self.tracepoint_user_value(self.trace_phase_hold_active, now_ms - self.phase_set_time_ms)
+        print(f"IntersectionNode-CommandArbiter-LOCAL_FALLBACK-PHASE_HOLD ({now_ms - self.phase_set_time_ms}ms / {self.phase_duration_ms}ms)")
+        return
+
+      # AI plan accepted only if trust threshold met
+      if ai_plan.is_present and self.ai_trust_count >= 7:
+        p = ai_plan.value
+        cmd = {"phase": p["phase"], "duration_ms": p["duration_ms"], "mode": "AI_ASSIST"}
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_ai_plan_accepted, cmd["duration_ms"])
+        print(f"IntersectionNode-CommandArbiter-AI_PLAN_ACCEPTED (phase={cmd['phase']}, duration_ms={cmd['duration_ms']}, trust={self.ai_trust_count})")
+        self._log_rerun(cmd, ai_used=1)
+        self.ai_trust_count = 0
+        AI_Plan.set()
+      elif local_plan.is_present:
+        cmd = local_plan.value
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_local_fallback, cmd["duration_ms"])
+        print(f"IntersectionNode-CommandArbiter-LOCAL_FALLBACK (phase={cmd['phase']}, duration_ms={cmd['duration_ms']}, ai_trust={self.ai_trust_count}/7 — reset)")
+        self._log_rerun(cmd, ai_used=0)
+
+        # Reset trust counter: threshold of 7 was not reached within this local planner interval (10s), so start counting fresh.
+        self.ai_trust_count = 0
+    =} tardy {=
+      print("IntersectionNode-CommandArbiter-AI_PLAN_TARDY (dropped)")
+    =}
+
+    // --- emergency: immediate preemption, no phase check ---
+    reaction(emergency) -> safe_cmd, reset(Emergency) {=
+      if not emergency.value:
+        return
+      cmd = {"phase": "EMERGENCY_ROUTE_GREEN", "duration_ms": 5000, "mode": "EMERGENCY"}
+      self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+      self.phase_duration_ms = cmd["duration_ms"]
+      safe_cmd.set(cmd)
+      self.tracepoint_user_value(self.trace_emergency_preempt, cmd["duration_ms"])
+      print(f"IntersectionNode-CommandArbiter-EMERGENCY_PREEMPT (phase={cmd['phase']}, duration_ms={cmd['duration_ms']})")
+      self._log_rerun(cmd, ai_used=0)
+      Emergency.set()
+    =}
+
+    // --- manual_override: ENTER_MANUAL transitions to Manual_Control ---
+    reaction(manual_override) -> safe_cmd, reset(Manual_Control) {=
+      cmd = manual_override.value
+      if cmd.get("action") == "ENTER_MANUAL":
+        self.tracepoint_user_value(self.trace_manual_override, 1)
+        print(f"IntersectionNode-CommandArbiter-MANUAL_OVERRIDE_ENTER")
+        Manual_Control.set()
+    =}
+  }
+
+  // ==================================================================
+  //  Emergency (emergency vehicle preemption active).
+  //  - local_plan / ai_plan: accepted when emergency phase expired;
+  //    ai_plan takes priority and transitions to AI_Plan,
+  //    local_plan transitions to Local_Fallback
+  //  - emergency: new emergency accepted only when phase expired (refresh/stay)
+  //  - manual_override ENTER_MANUAL: immediate (no phase check) → Manual_Control
+  // ==================================================================
+  mode Emergency {
+
+    // --- plan selection: ai_plan preferred over local_plan (after emergency phase expires) ---
+    reaction(local_plan, ai_plan) -> safe_cmd, reset(AI_Plan), reset(Local_Fallback) {=
+      if self._phase_active():
+        now_ms = lf.time.logical() // MSEC(1)
+        self.tracepoint_user_value(self.trace_phase_hold_active, now_ms - self.phase_set_time_ms)
+        print(f"IntersectionNode-CommandArbiter-EMERGENCY-PHASE_HOLD ({now_ms - self.phase_set_time_ms}ms / {self.phase_duration_ms}ms)")
+        return
+      if ai_plan.is_present:
+        p = ai_plan.value
+        cmd = {"phase": p["phase"], "duration_ms": p["duration_ms"], "mode": "AI_ASSIST"}
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_ai_plan_accepted, cmd["duration_ms"])
+        print(f"IntersectionNode-CommandArbiter-AI_PLAN_ACCEPTED (phase={cmd['phase']}, duration_ms={cmd['duration_ms']}, from=EMERGENCY)")
+        self._log_rerun(cmd, ai_used=1)
+        AI_Plan.set()
+      elif local_plan.is_present:
+        cmd = local_plan.value
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_local_fallback, cmd["duration_ms"])
+        print(f"IntersectionNode-CommandArbiter-LOCAL_FALLBACK (phase={cmd['phase']}, duration_ms={cmd['duration_ms']}, from=EMERGENCY)")
+        self._log_rerun(cmd, ai_used=0)
+        Local_Fallback.set()
+    =} tardy {=
+      print("IntersectionNode-CommandArbiter-AI_PLAN_TARDY (dropped)")
+    =}
+
+    // --- emergency: refresh only when phase expired ---
+    reaction(emergency) -> safe_cmd {=
+      if not emergency.value:
+        return
+      if self._phase_active():
+        now_ms = lf.time.logical() // MSEC(1)
+        self.tracepoint_user_value(self.trace_phase_hold_active, now_ms - self.phase_set_time_ms)
+        print(f"IntersectionNode-CommandArbiter-EMERGENCY-PHASE_HOLD (emergency blocked, {now_ms - self.phase_set_time_ms}ms / {self.phase_duration_ms}ms)")
+        return
+      cmd = {"phase": "EMERGENCY_ROUTE_GREEN", "duration_ms": 5000, "mode": "EMERGENCY"}
+      self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+      self.phase_duration_ms = cmd["duration_ms"]
+      safe_cmd.set(cmd)
+      self.tracepoint_user_value(self.trace_emergency_preempt, cmd["duration_ms"])
+      print(f"IntersectionNode-CommandArbiter-EMERGENCY_REFRESH (phase={cmd['phase']}, duration_ms={cmd['duration_ms']})")
+      self._log_rerun(cmd, ai_used=0)
+    =}
+
+    // --- manual_override: immediate, no phase check (highest authority) ---
+    reaction(manual_override) -> safe_cmd, reset(Manual_Control) {=
+      cmd = manual_override.value
+      if cmd.get("action") == "ENTER_MANUAL":
+        self.tracepoint_user_value(self.trace_manual_override, 1)
+        print(f"IntersectionNode-CommandArbiter-MANUAL_OVERRIDE_ENTER (from=EMERGENCY)")
+        Manual_Control.set()
+    =}
+  }
+
+  // ==================================================================
+  //  Manual_Control (human operator has taken over this intersection).
+  //  - local_plan: ignored (operator has control)
+  //  - ai_plan: ignored (operator has control)
+  //  - emergency: ignored (operator has supreme authority)
+  //  - manual_override:
+  //      PHASE → accept phase command, stay in Manual_Control
+  //      EXIT_MANUAL → release control, transition to AI_Plan
+  // ==================================================================
+  mode Manual_Control {
+
+    // --- local_plan / ai_plan / emergency: all ignored (operator has control) ---
+    reaction(local_plan, ai_plan, emergency) {=
+      if ai_plan.is_present:
+        print(f"IntersectionNode-CommandArbiter-MANUAL_CONTROL (ai_plan ignored)")
+      if local_plan.is_present:
+        print(f"IntersectionNode-CommandArbiter-MANUAL_CONTROL (local_plan ignored)")
+      if emergency.is_present and emergency.value:
+        print(f"IntersectionNode-CommandArbiter-MANUAL_CONTROL (emergency ignored — operator has control)")
+    =} tardy {=
+      print("IntersectionNode-CommandArbiter-AI_PLAN_TARDY (dropped)")
+    =}
+
+    // --- manual_override: PHASE commands or EXIT_MANUAL ---
+    reaction(manual_override) -> safe_cmd, reset(AI_Plan) {=
+      cmd = manual_override.value
+      action = cmd.get("action")
+      if action == "PHASE":
+        self.phase_set_time_ms = lf.time.logical() // MSEC(1)
+        self.phase_duration_ms = cmd["duration_ms"]
+        safe_cmd.set(cmd)
+        self.tracepoint_user_value(self.trace_manual_override, 0)
+        print(f"IntersectionNode-CommandArbiter-MANUAL_PHASE (phase={cmd['phase']}, duration_ms={cmd['duration_ms']})")
+        self._log_rerun(cmd, ai_used=0)
+      elif action == "EXIT_MANUAL":
+        self.phase_duration_ms = 0
+        self.tracepoint_user_value(self.trace_manual_override, -1)
+        print(f"IntersectionNode-CommandArbiter-MANUAL_OVERRIDE_EXIT → AI_Plan")
+        AI_Plan.set()
+    =}
+  }
+}
+
+
+reactor PhasePlanner {
+  // Purpose:
+  //   Convert the safe command into an actuator command.
+  //
+  // Why this exists as a separate reactor:
+  //   In real traffic control, you often need intermediate planning logic:
+  //   - insert all-red clearance intervals
+  //   - ensure conflicting greens never occur
+  //   - coordinate across rings/barriers
+  // Here we keep it as a pass-through but log the step.
+
+  input safe_cmd
+  output actuator_cmd
+
+  state trace_phase_plan_ok = 0
+
+  reaction(startup) {=
+    self.trace_phase_plan_ok = self.register_user_trace_event("PHASE_PLAN_OK")
+    if self.trace_phase_plan_ok == 0:
+      print("ERROR: Failed to register trace event PHASE_PLAN_OK.")
+      exit(1)
+  =}
+
+  reaction(safe_cmd) -> actuator_cmd {=
+    # Trigger: new safe_cmd from command arbiter
+    #
+    # In this toy demo, we forward the command unchanged.
+    actuator_cmd.set(safe_cmd.value)
+
+    # Emit trace event so this step is visible in logs.
+    self.tracepoint_user_event(self.trace_phase_plan_ok)
+    print("IntersectionNode-PhasePlanner-PHASE_PLAN_OK")
+  =}
+}
+
+reactor SignalActuator {
+  // Purpose:
+  //   Interface with the actual traffic light hardware/controller.
+  //
+  // In a real system:
+  //   - talk NTCIP or vendor protocol
+  //   - confirm state transitions
+  //   - apply failsafe in case of hardware faults
+  //
+  // Here:
+  //   - just emit a status log event.
+
+  input actuator_cmd
+
+  state trace_actuated = 0
+
+  reaction(startup) {=
+    self.trace_actuated = self.register_user_trace_event("ACTUATED")
+    if self.trace_actuated == 0:
+      print("ERROR: Failed to register trace event ACTUATED.")
+      exit(1)
+  =}
+
+  reaction(actuator_cmd) {=
+    # Trigger: new actuator command
+    self.tracepoint_user_event(self.trace_actuated)
+    print("IntersectionNode-SignalActuator-ACTUATED")
+  =}
+}
+
+reactor HeartbeatEmitter {
+  // Purpose:
+  //   Periodic heartbeat emitter for each intersection.
+  //
+  // It demonstrates:
+  //   - periodic heartbeat emission (for distributed health)
+  //
+  // Outputs:
+  //   heartbeat: bank index (int) identifying this intersection.
+  //     The heartbeat's presence itself signals health; no payload needed beyond identity.
+
+  output heartbeat
+
+  timer tick(0, 1 sec)
+
+  reaction(tick) -> heartbeat {=
+    # TEST: simulate constant heartbeat failure after 5 seconds, to demonstrate the HEARTBEAT_MISSING path.
+    #if lf.time.logical_elapsed() > SEC(5):
+    #  print(f"IntersectionNode-HeartbeatEmitter-OFFLINE (test: stopped after 5s, intersection={self.bank_index})")
+    #  return
+    # end of test case logic
+
+    # TEST: simulate dropped heartbeats at specific seconds, to demonstrate HEARTBEAT_PARTIAL / HEARTBEAT_MISSING paths.
+    # Drops at 3,4,5s (full window miss - 0/3 received), 9,10s (partial miss - 1/3 received), 15s (single drop - 2/3 received).
+    # Comment out if not needed.
+    drop_seconds = {3, 4, 5, 9, 10, 15}
+    elapsed_s = lf.time.logical_elapsed() // SEC(1)
+    if elapsed_s in drop_seconds:
+      print(f"IntersectionNode-HeartbeatEmitter-SKIPPED (test: beat dropped at {elapsed_s}s, intersection={self.bank_index})")
+      return
+    # end of test case logic
+
+    # self.bank_index identifies this intersection (0 for single instance)
+    heartbeat.set(self.bank_index)
+  =}
+}
+
+// ------------------------------------------------------------------------
+// Composite reactor: IntersectionNode
+// ------------------------------------------------------------------------
+// This encapsulates the full local pipeline at an intersection.
+// Each intersection is a separate federate.
+// ------------------------------------------------------------------------
+
+reactor IntersectionNode {
+  // Federate-facing ports (network boundaries):
+  // Inputis:
+      // ai_plan: AI suggestion received from AIPlanner
+      // override: manual override received from HumanOversightConsole
+  // Outputs:
+      // features: validated features forwarded to AIPlanner
+      // heartbeat: heartbeat forwarded to HealthAggregator
+
+  input ai_plan
+  input override
+  output features
+  output heartbeat
+
+  // Instantiate the "core architecture" pipeline reactors.
+  // 1) Sensor/Perception
+  s  = new TrafficSensors()
+
+  // 2) Data validation gate (drops invalid sensor data)
+  dv = new DataValidatorGate()
+
+  // 3) Feature extraction for AI
+  fe = new FeatureExtractor()
+
+  // 4) Stateful modal command arbiter (AI_Plan / Local_Fallback / Emergency / Manual_Control)
+  ca  = new CommandArbiter()
+
+  // 5) Planner / Controller
+  p  = new PhasePlanner()
+
+  // 6) Actuator Interface
+  a  = new SignalActuator()
+
+  // 7) Heartbeat emitter (distributed health signaling)
+  hb = new HeartbeatEmitter()
+
+  // 8) Local fallback planner (autonomous fixed-time cycle)
+  lp = new LocalPlanner()
+
+  // --- Wiring: traffic sensors -> data validator gate -> feature extractor
+  s.sensor_data -> dv.sensor_data
+  dv.validated_data -> fe.validated_data
+
+  // Export features to AI planner
+  fe.features -> features
+
+  // --- Wiring: inputs to command arbiter (each mode handles all inputs directly)
+  s.emergency -> ca.emergency
+  ai_plan -> ca.ai_plan
+  override -> ca.manual_override
+  lp.local_plan -> ca.local_plan
+
+  // --- Wiring: command arbiter -> phase planner -> signal actuator
+  ca.safe_cmd -> p.safe_cmd
+  p.actuator_cmd -> a.actuator_cmd
+
+  // Export heartbeat
+  hb.heartbeat -> heartbeat
+
+  // ---------------------------------------------------------------------------
+  // Rerun lifecycle: init on startup, save on shutdown.
+  // Each intersection federate is a separate OS process, so bank_index
+  // uniquely identifies this process. The recording name and filename both
+  // encode the index so that all three .rrd files can be loaded together in
+  // the Rerun viewer without entity-path collisions.
+  // ---------------------------------------------------------------------------
+  reaction(startup) {=
+    global _rr_initialized
+    # _federate_idx was already parsed from __file__ in the preamble at module load time, 
+    # so no re-parsing is needed here.
+    if not _rr_initialized:
+      rr.init(f"intersection_{_federate_idx}", spawn=True)
+      _rr_initialized = True
+      print(f"IntersectionNode[{_federate_idx}]: Rerun initialized.")
+  =}
+
+  reaction(shutdown) {=
+    rr.save(f"intersection_{_federate_idx}.rrd")
+    print(f"IntersectionNode[{_federate_idx}]: saved intersection_{_federate_idx}.rrd")
+  =}
+}
+
+// ------------------------------------------------------------------------
+// AI planner federate: encapsulated AI model
+// ------------------------------------------------------------------------
+
+reactor PromptGenerator(num_intersections = 3) {
+  // Purpose:
+  //   Aggregates per-intersection feature vectors from the multiport input
+  //   into a single combined prompt dict that the AI model consumes as one input.
+  //   This makes the prompt generation step explicit in the architecture and
+  //   allows the AI model to reason across all intersections at once.
+  //
+  // Input:
+  //   features: multiport, one feature vector [q_ns, q_ew] per intersection
+  //
+  // Output:
+  //   prompt: dict mapping intersection index to its feature vector,
+  //     e.g. {0: [10.0, 6.0], 1: [8.0, 12.0], 2: [5.0, 5.0]}
+  //     Only intersections whose features are present are included.
+
+  input[num_intersections] features
+  output prompt
+
+  reaction(features) -> prompt {=
+    agg = {}
+    for i, f in enumerate(features):
+      if f.is_present:
+        agg[i] = f.value
+    if agg:
+      prompt.set(agg)
+      print(f"AIPlanner-PromptGenerator-PROMPT_READY ({len(agg)}/{len(features)} intersections)")
+  =}
+}
+
+reactor AIModel(num_intersections = 3) {
+  // Purpose:
+  //   Encapsulated AI model: consumes a prompt dict covering
+  //   all intersections and outputs a PhasePlan for each.
+  //
+  // In this demo:
+  //   The "model" is a simple heuristic to choose NS_GREEN or EW_GREEN.
+  //   Confidence is set slightly above the gating threshold to show acceptance.
+  //   The prompt allows a future model to reason across all
+  //   intersections jointly (e.g. coordinated green waves).
+  //
+  // Important: This reactor is "AI in a box" from an architectural perspective.
+  // Its internals can be swapped without changing the rest of the system.
+
+  input prompt
+  output[num_intersections] plan
+
+  state trace_ai_tick = 0
+
+  reaction(startup) {=
+    self.trace_ai_tick = self.register_user_trace_event("AI_TICK")
+    if self.trace_ai_tick == 0:
+      print("ERROR: Failed to register trace event AI_TICK.")
+      exit(1)
+  =}
+
+  // tardy messages are dropped (empty reaction body) because recency of data is critical for AI relevance;
+  // a late-arriving feature vector would lead to an irrelevant/outdated plan.
+  reaction(prompt) -> plan {=
+    # The prompt is a dict: {intersection_index: [q_ns, q_ew], ...}
+    agg = prompt.value
+
+    # TEST: simulate AI failure between seconds 8 and 12, to demonstrate
+    # the Local_Fallback trust rebuild mechanism.
+    # Comment out if not needed.
+    elapsed_s = lf.time.logical_elapsed() // SEC(1)
+    if 8 <= elapsed_s <= 12:
+      print(f"AIPlanner-AIModel-AI_OFFLINE (test: failing at {elapsed_s}s, resumes after 12s)")
+      return
+    # end of test case logic
+
+    # Toy heuristic in place of actual AI model:
+    for i, feature_vector in agg.items():
+      q_ns, q_ew = feature_vector
+
+      if q_ns >= q_ew:
+        plan[i].set({"phase":"NS_GREEN","duration_ms":6000,"confidence":0.82,"rationale":"NS queue >= EW queue","mode":"AI_ASSIST"})
+      else:
+        plan[i].set({"phase":"EW_GREEN","duration_ms":7000,"confidence":0.81,"rationale":"EW queue > NS queue","mode":"AI_ASSIST"})
+
+    self.tracepoint_user_event(self.trace_ai_tick)
+    print("AIPlanner-AIModel-AI_TICK")
+  =} tardy {= pass =}
+}
+
+reactor AISafetyGate(num_intersections = 3) {
+  // Purpose:
+  //   Vets AI model output before it leaves the AI planner.
+  //   Enforces hard constraints (duration clamping) and confidence gating.
+  //   Plans that fail the gate are silently dropped. When no AI plan
+  //   arrives, CommandArbiter accepts LocalPlanner's output and
+  //   transitions to Local_Fallback mode.
+  //
+  // Inputs:
+  //   ai_plan: raw plans from the AI model (one per intersection)
+  //
+  // Outputs:
+  //   vetted_ai_plan: plans that passed confidence and constraint checks
+
+  input[num_intersections] ai_plan
+  output[num_intersections] vetted_ai_plan
+
+  state trace_ai_plan_rejected = 0
+  state trace_ai_plan_vetted = 0
+
+  reaction(startup) {=
+    self.trace_ai_plan_rejected = self.register_user_trace_event("AI_PLAN_REJECTED")
+    if self.trace_ai_plan_rejected == 0:
+      print("ERROR: Failed to register trace event AI_PLAN_REJECTED.")
+      exit(1)
+    self.trace_ai_plan_vetted = self.register_user_trace_event("AI_PLAN_VETTED")
+    if self.trace_ai_plan_vetted == 0:
+      print("ERROR: Failed to register trace event AI_PLAN_VETTED.")
+      exit(1)
+  =}
+
+  reaction(ai_plan) -> vetted_ai_plan {=
+    for i, ap in enumerate(ai_plan):
+      if not ap.is_present:
+        continue
+
+      p = ap.value
+
+      # Hard constraints: clamp durations to [min_g, max_g]
+      min_g, max_g = 5000, 30000
+      dur = p["duration_ms"]
+      if dur < min_g: dur = min_g
+      if dur > max_g: dur = max_g
+
+      # Confidence gating: low confidence => reject
+      if p["confidence"] < 0.80:
+        self.tracepoint_user_event(self.trace_ai_plan_rejected)
+        print(f"AIPlanner-AISafetyGate-AI_PLAN_REJECTED (intersection={i})")
+        continue
+
+      # Vetted: forward with clamped duration
+      p["duration_ms"] = dur
+      vetted_ai_plan[i].set(p)
+      self.tracepoint_user_event(self.trace_ai_plan_vetted)
+      print(f"AIPlanner-AISafetyGate-AI_PLAN_VETTED (intersection={i})")
+  =}
+}
+
+// ------------------------------------------------------------------------
+// Composite reactor: AIPlanner
+// ------------------------------------------------------------------------
+
+reactor AIPlanner(num_intersections = 3) {
+  // Purpose: Central AI planner federate.
+  //  Contains a prompt generator, the AI model, and a safety gate.
+
+  // Inputs: features from all intersections (multiport)
+  input[num_intersections] features
+
+  // Outputs: vetted AI plans for all intersections (multiport)
+  output[num_intersections] ai_plan
+
+  // Prompt generator: collects per-intersection features into a single prompt dict
+  pg  = new PromptGenerator(num_intersections = num_intersections)
+
+  // Encapsulated AI model instance
+  m   = new AIModel(num_intersections = num_intersections)
+
+  // Safety gate: confidence + constraint checks on model output
+  asg = new AISafetyGate(num_intersections = num_intersections)
+
+  // Wiring: features -> prompt generator -> model -> safety gate -> output
+  features -> pg.features
+  pg.prompt -> m.prompt
+  m.plan -> asg.ai_plan
+  asg.vetted_ai_plan -> ai_plan
+
+}
+
+// ------------------------------------------------------------------------
+// Human oversight federate: HumanOversightConsole
+// ------------------------------------------------------------------------
+
+reactor HumanOversightConsole(num_intersections = 3) {
+  // Purpose:
+  //   Terminal-based operator console for human oversight.
+  //   A background thread reads lines from stdin; recognised commands
+  //   are forwarded to the intersection as manual overrides via a
+  //   physical action (so the LF runtime timestamps them at arrival).
+  //
+  // Supported commands:
+  //   0, 1, 2  — toggle manual mode for the given intersection
+  //              First press enters manual mode (ENTER_MANUAL),
+  //              second press exits manual mode (EXIT_MANUAL → AI_Plan).
+  //   NS       — set NS_GREEN on all manually-controlled intersections
+  //   EW       — set EW_GREEN on all manually-controlled intersections
+  //   AR       — set ALL_RED on all manually-controlled intersections
+  //
+  // Phase commands (NS/EW/AR) are only accepted while at least one
+  // intersection is in manual mode. Duration is indefinite (-1) —
+  // the phase holds until the operator issues a new command or exits.
+
+  // Inputs for situational awareness:
+  input[num_intersections] alarm
+
+  // Outputs: overrides to each intersection (multiport)
+  output[num_intersections] override
+
+  state trace_manual_override_issued = 0
+
+  // Set of intersection indices currently in manual mode
+  state manual_intersections = {= set() =}
+
+  // Physical action: fired by the stdin listener thread whenever the
+  // operator types a line and presses Enter. Physical actions carry
+  // the physical timestamp of the key press, keeping operator latency
+  // out of the logical time model.
+  physical action user_response
+
+  preamble {=
+    import threading
+    def listen_for_input(self, user_response):
+      while True:
+        try:
+          line = input()
+          user_response.schedule(0, line.strip())
+        except EOFError:
+          return
+  =}
+
+  // Start the stdin listener thread at startup.
+  // user_response is listed as an effect so its handle can be passed to the thread.
+  reaction(startup) -> user_response {=
+    self.trace_manual_override_issued = self.register_user_trace_event("MANUAL_OVERRIDE_ISSUED")
+    if self.trace_manual_override_issued == 0:
+      print("ERROR: Failed to register trace event MANUAL_OVERRIDE_ISSUED.")
+      exit(1)
+    t = self.threading.Thread(
+      target=self.listen_for_input,
+      args=(user_response,),
+      daemon=True
+    )
+    t.start()
+    print("HumanOversightConsole ready.")
+    print("  Commands: 0/1/2 = toggle manual mode, NS/EW/AR = set phase (while in manual mode)")
+  =}
+
+  reaction(user_response) -> override {=
+    raw = user_response.value.strip().upper()
+
+    # --- Phase direction commands (only when at least one intersection is manual) ---
+    # If multiple intersections are in manual mode, all receive the same command for simplicity. 
+    # A more advanced console could allow per-intersection commands.
+    phase_map = {"NS": "NS_GREEN", "EW": "EW_GREEN", "AR": "ALL_RED"}
+    if raw in phase_map:
+      if not self.manual_intersections:
+        print(f"HumanOversightConsole: no intersections in manual mode — enter manual mode first (type 0, 1, or 2)")
+        return
+      phase = phase_map[raw]
+      for idx in sorted(self.manual_intersections):
+        cmd = {"action": "PHASE", "phase": phase, "duration_ms": -1, "mode": "MANUAL"}
+        override[idx].set(cmd)
+        self.tracepoint_user_value(self.trace_manual_override_issued, idx)
+        print(f"HumanOversightConsole-MANUAL_PHASE ({phase} → intersection {idx})")
+      return
+
+    # --- Intersection index: toggle manual mode ---
+    try:
+      idx = int(raw)
+    except ValueError:
+      print(f"HumanOversightConsole: unknown command '{raw}' — use 0/1/2, NS, EW, or AR")
+      return
+    if idx < 0 or idx >= len(override):
+      print(f"HumanOversightConsole: intersection index {idx} out of range (0-{len(override)-1})")
+      return
+
+    if idx in self.manual_intersections:
+      # Exit manual mode for this intersection
+      self.manual_intersections.discard(idx)
+      override[idx].set({"action": "EXIT_MANUAL", "mode": "MANUAL"})
+      self.tracepoint_user_value(self.trace_manual_override_issued, idx)
+      print(f"HumanOversightConsole: Intersection {idx} → AUTO (AI_Plan)")
+    else:
+      # Enter manual mode for this intersection
+      self.manual_intersections.add(idx)
+      override[idx].set({"action": "ENTER_MANUAL", "mode": "MANUAL"})
+      self.tracepoint_user_value(self.trace_manual_override_issued, idx)
+      print(f"HumanOversightConsole: Intersection {idx} → MANUAL MODE")
+
+    # Show current manual status
+    if self.manual_intersections:
+      print(f"  Manual intersections: {sorted(self.manual_intersections)}")
+    else:
+      print(f"  All intersections in automatic mode")
+  =}
+
+  // tardy handler without a reaction body means normal reaction body will be executed instead.
+  // For alarms, we want to be aware of late arrivals (e.g. due to network delay) but still process them,
+  // so we handle tardy arrivals and do not drop them.
+  reaction(alarm) {=
+    for port in alarm:
+      if port.is_present:
+        a = port.value
+        print(f"HumanOversightConsole-HealthAggregator-Message: [intersection={a['intersection']}, {a['severity']}]: {a['msg']}")
+  =} tardy
+}
+
+// ------------------------------------------------------------------------
+// Health aggregation federate
+// ------------------------------------------------------------------------
+// Demonstrates:
+// - distributed monitoring: intersection sends heartbeats
+// - centralized alarm emission
+// ------------------------------------------------------------------------
+
+reactor HealthAggregator(num_intersections = 3) {
+  input[num_intersections] heartbeat
+
+  output[num_intersections] alarm
+
+  // Per-intersection count of heartbeats received in the current 3-second window.
+  // Reset to 0 in the tick reaction after each check.
+  state window_counts = {= [0] * 3 =}
+
+  // Trace event handles for heartbeat status per intersection
+  state trace_heartbeat_ok = 0
+  state trace_heartbeat_partial = 0
+  state trace_heartbeat_missing = 0
+
+  // Delay first tick by 2 sec to allow system to start up and receive heartbeats.
+  timer tick(2 sec, 3 sec)
+
+  reaction(startup) {=
+    self.trace_heartbeat_ok = self.register_user_trace_event("HEARTBEAT_OK")
+    if self.trace_heartbeat_ok == 0:
+      print("ERROR: Failed to register trace event HEARTBEAT_OK.")
+      exit(1)
+    self.trace_heartbeat_partial = self.register_user_trace_event("HEARTBEAT_PARTIAL")
+    if self.trace_heartbeat_partial == 0:
+      print("ERROR: Failed to register trace event HEARTBEAT_PARTIAL.")
+      exit(1)
+    self.trace_heartbeat_missing = self.register_user_trace_event("HEARTBEAT_MISSING")
+    if self.trace_heartbeat_missing == 0:
+      print("ERROR: Failed to register trace event HEARTBEAT_MISSING.")
+      exit(1)
+
+    # ReRun initialization
+    global _rr_initialized
+    if not _rr_initialized:
+      rr.init("health_aggregator", spawn=True)
+      _rr_initialized = True
+      print("HealthAggregator: Rerun initialized.")
+  =}
+
+  // Increment the per-intersection window counter each time a heartbeat arrives.
+  // tardy handler: if the heartbeat arrived after the window has already
+  // advanced (STP violation), do not count it — the tick reaction will
+  // see a lower count and emit the appropriate WARN/CRIT alarm naturally.
+  reaction(heartbeat) {=
+    for i, hb in enumerate(heartbeat):
+      if hb.is_present:
+        self.window_counts[i] += 1
+        print(f"HealthAggregator-HEARTBEAT_RECEIVED (intersection={i}, window_count={self.window_counts[i]})")
+  =} tardy {=
+    print("HealthAggregator-HEARTBEAT_TARDY (dropped)")
+  =}
+
+  // Check how many heartbeats arrived per intersection in the last window and emit alarms.
+  // Reset the counters afterwards so the next window starts clean.
+  reaction(tick) -> alarm {=
+    n = len(self.window_counts)
+    rr.set_time("logical_time_ms", sequence=lf.time.logical_elapsed() // 1_000_000)
+    for i in range(n):
+      count = self.window_counts[i]
+      # Log heartbeat count for this intersection (0-3 per 3-second window).
+      rr.log(f"health/heartbeat/{i}", rr.Scalars(float(count)))
+      if count == 3:
+        alarm[i].set({"severity":"INFO", "intersection": i, "msg":f"Intersection {i}: Heartbeat OK ({count}/3 received)"})
+        self.tracepoint_user_value(self.trace_heartbeat_ok, i)
+        print(f"HealthAggregator-HEARTBEAT_OK (intersection={i}, {count}/3 received)")
+      elif count > 0:
+        alarm[i].set({"severity":"WARN", "intersection": i, "msg":f"Intersection {i}: Heartbeat partial ({count}/3 received)"})
+        self.tracepoint_user_value(self.trace_heartbeat_partial, i)
+        print(f"HealthAggregator-HEARTBEAT_PARTIAL (intersection={i}, {count}/3 received)")
+      else:
+        alarm[i].set({"severity":"CRIT", "intersection": i, "msg":f"Intersection {i}: Heartbeat missing (0/3 received)"})
+        self.tracepoint_user_value(self.trace_heartbeat_missing, i)
+        print(f"HealthAggregator-HEARTBEAT_MISSING (intersection={i}, 0/3 received)")
+
+    self.window_counts = [0] * n
+  =}
+
+  reaction(shutdown) {=
+    rr.save("health_aggregator.rrd")
+    print("HealthAggregator: saved health_aggregator.rrd")
+  =}
+}
+
+
+// ------------------------------------------------------------------------
+// Main 'trafficLights' reactor that composes the system.
+// ------------------------------------------------------------------------
+
+federated reactor trafficLights {
+
+  // --- Three federate instances (Intersection bank + AI + human oversight + health)
+  I   = new[3] IntersectionNode()
+
+  // maxwait(forever): AIPlanner blocks indefinitely waiting for features
+  // before advancing logical time, ensuring no feature messages are dropped.
+  @maxwait(forever)
+  AI  = new AIPlanner()
+  HOC = new HumanOversightConsole()
+
+  // maxwait(1 sec): HA waits up to 1 second of physical time before advancing
+  // logical time, absorbing network latency and clock synchronization error
+  // without requiring an 'after' delay on the heartbeat connection.
+  @maxwait(1 sec)
+  HA = new HealthAggregator()
+
+  // --- Data path: validated features from all intersections to AI planner
+  I.features -> AI.features
+
+  // --- Data path: AI plans back to each intersection
+  // 'after' delay to account for AI computation time, network latency, and clock sync error.
+  // This facilitated plans not being timestamped in the past relative to when features were sent.
+  AI.ai_plan -> I.ai_plan after 1 sec
+
+  // --- Human oversight path: operator overrides to intersections (multiport to bank)
+  HOC.override -> I.override
+
+  // --- Health monitoring: collect heartbeats from all intersections
+  // No 'after' delay needed: HA's maxwait(1 sec) absorbs network latency instead.
+  I.heartbeat -> HA.heartbeat
+
+  // --- Oversight visibility: alarms to human oversight console
+  // 'after' delay to account for network delay and clock sync error.
+  HA.alarm -> HOC.alarm after 100 ms
+
+  // Reaction at startup to announce the program.
+  // Because the program is federated, this reaction is executed in all federates.
+  reaction(startup) {=
+    print()
+    print("╔══════════════════════════════════════════════╗")
+    print("║  Lingua Franca Traffic Light Control AI-CPS  ║")
+    print("╚══════════════════════════════════════════════╝")
+    print()
+    
+  =}
+}
