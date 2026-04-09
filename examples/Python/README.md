@@ -6,6 +6,7 @@
 * [Audio](src/audio/README.md): Live display of the spectrum of microphone audio input.
 * [Audio Classification](src/audio-classification/README.md): Audio classification using Tensorflow Lite.
 * [Reflex Game](src/reflex-game/README.md): Interactive timed game, showing pygame and enclaves.
+* [Traffic Lights Control System](src/traffic-lights-control/README.md): AI-CPS demonstrator controlling the traffic lights of three intersections.
 * [Train Door](src/train-door/README.md): Simple train door model, showing using threading with the Python target.
 * [Web Server](src/web-server/README.md): Simple web server examples.
 
