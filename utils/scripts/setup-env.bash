@@ -42,13 +42,12 @@ sudo apt-get update
 ## Setup C, C++, Python, Rust, protobuf, gRPC, gnuplot
 sudo apt-get install --assume-yes \
     build-essential \
-    python3.10 python3.10-dev python3.10-venv \
+    python3.10 python3.10-dev python3.10-venv python3.10-distutils \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
     protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot libasound2-dev libfluidsynth-dev libgpiod-dev
     
-python3.10 -m ensurepip --upgrade
-python3.10 -m pip install --upgrade pip
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 # Install python dependencies and
 # latest CMake; see https://www.kitware.com/cmake-python-wheels/ https://askubuntu.com/a/1070770
 sudo python3.10 -m pip install --exists-action i requests setuptools cmake
