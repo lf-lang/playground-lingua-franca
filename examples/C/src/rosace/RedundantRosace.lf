@@ -1,0 +1,116 @@
+/**
+ * @brief This is a variant of the ROSACE case study with a redundant controller.
+ *
+ * It is drawn from the following paper:
+ *
+ * Deschamps, Henrick and Cappello, Gerlando and Cardoso, Janette and Siron, Pierre Coincidence
+ * Problem in CPS Simulations: the R-ROSACE Case Study. (2018) In: 9th European Congress Embedded
+ * Real Time Software and Systems ERTS2 2018, 31 January 2018 - 2 February 2018 (Toulouse, France).
+ * https://www.erts2018.org/authors_detail_inverted_Cappello%20Gerlando.html
+ *
+ * The Arbitrator in this program assumes it will receive logically simulatenous inputs from two
+ * controllers. If it receives any one input from a controller, it checks for the presence first of
+ * an input from the first controller, then the second controller. If it receives an input from both
+ * controllers, it will choose the input from the first controller.
+ *
+ * FailSilent reactors are inserted to emulate failures of the controllers. At a specified logical
+ * time, these simply drop the input.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  fast: true,
+  build: "./build_run_plot.sh RedundantRosace",
+  timeout: 10 min
+}
+
+import Aircraft from "AircraftSimulator.lf"
+import RosaceController from "RosaceController.lf"
+import PrintToFile from "../lib/PrintToFile.lf"
+import Command from "Rosace.lf"
+
+preamble {=
+  // Shared constants.
+  // Trimming parameters
+  #define Va_eq (230.0)   // Nominal airspeed?
+  #define h_eq (10000.0)
+
+  #define delta_th_eq (1.5868660794926)
+  #define delta_e_eq (0.012009615652468)
+=}
+
+reactor Arbitrator {
+  input delta_thc1: double  // Engine control
+  input delta_ec1: double   // Elevator control
+  input delta_thc2: double  // Engine control
+  input delta_ec2: double   // Elevator control
+
+  output delta_thc: double  // Engine control
+  output delta_ec: double   // Elevator control
+
+  reaction(delta_thc1, delta_ec1, delta_thc2, delta_ec2) -> delta_thc, delta_ec {=
+    if (delta_thc1->is_present) {
+      lf_set(delta_thc, delta_thc1->value);
+    } else if (delta_thc2->is_present) {
+      // lf_print_warning("First controller delta_thc input is missing.");
+      lf_set(delta_thc, delta_thc2->value);
+    } else {
+      // lf_print_error("Both controllers' delta_thc inputs are missing!");
+    }
+    if (delta_ec1->is_present) {
+      lf_set(delta_ec, delta_ec1->value);
+    } else if (delta_ec2->is_present) {
+      lf_print_warning("First controller delta_ec input is missing.");
+      lf_set(delta_ec, delta_ec2->value);
+    } else {
+      lf_print_error("Both controllers' delta_ec inputs are failed!");
+    }
+  =}
+}
+
+reactor FailSilent(fail_time: time = 0) {
+  input in: double
+  output out: double
+
+  reaction(in) -> out {=
+    if (self->fail_time > 0 && lf_time_logical_elapsed() < self->fail_time) {
+      lf_set(out, in->value);
+    }
+  =}
+}
+
+main reactor(filter_period: time = 10 ms) {
+  a = new Aircraft()
+  c = new RosaceController(filter_period=filter_period)
+  altitude = new Command(value=11000)  // Altitude command
+  speed = new Command(value=0.0)  // Delta airspeed from nominal Va_eq (230)
+
+  p_h = new PrintToFile(filename="altitude.data")
+  p_Va = new PrintToFile(filename="airspeed.data")
+
+  a.h, a.az, a.Vz, a.q, a.Va -> c.h, c.az, c.Vz, c.q, c.Va
+  altitude.c -> c.c
+  speed.c -> c.s
+
+  c2 = new RosaceController(filter_period=filter_period)  // Backup controller.
+  a.h, a.az, a.Vz, a.q, a.Va -> c2.h, c2.az, c2.Vz, c2.q, c2.Va
+  altitude.c -> c2.c
+  speed.c -> c2.s
+
+  f1 = new FailSilent(fail_time = 100 s)
+
+  ar = new Arbitrator()
+
+  c.delta_thc -> f1.in
+  f1.out -> ar.delta_thc1
+  c.delta_ec -> ar.delta_ec1
+
+  c2.delta_ec -> ar.delta_ec2
+  c2.delta_thc -> ar.delta_thc2
+
+  ar.delta_ec -> a.delta_ec
+  ar.delta_thc -> a.delta_thc
+
+  a.h -> p_h.y                    // Print connections.
+  a.Va -> p_Va.y
+}
