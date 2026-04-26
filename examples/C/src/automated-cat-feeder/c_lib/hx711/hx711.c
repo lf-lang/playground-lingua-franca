@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 // changed!
-// added memory barrier
+// added memory barrier to not reorder/rewrite instructions going forward
 #define MEM_BARRIER() __sync_synchronize()
 
 int setupGPIO(HX711 *hx)
@@ -16,7 +16,8 @@ int setupGPIO(HX711 *hx)
   OUT_GPIO(hx->clock_pin);
 
   // changed! 
-  //ensure clock begins low instead of error msg
+  // clock must be low for hx711 to remain active
+  // sleep to assure low
   setPinState(hx->clock_pin, 0);
   usleep(10);
 
@@ -61,12 +62,12 @@ void setGain(HX711 *hx)
 {
   // changed!
   int pulses = 1;
-
+  // simplified variable assignment
   if (hx->wanted_channel == 'B')
     pulses = 2;
   else if (hx->gain_channel_A == 64)
     pulses = 3;
-
+  // usleep instead of continue
   for (int i = 0; i < pulses; i++)
   {
     setPinState(hx->clock_pin, 1);
@@ -84,6 +85,7 @@ int getRawData(HX711 *hx)
   // wait until low data
   while (getPinState(hx->data_pin))
   {
+    // reduced polling sleep
     usleep(100);
   }
 
@@ -114,7 +116,7 @@ int getRawData(HX711 *hx)
 
 
 // changed!
-// memory barrier!!
+// place mem barrier around direct gpio mem read to read state of curr physical pin, rather than cached val
 bool getPinState(unsigned pin_number)
 {
   if (pin_number > 31)
@@ -133,7 +135,7 @@ bool getPinState(unsigned pin_number)
 }
 
 // changed!
-// memory barrier!!
+// place mem barrier around direct gpio mem write to assure cpu does not reorder other var around hw write
 int setPinState(unsigned pin_number, bool state)
 {
   if (pin_number > 31)
@@ -183,6 +185,7 @@ int initHX711(HX711 *hx, unsigned char clock_pin, unsigned char data_pin)
 }
 
 //changed!
+// simplified- only zero scale if using default channel A @ 128 gain
 int zeroScale(HX711 *hx)
 {
   double result = getRawDataMean(hx, 50);
@@ -197,6 +200,7 @@ int zeroScale(HX711 *hx)
 }
 
 // changed!
+// tally instead of dynamic allocation to array
 int getRawDataMean(HX711 *hx, int samples)
 {
   long sum = 0;
@@ -212,6 +216,7 @@ int getRawDataMean(HX711 *hx, int samples)
 }
 
 // changed!
+// simplified - only offset for A 128
 int getDataMean(HX711 *hx, int samples)
 {
   int result = getRawDataMean(hx, samples);
@@ -225,6 +230,6 @@ int getWeightMean(HX711 *hx, int samples)
 
   if (hx->scale_ratio_A_128 == 0)
     return 0;
-
+  // simplfied - only assuming A 128
   return (int)((result - hx->offset_A_128) / hx->scale_ratio_A_128);
 }

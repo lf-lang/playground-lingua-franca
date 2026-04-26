@@ -27,10 +27,10 @@
 UBYTE DEV_ModuleInit(void)
 {
     if(!bcm2835_init()) {
-        DEBUG("bcm2835 init failed   !!! \r\n");
+        //DEBUG("bcm2835 init failed   !!! \r\n");
         return 1;
     } else {
-        DEBUG("bcm2835 init success  !!! \r\n");
+        //DEBUG("bcm2835 init success  !!! \r\n");
     }
     
     //motor 1 

@@ -1,32 +1,35 @@
-target C {
-  single-threaded: true
+target C{
+    single-threaded: true,
+    keepalive: true
 }
+import StepperMotor from "lib/motor.lf";
+import LoadCell from "lib/loadcell.lf";
 
-import StepperMotor from "lib/motor.lf"
-import LoadCell from "lib/loadcell.lf"
+main reactor{
 
-// using boolean from loadcell, spin motor or leave be
-// email notif of feeding?
-main reactor {
-  state run: bool = false
-  balance = new LoadCell()  // motor = new StepperMotor();
+    state run: bool = false;
 
-  // balance = new LoadCell(clock_pin = 6, data_pin = 5)
-  reaction(
-      /** -> motor.run */
-      startup) {=
-    /*-> motor.run*/
+    motor = new StepperMotor();
+    loadcell = new LoadCell();
+    
+    reaction(startup){=
+        printf("\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf("Welcome to automated cat feeder!\nWe will be using 50-60 grams as the ideal food weight threshold and pins 5 for data and 6 for clock.\n");
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+        printf(" /\\_/\\\n");
+        printf("( o.o )\n");
+        printf(" > ^ <\n");
+        printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
+    =}
 
-            printf("Starting main reactor!\n");
-            //printf("%d\n", balance.weight->value);
-            //lf_set(motor.run, true);
-  =}
+    reaction(loadcell.low_food)-> motor.run {=
+        if (loadcell.low_food->value) {
+            printf("Low food detected!\n");
+            lf_set(motor.run, true);
+        }
 
-  reaction(balance.weight) {=
-    //printf("Weight= %f\n", balance.weight->value);
-    printf("-----------------------------");
-    // spin motor
-  =}
+    =}
+
 
   reaction(shutdown) {=
     printf("Shutting down main reactor!\n");

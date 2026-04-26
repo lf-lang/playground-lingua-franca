@@ -91,12 +91,12 @@ void HR8825_Stop(void)
 void HR8825_SetMicroStep(char mode, const char *stepformat)
 {
     if(mode == HARDWARD) {
-        DEBUG("use hardware control\r\n");
+        //DEBUG("use hardware control\r\n");
         return;
     } else {
-        DEBUG("use software control\r\n");
+        //DEBUG("use software control\r\n");
     }
-    DEBUG("step formoat = %s\r\n", stepformat);
+    //DEBUG("step formoat = %s\r\n", stepformat);
 
     char i = 0;
     char **str = microstepmode;
@@ -107,7 +107,7 @@ void HR8825_SetMicroStep(char mode, const char *stepformat)
         }
         str++;
     }
-    printf("MicroStep = %s\r\n", Motor.MicroStep);
+    //printf("MicroStep = %s\r\n", Motor.MicroStep);
     if(i == 6) {
         DEBUG("The stepformat must be : \"fullstep\",\"halfstep\",\"1/4step\",\"1/8step\",\"1/16step\",\"1/32step\"\r\n");
         exit(0);
@@ -132,11 +132,11 @@ void HR8825_TurnStep(UBYTE dir, UWORD steps, UWORD stepdelay)
 {
     Motor.Dir = dir;
     if(dir == FORWARD) {
-        DEBUG("motor %d formward\r\n", Motor.Name);
+        //DEBUG("motor %d formward\r\n", Motor.Name);
         HR8825_Enable();
         DEV_Digital_Write(Motor.DirPin, 0);
     } else if(dir == BACKWARD) {
-        DEBUG("motor %d backmward\r\n", Motor.Name);
+        //DEBUG("motor %d backmward\r\n", Motor.Name);
         HR8825_Enable();
         DEV_Digital_Write(Motor.DirPin, 1);
     } else {
@@ -147,7 +147,7 @@ void HR8825_TurnStep(UBYTE dir, UWORD steps, UWORD stepdelay)
         return;
 
     UWORD i = 0;
-    DEBUG("turn %d steps\r\n", steps);
+    //DEBUG("turn %d steps\r\n", steps);
     for(i = 0; i < steps; i++) {
         DEV_Digital_Write(Motor.StepPin, 1);
         DEV_Delay_ms(stepdelay);

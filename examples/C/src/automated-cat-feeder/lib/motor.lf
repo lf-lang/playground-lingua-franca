@@ -18,66 +18,35 @@ preamble {=
   #include <stdlib.h>     //exit()
 =}
 
-// modal
-// error signal + error mode.. timeout back to idle
-// idle, dispense, error
-reactor StepperMotor {
-  input run: bool
-  input stop: bool
-  timer cool_down(1 sec, 60 sec)
+reactor StepperMotor{
 
-  initial mode IDLE {
-    // case 1: weight under threshold, run is true + dispense
-    reaction(run) ->
-    // reaction(reset)??
-    reset(DISPENSE) {=
-      if(run->value){
-          printf("Dispense mode has been entered!!\n");
-          lf_set_mode(DISPENSE);
-      }
-    =}
+    input run: bool;
 
-    // case 2: weight in threshold, remain idle
-    // no rxn needed!
-    // case 3: weight under threshold, run is false + error
-    reaction(stop) -> reset(ERROR) {=
-      if (stop->value){
-          printf("ERROR: stop signal received.\n");
-          lf_set_mode(ERROR);
-      }
-    =}
-  }
+    initial mode IDLE {
+        reaction(run)->reset(DISPENSE){=
+            // weight under threshold, run is true + dispense
+            if(run->value){
+                lf_set_mode(DISPENSE);
+            }
+            // else, ideal weight, can remain idle
+        =}
+    }
 
-  mode DISPENSE {
-    reaction(startup) {=
-      if (DEV_ModuleInit())
-      {
-          printf("Exiting; failed to init.\n");
-          exit(0);
-      }
-      // Exception handling:ctrl + c
-      //signal(SIGINT, Handler);
-      HR8825_SelectMotor(MOTOR2);
-      // fullstep -> 1/32step
-      HR8825_SetMicroStep(SOFTWARD, "fullstep");
-      // backward/forward, steps, speed(1=fast, 5=slow)
-      HR8825_TurnStep(BACKWARD, 6144, 1);
-      HR8825_Stop();
-    =}
-  }
+    mode DISPENSE {
+        reaction(run){=
+            if (DEV_ModuleInit())
+            {
+                printf("EXITING; failed to init.\n"); 
+                exit(0);
+            }
+            //signal(SIGINT, Handler);
+            HR8825_SelectMotor(MOTOR2);
+            // fullstep -> 1/32step
+            HR8825_SetMicroStep(SOFTWARD, "fullstep");
+            // backward/forward, steps, speed(1=fast, 5=slow)
+            HR8825_TurnStep(BACKWARD, 6144, 1);
+            HR8825_Stop();
+        =}
+    }
 
-  mode ERROR {
-    reaction(startup) {=
-      printf("ERROR: weight index out of range; shutting down.\n");
-      HR8825_SelectMotor(MOTOR2);
-      HR8825_Stop();
-      DEV_ModuleExit();
-      //stop = false;
-    =}
-
-    reaction(cool_down) -> reset(IDLE) {=
-      printf("Cool down period is over; returning to idle mode.\n");
-      lf_set_mode(IDLE);
-    =}
-  }
 }
