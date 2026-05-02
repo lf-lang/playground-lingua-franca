@@ -3,7 +3,7 @@ target C {
   keepalive: true
 }
 
-import StepperMotor from "lib/motor.lf"
+import StepperMotor from "lib/motor.lf"  // comment
 import LoadCell from "lib/loadcell.lf"
 
 main reactor {
