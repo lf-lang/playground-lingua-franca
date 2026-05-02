@@ -55,28 +55,27 @@ reactor LoadCell {
   timer t(1 sec, 2 sec)
 
   reaction(startup) -> weight {=
-        // set process priority
-        int err = setPriority(10);
-        if (err) {
-            printf("FAILURE: priority\n");
-        }
+    // set process priority
+    int err = setPriority(10);
+    if (err) {
+        printf("FAILURE: priority\n");
     }
 
-        // init hx711
-        //initHX711(&self->hx, <CLOCK_PIN>, <DATA_PIN>);
-        initHX711(&self->hx, 6, 5);
+    // init hx711
+    //initHX711(&self->hx, <CLOCK_PIN>, <DATA_PIN>);
+    initHX711(&self->hx, 6, 5);
 
-        // setup gpio pins
-        setupGPIO(&self->hx);
+    // setup gpio pins
+    setupGPIO(&self->hx);
 
-        // reset hx711
-        reset(&self->hx);
+    // reset hx711
+    reset(&self->hx);
 
-        // zero scale
-        err = zeroScale(&self->hx);
-        if (err) {
-            printf("FAILURE: zero scale\n");
-        }
+    // zero scale
+    err = zeroScale(&self->hx);
+    if (err) {
+        printf("FAILURE: zero scale\n");
+    }
   =}
 
   reaction(t) -> weight, low_food, cooldown, cooldown_end {=
@@ -88,7 +87,16 @@ reactor LoadCell {
         return;
     }
 
-    printf("Weight (g): %.2f\n", grams);
+    // 1) raw value read
+    // wait for pin to go low
+    int wait_count = 0;
+    while (getPinState(self->hx.data_pin) == 1) {
+        usleep(1000);
+        wait_count++;
+        if (wait_count % 1000 == 0) {
+            printf("waiting for low data pin (%d ms)\n", wait_count);
+        }
+    }
 
     // collect samples
     int raw_vals[10];

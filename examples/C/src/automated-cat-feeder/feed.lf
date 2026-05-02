@@ -28,8 +28,4 @@ main reactor {
         lf_set(motor.run, true);
     }
   =}
-
-  reaction(shutdown) {=
-    printf("Shutting down main reactor!\n");
-  =}
 }

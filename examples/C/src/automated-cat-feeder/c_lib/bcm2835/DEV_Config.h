@@ -14,7 +14,7 @@
 #ifndef __DEV_CONFIG_H_
 #define __DEV_CONFIG_H_
 
-#include <bcm2835.h>
+#include "bcm2835.h"//<bcm2835.h>
 #include <stdint.h>
 
 /**

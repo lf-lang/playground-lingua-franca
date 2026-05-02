@@ -17,6 +17,9 @@
 
 ---
 
+// add physical components necessary
+// add links
+
 ## Overview
 
 This project is an elementary automated pet feeder designed to run on a Raspberry Pi 4. 

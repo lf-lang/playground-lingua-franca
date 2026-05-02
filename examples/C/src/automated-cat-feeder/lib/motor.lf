@@ -7,7 +7,9 @@ target C {
       "../c_lib/bcm2835/HR8825.h",
       "../c_lib/bcm2835/HR8825.c",
       "../c_lib/bcm2835/DEV_Config.c",
-      "../c_lib/bcm2835/Debug.h"]
+      "../c_lib/bcm2835/Debug.h",
+      "../c_lib/bcm2835/bcm2835.h",
+      "../c_lib/bcm2835/bcm2835.c"]
 }
 
 preamble {=
