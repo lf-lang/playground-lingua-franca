@@ -182,14 +182,31 @@ void chessboard(uint32_t *led_strip, uint32_t** remapping, int i, float brightne
 
 /**
  * @brief Displays the American Flag.
- * 
+ *
  * @param led_strip One dimensional array used to write values to the LED strip.
  * @param remapping Allows row/column format to be translated to the one dimensional LED array.
- * @param i Counter referring to the current frame. This is used for animation purposes. 
+ * @param i Counter referring to the current frame. This is used for animation purposes.
  *             By modding the pointer different patterns can be made per frame.
  * @param brightness Scalar to adjust the brightness of the pixel value.
  * @param rows Number of rows in the LED strip.
  * @param cols Number of columns in the LED strip.
  */
 void old_glory(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols);
+
+/**
+ * @brief Displays the LF logo pattern with a fade in/out animation.
+ *
+ * The pattern uses dark navy, white, and orange pixels. Pass i=1 to fade the
+ * logo in (brightness ramps up over successive calls) and i=0 to fade it out.
+ * The fade is driven by an internal static accumulator updated each call.
+ *
+ * @param led_strip One dimensional array used to write values to the LED strip.
+ * @param remapping Allows row/column format to be translated to the one dimensional LED array.
+ * @param i Anumation on or off
+ * @param brightness Maximum brightness scalar (0.0–1.0).
+ * @param rows Number of rows in the LED strip.
+ * @param cols Number of columns in the LED strip.
+ */
+void lf_logo_8x8(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols);
+
 #endif /* _WS2812_H */

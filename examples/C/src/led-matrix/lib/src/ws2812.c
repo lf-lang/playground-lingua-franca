@@ -365,3 +365,50 @@ void old_glory(uint32_t *led_strip, uint32_t** remapping, int i, float brightnes
         }
     }
 }
+
+void lf_logo_8x8(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols)
+{
+    // Static fade level: smoothly increases toward 1.0 when i=1, decreases toward 0.0 when i=0
+    static float fade = 0.0f;
+    static const float FADE_STEP = 0.05f;
+
+    int choose = i % 2;
+
+    uint32_t dark_navy = rgb_color(28, 28, 132, brightness * (choose? 1 : 2));
+    uint32_t white     = rgb_color(255, 255, 255, brightness * (choose? 1 : 2));
+    uint32_t orange    = rgb_color(255, 165, 0, brightness * (choose? 1 : 2));
+
+    // 8x8 pixel pattern: N=dark navy, W=white, O=orange (following a snake pattern)
+    static const char pattern[8][8] = {
+        {'N','N','N','N','N','N','N','N'},
+        {'O','O','O','O','N','N','W','W'},
+        {'W','W','N','N','O','W','W','W'},
+        {'N','N','W','W','N','N','W','W'},
+        {'W','W','N','N','W','W','W','W'},
+        {'N','N','W','W','W','W','W','W'},
+        {'W','W','W','W','W','W','N','N'},
+        {'N','N','N','N','N','N','N','N'},
+    };
+
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            uint32_t color;
+            if (row < 8 && col < 8) {
+                switch (pattern[row][col]) {
+                    case 'W': 
+                        if (choose) color = white;
+                        else color = dark_navy;
+                        break;
+                    case 'O': 
+                        if (choose) color = orange;
+                        else color = dark_navy;
+                        break;
+                    default:  color = dark_navy; break;
+                }
+            } else {
+                color = dark_navy;
+            }
+            led_strip[remapping[row][col]] = color;
+        }
+    }
+}

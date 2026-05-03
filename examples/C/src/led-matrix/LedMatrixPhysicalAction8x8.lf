@@ -1,0 +1,175 @@
+/**
+ * This program  uses a modal model to display a variety of LED animations on a WS2812 RGB Led Panel.
+ * The WS2812, or Neopixel, uses precise timing of pulses to encode 1s and 0s. See lib/ws2812.pio to
+ * see the mechanism. Animations can be added or altered in lib/src/ws2812.c and then added to a
+ * mode in the LED reactor.
+ *
+ * For convenience a remapped array can be used to interact with the LED array in a row, column
+ * format. The remapping object in the LED reactor
+ *
+ * @author Benjamin Gunnels
+ */
+target C {
+  platform: {
+    name: "rp2040",
+    board: "pico"
+  },
+  single-threaded: true,
+  files: ["./lib/"],
+  cmake-include: ["./lib/lib.txt"],
+  keepalive: true
+}
+
+preamble {=
+  #include <stdio.h>
+  #include "pico/stdlib.h"
+  #include "hardware/timer.h"
+  #include "led_remapping.h"
+  #include "ws2812.h"
+  #include "hardware/pio.h"
+  #include "ws2812.pio.h"
+  #include <hardware/gpio.h>
+
+  #define NUM_LEDS 64 // How many leds are in your array
+=}
+
+reactor LED {
+  input change_mode: bool
+  input frame: int
+
+  preamble {=
+    #define ROWS 8
+    #define COLS 8
+
+    int sm = 0;
+
+    PIO pio = pio0;
+    uint offset;
+
+    // Create a one dimensional array to map the colors onto the LED strip
+    uint32_t led_strip[ROWS*COLS] = {0};
+
+    // Create a two dimensional array for convenience mapping effects
+    uint32_t** remapping;
+  =}
+
+  reaction(startup) {=
+    // Initialize the remapping array during startup
+    remapping = remap(ROWS, COLS);
+    if (remapping == NULL) {
+        printf("Error: Remapping initialization failed.\n");
+    } else {
+        printf("Remapping successfully initialized.\n");
+    }
+
+    offset = pio_add_program(pio, &ws2812_program);
+
+    ws2812_program_init(pio, sm, offset, ws2812_config.pin, 800000, false); // 800kHz WS2812B
+  =}
+
+  initial mode RAINBOW {
+    reaction(frame) {=
+      rainbow(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+
+      // Send the colors to the WS2812 LEDs
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+    =}
+
+    reaction(change_mode) -> reset(CHESSBOARD) {=
+      lf_set_mode(CHESSBOARD);
+    =}
+  }
+
+  mode CHESSBOARD {
+    reaction(frame) {=
+      chessboard(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+
+      // Send the colors to the WS2812 LEDs
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+    =}
+
+    reaction(change_mode) -> reset(LOGO) {=
+      lf_set_mode(LOGO);
+    =}
+  }
+
+  mode LOGO {
+    reaction(frame) {=
+      lf_logo_8x8(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+
+      // Send the colors to the WS2812 LEDs
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+    =}
+
+    reaction(change_mode) -> reset(RAINBOW) {=
+      lf_set_mode(RAINBOW);
+    =}
+  }
+}
+
+main reactor {
+  timer iterator(1 s, 350 ms)
+  physical action a
+
+  state next_frame: int = 0
+  state led_mode: int = 0
+  state last_button_time: time = 0
+  state debounce_time: time = 50ms
+
+  led = new LED()
+
+  preamble {=
+    static void* action = NULL;
+
+    int button_pressed = 0;
+
+    void initialize_leds(ws2812_config_t* ws2812_config) {
+        gpio_init(ws2812_config->pin);
+        gpio_set_dir(ws2812_config->pin, GPIO_OUT);
+        gpio_put(ws2812_config->pin, 0);
+    }
+
+    // Callback function has to have signature as follows (from gpio.h):
+    //    typedef void (*gpio_irq_callback_t)(uint gpio, uint32_t event_mask);
+    void my_callback(uint gpio, uint32_t event_mask) {
+      // printf("Callback invoked for gpio %#010x and event_mask %#010x\n", gpio, event_mask);
+      lf_schedule(action, 0);
+    }
+  =}
+
+  reaction(startup) -> a {=
+    // Initialize the hardware
+    stdio_init_all();
+    // Initialize the LED pin
+    initialize_leds(&ws2812_config);
+
+    // Initialize the switch button pin
+    gpio_init(BUTTON);
+    gpio_set_dir(BUTTON, GPIO_IN);
+    gpio_pull_up(BUTTON);
+
+    if (action != NULL) {
+      lf_print_error_and_exit("Only one instance of the action is allowed.");
+    }
+    action = (void*)a;
+    gpio_set_irq_enabled_with_callback(BUTTON, GPIO_IRQ_EDGE_FALL, true, &my_callback);
+
+    // Time to breathe
+    sleep_ms(1000);
+  =}
+
+  reaction(iterator) -> led.frame {=
+    if (self->next_frame < 760) self->next_frame++;
+    else self->next_frame = 0; // Reset the frame every 760 frames
+
+    lf_set(led.frame, self->next_frame);
+  =}
+
+  reaction(a) -> led.change_mode {=
+    instant_t now = lf_time_logical();
+    if (now - self->last_button_time >= self->debounce_time) {
+      lf_set(led.change_mode, true);
+    }
+    self->last_button_time = now;
+  =}
+}

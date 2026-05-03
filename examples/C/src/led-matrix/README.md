@@ -25,7 +25,7 @@ The original code can be viewed at <a href="https://github.com/ben-gunnels/embed
 To build this project, you will need the following components:
 
 - **Raspberry Pi Pico Microcontroller**  
-  [Adafruit Product Page](https://www.adafruit.com/pico?src=raspberrypi)
+  [Adafruit Product Page](https://www.adafruit.com/pico?src=raspberrypi). The [Raspberry Pi Pico W Microcontroller](https://www.adafruit.com/product/5526) can also be used.
 
 - **Breadboard and Components**
   - 7x Jumper Wires (see connection details below)
@@ -147,3 +147,13 @@ void ws2812_send_bit(ws2812_config_t *ws2812_config, bool bit)
 ```
 
 For any inquiries on this project please email me (Benjamin Gunnels, @ben-gunnels) at: bengunnels8@gmail.com
+
+## Variants
+
+### Interrupt-based button handling
+
+[LedMatrix8x8Interrupt.lf](LedMatrix8x8Interrupt.lf) is an alternative version that replaces the polling-based button with a hardware interrupt, using a **Lingua Franca physical action** to schedule the mode change. Button debouncing is also implemented to prevent spurious mode switches. 
+
+### **WS2812 Neopixel 8x8 LED Array Board** 
+
+The example also works for the 8x8 variant of the LED Array Board; note that some animations are truncated on the smaller display.
