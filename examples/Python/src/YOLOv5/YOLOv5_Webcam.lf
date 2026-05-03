@@ -138,7 +138,7 @@ reactor Plotter(label_deadline = 100 msec) {
 
 main reactor {
   # Offset allows time for the model to load.
-  webcam = new WebCamAsync(webcam_id = 0, offset = 2 s)
+  webcam = new WebCamAsync(webcam_id=0, offset = 2 s)
   dnn = new DNN()
   plotter = new Plotter()
   display = new Display()
