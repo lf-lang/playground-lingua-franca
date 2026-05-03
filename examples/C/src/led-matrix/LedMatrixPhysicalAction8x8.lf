@@ -1,14 +1,17 @@
 /**
- * This program  uses a modal model to display a variety of LED animations on a WS2812 RGB Led Panel.
- * The WS2812, or Neopixel, uses precise timing of pulses to encode 1s and 0s. See lib/ws2812.pio to
- * see the mechanism. Animations can be added or altered in lib/src/ws2812.c and then added to a
- * mode in the LED reactor.
+ * This program is a variant of `LEdMatrix.lf`, which is by Benjamin
+ * Gunnels, that uses a physical action to change the mode of an LED 
+ * matrix display. 
  *
- * For convenience a remapped array can be used to interact with the LED array in a row, column
- * format. The remapping object in the LED reactor
+ * The display is an 8x8 grid of WS2812B LEDs, which are similarly  
+ * controlled by a Raspberry Pi Pico microcontroller. The program 
+ * cycles through four different display modes (RAINBOW, CHESSBOARD, 
+ * LOGO, and SMILEY) every time a physical button connected to the 
+ * Pico is pressed. 
  *
- * @author Benjamin Gunnels
+ * @author Chadlia Jerad
  */
+ 
 target C {
   platform: {
     name: "rp2040",
@@ -101,6 +104,19 @@ reactor LED {
       send_colors(pio, sm, led_strip, NUM_LEDS);
     =}
 
+    reaction(change_mode) -> reset(SMILEY) {=
+      lf_set_mode(SMILEY);
+    =}
+  }
+
+  mode SMILEY {
+    reaction(frame) {=
+      smiley_8x8(led_strip, remapping, frame->value, 0.01, ROWS, COLS);
+
+      // Send the colors to the WS2812 LEDs
+      send_colors(pio, sm, led_strip, NUM_LEDS);
+    =}
+
     reaction(change_mode) -> reset(RAINBOW) {=
       lf_set_mode(RAINBOW);
     =}
@@ -114,7 +130,7 @@ main reactor {
   state next_frame: int = 0
   state led_mode: int = 0
   state last_button_time: time = 0
-  state debounce_time: time = 50ms
+  state debounce_time: time = 90ms
 
   led = new LED()
 

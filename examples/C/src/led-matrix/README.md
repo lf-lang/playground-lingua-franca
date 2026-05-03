@@ -150,9 +150,9 @@ For any inquiries on this project please email me (Benjamin Gunnels, @ben-gunnel
 
 ## Variants
 
-### Interrupt-based button handling
+### Physical action-based button handling
 
-[LedMatrix8x8Interrupt.lf](LedMatrix8x8Interrupt.lf) is an alternative version that replaces the polling-based button with a hardware interrupt, using a **Lingua Franca physical action** to schedule the mode change. Button debouncing is also implemented to prevent spurious mode switches. 
+[LedMatrixPhysicalAction8x8.lf](LedMatrixPhysicalAction8x8.lf) is an alternative version that replaces the polling-based button with a hardware interrupt, using a **Lingua Franca physical action** to schedule the mode change. Button debouncing is also implemented to prevent spurious mode switches. 
 
 ### **WS2812 Neopixel 8x8 LED Array Board** 
 
