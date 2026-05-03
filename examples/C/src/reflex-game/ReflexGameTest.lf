@@ -52,7 +52,7 @@ main reactor {
       fflush(stdout);
     } else {
       interval_t elapsed = lf_time_logical() - self->request_time;
-      printf("Character entered: %c after %lld nsec.\n", *a->value, elapsed);
+      printf("Character entered: %c after " PRINTF_TIME " nsec.\n", *a->value, elapsed);
     }
   =}
 }
