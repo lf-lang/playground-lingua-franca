@@ -16,8 +16,7 @@ target C {
   },
   single-threaded: true,
   files: ["./lib/"],
-  cmake-include: ["./lib/lib.txt"],
-  keepalive: true
+  cmake-include: ["./lib/lib.txt"]
 }
 
 preamble {=
