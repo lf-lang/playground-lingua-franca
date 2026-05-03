@@ -94,8 +94,15 @@ if [ $SETUP_ROS = true ]; then
             if [ "${OS_ID}" != "ubuntu" ] ; then 
                 echo "This script has only been tested on ubuntu. Proceed with caution."
             else
-                # On Ubuntu, we need to add universe; 
-                sudo add-apt-repository universe --yes
+                # Enable the universe component directly to avoid contacting Launchpad
+                # (add-apt-repository universe makes a network call to launchpad.net which can time out)
+                if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+                    # Ubuntu 24.04+ uses deb822 format
+                    sudo sed -i 's/^Components: main$/Components: main universe/' /etc/apt/sources.list.d/ubuntu.sources
+                else
+                    # Ubuntu 22.04 and earlier use the traditional sources.list format
+                    sudo sed -i 's/^\(deb [^ ]* [^ ]* main\)$/\1 universe/' /etc/apt/sources.list
+                fi
             fi
             
             sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
