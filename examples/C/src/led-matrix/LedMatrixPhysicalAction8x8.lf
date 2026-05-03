@@ -1,17 +1,13 @@
 /**
- * This program is a variant of `LEdMatrix.lf`, which is by Benjamin
- * Gunnels, that uses a physical action to change the mode of an LED 
- * matrix display. 
+ * This program is a variant of `LEdMatrix.lf`, which is by Benjamin Gunnels, that uses a physical
+ * action to change the mode of an LED matrix display.
  *
- * The display is an 8x8 grid of WS2812B LEDs, which are similarly  
- * controlled by a Raspberry Pi Pico microcontroller. The program 
- * cycles through four different display modes (RAINBOW, CHESSBOARD, 
- * LOGO, and SMILEY) every time a physical button connected to the 
- * Pico is pressed. 
+ * The display is an 8x8 grid of WS2812B LEDs, which are similarly controlled by a Raspberry Pi Pico
+ * microcontroller. The program cycles through four different display modes (RAINBOW, CHESSBOARD,
+ * LOGO, and SMILEY) every time a physical button connected to the Pico is pressed.
  *
  * @author Chadlia Jerad
  */
- 
 target C {
   platform: {
     name: "rp2040",
@@ -130,7 +126,7 @@ main reactor {
   state next_frame: int = 0
   state led_mode: int = 0
   state last_button_time: time = 0
-  state debounce_time: time = 90ms
+  state debounce_time: time = 90 ms
 
   led = new LED()
 
