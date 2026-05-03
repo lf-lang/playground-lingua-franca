@@ -1,4 +1,4 @@
-opencv-python==4.5.5.64   # Later versions give error: Submodule name should always start with a parent module name. Parent name: cv2.cv2. Submodule name: cv2
+opencv-python>=4.8.0
 pandas
 tqdm
 seaborn
@@ -6,7 +6,7 @@ ipywidgets
 ipython
 ipykernel
 matplotlib>=3.2.2
-numpy>=1.18.5
+numpy>=2.0.0
 Pillow>=7.1.2
 PyYAML>=5.3.1
 scipy>=1.4.1
