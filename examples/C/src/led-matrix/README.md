@@ -89,8 +89,8 @@ $ cd playground-lingua-franca/examples/C
 # Compile the main reactor
 $ lfc src/led-matrix/LedMatrix.lf
 
-# Run the program
-$ bin/LedMatrix.elf
+# Load and run the program
+$ picotool load -x bin/LedMatrix.elf
 ```
 
 > **Note:**
