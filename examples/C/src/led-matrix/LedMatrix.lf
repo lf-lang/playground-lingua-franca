@@ -16,7 +16,8 @@ target C {
   },
   single-threaded: true,
   files: ["./lib/"],
-  cmake-include: ["./lib/lib.txt"]
+  cmake-include: ["./lib/lib.txt"],
+  keepalive: true
 }
 
 preamble {=
@@ -133,7 +134,6 @@ reactor LED {
 }
 
 main reactor {
-  physical action button_press
   logical action change_mode
 
   state next_frame: int = 0
