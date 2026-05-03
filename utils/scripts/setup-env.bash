@@ -33,24 +33,18 @@ done
 # Update package index first
 sudo apt-get update
 
-# Make add-apt-repository available
-sudo apt-get install --assume-yes software-properties-common
-# We need python3.10 to use LF
-sudo add-apt-repository -y 'ppa:deadsnakes/ppa'
-sudo apt-get update
-
 ## Setup C, C++, Python, Rust, protobuf, gRPC, gnuplot
 sudo apt-get install --assume-yes \
     build-essential \
-    python3.10 python3.10-dev python3.10-venv python3.10-distutils \
+    python3 python3-dev python3-venv \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
     protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot libasound2-dev libfluidsynth-dev libgpiod-dev
-    
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 # Install python dependencies and
 # latest CMake; see https://www.kitware.com/cmake-python-wheels/ https://askubuntu.com/a/1070770
-sudo python3.10 -m pip install --exists-action i requests setuptools cmake
+sudo python3 -m pip install --exists-action i requests setuptools cmake
 
 if [ $SETUP_NETWORK = true ]; then 
     # Install support for protocol buffers
