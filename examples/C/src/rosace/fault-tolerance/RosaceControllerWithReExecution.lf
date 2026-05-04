@@ -36,7 +36,12 @@ reactor VaControl50Body extends TaskBody {
     const REAL_TYPE K1_Va     = -0.486813084356079;
     const REAL_TYPE K1_Vz     = -0.077603095495388;
     const REAL_TYPE K1_q      = 21.692383376322041;
-    const REAL_TYPE Va_eq       = 230.0;
+    // Guard against the #define Va_eq from RosaceController.lf being injected into the same
+    // compilation unit (GCC 13+ / Ubuntu 24.04): a bare `const REAL_TYPE Va_eq` declaration
+    // would be macro-expanded to `const REAL_TYPE 230.0`, which is invalid C.
+    #ifndef Va_eq
+    #define Va_eq 230.0
+    #endif
 
     int Va_control_50(REAL_TYPE Va_f, REAL_TYPE Vz_f, REAL_TYPE q_f, REAL_TYPE Va_c, REAL_TYPE* output, REAL_TYPE* saved_y, REAL_TYPE* saved_integrator,int seg_start_num){
     	static REAL_TYPE y = 0.0;

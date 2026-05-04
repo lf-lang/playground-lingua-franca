@@ -37,7 +37,7 @@ reactor LogicalAnd {
   input b: bool
 
   reaction(a, b) {=
-    printf("Output: %d, tag: (%lld, %u)\n",
+    printf("Output: %d, tag: " PRINTF_TAG "\n",
       a->is_present & b->is_present, lf_time_logical_elapsed(), lf_tag().microstep
     );
   =}

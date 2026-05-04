@@ -76,8 +76,8 @@ reactor Server(
     lf_set(update, self->update_amount);
   =} deadline(update_deadline) {=
     tag_t tag = lf_tag();
-    lf_print_error("At tag (%lld, %u), deadline missed at database \"%s\". Rejecting update.\n"
-        "   Elapsed physical time is %lld.",
+    lf_print_error("At tag " PRINTF_TAG ", deadline missed at database \"%s\". Rejecting update.\n"
+        "   Elapsed physical time is " PRINTF_TIME ".",
         tag.time - lf_time_start(),
         tag.microstep,
         self->name,
@@ -86,7 +86,7 @@ reactor Server(
   =}
 
   reaction(reply) {=
-    lf_print("***** At tag (%lld, %u), server \"%s\" reports balance: %d.",
+    lf_print("***** At tag " PRINTF_TAG ", server \"%s\" reports balance: %d.",
       lf_time_logical_elapsed(), lf_tag().microstep, self->server_name, reply->value
     );
     self->queries_outstanding--;
@@ -155,8 +155,8 @@ reactor Database(name: char* = "unnamed database", num_remote_inputs: int = 1) {
         self->record += remote_update[i]->value;
       }
     }
-    lf_print("At tag (%lld, %u), database \"%s\" updated balance to %d.\n"
-        "   Elapsed physical time is %lld.",
+    lf_print("At tag " PRINTF_TAG ", database \"%s\" updated balance to %d.\n"
+        "   Elapsed physical time is " PRINTF_TIME ".",
         lf_time_logical() - lf_time_start(), lf_tag().microstep,
         self->name,
         self->record,
@@ -166,10 +166,10 @@ reactor Database(name: char* = "unnamed database", num_remote_inputs: int = 1) {
     #ifdef FEDERATED_DECENTRALIZED
         for (int i = 0; i < remote_update_width; i++) {
           if (remote_update[i]->is_present) {
-            lf_print_warning("At tag (%lld, %u), database \"%s\" "
-                "received remote update (%d) with intended tag (%lld, %u).\n"
+            lf_print_warning("At tag " PRINTF_TAG ", database \"%s\" "
+                "received remote update (%d) with intended tag " PRINTF_TAG ".\n"
                 "   Balance previously reported may have been incorrect.\n"
-                "   Elapsed physical time is %lld.",
+                "   Elapsed physical time is " PRINTF_TIME ".",
                 current_tag.time - lf_time_start(),
                 current_tag.microstep,
                 self->name,
