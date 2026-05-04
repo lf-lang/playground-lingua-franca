@@ -1,2 +1,14 @@
-add_subdirectory(lib led_matrix)
-target_link_libraries(${LF_MAIN_TARGET} PUBLIC led_matrix)
+target_sources(${LF_MAIN_TARGET} PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/lib/src/ws2812.c
+  ${CMAKE_CURRENT_LIST_DIR}/lib/src/led_remapping.c
+)
+target_include_directories(${LF_MAIN_TARGET} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/lib/src)
+pico_generate_pio_header(${LF_MAIN_TARGET} ${CMAKE_CURRENT_LIST_DIR}/lib/ws2812.pio)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC
+  pico_stdlib
+  hardware_adc
+  hardware_pio
+  hardware_pwm
+  hardware_spi
+  hardware_i2c
+)
