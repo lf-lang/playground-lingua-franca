@@ -82,5 +82,8 @@ case "$RELEASE_BUILD" in
     # Here, we ignore the actual build name (the original name of the file and the original first directory).
     tar -xf lf.tar.gz -C lingua-franca --strip-components 1
     rm lf.tar.gz
+    # Symlink lfc into the system PATH so it is available regardless of how the shell is invoked
+    # (e.g. devcontainer exec does not always apply remoteEnv.PATH from devcontainer.json)
+    sudo ln -sf "$(pwd)/lingua-franca/bin/lfc" /usr/local/bin/lfc
     ;;
 esac

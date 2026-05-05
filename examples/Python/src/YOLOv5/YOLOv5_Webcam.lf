@@ -36,8 +36,18 @@ reactor DNN {
   =}
 
   reaction(startup) -> model {=
-    # Load YOLOv5
-    self._model = self.torch.hub.load("ultralytics/yolov5", "yolov5s", pretrained=True)
+    # YOLOv5 hub code calls the deprecated torch.cuda.amp.autocast on every
+    # inference. Redirect it to the current API so the FutureWarning disappears.
+    self.torch.cuda.amp.autocast = lambda enabled=True, **kw: self.torch.amp.autocast("cuda", enabled=enabled, **kw)
+
+    # PyTorch 2.6 changed torch.load to default weights_only=True, which breaks
+    # the YOLOv5 checkpoint format. Patch it back to False for this trusted load.
+    _orig_load = self.torch.load
+    self.torch.load = lambda *a, **kw: _orig_load(*a, **{**kw, "weights_only": kw.get("weights_only", False)})
+    try:
+      self._model = self.torch.hub.load("ultralytics/yolov5", "yolov5s", pretrained=True)
+    finally:
+      self.torch.load = _orig_load
     # Find out if CUDA is supported
     self._device = "cuda" if self.torch.cuda.is_available() else 'cpu'
     # Send the model to device
@@ -128,7 +138,7 @@ reactor Plotter(label_deadline = 100 msec) {
 
 main reactor {
   # Offset allows time for the model to load.
-  webcam = new WebCamAsync(offset = 2 s)
+  webcam = new WebCamAsync(webcam_id=0, offset = 2 s)
   dnn = new DNN()
   plotter = new Plotter()
   display = new Display()

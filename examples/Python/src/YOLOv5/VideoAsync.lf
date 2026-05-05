@@ -11,6 +11,7 @@ import Display from "Video.lf"
 
 preamble {=
   import cv2
+  import time
 =}
 
 /**
@@ -38,12 +39,20 @@ reactor WebCamAsync(webcam_id=0, offset = 0 s, frames_per_second=30) {
 
     self.stream.set(cv2.CAP_PROP_FPS, self.frames_per_second)
 
-    # Read the first frame. This is a blocking read.
-    ret, frame = self.stream.read()
-    if ret is True:
+    # macOS AVFoundation needs a moment to warm up after open() before
+    # frames are available; retry for up to ~2 seconds before giving up.
+    ret, frame = False, None
+    for _ in range(20):
+      ret, frame = self.stream.read()
+      if ret:
+        break
+      time.sleep(0.1)
+
+    if ret:
       camera_frame.set(frame)
     else:
-      print("Warning, failed to get first frame.")
+      sys.stderr.write("Error: Failed to get first frame from camera.\n")
+      exit(1)
   =}
 
   reaction(trigger) -> camera_frame {=
@@ -52,7 +61,7 @@ reactor WebCamAsync(webcam_id=0, offset = 0 s, frames_per_second=30) {
     if ret is True:
       camera_frame.set(frame)
     else:
-      print("Warning, failed to get first frame.")
+      print("Warning, failed to get frame.")
   =}
 
   reaction(shutdown) {=
