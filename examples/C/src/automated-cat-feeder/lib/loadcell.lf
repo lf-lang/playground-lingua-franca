@@ -9,7 +9,6 @@ target C {
       "../c_lib/hx711/hx711.h"]
 }
 
-// perhaps remove all error state?
 preamble {=
   #include "hx711.h"
   #include "gb_common.h"
@@ -32,168 +31,211 @@ preamble {=
   }
 =}
 
-reactor LoadCell {
-  state hx: HX711            // init hx711
+    reactor LoadCell {
+    state hx: HX711            // init hx711
 
-  state scale_init: bool
-  state bowl_weight: double  // grams
+    state scale_init: bool
+    state bowl_weight: double  // grams
 
-  state calibrated: bool     // calibration states
-  state offset: double
-  state scale: double
+    state calibrated: bool     // calibration states
+    state offset: double
+    state scale: double
 
-  state num_errors: int = 0  // cooldown variables
-  state in_cooldown: bool = false
-  physical action cooldown_end
-  output cooldown: bool
+    state num_errors: int = 0  // cooldown variables
+    state in_cooldown: bool = false
+    physical action cooldown_end
 
-  // feed.lf outputs
-  // grams
-  output weight: double
-  output low_food: bool
+    output low_food: bool
 
-  timer t(1 sec, 2 sec)
+    timer t(1 sec, 2 sec)
 
-  reaction(startup) -> weight {=
-    // set process priority
-    int err = setPriority(10);
-    if (err) {
-        printf("FAILURE: priority\n");
-    }
-
-    // init hx711
-    //initHX711(&self->hx, <CLOCK_PIN>, <DATA_PIN>);
-    initHX711(&self->hx, 6, 5);
-
-    // setup gpio pins
-    setupGPIO(&self->hx);
-
-    // reset hx711
-    reset(&self->hx);
-
-    // zero scale
-    err = zeroScale(&self->hx);
-    if (err) {
-        printf("FAILURE: zero scale\n");
-    }
-  =}
-
-  reaction(t) -> weight, low_food, cooldown, cooldown_end {=
-    //measurement skip from cooldown check
-    if (self->in_cooldown) {
-        //printf("~~~ COOLDOWN: skipping measurement ~~~\n");
-        lf_set(low_food, false);
-        lf_set(cooldown, true);
-        return;
-    }
-
-    // 1) raw value read
-    // wait for pin to go low
-    int wait_count = 0;
-    while (getPinState(self->hx.data_pin) == 1) {
-        usleep(1000);
-        wait_count++;
-        if (wait_count % 1000 == 0) {
-            printf("waiting for low data pin (%d ms)\n", wait_count);
+    reaction(startup) {=
+        // set process priority
+        int err = setPriority(10);
+        if (err) {
+            printf("FAILURE: priority\n");
         }
-    }
 
-    // collect samples
-    int raw_vals[10];
-    for (int i = 0; i < 10; i++) {
-        raw_vals[i] = getRawData(&self->hx);
-        usleep(5000);//10000
-    }
+        // init hx711
+        // initHX711(&self->hx, <CLOCK_PIN>, <DATA_PIN>);
+        initHX711(&self->hx, 6, 5);
 
-    // median
-    int raw_median = get_median(raw_vals, 10);
+        // setup gpio pins
+        setupGPIO(&self->hx);
 
-    // 2) calibration
-    if (self->scale_init == false) {
-        printf("Calibrating ...\n");
-        self->offset = (double)raw_median;
-        self->scale_init = true;
-        return;
-    }
+        // reset hx711
+        reset(&self->hx);
 
-    // 1 is scale w/ bowl
-    if (self->scale_init== true && !self->calibrated) {
-        printf("Please place empty bowl on scale.\n");
-        printf(" ╭─────────╮\n");
-        printf(" ╰╮       ╭╯\n");
-        printf("  ╰───────╯\n\n\n");
-        // recalibrate bowl
-        if (raw_median > self->offset + 10000) {
-            double delta = raw_median - self->offset;
-            self->scale = 44.0 / delta;
-            self->calibrated = true;
-            printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-            printf("Calibration complete!!\n");
-            printf("offset = %f\n", self->offset);
-            printf("scale  = %f g/unit\n", self->scale);
-
-            double grams = (raw_median - self->offset) * self->scale;
-            self->bowl_weight=grams;
+        // zero scale
+        err = zeroScale(&self->hx);
+        if (err) {
+            printf("FAILURE: zero scale\n");
         }
-        return;
-    }
 
+        // 1) raw value read
+        // wait for pin to go low
+        int wait_count = 0;
+        while (getPinState(self->hx.data_pin) == 1) {
+            usleep(1000);
+            wait_count++;
+            if (wait_count % 1000 == 0) {
+                printf("waiting for low data pin (%d ms)\n", wait_count);
+            }
+        }
 
-    if (self->calibrated) {
-        // cooldown triggered
-        if (self->num_errors >= 5){
-            printf("\n\n\nWARNING: 5 invalid measurements. Entering 10-second cooldown.\n");
-            printf(" /\\_/\\\n");
-            printf("( -.- )\n\n");
+        // collect samples
+        int raw_vals[10];
+        for (int i = 0; i < 10; i++) {
+            raw_vals[i] = getRawData(&self->hx);
+            usleep(5000);//10000
+        }
 
-            self->num_errors = 0;
-            self->in_cooldown = true;
+        // median
+        int raw_median = get_median(raw_vals, 10);
 
-            lf_set(cooldown, true);
-            lf_set(low_food, false);
-
-            lf_schedule(cooldown_end, SEC(10));
+        // 2) calibration
+        if (self->scale_init == false) {
+            printf("Calibrating ...\n");
+            self->offset = (double)raw_median;
+            self->scale_init = true;
             return;
         }
 
-        double grams = (raw_median - self->offset) * self->scale;
-        printf("\n\nWeight (g): %.2f\n", grams);
-        lf_set(weight, grams);
+        // 1 is scale w/ bowl
+        if (self->scale_init== true && !self->calibrated) {
+            printf("Please place empty bowl on scale.\n");
+            printf(" ╭─────────╮\n");
+            printf(" ╰╮       ╭╯\n");
+            printf("  ╰───────╯\n\n\n");
+            // recalibrate bowl
+            if (raw_median > self->offset + 10000) {
+                double delta = raw_median - self->offset;
+                self->scale = 44.0 / delta;
+                self->calibrated = true;
+                printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+                printf("Calibration complete!!\n");
+                printf("offset = %f\n", self->offset);
+                printf("scale  = %f g/unit\n", self->scale);
 
-        double food = ceil(grams - self->bowl_weight);
-        printf("Food (g): %.2f\n", food);
-        lf_set(cooldown, false);
+                double grams = (raw_median - self->offset) * self->scale;
+                self->bowl_weight=grams;
+            }
+            return;
+        }
 
-        if (food>=50 && food<=60){
-            //perfect food
-            printf("CASE 1: Ideal weight\n");
-            self->num_errors=0;
+    =}
 
+    reaction(t) -> low_food, cooldown_end {=
+        //measurement skip from cooldown check
+        if (self->in_cooldown) {
+            //printf("~~~ COOLDOWN: skipping measurement ~~~\n");
             lf_set(low_food, false);
+            return;
         }
-        else if(food<50 && food >=0){
-            printf("CASE 2: Low food\n");
-            self->num_errors=0;
-
-            lf_set(low_food, true);
+        // 1) raw value read
+        // wait for pin to go low
+        int wait_count = 0;
+        while (getPinState(self->hx.data_pin) == 1) {
+            usleep(1000);
+            wait_count++;
+            if (wait_count % 1000 == 0) {
+                printf("waiting for low data pin (%d ms)\n", wait_count);
+            }
         }
-        else if (food>60 || food <0){
-            printf("CASE 3: Oddly high or low\n");
-            self->num_errors++;
 
-            lf_set(low_food, false);
+        // collect samples
+        int raw_vals[10];
+        for (int i = 0; i < 10; i++) {
+            raw_vals[i] = getRawData(&self->hx);
+            usleep(5000);//10000
         }
-    }
-  =}
 
-  reaction(cooldown_end) -> cooldown {=
-    printf("\nCOOLDOWN complete: Resuming measurements\n\n");
-    self->in_cooldown = false;
-    lf_set(cooldown, false);
-  =}
+        // median
+        int raw_median = get_median(raw_vals, 10);
 
-  reaction(shutdown) {=
-    printf("\nShutting down\n");
-    cleanGPIO(&self->hx);
-  =}
+        // 2) calibration
+        if (self->scale_init == false) {
+            printf("Calibrating ...\n");
+            self->offset = (double)raw_median;
+            self->scale_init = true;
+            return;
+        }
+
+        // 1 is scale w/ bowl
+        if (self->scale_init== true && !self->calibrated) {
+            printf("Please place empty bowl on scale.\n");
+            printf(" ╭─────────╮\n");
+            printf(" ╰╮       ╭╯\n");
+            printf("  ╰───────╯\n\n\n");
+            // recalibrate bowl
+            if (raw_median > self->offset + 10000) {
+                double delta = raw_median - self->offset;
+                self->scale = 44.0 / delta;
+                self->calibrated = true;
+                printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+                printf("Calibration complete!!\n");
+                printf("offset = %f\n", self->offset);
+                printf("scale  = %f g/unit\n", self->scale);
+
+                double grams = (raw_median - self->offset) * self->scale;
+                self->bowl_weight=grams;
+            }
+            return;
+        }
+
+
+        if (self->calibrated) {
+            // cooldown triggered
+            // try logical action
+            if (self->num_errors >= 5 && !self->in_cooldown){
+                printf("\n\n\nWARNING: 5 invalid measurements. Entering 10-second cooldown.\n");
+                printf(" /\\_/\\\n");
+                printf("( -.- )\n\n");
+
+                self->num_errors = 0;
+                self->in_cooldown = true;
+
+                lf_set(low_food, false);
+
+                lf_schedule(cooldown_end, SEC(10));
+                return;
+            }
+
+            double grams = (raw_median - self->offset) * self->scale;
+            printf("\n\nWeight (g): %.2f\n", grams);
+
+            double food = ceil(grams - self->bowl_weight);
+            printf("Food (g): %.2f\n", food);
+
+            if (food>=50 && food<=60){
+                //perfect food
+                printf("CASE 1: Ideal weight\n");
+                self->num_errors=0;
+
+                lf_set(low_food, false);
+            }
+            else if(food<50 && food >=0){
+                printf("CASE 2: Low food\n");
+                self->num_errors=0;
+
+                lf_set(low_food, true);
+            }
+            else if (food>60 || food <0){
+                printf("CASE 3: Oddly high or low\n");
+                self->num_errors++;
+
+                lf_set(low_food, false);
+            }
+        }
+    =}
+
+    reaction(cooldown_end) {=
+        printf("\nCOOLDOWN complete: Resuming measurements\n\n");
+        self->in_cooldown = false;
+    =}
+
+    reaction(shutdown) {=
+        printf("\nShutting down\n");
+        cleanGPIO(&self->hx);
+    =}
 }

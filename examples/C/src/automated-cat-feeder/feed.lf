@@ -3,7 +3,8 @@ target C {
   keepalive: true
 }
 
-import StepperMotor from "lib/motor.lf"  // comment
+// delete weight + cooldown
+import StepperMotor from "lib/motor.lf"
 import LoadCell from "lib/loadcell.lf"
 
 main reactor {
@@ -22,10 +23,15 @@ main reactor {
     printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
   =}
 
-  reaction(loadcell.low_food) -> motor.run {=
+  reaction(loadcell.low_food) -> motor.run, motor.stop {=
     if (loadcell.low_food->value) {
         printf("Low food detected!\n");
         lf_set(motor.run, true);
     }
+    else {
+      //printf("No low food.\n");
+      lf_set(motor.stop, true);
+    }
   =}
+  
 }

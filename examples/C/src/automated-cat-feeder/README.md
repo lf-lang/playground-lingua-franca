@@ -1,24 +1,20 @@
 <h1 align="center">
   <br>
-    Automated Cat Feeder
+  Automated Cat Feeder
   <br>
 </h1>
 
-<h4 align="center">A weight-sensing pet feeder built with <a href="https://www.lf-lang.org/" target="_blank">Lingua Franca</a>.</h4>
+<h4 align="center">
+  A weight-sensing pet feeder built with 
+  <a href="https://www.lf-lang.org/" target="_blank">Lingua Franca</a>.
+</h4>
 
-<br>
+<p align="center">
+  <img src="assets/cat_feeder.png" width="400">
+</p>
 
-<div display="block" align="center">
-  <video width="600" controls>
-    <source src="assets/demo.mov" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</div>
 
 ---
-
-// add physical components necessary
-// add links
 
 ## Overview
 
@@ -29,6 +25,7 @@ If the food weight is below a certain threshold, the motor is triggered dispensi
 - Goal food weight: 50 - 60 grams
 - Data pin= 5, Clock pin= 6
 - Empty bowl placed to begin with
+- Bowl Calibration Base Weight: 44 grams
 
 
 The goal is to ensure a pet always has the ideal amount of food (50-60 grams) while demonstrating how deterministic, reactive programming can be used to handle noisy sensor data, hardware interrupts, and mechanical dispensing logic safely.
@@ -58,10 +55,11 @@ sudo bin/feed
 
 ## Hardware Requirements
 
-- **Raspberry Pi 4 Model B** (Primary controller running the LF application)
-- **HX711 Load Cell Amplifier** (Wired to GPIO 5 for Data, GPIO 6 for Clock)
-- **Load Cell** (Mounted to the base of the food bowl)
-- **Stepper Motor & Stepper Hat B** (Wired to `MOTOR2` output for the dispensing mechanism)
+- **[Raspberry Pi 4 Model B](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)** 
+- **[HX711 Load Cell Amplifier(1 KG)](https://www.amazon.com/dp/B0BLNQZRBD?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)**
+- **[Load Cell](https://www.amazon.com/dp/B0BLNQZRBD?ref=ppx_yo2ov_dt_b_fed_asin_title&th=1)** 
+- **Stepper Motor**
+- **[Stepper Hat B](https://www.waveshare.com/wiki/Stepper_Motor_HAT_(B)?srsltid=AfmBOorD0cHVk7AqhdQ46iFxuBOxcegc7QxJ7O0b3TRa4oe1HzmYGizS)**
 
 ---
 
@@ -69,14 +67,22 @@ sudo bin/feed
 
 - **Lingua Franca compiler** (`lfc`)
 - **GCC toolchain** (`gcc`) for the C target
-- **BCM2835 C Library** 
-- **HX711 C Library** 
+- **[WaveShare BCM2835 C Library](https://www.waveshare.com/wiki/Stepper_Motor_HAT_(B)#BCM2835)** 
+- **[MikeM BCM2835 C Library](https://www.airspayce.com/mikem/bcm2835/)** 
+- **[HX711 C Library](https://github.com/gandalf15/HX711)** 
+
 
 ### Custom Library Modifications
-To ensure real-time safety and hardware stability on the ARM-based Raspberry Pi, the standard `hx711.c` library was heavily modified for this project:
+To ensure real-time safety and hardware stability on the ARM-based Raspberry Pi, the standard `hx711.c` library was modified for this project:
 * **Memory Barriers:** Added `__sync_synchronize()` around direct GPIO register access to prevent CPU instruction reordering.
-* **Precise Timing:** Replaced empty `for`-loop delays with explicit `usleep(1)` hardware delays.
+* **Precise Timing:** Replaced empty `for' loop delays with explicit `usleep(1)` hardware delays.
 * **Memory Management:** Stripped out dynamic memory allocation (`malloc`/`free`) to prevent fragmentation during long uptimes.
+
+---
+
+## Mechanical Requirements
+- **Archimedes Screw** 
+- **Container** 
 
 ---
 
@@ -97,9 +103,10 @@ To ensure real-time safety and hardware stability on the ARM-based Raspberry Pi,
 </table>
 
 ### Demo
+[Demo Video](https://youtube.com/shorts/B0-c7XisVDo)
 
 ### Contributor
-Irene Fahndrich
+[Irene Fahndrich](https://github.com/IreneMarciana)
 
 
 

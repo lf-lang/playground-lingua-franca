@@ -1,20 +1,19 @@
+// Note: This script has been modified from original library for functionality with a memory barrier. 
+// All changed functions sections are denoted by a "changed!" comment and a brief reason why.
 #include "hx711.h"
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 
-// changed!
 // added memory barrier to not reorder/rewrite instructions going forward
 #define MEM_BARRIER() __sync_synchronize()
 
 int setupGPIO(HX711 *hx)
 {
   setup_io();
-
   INP_GPIO(hx->data_pin);
   INP_GPIO(hx->clock_pin);
   OUT_GPIO(hx->clock_pin);
-
   // changed! 
   // clock must be low for hx711 to remain active
   // sleep to assure low
@@ -67,6 +66,7 @@ void setGain(HX711 *hx)
     pulses = 2;
   else if (hx->gain_channel_A == 64)
     pulses = 3;
+
   // usleep instead of continue
   for (int i = 0; i < pulses; i++)
   {
@@ -81,7 +81,6 @@ void setGain(HX711 *hx)
 int getRawData(HX711 *hx)
 {
   unsigned int bits = 0;
-
   // wait until low data
   while (getPinState(hx->data_pin))
   {
@@ -104,8 +103,6 @@ int getRawData(HX711 *hx)
   // set gain for next read
   setGain(hx);
 
-  //  bits = ~0x1800000 & bits;
-  //  bits = ~0x800000 & bits;
   if (bits & 0x800000)
   {
     bits |= ~0xFFFFFF;
@@ -135,7 +132,8 @@ bool getPinState(unsigned pin_number)
 }
 
 // changed!
-// place mem barrier around direct gpio mem write to assure cpu does not reorder other var around hw write
+// place mem barrier around direct gpio mem write to assure 
+//cpu does not reorder other var around hw write
 int setPinState(unsigned pin_number, bool state)
 {
   if (pin_number > 31)

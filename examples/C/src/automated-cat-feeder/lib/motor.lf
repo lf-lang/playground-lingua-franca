@@ -11,7 +11,7 @@ target C {
       "../c_lib/bcm2835/bcm2835.h",
       "../c_lib/bcm2835/bcm2835.c"]
 }
-
+//maybe try changing to idle
 preamble {=
   #include "HR8825.h"
   #include "DEV_Config.h"
@@ -22,6 +22,7 @@ preamble {=
 
 reactor StepperMotor {
   input run: bool
+  input stop: bool
 
   initial mode IDLE {
     reaction(run) -> reset(DISPENSE) {=
@@ -29,7 +30,10 @@ reactor StepperMotor {
       if(run->value){
           lf_set_mode(DISPENSE);
       }
-      // else, ideal weight, can remain idle
+      else { // else, ideal weight, can remain idle
+        HR8825_SelectMotor(MOTOR2);
+        HR8825_Stop();
+      }
     =}
   }
 
@@ -43,10 +47,17 @@ reactor StepperMotor {
       //signal(SIGINT, Handler);
       HR8825_SelectMotor(MOTOR2);
       // fullstep -> 1/32step
-      HR8825_SetMicroStep(SOFTWARD, "fullstep");
+      HR8825_SetMicroStep(SOFTWARD, "1/4step");
       // backward/forward, steps, speed(1=fast, 5=slow)
-      HR8825_TurnStep(BACKWARD, 6144, 1);
+      HR8825_TurnStep(FORWARD, 6144, 1);
+      HR8825_Stop();
+      
+    =}
+
+    reaction(stop)-> IDLE{=
+      HR8825_SelectMotor(MOTOR2);
       HR8825_Stop();
     =}
+
   }
 }
