@@ -11,7 +11,8 @@ target C {
       "../c_lib/bcm2835/bcm2835.h",
       "../c_lib/bcm2835/bcm2835.c"]
 }
-//maybe try changing to idle
+
+// maybe try changing to idle
 preamble {=
   #include "HR8825.h"
   #include "DEV_Config.h"
@@ -51,13 +52,11 @@ reactor StepperMotor {
       // backward/forward, steps, speed(1=fast, 5=slow)
       HR8825_TurnStep(FORWARD, 6144, 1);
       HR8825_Stop();
-      
     =}
 
-    reaction(stop)-> IDLE{=
+    reaction(stop) -> reset(IDLE) {=
       HR8825_SelectMotor(MOTOR2);
       HR8825_Stop();
     =}
-
   }
 }

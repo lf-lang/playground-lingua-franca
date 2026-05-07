@@ -3,8 +3,7 @@ target C {
   keepalive: true
 }
 
-// delete weight + cooldown
-import StepperMotor from "lib/motor.lf"
+import StepperMotor from "lib/motor.lf"  // delete weight + cooldown
 import LoadCell from "lib/loadcell.lf"
 
 main reactor {
@@ -33,5 +32,4 @@ main reactor {
       lf_set(motor.stop, true);
     }
   =}
-  
 }
