@@ -1,0 +1,35 @@
+target C {
+  single-threaded: true,
+  keepalive: true
+}
+
+import StepperMotor from "lib/motor.lf"  // delete weight + cooldown
+import LoadCell from "lib/loadcell.lf"
+
+main reactor {
+  state run: bool = false
+
+  motor = new StepperMotor()
+  loadcell = new LoadCell()
+
+  reaction(startup) {=
+    printf("\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf("Welcome to automated cat feeder!\nWe will be using 50-60 grams as the ideal food weight threshold and pins 5 for data and 6 for clock.\n");
+    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf(" /\\_/\\\n");
+    printf("( o.o )\n");
+    printf(" > ^ <\n");
+    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
+  =}
+
+  reaction(loadcell.low_food) -> motor.run, motor.stop {=
+    if (loadcell.low_food->value) {
+        printf("Low food detected!\n");
+        lf_set(motor.run, true);
+    }
+    else {
+      //printf("No low food.\n");
+      lf_set(motor.stop, true);
+    }
+  =}
+}

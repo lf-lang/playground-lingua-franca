@@ -53,7 +53,7 @@ reactor Print {
   input x: int
 
   reaction(x) {=
-    printf("Logical time: %lld, Physical time %lld"
+    printf("Logical time: " PRINTF_TIME ", Physical time " PRINTF_TIME
         ", Value: %d\n",
         lf_time_logical_elapsed(),
         lf_time_physical_elapsed(), x->value);
