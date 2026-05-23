@@ -37,7 +37,7 @@ static const double due_per_exec = 0.3;
 static const double sdc_per_exec = 0.3;
 ```
 
-In Default, this example simulates the naive TMR. You can simulate different level of redundancy  by modifying the following variable in SerialTMR reactor:
+By default, this example simulates the naive TMR. You can simulate different level of redundancy  by modifying the following variable in SerialExecution reactor:
 
 ```
 state max_number_of_executions: int = 3
