@@ -10,25 +10,25 @@ This example provides a high-level, abstracted failure simulation on Lingua Fran
 
 ### How to Use?
 
-You can compile `TMR.lf` with `lfc` as follows.
+You can compile `SerialTMR.lf` with `lfc` as follows.
 
 First, move to the root directory of the Lingua Franca Playground repository. Then run:
 
 ```bash
-lfc examples/C/src/triple-modular-redundancy/TMR.lf
+lfc examples/C/src/triple-modular-redundancy/SerialTMR.lf
 ```
 
 After compilation, execute the generated program with:
 
 ```bash
-./examples/C/bin/TMR
+./examples/C/bin/SerialTMR
 ```
 
 Note: this example requires Lingua Franca version 0.12.0 or later.
 
 ### How to Configure?
 
-Currently, this example does not support command-line parameters. To change the configuration, manually edit the parameters defined in `TMR.lf` before compilation.
+Currently, this example does not support command-line parameters. To change the configuration, manually edit the parameters defined in `SerialTMR.lf` before compilation.
 
 You can configure DUE and SDC probabilities per execution by modifying the following variables in preamble:
 
