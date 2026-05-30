@@ -1,32 +1,31 @@
 /**
- * A nondeterministic resettable counter implementation demonstrating a CRDT (ACID 2.0)with an additional
- * non-commutative reset operation. This program should be executed using the `--tmux`  or `-x`option.
- * Enter commands "i" or "r" (for increment or reset) in each of the Node panels. Each node will increment its
- * element of a shared vector counter and then broadcast the updated vector counter to all other nodes.
- * The increment operation is commutative and associative, and the broadcast ensures exactly once delivery,
- * so the vector counter is a CRDT. To take advantage of this, the Node uses a `maxwait` of zero and
- * a physical connection, so timestamps are ignored.
+ * A nondeterministic resettable counter implementation demonstrating a CRDT (ACID 2.0)with an
+ * additional non-commutative reset operation. This program should be executed using the `--tmux` or
+ * `-x`option. Enter commands "i" or "r" (for increment or reset) in each of the Node panels. Each
+ * node will increment its element of a shared vector counter and then broadcast the updated vector
+ * counter to all other nodes. The increment operation is commutative and associative, and the
+ * broadcast ensures exactly once delivery, so the vector counter is a CRDT. To take advantage of
+ * this, the Node uses a `maxwait` of zero and a physical connection, so timestamps are ignored.
  *
- * The reset operation, however, is non-commutative. The goal is that all nodes agree on the value of the
- * vector counter before the reset operation and then all reset their copy of the vector counter to zeros.
- * This is realized by a distributed consensus algorithm, where each node, upon receiving a reset request,
- * waits for a confirmation of the reset from all other nodes. During the wait, it queues increments to
- * be processed after the reset.
+ * The reset operation, however, is non-commutative. The goal is that all nodes agree on the value
+ * of the vector counter before the reset operation and then all reset their copy of the vector
+ * counter to zeros. This is realized by a distributed consensus algorithm, where each node, upon
+ * receiving a reset request, waits for a confirmation of the reset from all other nodes. During the
+ * wait, it queues increments to be processed after the reset.
  *
- * This implementation is not fault tolerant. If any one node fails and another issues a reset, then the
- * nodes will all block indefinitely.  It could be made more fault tolerant by waiting for quorum of
- * nodes to confirm the reset. But this would introduce a further nondeterminism in that some nodes may
- * reset before others, leading to a different final value.
+ * This implementation is not fault tolerant. If any one node fails and another issues a reset, then
+ * the nodes will all block indefinitely. It could be made more fault tolerant by waiting for quorum
+ * of nodes to confirm the reset. But this would introduce a further nondeterminism in that some
+ * nodes may reset before others, leading to a different final value.
  *
- * The program is nondeterministic in every sense. The agreed-upon value before the reset occurs is not
- * in any way a function of the inputs and can be strongly affected by the random delays introduced by
- * the Delay reactors.
+ * The program is nondeterministic in every sense. The agreed-upon value before the reset occurs is
+ * not in any way a function of the inputs and can be strongly affected by the random delays
+ * introduced by the Delay reactors.
  *
  * This example is inspired by the following paper:
  *
- * Zhao, X. and P. Haller (2020).
- * "Replicated data types that unify eventual consistency and observable atomic consistency."
- * Journal of Logical and Algebraic Methods in Programming 114.
+ * Zhao, X. and P. Haller (2020). "Replicated data types that unify eventual consistency and
+ * observable atomic consistency." Journal of Logical and Algebraic Methods in Programming 114.
  * https://doi.org/10.1016/j.jlamp.2020.100561
  *
  * @author Edward A. Lee
@@ -62,7 +61,7 @@ reactor UserInput {
   =}
 }
 
-reactor Node(n = 3, bank_index = 0) {
+reactor Node(n=3, bank_index=0) {
   output out
   input[n] inp
 
@@ -84,8 +83,10 @@ reactor Node(n = 3, bank_index = 0) {
         QUEUING.set()
       else:
         print(f"Unrecognized command: {u.text.value}")
-    =} tardy # Handle tardy inputs identically to normal inputs.
+    =} tardy
 
+    # Handle tardy inputs identically to normal inputs.
+    # Handle tardy inputs identically to normal inputs.
     reaction(inp) -> out, reset(QUEUING) {=
       for i, port in enumerate(inp):
         if port.is_present:
@@ -98,12 +99,11 @@ reactor Node(n = 3, bank_index = 0) {
             for j in range(min(len(self.banks), len(port.value))):
               self.banks[j] = max(self.banks[j], port.value[j])
             print(f"Received '{port.value}' from {i}. banks={self.banks}")
-    =} tardy # Handle tardy inputs identically to normal inputs.
+    =} tardy
   }
 
   mode QUEUING {
     reset state queued_incr = 0
-
     reaction(u.text) -> out {=
       if u.text.value[0] == "r":
         print("Reset is already in progress. Ignoring input")
@@ -112,8 +112,10 @@ reactor Node(n = 3, bank_index = 0) {
         print(f"Queued increment. queued_incr={self.queued_incr}")
       else:
         print(f"Unrecognized command: {u.text.value}")
-    =} tardy # Handle tardy inputs identically to normal inputs.
+    =} tardy
 
+    # Handle tardy inputs identically to normal inputs.
+    # Handle tardy inputs identically to normal inputs.
     reaction(inp) -> out, reset(INCREMENTING) {=
       for i, port in enumerate(inp):
         if port.is_present:
@@ -133,11 +135,11 @@ reactor Node(n = 3, bank_index = 0) {
             for j in range(min(len(self.banks), len(port.value))):
               self.banks[j] = max(self.banks[j], port.value[j])
             print(f"Received  '{port.value}' from {i}. banks={self.banks}")
-    =} tardy # Handle tardy inputs identically to normal inputs.
+    =} tardy
   }
 }
 
-reactor Delay(delay = 3) {
+reactor Delay(delay=3) {
   input inp
   output out
   state rng = {= None =}
@@ -157,9 +159,9 @@ reactor Delay(delay = 3) {
   =}
 }
 
-federated reactor(n = 3) {
+federated reactor(n=3) {
   @maxwait(0)
-  nodes = new[n] Node(n = n)
+  nodes = new[n] Node(n=n)
   delay = new[n] Delay()
   nodes.out -> delay.inp
   (delay.out)+ ~> nodes.inp
