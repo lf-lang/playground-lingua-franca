@@ -1,0 +1,145 @@
+/**
+ * A more deterministic resettable counter implementation demonstrating a CRDT with an additional
+ * non-commutative reset operation. This program should be executed using the `--tmux` option. Enter
+ * commands "i" or "r" (increment or reset) in each of the Node panels. Each node will increment its
+ * element of a shared vector counter and then broadcast the updated vector counter to all other
+ * nodes. The increment operation is commutative and associative, and the broadcast ensures exactly
+ * once delivery, so the vector counter is a CRDT. To take advantage of this, the Node uses a
+ * `maxwait` of zero and processes inputs as soon as they are received, regardless of whether they
+ * are tardy. Assuming eventual delivery, all vector counters will eventually agree on the same
+ * value.
+ *
+ * The reset operation, however, is non-commutative. The goal is that all nodes agree on the value
+ * of the vector counter before the reset operation and then all reset their copy of the vector
+ * counter to zeros. This implementation introduces a time delay in the reset. When a Node requests
+ * a reset, it requests that the reset take effect 100 ms in the future. It modifies the `maxwait`
+ * to 100 ms so that processing of inputs will revert to timestamp order as long as network delays
+ * are less than 100 ms. The Node requesting the reset broadcasts a reset request to all other
+ * Nodes. The other Nodes will schedule a reset action for the requested time. If the reset request
+ * is received within 100 ms by all Nodes, then they will all reset at the same time. Therefore,
+ * they all agree on a time value such that any "i" commands received before that time will be
+ * processed before the reset.
+ *
+ * This implementation can still fail. If a reset request takes more than 100 ms to arrive, then the
+ * receiving Node may have already processed an increment that should have been processed after the
+ * reset. In addition, if a a state output takes more than 100 ms to arrive, then the receiving Node
+ * may have already processed a reset and will handle the input after the reset, incorrectly.
+ *
+ * In exchange for this possibility of failure, however, this implementation is more fault tolerant.
+ * The RessettableCounter.lf implemention blocks completely if one node fails and another issues a
+ * reset. This implementation will continue to operate, albeit with a possibility of failure.
+ *
+ * @author Edward A. Lee
+ */
+target Python {
+  coordination: decentralized
+}
+
+preamble {=
+  import random
+  import sys
+  import threading
+  import time
+=}
+
+reactor UserInput {
+  output text
+  physical action emit
+  state latest = ""
+
+  reaction(startup) -> emit {=
+    # Read stdin in a daemon thread so the reactor thread remains non-blocking.
+    def _stdin_reader():
+      for raw in sys.stdin:
+        self.latest = raw.rstrip("\n")
+        emit.schedule(0)
+
+    threading.Thread(target=_stdin_reader, daemon=True).start()
+  =}
+
+  reaction(emit) -> text {=
+    text.set(self.latest)
+  =}
+}
+
+reactor Node(n=3, bank_index=0) {
+  input[n] inp      # Input to receive updated vector counter from all nodes
+  input[n] rst_inp  # Input to receive user request for reset from some node
+  output out        # Output to send updated vector counter to all nodes
+  output rst_out    # Output to send user request for reset to all nodes
+
+  state banks = {= [0] * self.n =}
+  state reset_time = forever
+
+  logical action reset_action(0)
+
+  u = new UserInput()
+
+  reaction(u.text) -> out, rst_out, reset_action {=
+    if u.text.value[0] == "i":
+      if 0 <= self.bank_index < len(self.banks):
+        self.banks[self.bank_index] += 1
+        out.set(self.banks)
+        print(f"Incremented bank {self.bank_index}. banks={self.banks}")
+    elif u.text.value[0] == "r":
+      print("Sending reset and scheduling reset action.")
+      reset_action.schedule(MSEC(100))
+      rst_out.set(lf.time.logical() + MSEC(100))
+      # Change maxwait to 100 ms for more conservative handling of inputs.
+      lf.set_fed_maxwait(MSEC(100))
+    else:
+      print(f"Unrecognized command: {u.text.value}")
+  =}
+
+  reaction(reset_action) -> out {=
+    self.banks = [0] * self.n
+    print(f"\nResetting banks to 0. banks={self.banks}")
+    self.reset_time = FOREVER
+    # Reset maxwait to 0 so nodes process inputs as soon as they are received.
+    lf.set_fed_maxwait(0)
+  =}
+
+  reaction(inp) {=
+    for i, port in enumerate(inp):
+      if port.is_present and self.bank_index != i:
+        for j in range(min(len(self.banks), len(port.value))):
+          self.banks[j] = max(self.banks[j], port.value[j])
+        print(f"Received '{port.value}' from {i}. banks={self.banks}")
+  =} tardy {=
+    for i, port in enumerate(inp):
+      if port.is_present and self.bank_index != i:
+        # Check intended tag of the input against the reset time
+        if port.intended_tag.time >= self.reset_time:
+          # Queue the input
+          print(f"Input from {port.intended_tag.time} is late! Resetting banks to 0 and waiting for updates.")
+          self.banks = [0] * self.n
+        else:
+          # Handle normal input.
+          print(f"Received '{port.value}' from {i}. banks={self.banks}")
+          for j in range(min(len(self.banks), len(port.value))):
+            self.banks[j] = max(self.banks[j], port.value[j])
+  =}
+
+  # Handle tardy inputs identically to normal inputs.
+  reaction(rst_inp) -> reset_action {=
+    for i, port in enumerate(rst_inp):
+      if port.is_present and self.bank_index != i:
+        # port.value is the logical time of the reset request
+        print(f"Received reset from {i} for time {port.value}")
+        if port.value >= self.reset_time:
+          print(f"Ignoring reset from {i} because I have already scheduled a reset action for an earlier time.")
+        else:
+          # I have not scheduled a reset action for an earlier time, so I can schedule one for now
+          print(f"Scheduling reset for time {port.value}")
+          reset_action.schedule(port.value - lf.time.logical())
+          self.reset_time = port.value
+  =} tardy
+}
+
+federated reactor(n=3) {
+  # Set maxwait to 0 so nodes process inputs as soon as they are received.
+  @maxwait(0)
+  nodes = new[n] Node(n=n)
+  (nodes.out)+ -> nodes.inp
+  (nodes.rst_out)+ -> nodes.rst_inp
+}
