@@ -1,6 +1,6 @@
 # Distributed Lingua Franca
 
-When intead of a **main reactor** you defined a **federated reactor**, a Lingua Franca program gets divided into multiple programs that execute as separate processes and can execute on different machines. The coordination and communication is automatically generated to preserve LF semantics so that the programs will logically behave the same as a non-federated program. See [Distributed Execution documentation](https://www.lf-lang.org/docs/handbook/distributed-execution?target=c) for more details.
+When intead of a `main reactor` you defined a `federated reactor`, a Lingua Franca program gets divided into multiple programs that execute as separate processes and can execute on different machines. The coordination and communication is automatically generated to preserve LF semantics so that the programs will logically behave the same as a non-federated program. See [Distributed Execution documentation](https://www.lf-lang.org/docs/handbook/distributed-execution?target=c) for more details.
 
 This directory includes a series of very simple "Hello World" examples.
 
@@ -17,11 +17,11 @@ This directory includes a series of very simple "Hello World" examples.
 </tr>
 <tr>
 <td> <img src="img/HelloWorldDecentralized.png" alt="HelloWorldDecentralized" width="100%"> </td>
-<td> <a href="HelloWorldDecentralized.lf"> HelloWorldDecentralized.lf </a>: A variant that uses decentralized coordination, which relies and clock synchronization. This version uses an **after** delay.</td>
+<td> <a href="HelloWorldDecentralized.lf"> HelloWorldDecentralized.lf </a>: A variant that uses decentralized coordination, which relies and clock synchronization. This version uses an `after` delay.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldDecentralizedSTA.png" alt="HelloWorldDecentralizedSTA" width="100%"> </td>
-<td> <a href="HelloWorldDecentralizedSTA.lf"> HelloWorldDecentralizedSTA.lf </a>: A decentralized variant that uses a safe-to-advance (STA) offset instead of an **after** delay.</td>
+<td> <img src="img/HelloWorldMaxwait.png" alt="HelloWorldMaxwait" width="100%"> </td>
+<td> <a href="HelloWorldMaxwait.lf"> HelloWorldMaxwait.lf </a>: A decentralized variant that uses `maxwait` instead of an `after` delay.</td>
 </tr>
 <tr>
 <td> <img src="img/HelloWorldPhysical.png" alt="HelloWorldPhysical" width="100%"> </td>
@@ -29,7 +29,7 @@ This directory includes a series of very simple "Hello World" examples.
 </tr>
 <tr>
 <td> <img src="img/HelloWorldPhysicalAfter.png" alt="HelloWorldPhysicalAfter" width="100%"> </td>
-<td> <a href="HelloWorldPhysicalAfter.lf"> HelloWorldPhysicalAfter.lf </a>: A variant with a physical connection and an **after** delay.</td>
+<td> <a href="HelloWorldPhysicalAfter.lf"> HelloWorldPhysicalAfter.lf </a>: A variant with a physical connection and an `after` delay.</td>
 </tr>
 <tr>
 <td> <img src="img/CAL.png" alt="CAL" width="100%"> </td>
