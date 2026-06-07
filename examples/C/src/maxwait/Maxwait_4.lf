@@ -1,8 +1,8 @@
 /**
- * Variant where the STA (safe-to-advance) is 20 ms, and the STAA (safe-to-assume-absent) is zero.
- * Note that even though the STA is not used at the start tag, the wait time at an input port is
- * STA+STAA, so even though the STAA is zero, the downstream will not infer an absence of the input
- * at a tag _t_ until the physical time _t_ + STA + STAA has passed.
+ * Variant where `maxwait` is 20 ms, and `absent_after` is zero. Note that even though `maxwait` is
+ * not used at the start tag, the wait time at an input port is `maxwait`+`absent_after`, so even
+ * though `absent_after` is zero, the downstream will not infer an absence of the input at a tag _t_
+ * until the physical time _t_ + `maxwait` + `absent_after` has passed.
  *
  * @author Edward A. Lee
  */
@@ -26,16 +26,15 @@ reactor Upstream {
   =}
 }
 
-@label("STA == 20ms, STAA == 0")
-reactor Downstream(STA: time = 20 ms) {
+reactor Downstream {
   input in: int
   timer t(0, 100 ms)
 
   reaction(in) {=
     lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
-  =} STAA(0) {=
-    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+  =} tardy {=
+    lf_print("Downstream " PRINTF_TAG ": *** Tardy on data (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
   =}
 
@@ -47,8 +46,9 @@ reactor Downstream(STA: time = 20 ms) {
 
 federated reactor {
   s = new Upstream()
-  @label("STA == STAA == 0")
+  @maxwait(20 ms)
   a = new Downstream()
 
+  @absent_after(0)
   s.out -> a.in
 }
