@@ -2,7 +2,8 @@
  * This example corrects the flaw in LET_Late_Deadline.lf. It adds a second reaction to the Actuator
  * that reacts to a timer to check whether the data arrived on time. If not, it invokes an early
  * deadline violation handler, one that does not have to wait for the input to arrive. This could,
- * for example, perform a backup actuation.
+ * for example, perform a backup actuation. Here, the `maxwait` of 5 ms allows the Actuator to
+ * handle the timer event within 5 ms of its timestamp, enabling early detection of a missing input.
  *
  * If data arrives on time, the normal handler (reaction 1) is invoked. After it completes, the
  * checker reaction (reaction 2) is invoked. The checker reaction itself also has a deadline. This
@@ -95,10 +96,10 @@ reactor Actuator(STA: time = 0) {
 federated reactor {
   s = new Sensor()
   c = new Compute()
+  @maxwait(5 ms)
   a = new Actuator()
 
   s.out -> c.in after 15 ms
   // If an input does not arrive within 5 ms, react to its tardiness now.
-  @absent_after(5 ms)
   c.out -> a.in after 15 ms
 }

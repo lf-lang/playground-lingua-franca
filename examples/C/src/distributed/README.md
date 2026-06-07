@@ -8,31 +8,31 @@ This directory includes a series of very simple "Hello World" examples.
 
 <table>
 <tr>
-<td> <img src="img/HelloWorld.png" alt="HelloWorld" width="100%"> </td>
+<td> <img src="img/HelloWorld.png" alt="HelloWorld" width="500"> </td>
 <td> <a href="HelloWorld.lf"> HelloWorld.lf </a>: A MessageGenerator produces a string and sends it over a network connection to a PrintMessage reactor that prints the message.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldAfter.png" alt="HelloWorldAfter" width="100%"> </td>
+<td> <img src="img/HelloWorldAfter.png" alt="HelloWorldAfter" width="500"> </td>
 <td> <a href="HelloWorldAfter.lf"> HelloWorldAfter.lf </a>: A variant with a logical time delay on the connection.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldDecentralized.png" alt="HelloWorldDecentralized" width="100%"> </td>
+<td> <img src="img/HelloWorldDecentralized.png" alt="HelloWorldDecentralized" width="500"> </td>
 <td> <a href="HelloWorldDecentralized.lf"> HelloWorldDecentralized.lf </a>: A variant that uses decentralized coordination, which relies and clock synchronization. This version uses an `after` delay.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldMaxwait.png" alt="HelloWorldMaxwait" width="100%"> </td>
+<td> <img src="img/HelloWorldMaxwait.png" alt="HelloWorldMaxwait" width="500"> </td>
 <td> <a href="HelloWorldMaxwait.lf"> HelloWorldMaxwait.lf </a>: A decentralized variant that uses `maxwait` instead of an `after` delay.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldPhysical.png" alt="HelloWorldPhysical" width="100%"> </td>
+<td> <img src="img/HelloWorldPhysical.png" alt="HelloWorldPhysical" width="500"> </td>
 <td> <a href="HelloWorldPhysical.lf"> HelloWorldPhysical.lf </a>: A variant with physical connection.</td>
 </tr>
 <tr>
-<td> <img src="img/HelloWorldPhysicalAfter.png" alt="HelloWorldPhysicalAfter" width="100%"> </td>
+<td> <img src="img/HelloWorldPhysicalAfter.png" alt="HelloWorldPhysicalAfter" width="500"> </td>
 <td> <a href="HelloWorldPhysicalAfter.lf"> HelloWorldPhysicalAfter.lf </a>: A variant with a physical connection and an `after` delay.</td>
 </tr>
 <tr>
-<td> <img src="img/CAL.png" alt="CAL" width="100%"> </td>
+<td> <img src="img/CAL.png" alt="CAL" width="500"> </td>
 <td> <a href="CAL.lf"> CAL.lf </a>: An illustration of the fundamental tradeoff between consistency, availability, and latency, using centralized coordination.</td>
 </tr>
 <tr>
