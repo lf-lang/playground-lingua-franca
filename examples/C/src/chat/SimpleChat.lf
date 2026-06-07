@@ -9,8 +9,8 @@
  * the received message. This process creates a two-way communication where `a` and `b` can send and
  * receive messages from each other.
  *
- * @note: This example needs to be run using the `--tmux` option so that each federate run from its own
- * terminal subwindow.
+ * @note: This example needs to be run using the `--tmux` option so that each federate run from its
+ * own terminal subwindow.
  *
  * @author Byeonggil Jun (junbg@hanyang.ac.kr)
  * @author Hokeun Kim (hokeunkim@berkeley.edu)
