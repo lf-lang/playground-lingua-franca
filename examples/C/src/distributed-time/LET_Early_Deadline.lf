@@ -100,6 +100,5 @@ federated reactor {
   a = new Actuator()
 
   s.out -> c.in after 15 ms
-  // If an input does not arrive within 5 ms, react to its tardiness now.
-  c.out -> a.in after 15 ms
+  c.out -> a.in after 15 ms  // If an input does not arrive within 5 ms, react to its tardiness now.
 }

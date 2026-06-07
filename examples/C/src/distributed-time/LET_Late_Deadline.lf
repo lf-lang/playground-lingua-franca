@@ -3,7 +3,8 @@
  * connections provide a system-level Logical Execution Time (LET). If these delays are large enough
  * to absorb upstream processing times and communication latencies, then the deadline will be met.
  * Note that the default `maxwait` of forever has no effect in this example because each reactor
- * only ever has one event driving the advancement of logical time. Any value of `maxwait` will have the same effect.
+ * only ever has one event driving the advancement of logical time. Any value of `maxwait` will have
+ * the same effect.
  *
  * However, this example has a flaw that may make it unacceptable in practice: the Compute, on every
  * second firing, takes 50ms to process the data, which causes a violation of the deadline at the
