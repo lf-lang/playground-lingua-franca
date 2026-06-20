@@ -30,8 +30,8 @@ reactor PrintMessageWithDetector(offset: time = 10 msec) extends PrintMessage {
 
   reaction(message) {=
     // Empty. The base class will react and report the incoming message.
-  =} STAA(0) {=
-    lf_print_warning("Message is tardy. Intended tag is " PRINTF_TAG ".",
+  =} tardy {=
+    lf_print_warning("*** Message is tardy. Intended tag is " PRINTF_TAG ".",
       message->intended_tag.time - lf_time_start(), message->intended_tag.microstep
     );
   =}

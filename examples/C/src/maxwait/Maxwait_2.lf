@@ -1,11 +1,6 @@
 /**
- * In this variant, the downstream reactor has a timer that triggers much more often than incoming
- * signals. In this case, whenever the local timer triggers at a tag where no input is expected, the
- * system has to wait for the STA+STAA time before it can safely assume that the input is absent.
- * This causes an unnecessary delay in the processing of the timer event. Notice that you could
- * reverse the order of the reactions and use STAA = 20 ms instead of STA = 20 ms, but this would
- * also delay the effect that any input could have on the actions taken in response to the local
- * timer.
+ * Variant where zero values for `maxwait` and `absent_after` will not work. Safe-to-process
+ * violations occur.
  *
  * @author Edward A. Lee
  */
@@ -29,16 +24,15 @@ reactor Upstream {
   =}
 }
 
-@label("STA == 20ms, STAA == 0")
-reactor Downstream(STA: time = 20 ms) {
+reactor Downstream(STA: time = 0) {
   input in: int
-  timer t(0, 10 ms)
+  timer t(0, 100 ms)
 
   reaction(in) {=
     lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
-  =} STAA(0) {=
-    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+  =} tardy {=
+    lf_print("Downstream " PRINTF_TAG ": *** STP violation on data (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
   =}
 
@@ -50,8 +44,11 @@ reactor Downstream(STA: time = 20 ms) {
 
 federated reactor {
   s = new Upstream()
-  @label("STA == STAA == 0")
+  // The following choice causes STP violations.
+  @maxwait(0)
   a = new Downstream()
 
+  // The STP violations could be avoided by setting `absent_after` to `forever`, but with zero (the default), STP violations will occur.
+  @absent_after(0)
   s.out -> a.in
 }

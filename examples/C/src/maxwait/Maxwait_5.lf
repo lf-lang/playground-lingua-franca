@@ -1,5 +1,11 @@
 /**
- * Fix for the previous example where the STAA (safe-to-assume-absent) is 20 ms.
+ * In this variant, the downstream reactor has a timer that triggers much more often than incoming
+ * signals. In this case, whenever the local timer triggers at a tag where no input is expected, the
+ * system has to wait for `maxwait`+`absent_after` time before it can safely assume that the input
+ * is absent. This causes an unnecessary delay in the processing of the timer event. Notice that you
+ * could reverse the order of the reactions and use `absent_after` = 20 ms instead of `maxwait` = 20
+ * ms, but this would also delay the effect that any input could have on the actions taken in
+ * response to the local timer.
  *
  * @author Edward A. Lee
  */
@@ -23,16 +29,15 @@ reactor Upstream {
   =}
 }
 
-@label("STA == 0, STAA == 20 ms")
-reactor Downstream(STA: time = 0) {
+reactor Downstream {
   input in: int
-  timer t(0, 100 ms)
+  timer t(0, 10 ms)
 
   reaction(in) {=
     lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
-  =} STAA(20 ms) {=
-    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+  =} tardy {=
+    lf_print("Downstream " PRINTF_TAG ": *** Tardy on data (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
   =}
 
@@ -44,8 +49,9 @@ reactor Downstream(STA: time = 0) {
 
 federated reactor {
   s = new Upstream()
-  @label("STA == STAA == 0")
+  @maxwait(20 ms)
   a = new Downstream()
 
+  @absent_after(0)
   s.out -> a.in
 }

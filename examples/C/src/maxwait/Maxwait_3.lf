@@ -1,5 +1,5 @@
 /**
- * Variant where zero values for STA and STAA will not work. Safe-to-process violations occur.
+ * Fix for the previous example where `absent_after` is 20 ms.
  *
  * @author Edward A. Lee
  */
@@ -23,7 +23,6 @@ reactor Upstream {
   =}
 }
 
-@label("STA == STAA == 0 doesn't work")
 reactor Downstream(STA: time = 0) {
   input in: int
   timer t(0, 100 ms)
@@ -31,21 +30,16 @@ reactor Downstream(STA: time = 0) {
   reaction(in) {=
     lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
-  =} STAA(0) {=
-    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+  =} tardy {=
+    lf_print("Downstream " PRINTF_TAG ": *** Tardy on data (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
-  =}
-
-  reaction(t) {=
-    lf_print("Downstream " PRINTF_TAG ": React to timer at physical time " PRINTF_TIME,
-        lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
   =}
 }
 
 federated reactor {
   s = new Upstream()
-  @label("STA == STAA == 0")
   a = new Downstream()
 
+  @absent_after(20 ms)
   s.out -> a.in
 }

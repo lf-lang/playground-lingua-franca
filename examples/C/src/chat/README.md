@@ -12,12 +12,8 @@ receive messages from each other.
 
 Among other things, this example illustrates the use of the `string` datatype in federated execution.
 
-@note: This example needs to be run manually with each federate run from its own terminal window.
-After compiling with `lfc`, create three terminal windows and run the following commands in each
-window:
-1. `fed-gen/SimpleChat/bin/RTI -n 2`
-2. `fed-gen/SimpleChat/bin/federate_a`
-3. `fed-gen/SimpleChat/bin/federate_b`
+@note: This example should be run using the `--tmux` option so that each federate run from its own
+terminal subwindow.
 
 <table>
 <tr>

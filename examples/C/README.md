@@ -22,9 +22,9 @@ The examples are grouped into unfederated, federated, and embedded and listed in
 
 These examples illustrated federated execution, where each top-level reactor becomes its own program that can be deployed across containers and networked machines.
 
-* [Chat](src/chat/README.md): Simple federated chat application with two users (run manually).
+* [Chat](src/chat/README.md): Simple federated chat application with two users (run using --tmux).
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
-* [Distributed STA and STAA](src/distributed-sta/README.md): How to set STA and STAA in federated/decentralized.
+* [Maxwait](src/maxwait/README.md): How to set `maxwait` in federated with decentralized coordination.
 * [Distributed Time](src/distributed-time/README.md): Federated, decentralized, with deadlines.
 * [MQTT](https://github.com/lf-lang/mqtt-c): Interacting with MQTT publish-and-subscribed (moved to a library repo).
 * [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.

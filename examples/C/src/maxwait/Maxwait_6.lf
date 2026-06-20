@@ -1,6 +1,6 @@
 /**
- * This variant eliminates the unnecessary delay in the previous example by setting the STA to 0
- * until the next time that an input is expected. The ability to set the STA dynamically using
+ * This variant eliminates the unnecessary delay in the previous example by setting `maxwait` to 0
+ * until the next time that an input is expected. The ability to set `maxwait` dynamically using
  * knowledge about the program is a powerful feature of the decentralized coordination model.
  *
  * @author Edward A. Lee
@@ -25,8 +25,7 @@ reactor Upstream {
   =}
 }
 
-@label("STA == variable, STAA == 0")
-reactor Downstream(STA: time = 20 ms) {
+reactor Downstream {
   input in: int
   timer t(0, 10 ms)
   state count: int = 0
@@ -35,10 +34,10 @@ reactor Downstream(STA: time = 20 ms) {
     lf_print("Downstream " PRINTF_TAG ": Received (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
     // Temporarily set STP offset to 0 to avoid the delay in the timer reaction.
-    lf_set_sta(0);
+    lf_set_fed_maxwait(0);
     self->count = 0;
-  =} STAA(0) {=
-    lf_print("Downstream " PRINTF_TAG ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
+  =} tardy {=
+    lf_print("Downstream " PRINTF_TAG ": *** Tardy on data (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), lf_tag().microstep, in->value, lf_time_physical_elapsed());
   =}
 
@@ -47,15 +46,18 @@ reactor Downstream(STA: time = 20 ms) {
         lf_time_logical_elapsed(), lf_tag().microstep, lf_time_physical_elapsed());
     self->count++;
     if (self->count == 10) {
-      lf_set_sta(MSEC(20));
+      lf_set_fed_maxwait(MSEC(20));
+    } else {
+      lf_set_fed_maxwait(0);
     }
   =}
 }
 
 federated reactor {
   s = new Upstream()
-  @label("STA == STAA == 0")
+  @maxwait(20 ms)
   a = new Downstream()
 
+  @absent_after(0)
   s.out -> a.in
 }

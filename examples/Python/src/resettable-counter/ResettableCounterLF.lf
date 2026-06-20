@@ -35,6 +35,8 @@ target Python {
   coordination: decentralized
 }
 
+import UserInput from "ResettableCounterZH.lf"
+
 preamble {=
   import random
   import sys
@@ -42,104 +44,122 @@ preamble {=
   import time
 =}
 
-reactor UserInput {
-  output text
-  physical action emit
-  state latest = ""
+reactor Node(N=3, bank_index=0, lex = 100 ms) {
+  input[N] inp               # Input to receive updated vector counter from all nodes
+  input[N] rst_inp           # Input to receive user request for reset from some node
+  output out                 # Output to send updated vector counter to all nodes
+  output rst_out             # Output to send user request for reset to all nodes
 
-  reaction(startup) -> emit {=
-    # Read stdin in a daemon thread so the reactor thread remains non-blocking.
-    def _stdin_reader():
-      for raw in sys.stdin:
-        self.latest = raw.rstrip("\n")
-        emit.schedule(0)
+  state count = {= [0] * self.N =}
+  state q_count = {= [0] * self.N =}
+  state rst_time = forever   # Logical time of a pending reset request.
+  state apply_rst = forever  # Time at which reset should be applied or was most recently applied.
 
-    threading.Thread(target=_stdin_reader, daemon=True).start()
-  =}
-
-  reaction(emit) -> text {=
-    text.set(self.latest)
-  =}
-}
-
-reactor Node(n=3, bank_index=0) {
-  input[n] inp      # Input to receive updated vector counter from all nodes
-  input[n] rst_inp  # Input to receive user request for reset from some node
-  output out        # Output to send updated vector counter to all nodes
-  output rst_out    # Output to send user request for reset to all nodes
-
-  state banks = {= [0] * self.n =}
-  state reset_time = forever
-
-  logical action reset_action(0)
+  logical action rst_action(0)
 
   u = new UserInput()
 
-  reaction(u.text) -> out, rst_out, reset_action {=
+  reaction(u.text) -> out, rst_out, rst_action {=
     if u.text.value[0] == "i":
-      if 0 <= self.bank_index < len(self.banks):
-        self.banks[self.bank_index] += 1
-        out.set(self.banks)
-        print(f"Incremented bank {self.bank_index}. banks={self.banks}")
+      if lf.time.logical() >= self.rst_time:
+        # Increment is after or at the reset time.
+        self.q_count[self.bank_index] += 1
+        out.set(self.q_count)
+        print(f"Queued increment for node {self.bank_index}. q_count={self.q_count}")
+      else:
+        self.count[self.bank_index] += 1
+        out.set(self.count)
+        print(f"Incremented node {self.bank_index}. count={self.count}")
     elif u.text.value[0] == "r":
-      print("Sending reset and scheduling reset action.")
-      reset_action.schedule(MSEC(100))
-      rst_out.set(lf.time.logical() + MSEC(100))
-      # Change maxwait to 100 ms for more conservative handling of inputs.
-      lf.set_fed_maxwait(MSEC(100))
+      t = lf.time.logical() + self.lex
+      if t < self.rst_time:
+        self.rst_time = t
+        print(f"Sending reset and scheduling reset action for time {self.rst_time}")
+        # Allow time for reset request to propagate and updates up to reset time to propagate.
+        self.apply_rst = self.rst_time + self.lex
+        rst_action.schedule(self.lex * 2)
+        rst_out.set(self.rst_time)
     else:
       print(f"Unrecognized command: {u.text.value}")
   =}
 
-  reaction(reset_action) -> out {=
-    self.banks = [0] * self.n
-    print(f"\nResetting banks to 0. banks={self.banks}")
-    self.reset_time = FOREVER
-    # Reset maxwait to 0 so nodes process inputs as soon as they are received.
-    lf.set_fed_maxwait(0)
+  reaction(rst_action) {=
+    if self.apply_rst == lf.time.logical():
+      self.count = self.q_count
+      self.q_count = [0] * self.N
+      print(f"\nResetting count. After reset, count={self.count}")
+      self.rst_time = FOREVER
   =}
 
-  reaction(inp) {=
-    for i, port in enumerate(inp):
-      if port.is_present and self.bank_index != i:
-        for j in range(min(len(self.banks), len(port.value))):
-          self.banks[j] = max(self.banks[j], port.value[j])
-        print(f"Received '{port.value}' from {i}. banks={self.banks}")
-  =} tardy {=
-    for i, port in enumerate(inp):
-      if port.is_present and self.bank_index != i:
-        # Check intended tag of the input against the reset time
-        if port.intended_tag.time >= self.reset_time:
-          # Queue the input
-          print(f"Input from {port.intended_tag.time} is late! Resetting banks to 0 and waiting for updates.")
-          self.banks = [0] * self.n
-        else:
-          # Handle normal input.
-          print(f"Received '{port.value}' from {i}. banks={self.banks}")
-          for j in range(min(len(self.banks), len(port.value))):
-            self.banks[j] = max(self.banks[j], port.value[j])
-  =}
-
-  # Handle tardy inputs identically to normal inputs.
-  reaction(rst_inp) -> reset_action {=
+  reaction(rst_inp) -> rst_action {=
     for i, port in enumerate(rst_inp):
       if port.is_present and self.bank_index != i:
         # port.value is the logical time of the reset request
         print(f"Received reset from {i} for time {port.value}")
-        if port.value >= self.reset_time:
-          print(f"Ignoring reset from {i} because I have already scheduled a reset action for an earlier time.")
+        if port.value > lf.time.logical():
+          # Requested reset time is in the future.
+          if port.value >= self.rst_time:
+            # Requested reset time is after my scheduled reset time.
+            print(f"Ignoring reset from {i} because I already have an earlier reset pending.")
+          else:
+            print(f"Scheduling reset for time {port.value}")
+            t = port.value - lf.time.logical() + self.lex
+            rst_action.schedule(t)
+            self.rst_time = port.value
+            self.apply_rst = port.value + self.lex
         else:
-          # I have not scheduled a reset action for an earlier time, so I can schedule one for now
-          print(f"Scheduling reset for time {port.value}")
-          reset_action.schedule(port.value - lf.time.logical())
-          self.reset_time = port.value
+          # Requested reset time is in the past.
+          print(f"FAULT: Received reset request too late!")
+          # Reset my count to 0. Will recover when I merge updates from other nodes.
+          self.count = [0] * self.N
   =} tardy
+
+  # Handle tardy inputs normally.
+  reaction(inp) {=
+    for i, port in enumerate(inp):
+      if port.is_present and self.bank_index != i:
+        # Merge into count or q_count depending on the logical time.
+        if lf.time.logical() < self.rst_time:
+          for j in range(self.N):
+            self.count[j] = max(self.count[j], port.value[j])
+          print(f"Received '{port.value}' from {i}. count={self.count}")
+        else:
+          for j in range(self.N):
+            self.q_count[j] = max(self.q_count[j], port.value[j])
+          print(f"Received '{port.value}' from {i}. q_count={self.q_count}")
+  =} tardy {=
+    for i, port in enumerate(inp):
+      if port.is_present and self.bank_index != i:
+        # Merge into count or q_count depending on the logical time.
+        if port.intended_tag.time < self.rst_time:
+          # Intended to be processed before the reset time. Is it too late?
+          if port.intended_tag.time < self.apply_rst:
+            # It is on time. Merge into count.
+            for j in range(self.N):
+              self.count[j] = max(self.count[j], port.value[j])
+            print(f"Received '{port.value}' from {i}. count={self.count}")
+          else:
+            print(f"FAULT: Input from {i} is late! Should have been handled before reset. Ignoring.")
+        else:
+          # Intended to be processed after the reset time. Merge into count or q_count depending on
+          # whether the reset has been applied.
+          if lf.time.logical() >= self.rst_time:
+            # The reset has been applied. Merge into count.
+            for j in range(self.N):
+              self.count[j] = max(self.count[j], port.value[j])
+            print(f"Received '{port.value}' from {i}. count={self.count}")
+          else:
+            # The reset has not been applied. Merge into q_count.
+            for j in range(self.N):
+              self.q_count[j] = max(self.q_count[j], port.value[j])
+            print(f"Received '{port.value}' from {i}. q_count={self.q_count}")
+  =}
 }
 
-federated reactor(n=3) {
+federated reactor(N=3) {
   # Set maxwait to 0 so nodes process inputs as soon as they are received.
   @maxwait(0)
-  nodes = new[n] Node(n=n)
+  nodes = new[N] Node(N=N)
   (nodes.out)+ -> nodes.inp
   (nodes.rst_out)+ -> nodes.rst_inp
 }
