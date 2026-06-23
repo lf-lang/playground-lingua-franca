@@ -68,14 +68,26 @@ reactor Node(N=3, bank_index=0) {
   state count = {= [0] * self.N =}
   state resets_received = 0
 
+  state epoch = 0
+  state pending = {= {} =}
+
   u = new UserInput()
 
   reaction(inp) {=
     for i, port in enumerate(inp):
       if port.is_present:
-        for j in range(min(len(self.count), len(port.value))):
-          self.count[j] = max(self.count[j], port.value[j])
-        print(f"Received  '{port.value}' from {i}. count={self.count}")
+        epoch, vec = port.value
+        if epoch == self.epoch:
+          for j in range(min(len(self.count), len(vec))):
+            self.count[j] = max(self.count[j], vec[j])
+          print(f"Received '{vec}' (epoch {epoch}) from {i}. count={self.count}")
+        elif epoch > self.epoch:
+          buf = self.pending.setdefault(epoch, [0] * self.N)
+          for j in range(min(len(buf), len(vec))):
+            buf[j] = max(buf[j], vec[j])
+          print(f"Buffered '{vec}' from {i} for future epoch {epoch}.")
+        else:
+          raise RuntimeError(f"Increment from {i} with epoch {epoch} is older than current epoch {self.epoch}.")
   =} tardy
 
   # Handle tardy inputs identically to normal inputs.
@@ -84,7 +96,7 @@ reactor Node(N=3, bank_index=0) {
       if u.text.value[0] == "i":
         if 0 <= self.bank_index < len(self.count):
           self.count[self.bank_index] += 1
-          out.set(self.count)
+          out.set([self.epoch, self.count])
       elif u.text.value[0] == "r":
         print("Sending reset. Entering QUEUING mode.")
         rst_out.set("reset")
@@ -97,12 +109,12 @@ reactor Node(N=3, bank_index=0) {
     # Handle tardy inputs identically to normal inputs.
     # Handle tardy inputs identically to normal inputs.
     reaction(rst_inp) -> rst_out, reset(QUEUING) {=
-      for i, port in enumerate(rst_inp):
-        if port.is_present:
-          print("Received reset. Sending reset. Entering QUEUING.")
-          QUEUING.set()
-          self.resets_received = 1
-          rst_out.set("reset")
+      count = sum(1 for port in rst_inp if port.is_present)
+      if count > 0:
+        print("Received reset. Sending reset. Entering QUEUING.")
+        QUEUING.set()
+        self.resets_received = count
+        rst_out.set("reset")
     =} tardy
   }
 
@@ -128,11 +140,12 @@ reactor Node(N=3, bank_index=0) {
           if self.resets_received == self.N:
             print(f"All resets received. Consensus value: {self.count}.")
             print("")
-            self.count = [0] * self.N
-            self.count[self.bank_index] = self.queued_incr
-            print(f"Processed queued increments. count={self.count}")
+            self.epoch += 1
+            self.count = self.pending.pop(self.epoch, [0] * self.N)
+            self.count[self.bank_index] = max(self.count[self.bank_index], self.queued_incr)
+            print(f"Reset to epoch {self.epoch}. Processed queued increments. count={self.count}")
             if (self.queued_incr > 0):
-              out.set(self.count)
+              out.set([self.epoch, self.count])
             INCREMENTING.set()
     =} tardy
   }
