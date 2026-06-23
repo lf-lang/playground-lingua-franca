@@ -1,0 +1,384 @@
+/**
+ * GNSS Positioning Pipeline Model — SYNCHRONOUS (LOGICAL-ACTION) VARIANT
+ *
+ * This is a companion to GNSSPipelineAsynchronous.lf. It is identical in structure, parameters, and logging,
+ * with exactly ONE difference: the UART interrupt (`hw_interrupt`) is modeled with a
+ * *logical action* instead of a *physical action*.
+ *
+ * Why this variant exists:
+ * - GNSSPipelineAsynchronous.lf uses a `physical action` to model the UART FIFO interrupt, treating it as an
+ *   asynchronous hardware event whose tag is taken from the *physical* (wall-clock) clock. This is
+ *   the realistic model: in a real deployment, the interrupt is raised by hardware/an ISR running
+ *   outside the LF runtime, and a physical action is the only thread-safe way to inject such an
+ *   external event. Its logical timestamp therefore carries real hardware/OS jitter.
+ * - This variant uses a `logical action`, so each interrupt's tag is computed purely in *logical*
+ *   time as (current logical time + 347 µs). The interrupt cadence becomes drift-free and the entire
+ *   trace is bit-for-bit reproducible across runs — at the cost of no longer modeling a genuinely
+ *   asynchronous, externally-driven interrupt.
+ *
+ * Use this file side-by-side with GNSSPipelineAsynchronous.lf to compare physical-action vs
+ * logical-action modeling of the same interrupt-driven pipeline. See README.md
+ * ("Asynchronous vs. synchronous") for the full comparison.
+ *
+ * Five Predictability Factors (unchanged from the physical-action version):
+ * 1. 100ms epoch time (GNSS receiver at 10 Hz)
+ * 2. Fixed UART baudrate (460800 bps)
+ * 3. 16-byte hardware buffer
+ * 4. Fixed memory buffer size 1000
+ * 5. Periodic DataForwarder task with period 18 ms
+ */
+target C {
+  keepalive: true,
+  coordination: decentralized,
+  coordination-options: {
+    advance-message-interval: 10 msec
+  }
+}
+
+preamble {=
+  #include <string.h>  // For memory operations (ring buffer)
+  #include <stdlib.h>  // For standard library functions and rand()
+  #include <time.h>    // For time() to seed random number generator
+
+  // UART Configuration: 460800 bps = ~21.7 µs per byte (10 bits: 1 start + 8 data + 1 stop)
+  #define UART_BAUDRATE 460800
+
+  // Hardware FIFO buffer size: 16-byte threshold for interrupt generation
+  // Time to fill: 16 bytes × 21.7 µs/byte ≈ 347 µs
+  #define HW_BUFFER_SIZE 16
+
+  // Memory buffer size (not currently used, kept for reference)
+  #define MEM_BUFFER_SIZE 1000
+=}
+
+/**
+ * GNSS Receiver Reactor
+ *
+ * Models a multi-constellation GNSS receiver generating RTCM3 correction data. RTCM (Radio
+ * Technical Commission for Maritime Services) messages contain satellite observations for Real-Time
+ * Kinematic (RTK) positioning.
+ *
+ * Timing Characteristics:
+ * - Epoch period: 100 ms (10 Hz update rate, typical for RTK applications)
+ * - Data size: 400-800 bytes per epoch (realistic range for multi-constellation RTK)
+ * - Variable size models real-world conditions (satellite visibility, ionospheric corrections)
+ * - Deterministic generation: Fires exactly every 100 ms in logical time
+ */
+reactor GNSSReceiver {
+  output rtcm: int  // Number of RTCM bytes generated (packet size)
+  timer epoch(0, 100 msec)  // Factor 1: Predictable epoch timing (deterministic trigger)
+
+  state message_count: int = 0  // Epoch counter for tracking/debugging
+  state min_bytes: int = 400  // Minimum bytes per epoch (dual-constellation baseline)
+  state max_bytes: int = 800  // Maximum bytes per epoch (quad-constellation with full corrections)
+
+  reaction(startup) {=
+    // Seed random number generator for variable byte generation
+    srand(time(NULL));
+  =}
+
+  reaction(epoch) -> rtcm {=
+    self->message_count++;  // Increment epoch counter
+
+    // Generate random byte count between min and max to model real-world variability
+    // Variability due to: satellite visibility, ionospheric activity, multipath conditions
+    int bytes_this_epoch = 320;//self->min_bytes + (rand() % (self->max_bytes - self->min_bytes + 1));
+
+    // Log GNSS data generation with timestamp and epoch number
+    printf("[t=%lld ms] [EPOCH_%d] [GNSS_GENERATE] bytes=%d\n",
+           lf_time_logical() / MSEC(1), self->message_count, bytes_this_epoch);
+
+    // Emit RTCM data packet to downstream UART driver
+    lf_set(rtcm, bytes_this_epoch);
+  =}
+}
+
+/**
+ * UART Driver Reactor — LOGICAL-ACTION VERSION
+ *
+ * Models a hardware UART peripheral with FIFO buffer and interrupt-driven transmission. This
+ * reactor captures the timing behavior of real UART hardware with predictable byte transmission
+ * rates and buffer-triggered interrupts.
+ *
+ * Hardware Model:
+ * - Baudrate: 460800 bps (56.25 KB/s theoretical maximum)
+ * - Byte format: 10 bits per byte (1 start + 8 data + 1 stop bit)
+ * - Byte transmission time: ~21.7 microseconds
+ * - FIFO size: 16 bytes
+ * - FIFO fill time: ~347 microseconds (16 × 21.7 µs)
+ *
+ * KEY DIFFERENCE FROM GNSSPipelineAsynchronous.lf:
+ * Here `hw_interrupt` is a `logical action`, not a `physical action`. When `lf_schedule_int` is
+ * called with an offset of 347 µs, the interrupt's tag is computed in *logical* time as
+ * (current logical time + 347 µs). Consequences:
+ * - The interrupt cadence is exactly 347 µs with zero drift (the previous reaction's execution time
+ *   does NOT leak into the next tag), so timestamps are exact multiples and reproducible run-to-run.
+ * - The event is NOT tied to the physical clock, so it does not model a genuinely asynchronous,
+ *   externally-raised interrupt. A logical action also cannot be scheduled safely from an outside
+ *   ISR thread — only a physical action can. This version therefore trades realism for full
+ *   logical-time determinism.
+ */
+reactor UARTDriver {
+  input rtcm_in: int                 // Incoming RTCM data packet size from GNSS receiver
+  logical action hw_interrupt: int   // Models hardware interrupt in LOGICAL time (drift-free, reproducible)
+  output uart_out: int               // Bytes copied to memory buffer (per interrupt)
+
+  state hw_buffer_size: int = 16     // Factor 3: Hardware FIFO buffer size
+  state baudrate: int = 460800       // Factor 2: Fixed UART baudrate (bits per second)
+  state total_bytes: int = 0         // Total bytes in current transmission
+  state bytes_sent: int = 0          // Progress counter for current transmission
+
+  reaction(rtcm_in) -> hw_interrupt {=
+    // New RTCM data packet arrives from GNSS receiver - start transmission
+    self->total_bytes = rtcm_in->value;  // Store packet size
+    self->bytes_sent = 0;  // Reset progress counter
+
+    // Log start of UART transmission
+    printf("[t=%lld ms] [UART_START] bytes_total=%d\n",
+           lf_time_logical() / MSEC(1), self->total_bytes);
+
+    // Calculate timing for first hardware interrupt
+    // Time per byte = 1,000,000 µs / baudrate (in bits/sec) / (bits per byte)
+    // At 460800 bps with 10 bits per byte: ~21.7 µs per byte
+    interval_t byte_time_us = 1000000 / self->baudrate;
+    interval_t buffer_fill_time = USEC(byte_time_us * self->hw_buffer_size);
+
+    // Schedule first interrupt when FIFO fills to 16 bytes.
+    // Because hw_interrupt is a LOGICAL action, this lands at exactly
+    // (now + 347 µs) in logical time, independent of physical execution time.
+    int remaining = self->total_bytes - self->bytes_sent;
+    lf_schedule_int(hw_interrupt, buffer_fill_time, remaining);
+  =}
+
+  reaction(hw_interrupt) -> uart_out, hw_interrupt {=
+    // Hardware interrupt fires when FIFO reaches threshold (16 bytes)
+    // This models the behavior of real UART hardware with interrupt generation
+
+    // Calculate bytes in this interrupt: either full FIFO (16) or remaining bytes
+    int bytes_this_interrupt = (self->total_bytes - self->bytes_sent >= self->hw_buffer_size)
+                                ? self->hw_buffer_size
+                                : (self->total_bytes - self->bytes_sent);
+
+    self->bytes_sent += bytes_this_interrupt;  // Update progress
+
+    // Log interrupt with transmission progress
+    printf("[t=%lld ms] [UART_INTERRUPT] fifo_filled=%d bytes, sent_total=%d/%d\n",
+           lf_time_logical() / MSEC(1), bytes_this_interrupt,
+           self->bytes_sent, self->total_bytes);
+
+    // Send data to memory buffer (DataForwarder will write to ring buffer)
+    lf_set(uart_out, bytes_this_interrupt);
+
+    // Schedule next interrupt if more data remains to transmit.
+    // Each subsequent tag is exactly 347 µs after this one (no drift).
+    if (self->bytes_sent < self->total_bytes) {
+      interval_t byte_time_us = 1000000 / self->baudrate;
+      interval_t buffer_fill_time = USEC(byte_time_us * self->hw_buffer_size);
+      int remaining = self->total_bytes - self->bytes_sent;
+      lf_schedule_int(hw_interrupt, buffer_fill_time, remaining);
+    }
+  =}
+}
+
+/**
+ * DataForwarder Reactor (Periodic Task)
+ *
+ * Models a periodic software task that copies data from a ring buffer to the network. This
+ * represents a typical embedded system pattern where interrupt-driven hardware writes to a buffer,
+ * and a periodic task drains it for processing/forwarding.
+ *
+ * Ring Buffer Design:
+ * - Capacity: 1000 bytes (chosen to handle ~1 epoch at 800 bytes with margin)
+ * - Write pointer: Updated by UART interrupts (asynchronous writes)
+ * - Read pointer: Updated by periodic task (synchronous reads)
+ * - Thread-safe operation: LF reactor semantics prevent race conditions
+ *
+ * Periodic Task Characteristics:
+ * - Period: 18 ms (chosen to be less than epoch period of 100 ms)
+ * - Reads ALL available data per period (batch processing for efficiency)
+ */
+reactor DataForwarder {
+  input mem_in: int                   // Bytes written by UART interrupt (arrives asynchronously)
+  timer period(0, 18 msec)            // Factor 5: Periodic task for draining buffer
+  output network_out: int             // Bytes forwarded to network/SoC
+
+  state memory_buffer: uint8_t[1000]  // Factor 4: Ring buffer storage (1000 bytes)
+  state write_ptr: int = 0            // Write pointer: updated by UART (mem_in reaction)
+  state read_ptr: int = 0             // Read pointer: updated by periodic task (period reaction)
+  state max_buffer_usage: int = 0     // Peak buffer occupancy for performance analysis
+
+  reaction(mem_in) {=
+    // UART Interrupt Handler: Write data to ring buffer
+    // This reaction is triggered by UART hardware interrupts (every 16 bytes)
+    // It models the interrupt service routine (ISR) that copies data from
+    // hardware FIFO to software buffer
+
+    int bytes_to_write = mem_in->value;  // Bytes from current UART interrupt
+    int buffer_size = 1000;
+
+    // Calculate available space in ring buffer
+    int available = (self->write_ptr >= self->read_ptr) ?
+                    (buffer_size - self->write_ptr + self->read_ptr) :
+                    (self->read_ptr - self->write_ptr);
+
+    if (bytes_to_write <= available) {
+      // Sufficient space available - write to ring buffer
+      // (Simplified model: just update pointer; real implementation would copy data)
+      self->write_ptr = (self->write_ptr + bytes_to_write) % buffer_size;
+
+      // Calculate current buffer occupancy for monitoring
+      int current_usage;
+      if (self->write_ptr >= self->read_ptr) {
+        current_usage = self->write_ptr - self->read_ptr;
+      } else {
+        // Buffer wrapped: occupied = (end - read_ptr) + write_ptr
+        current_usage = buffer_size - self->read_ptr + self->write_ptr;
+      }
+
+      // Track peak buffer usage (important for sizing validation)
+      if (current_usage > self->max_buffer_usage) {
+        self->max_buffer_usage = current_usage;
+        printf("[t=%lld ms] [BUFFER_MAX] buffer_usage=%d bytes (%.1f%%)\n",
+               lf_time_logical() / MSEC(1), self->max_buffer_usage,
+               (self->max_buffer_usage * 100.0) / buffer_size);
+      }
+
+      // Log write operation with buffer state for analysis
+      printf("[t=%lld ms] [BUFFER_WRITE] bytes=%d, buffer_used=%d, w_ptr=%d, r_ptr=%d\n",
+             lf_time_logical() / MSEC(1), bytes_to_write, current_usage,
+             self->write_ptr, self->read_ptr);
+    } else {
+      // Buffer overflow - should not happen with proper sizing
+      printf("[t=%lld ms] [BUFFER_OVERFLOW] need=%d bytes, available=%d\n",
+             lf_time_logical() / MSEC(1), bytes_to_write, available);
+    }
+  =}
+
+  reaction(period) -> network_out {=
+    // Periodic Task: Drain ring buffer and forward to network
+    // Fires every 18 ms, regardless of buffer state (time-triggered, not event-triggered)
+    // This decouples UART write timing from network send timing
+
+    int buffer_size = 1000;
+    int available_data;
+
+    // Calculate available data in ring buffer (same logic as write check)
+    if (self->write_ptr >= self->read_ptr) {
+      // Simple case: no wrap-around
+      available_data = self->write_ptr - self->read_ptr;
+    } else {
+      // Buffer wrapped: data from read_ptr to end, plus 0 to write_ptr
+      available_data = buffer_size - self->read_ptr + self->write_ptr;
+    }
+
+    if (available_data > 0) {
+      // Data available - forward to network
+      printf("[t=%lld ms] [FORWARDER_READ] bytes=%d, w_ptr=%d, r_ptr=%d -> forwarding\n",
+             lf_time_logical() / MSEC(1), available_data,
+             self->write_ptr, self->read_ptr);
+
+      // Drain ALL available data (batch processing for efficiency)
+      self->read_ptr = self->write_ptr;  // Buffer now empty
+
+      // Forward data to SoC via network
+      lf_set(network_out, available_data);
+    } else {
+      // No data in buffer - idle period
+      printf("[t=%lld ms] [FORWARDER_IDLE] no_data\n",
+             lf_time_logical() / MSEC(1));
+    }
+  =}
+}
+
+/**
+ * MCU Composite Reactor
+ *
+ * Represents the microcontroller unit that interfaces with the GNSS receiver and forwards data to a
+ * more powerful System-on-Chip (SoC) processor.
+ *
+ * Architecture:
+ * GNSS Receiver → UART Driver → DataForwarder → Network
+ *    (100ms)       (interrupt)     (18ms timer)   (to SoC)
+ */
+reactor MCU {
+  output to_network: int  // Aggregated output to SoC via network
+
+  // Instantiate pipeline components
+  gnss = new GNSSReceiver()       // Sensor: generates RTCM data every 100ms
+  uart = new UARTDriver()         // Hardware: interrupt-driven serial transmission (logical action)
+  forwarder = new DataForwarder() // Software: periodic buffer-draining task
+
+  // Connect pipeline: data flows left to right
+  gnss.rtcm -> uart.rtcm_in              // GNSS → UART: trigger transmission
+  uart.uart_out -> forwarder.mem_in      // UART → Buffer: interrupt-driven writes
+  forwarder.network_out -> to_network    // Buffer → Network: periodic forwarding
+}
+
+/**
+ * Position Engine on SoC platform
+ * Event-triggered with predictable input pattern
+ */
+reactor PositionEngine {
+  input rtcm_stream: int
+
+  state position_x: double = 0.0
+  state position_y: double = 0.0
+  state last_update: time = 0
+
+  reaction(rtcm_stream) {=
+    // Event-triggered but input has predictable pattern
+    interval_t elapsed = lf_time_logical() - self->last_update;
+
+    printf("[t=%lld ms] [Position Engine] Received %d bytes of RTCM data\n",
+           lf_time_logical() / MSEC(1), rtcm_stream->value);
+    printf("[t=%lld ms] [Position Engine] Time since last update: %lld ms\n",
+           lf_time_logical() / MSEC(1), elapsed / MSEC(1));
+
+    // Simulate position calculation
+    self->position_x += 0.1;
+    self->position_y += 0.05;
+
+    printf("[t=%lld ms] [Position Engine] Calculated position: (%.2f, %.2f)\n",
+           lf_time_logical() / MSEC(1), self->position_x, self->position_y);
+
+    self->last_update = lf_time_logical();
+  =}
+}
+
+/**
+ * Latency monitor for end-to-end timing analysis
+ */
+reactor LatencyMonitor {
+  input data: int
+
+  state first_event: bool = true
+  state start_time: instant_t
+
+  reaction(data) {=
+    if (self->first_event) {
+      self->start_time = lf_time_physical();
+      self->first_event = false;
+    }
+
+    // Measure physical vs logical time jitter
+    instant_t now_physical = lf_time_physical();
+    instant_t now_logical = lf_time_logical();
+    interval_t jitter = now_physical - now_logical;
+
+    printf("[t=%lld ms] [Monitor] Jitter: %lld μs\n",
+           lf_time_logical() / MSEC(1), jitter / 1000);
+  =}
+}
+
+/**
+ * Complete GNSS Pipeline (synchronous / logical-action variant): MCU → Network → SoC
+ */
+federated reactor GNSSPipelineSynchronous {
+  mcu = new MCU()
+  soc = new PositionEngine()
+  monitor = new LatencyMonitor()
+
+  // Network connection with deterministic timing
+  mcu.to_network -> soc.rtcm_stream
+  mcu.to_network -> monitor.data
+}
