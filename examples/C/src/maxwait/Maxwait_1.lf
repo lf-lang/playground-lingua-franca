@@ -1,7 +1,7 @@
 /**
- * Simple situation where STA and STAA are both 0 because the Downstream reactor has no events to
- * process except input events. It is safe to advance to the tag of any input. This relies on the
- * assumption that inputs events arrive in tag order.
+ * Simple situation where `maxwait` and `absent_after` do not matter because the reactor only ever
+ * have one event to process. It is always safe to advance to the tag of any event. This relies on
+ * the assumption that inputs events arrive in tag order.
  *
  * @author Edward A. Lee
  */
@@ -25,22 +25,17 @@ reactor Upstream {
   =}
 }
 
-@label("STA == STAA == 0")
-reactor Downstream(STA: time = 0) {
+reactor Downstream {
   input in: int
 
   reaction(in) {=
     lf_print("Downstream " PRINTF_TIME ": Received (in=%d) at physical time " PRINTF_TIME,
-        lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
-  =} STAA(0) {=
-    lf_print("Downstream " PRINTF_TIME ": *** STAA violation on data (in=%d) at physical time " PRINTF_TIME,
         lf_time_logical_elapsed(), in->value, lf_time_physical_elapsed());
   =}
 }
 
 federated reactor {
   s = new Upstream()
-  @label("STA == STAA == 0")
   a = new Downstream()
 
   s.out -> a.in

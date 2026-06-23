@@ -8,18 +8,19 @@
  *
  * This program is just like CAL.lf except that it uses decentralized coordination.
  *
- * Removing or reducing the after delay strengthens consistency but causes deadline violations.
+ * Removing or reducing the after delay strengthens consistency but causes deadline violations
+ * (reduced availability).
  *
- * This program uses decentralized coordination, so if the processing latency plus communication
- * latency exceeds the 200ms tolerance for inconsistency plus the 30ms tolerance for unavailability
- * (the deadline), then the system can only preserve availability at the expense of consistency.
- * However, in order to do that, you need to adjust the STP offset, which corresponds to the
- * processing offset in the CAL theorem. If you remove the 200ms `after` delay, you will need to
- * increase the STP offset in the `Actuate` reactor to ensure that it does not prematurely assume
- * the inputs are absent. Any number significantly larger than the 35ms processing latency should be
- * sufficient to prevent STP violations, but such a number will result in a deadline violation.
- * Setting a lower number prevents the deadline violation, but at the cost of getting consistency
- * violations. It is also possible to get _both_ deadline and consistency violations.
+ * This program uses decentralized coordination. The `maxwait` at the `Actuate` reactor is set to
+ * zero so that the system can process events as soon as they are enabled. This makes meeting the
+ * deadline possible, thereby preserving availability. The cost is that the `after` delay
+ * compromises consistency because the `Actuate` reactor operates on older data. If the
+ * communication latency exceeds the 200ms tolerance for inconsistency plus the 30ms tolerance for
+ * unavailability (the deadline), then we have a fault condition; the tardy handler will be invoked
+ * when the late input arrives (this is called a "safe-to-process" (STP) violation).
+ *
+ * By changing the `after` delay, the `deadline`, and the `maxwait`, you can trade off consistency
+ * for availability.
  *
  * @author Edward A. Lee
  */
@@ -30,22 +31,15 @@ target C {
 
 import Sense, Process from "CAL.lf"
 
-// Override the base class to provide an STP offset.
-reactor ProcessFed(STP_offset: time = 10 ms) extends Process {
-}
-
 // Report inputs received.
-// STP_offset parameter is needed to ensure receiving the last input at time 5s.
-// This has to be less than the deadline or the deadline will always be violated.
-reactor Actuate(STP_offset: time = 20 ms) {
+reactor Actuate {
   input in1: int
   input in2: int
 
   reaction(in1) {=
     lf_print(PRINTF_TIME ": Received on in1: %d", lf_time_logical_elapsed(), in1->value);
-  =} STAA(0) {=
-    // No _additional_ STP offset (STAA) is needed here.
-    lf_print(PRINTF_TIME ": *** Consistency violation! Received on in1: %d", lf_time_logical_elapsed(), in1->value);
+  =} tardy {=
+    lf_print(PRINTF_TIME ": *** STP violation! Received on in1: %d", lf_time_logical_elapsed(), in1->value);
   =}
 
   reaction(in2) {=
@@ -59,7 +53,8 @@ reactor Actuate(STP_offset: time = 20 ms) {
 federated reactor {
   s1 = new Sense()
   s2 = new Sense()
-  c1 = new ProcessFed()
+  c1 = new Process()
+  @maxwait(0)
   a = new Actuate()
   s1.out -> c1.in
   c1.out -> a.in1 after 200 ms

@@ -35,10 +35,8 @@ target Python {
 }
 
 preamble {=
-  import random
   import sys
   import threading
-  import time
 =}
 
 reactor UserInput {
@@ -61,24 +59,35 @@ reactor UserInput {
   =}
 }
 
-reactor Node(n=3, bank_index=0) {
+reactor Node(N=3, bank_index=0) {
   output out
-  input[n] inp
+  output rst_out
+  input[N] inp
+  input[N] rst_inp
 
-  state banks = {= [0] * self.n =}
+  state count = {= [0] * self.N =}
   state resets_received = 0
 
   u = new UserInput()
 
+  reaction(inp) {=
+    for i, port in enumerate(inp):
+      if port.is_present:
+        for j in range(min(len(self.count), len(port.value))):
+          self.count[j] = max(self.count[j], port.value[j])
+        print(f"Received  '{port.value}' from {i}. count={self.count}")
+  =} tardy
+
+  # Handle tardy inputs identically to normal inputs.
   initial mode INCREMENTING {
-    reaction(u.text) -> out, reset(QUEUING) {=
+    reaction(u.text) -> out, rst_out, reset(QUEUING) {=
       if u.text.value[0] == "i":
-        if 0 <= self.bank_index < len(self.banks):
-          self.banks[self.bank_index] += 1
-          out.set(self.banks)
+        if 0 <= self.bank_index < len(self.count):
+          self.count[self.bank_index] += 1
+          out.set(self.count)
       elif u.text.value[0] == "r":
         print("Sending reset. Entering QUEUING mode.")
-        out.set("reset")
+        rst_out.set("reset")
         self.resets_received = 0
         QUEUING.set()
       else:
@@ -87,24 +96,19 @@ reactor Node(n=3, bank_index=0) {
 
     # Handle tardy inputs identically to normal inputs.
     # Handle tardy inputs identically to normal inputs.
-    reaction(inp) -> out, reset(QUEUING) {=
-      for i, port in enumerate(inp):
+    reaction(rst_inp) -> rst_out, reset(QUEUING) {=
+      for i, port in enumerate(rst_inp):
         if port.is_present:
-          if port.value[0] == "r":
-            print("Received reset. Sending reset. Entering QUEUING.")
-            QUEUING.set()
-            self.resets_received = 1
-            out.set("reset")
-          else:
-            for j in range(min(len(self.banks), len(port.value))):
-              self.banks[j] = max(self.banks[j], port.value[j])
-            print(f"Received '{port.value}' from {i}. banks={self.banks}")
+          print("Received reset. Sending reset. Entering QUEUING.")
+          QUEUING.set()
+          self.resets_received = 1
+          rst_out.set("reset")
     =} tardy
   }
 
   mode QUEUING {
     reset state queued_incr = 0
-    reaction(u.text) -> out {=
+    reaction(u.text) {=
       if u.text.value[0] == "r":
         print("Reset is already in progress. Ignoring input")
       elif u.text.value[0] == "i":
@@ -116,53 +120,27 @@ reactor Node(n=3, bank_index=0) {
 
     # Handle tardy inputs identically to normal inputs.
     # Handle tardy inputs identically to normal inputs.
-    reaction(inp) -> out, reset(INCREMENTING) {=
-      for i, port in enumerate(inp):
+    reaction(rst_inp) -> out, reset(INCREMENTING) {=
+      for i, port in enumerate(rst_inp):
         if port.is_present:
-          if port.value == "reset":
-            self.resets_received += 1
-            print(f"Received reset from {i}. resets_received={self.resets_received}.")
-            if self.resets_received == self.n:
-              print(f"All resets received. Consensus value: {self.banks}.")
-              print("")
-              self.banks = [0] * self.n
-              self.banks[self.bank_index] = self.queued_incr
-              print(f"Processed queued increments. banks={self.banks}")
-              if (self.queued_incr > 0):
-                out.set(self.banks)
-              INCREMENTING.set()
-          else:
-            for j in range(min(len(self.banks), len(port.value))):
-              self.banks[j] = max(self.banks[j], port.value[j])
-            print(f"Received  '{port.value}' from {i}. banks={self.banks}")
+          self.resets_received += 1
+          print(f"Received reset from {i}. resets_received={self.resets_received}.")
+          if self.resets_received == self.N:
+            print(f"All resets received. Consensus value: {self.count}.")
+            print("")
+            self.count = [0] * self.N
+            self.count[self.bank_index] = self.queued_incr
+            print(f"Processed queued increments. count={self.count}")
+            if (self.queued_incr > 0):
+              out.set(self.count)
+            INCREMENTING.set()
     =} tardy
   }
 }
 
-reactor Delay(delay=3) {
-  input inp
-  output out
-  state rng = {= None =}
-
-  reaction(startup) {=
-    # Give each delay reactor its own PRNG with a unique seed.
-    seed = time.time_ns() ^ (id(self) << 16)
-    self.rng = random.Random(seed)
-  =}
-
-  reaction(inp) -> out {=
-    random_delay_s = self.rng.uniform(1.0, 5.0)
-    print(f"Delaying {inp.value} by {random_delay_s} seconds.")
-    time.sleep(random_delay_s)
-    print(f"Forwarding {inp.value}.")
-    out.set(inp.value)
-  =}
-}
-
-federated reactor(n=3) {
+federated reactor(N=3) {
   @maxwait(0)
-  nodes = new[n] Node(n=n)
-  delay = new[n] Delay()
-  nodes.out -> delay.inp
-  (delay.out)+ ~> nodes.inp
+  nodes = new[N] Node(N=N)
+  (nodes.out)+ ~> nodes.inp
+  (nodes.rst_out)+ ~> nodes.rst_inp
 }
