@@ -1,6 +1,11 @@
 /**
- * GNSS Positioning Pipeline Model
- * Demonstrates predictable timing in event-driven GNSS system
+ * GNSS Positioning Pipeline Model — ASYNCHRONOUS (PHYSICAL-ACTION) VARIANT
+ * Demonstrates predictable timing in an event-driven GNSS system.
+ *
+ * The UART interrupt (`hw_interrupt`) is modeled with a *physical action*, so its tag is taken from
+ * the physical (wall-clock) clock — the realistic model of an asynchronous, hardware-driven
+ * interrupt. For the deterministic counterpart that models the same interrupt with a *logical
+ * action*, see GNSSPipelineSynchronous.lf. The README ("Asynchronous vs. synchronous") compares them.
  * 
  * Five Predictability Factors:
  * 1. 100ms epoch time (GNSS receiver at 10 Hz)
@@ -120,7 +125,7 @@ reactor GNSSReceiver {
  */
 reactor UARTDriver {
   input rtcm_in: int                 // Incoming RTCM data packet size from GNSS receiver
-  physical action hw_interrupt: int  // Models hardware interrupt (carries remaining byte count)
+  physical action hw_interrupt: int  // Models hardware interrupt in PHYSICAL time (asynchronous, wall-clock tag)
   output uart_out: int               // Bytes copied to memory buffer (per interrupt)
   
   state hw_buffer_size: int = 16     // Factor 3: Hardware FIFO buffer size
@@ -397,9 +402,9 @@ reactor LatencyMonitor {
 }
 
 /**
- * Complete GNSS Pipeline: MCU → Network → SoC
+ * Complete GNSS Pipeline (asynchronous / physical-action variant): MCU → Network → SoC
  */
-federated reactor GNSSPipeline {
+federated reactor GNSSPipelineAsynchronous {
   mcu = new MCU()
   soc = new PositionEngine()
   monitor = new LatencyMonitor()
