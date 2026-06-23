@@ -33,6 +33,21 @@ The two names map to the action type used for `hw_interrupt`:
 | `GNSSPipelineAsynchronous.lf` | `physical action`     | tag from the wall clock — models a true asynchronous interrupt |
 | `GNSSPipelineSynchronous.lf`  | `logical action`      | tag from logical time — drift-free and fully reproducible      |
 
+## Structure diagrams
+
+Both programs share the same reactor structure (`GNSSReceiver → UARTDriver → DataForwarder → network
+→ PositionEngine` / `LatencyMonitor`, with the first three composed inside the `MCU` federate). They
+differ only in how `UARTDriver`'s `hw_interrupt` action is declared — shown as the **P** (physical)
+vs **L** (logical) marker on the action triangle.
+
+**Asynchronous variant** — `hw_interrupt` is a `physical action` (**P**):
+
+![GNSSPipelineAsynchronous structure diagram](img/GNSSPipelineAsynchronous.svg)
+
+**Synchronous variant** — `hw_interrupt` is a `logical action` (**L**):
+
+![GNSSPipelineSynchronous structure diagram](img/GNSSPipelineSynchronous.svg)
+
 ## How to build and run
 
 1. Open a terminal in `examples/C/src/gnss-pipeline`.
@@ -96,37 +111,6 @@ In `GNSSPipelineSynchronous.lf`, `lf_schedule_int(hw_interrupt, offset, ...)` as
   causal trace) are independent of physical execution and identical across runs and machines.
 - **Loss of realism.** It no longer models a truly asynchronous interrupt, and it could not be
   driven from a real external ISR thread. It is an *idealized* model, useful for analysis.
-
-### Observed behavior (federated runs, ~5 s each on this machine)
-
-Both versions produce the **same data** — identical RTCM byte counts, ring-buffer evolution, and
-`{18, 90, 108} ms` forwarding pattern — confirming they agree on *what* happens. The difference is
-in the *timing of the interrupt burst*, measured as the logical-time span over which one epoch's 20
-interrupts occur:
-
-| Version                       | Epoch-1 interrupt-burst span | Steady-state span | Cause                                                    |
-| ----------------------------- | ---------------------------- | ----------------- | ------------------------------------------------------- |
-| **Synchronous** (logical)     | ~0.6 ms (1 ms bucket)        | ~0.6 ms           | tags advance by exactly the offset → zero drift         |
-| **Asynchronous** (physical)   | up to ~3–4 ms (cold start)   | ~1 ms             | each tag re-reads the wall clock → absorbs real overhead |
-
-The synchronous version compresses every epoch's burst into the same ~0.6 ms regardless of run or
-system load. The asynchronous version lets the burst **smear** — most visibly at cold start, where
-per-reaction overhead accumulates across the 20 self-rescheduled interrupts and pushes the burst out
-to ~4 ms. That smear is a function of physical conditions, not of the model — which is exactly the
-property a physical action is meant to expose.
-
-> Notes:
-> - On a lightly loaded machine the two versions are nearly indistinguishable in steady state; the
->   asynchronous (physical-action) version's guarantees are *weaker*, not its typical behavior worse.
->   Under load or on a slower target, the asynchronous version diverges while the synchronous version
->   cannot.
-> - Absolute printed timestamps shift between runs in *both* versions because a federated program's
->   start instant is derived from the wall clock. The synchronous model's reproducibility is about
->   logical *intervals* relative to start, not the absolute start instant.
-> - The model uses `1000000 / 460800` (integer division) for the per-byte time, which truncates to
->   2 µs/byte (32 µs per 16-byte interrupt) instead of the intended ~21.7 µs/byte (~347 µs). This
->   does not affect the asynchronous-vs-synchronous comparison, but it does make the interrupt burst
->   much shorter than the paper's analytical figures.
 
 ## What this example shows
 
