@@ -70,15 +70,6 @@ reactor Node(N=3, bank_index=0) {
 
   u = new UserInput()
 
-  reaction(inp) {=
-    for i, port in enumerate(inp):
-      if port.is_present:
-        for j in range(min(len(self.count), len(port.value))):
-          self.count[j] = max(self.count[j], port.value[j])
-        print(f"Received  '{port.value}' from {i}. count={self.count}")
-  =} tardy
-
-  # Handle tardy inputs identically to normal inputs.
   initial mode INCREMENTING {
     reaction(u.text) -> out, rst_out, reset(QUEUING) {=
       if u.text.value[0] == "i":
@@ -94,46 +85,56 @@ reactor Node(N=3, bank_index=0) {
         print(f"Unrecognized command: {u.text.value}")
     =} tardy
 
-    # Handle tardy inputs identically to normal inputs.
-    # Handle tardy inputs identically to normal inputs.
-    reaction(rst_inp) -> rst_out, reset(QUEUING) {=
-      for i, port in enumerate(rst_inp):
+    reaction(inp) {=
+      for i, port in enumerate(inp):
         if port.is_present:
-          print("Received reset. Sending reset. Entering QUEUING.")
-          QUEUING.set()
-          self.resets_received = 1
-          rst_out.set("reset")
+          for j in range(min(len(self.count), len(port.value))):
+            self.count[j] = max(self.count[j], port.value[j])
+          print(f"Received  '{port.value}' from {i}. count={self.count}")
+    =} tardy
+
+    reaction(rst_inp) -> rst_out, reset(QUEUING) {=
+      count = sum(1 for port in rst_inp if port.is_present)
+      if count > 0:
+        print(f"Received {count} resets. Sending reset. Entering QUEUING.")
+        QUEUING.set()
+        self.resets_received = count
+        rst_out.set("reset")
     =} tardy
   }
 
   mode QUEUING {
-    reset state queued_incr = 0
+    reset state q_count = {= [0] * self.N =}
     reaction(u.text) {=
       if u.text.value[0] == "r":
         print("Reset is already in progress. Ignoring input")
       elif u.text.value[0] == "i":
-        self.queued_incr += 1
-        print(f"Queued increment. queued_incr={self.queued_incr}")
+        self.q_count[self.bank_index] += 1
+        print(f"Queued increment. q_count={self.q_count}")
       else:
         print(f"Unrecognized command: {u.text.value}")
     =} tardy
 
-    # Handle tardy inputs identically to normal inputs.
-    # Handle tardy inputs identically to normal inputs.
-    reaction(rst_inp) -> out, reset(INCREMENTING) {=
-      for i, port in enumerate(rst_inp):
+    reaction(inp) {=
+      for i, port in enumerate(inp):
         if port.is_present:
-          self.resets_received += 1
-          print(f"Received reset from {i}. resets_received={self.resets_received}.")
-          if self.resets_received == self.N:
-            print(f"All resets received. Consensus value: {self.count}.")
-            print("")
-            self.count = [0] * self.N
-            self.count[self.bank_index] = self.queued_incr
-            print(f"Processed queued increments. count={self.count}")
-            if (self.queued_incr > 0):
-              out.set(self.count)
-            INCREMENTING.set()
+          for j in range(min(len(self.q_count), len(port.value))):
+            self.q_count[j] = max(self.q_count[j], port.value[j])
+          print(f"Received  '{port.value}' from {i}. q_count={self.q_count}")
+    =} tardy
+
+    reaction(rst_inp) -> out, reset(INCREMENTING) {=
+      count = sum(1 for port in rst_inp if port.is_present)
+      if count > 0:
+        self.resets_received += count
+        print(f"Received {count} resets. resets_received={self.resets_received}.")
+        if self.resets_received == self.N:
+          print(f"All resets received. Consensus value: {self.count}.")
+          print("")
+          self.count = self.q_count
+          print(f"Processed queued increments. count={self.count}")
+          out.set(self.count)
+          INCREMENTING.set()
     =} tardy
   }
 }
