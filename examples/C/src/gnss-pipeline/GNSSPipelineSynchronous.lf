@@ -1,31 +1,28 @@
 /**
  * GNSS Positioning Pipeline Model — SYNCHRONOUS (LOGICAL-ACTION) VARIANT
  *
- * This is a companion to GNSSPipelineAsynchronous.lf. It is identical in structure, parameters, and logging,
- * with exactly ONE difference: the UART interrupt (`hw_interrupt`) is modeled with a
+ * This is a companion to GNSSPipelineAsynchronous.lf. It is identical in structure, parameters, and
+ * logging, with exactly ONE difference: the UART interrupt (`hw_interrupt`) is modeled with a
  * *logical action* instead of a *physical action*.
  *
  * Why this variant exists:
- * - GNSSPipelineAsynchronous.lf uses a `physical action` to model the UART FIFO interrupt, treating it as an
- *   asynchronous hardware event whose tag is taken from the *physical* (wall-clock) clock. This is
- *   the realistic model: in a real deployment, the interrupt is raised by hardware/an ISR running
- *   outside the LF runtime, and a physical action is the only thread-safe way to inject such an
- *   external event. Its logical timestamp therefore carries real hardware/OS jitter.
+ * - GNSSPipelineAsynchronous.lf uses a `physical action` to model the UART FIFO interrupt, treating
+ * it as an asynchronous hardware event whose tag is taken from the *physical* (wall-clock) clock.
+ * This is the realistic model: in a real deployment, the interrupt is raised by hardware/an ISR
+ * running outside the LF runtime, and a physical action is the only thread-safe way to inject such
+ * an external event. Its logical timestamp therefore carries real hardware/OS jitter.
  * - This variant uses a `logical action`, so each interrupt's tag is computed purely in *logical*
- *   time as (current logical time + 347 µs). The interrupt cadence becomes drift-free and the entire
- *   trace is bit-for-bit reproducible across runs — at the cost of no longer modeling a genuinely
- *   asynchronous, externally-driven interrupt.
+ * time as (current logical time + 347 µs). The interrupt cadence becomes drift-free and the entire
+ * trace is bit-for-bit reproducible across runs — at the cost of no longer modeling a genuinely
+ * asynchronous, externally-driven interrupt.
  *
  * Use this file side-by-side with GNSSPipelineAsynchronous.lf to compare physical-action vs
- * logical-action modeling of the same interrupt-driven pipeline. See README.md
- * ("Asynchronous vs. synchronous") for the full comparison.
+ * logical-action modeling of the same interrupt-driven pipeline. See README.md ("Asynchronous vs.
+ * synchronous") for the full comparison.
  *
- * Five Predictability Factors (unchanged from the physical-action version):
- * 1. 100ms epoch time (GNSS receiver at 10 Hz)
- * 2. Fixed UART baudrate (460800 bps)
- * 3. 16-byte hardware buffer
- * 4. Fixed memory buffer size 1000
- * 5. Periodic DataForwarder task with period 18 ms
+ * Five Predictability Factors (unchanged from the physical-action version): 1. 100ms epoch time
+ * (GNSS receiver at 10 Hz) 2. Fixed UART baudrate (460800 bps) 3. 16-byte hardware buffer 4. Fixed
+ * memory buffer size 1000 5. Periodic DataForwarder task with period 18 ms
  */
 target C {
   keepalive: true,
@@ -107,26 +104,32 @@ reactor GNSSReceiver {
  * - FIFO size: 16 bytes
  * - FIFO fill time: ~347 microseconds (16 × 21.7 µs)
  *
- * KEY DIFFERENCE FROM GNSSPipelineAsynchronous.lf:
- * Here `hw_interrupt` is a `logical action`, not a `physical action`. When `lf_schedule_int` is
- * called with an offset of 347 µs, the interrupt's tag is computed in *logical* time as
- * (current logical time + 347 µs). Consequences:
+ * KEY DIFFERENCE FROM GNSSPipelineAsynchronous.lf: Here `hw_interrupt` is a `logical action`, not a
+ * `physical action`. When `lf_schedule_int` is called with an offset of 347 µs, the interrupt's tag
+ * is computed in *logical* time as (current logical time + 347 µs). Consequences:
  * - The interrupt cadence is exactly 347 µs with zero drift (the previous reaction's execution time
- *   does NOT leak into the next tag), so timestamps are exact multiples and reproducible run-to-run.
+ * does NOT leak into the next tag), so timestamps are exact multiples and reproducible run-to-run.
  * - The event is NOT tied to the physical clock, so it does not model a genuinely asynchronous,
- *   externally-raised interrupt. A logical action also cannot be scheduled safely from an outside
- *   ISR thread — only a physical action can. This version therefore trades realism for full
- *   logical-time determinism.
+ * externally-raised interrupt. A logical action also cannot be scheduled safely from an outside ISR
+ * thread — only a physical action can. This version therefore trades realism for full logical-time
+ * determinism.
  */
 reactor UARTDriver {
-  input rtcm_in: int                 // Incoming RTCM data packet size from GNSS receiver
-  logical action hw_interrupt: int   // Models hardware interrupt in LOGICAL time (drift-free, reproducible)
-  output uart_out: int               // Bytes copied to memory buffer (per interrupt)
+  // Incoming RTCM data packet size from GNSS receiver
+  input rtcm_in: int
+  // Models hardware interrupt in LOGICAL time (drift-free, reproducible)
+  logical action hw_interrupt: int
+  // Bytes copied to memory buffer (per interrupt)
+  output uart_out: int
 
-  state hw_buffer_size: int = 16     // Factor 3: Hardware FIFO buffer size
-  state baudrate: int = 460800       // Factor 2: Fixed UART baudrate (bits per second)
-  state total_bytes: int = 0         // Total bytes in current transmission
-  state bytes_sent: int = 0          // Progress counter for current transmission
+  // Factor 3: Hardware FIFO buffer size
+  state hw_buffer_size: int = 16
+  // Factor 2: Fixed UART baudrate (bits per second)
+  state baudrate: int = 460800
+  // Total bytes in current transmission
+  state total_bytes: int = 0
+  // Progress counter for current transmission
+  state bytes_sent: int = 0
 
   reaction(rtcm_in) -> hw_interrupt {=
     // New RTCM data packet arrives from GNSS receiver - start transmission
@@ -296,28 +299,26 @@ reactor DataForwarder {
  * Represents the microcontroller unit that interfaces with the GNSS receiver and forwards data to a
  * more powerful System-on-Chip (SoC) processor.
  *
- * Architecture:
- * GNSS Receiver → UART Driver → DataForwarder → Network
- *    (100ms)       (interrupt)     (18ms timer)   (to SoC)
+ * Architecture: GNSS Receiver → UART Driver → DataForwarder → Network (100ms) (interrupt) (18ms
+ * timer) (to SoC)
  */
 reactor MCU {
   output to_network: int  // Aggregated output to SoC via network
 
   // Instantiate pipeline components
-  gnss = new GNSSReceiver()       // Sensor: generates RTCM data every 100ms
-  uart = new UARTDriver()         // Hardware: interrupt-driven serial transmission (logical action)
-  forwarder = new DataForwarder() // Software: periodic buffer-draining task
+  // Sensor: generates RTCM data every 100ms
+  gnss = new GNSSReceiver()
+  uart = new UARTDriver()  // Hardware: interrupt-driven serial transmission (logical action)
+  forwarder = new DataForwarder()  // Software: periodic buffer-draining task
 
   // Connect pipeline: data flows left to right
-  gnss.rtcm -> uart.rtcm_in              // GNSS → UART: trigger transmission
-  uart.uart_out -> forwarder.mem_in      // UART → Buffer: interrupt-driven writes
-  forwarder.network_out -> to_network    // Buffer → Network: periodic forwarding
+  // GNSS → UART: trigger transmission
+  gnss.rtcm -> uart.rtcm_in
+  uart.uart_out -> forwarder.mem_in  // UART → Buffer: interrupt-driven writes
+  forwarder.network_out -> to_network  // Buffer → Network: periodic forwarding
 }
 
-/**
- * Position Engine on SoC platform
- * Event-triggered with predictable input pattern
- */
+/** Position Engine on SoC platform Event-triggered with predictable input pattern */
 reactor PositionEngine {
   input rtcm_stream: int
 
@@ -345,9 +346,7 @@ reactor PositionEngine {
   =}
 }
 
-/**
- * Latency monitor for end-to-end timing analysis
- */
+/** Latency monitor for end-to-end timing analysis */
 reactor LatencyMonitor {
   input data: int
 
@@ -370,15 +369,12 @@ reactor LatencyMonitor {
   =}
 }
 
-/**
- * Complete GNSS Pipeline (synchronous / logical-action variant): MCU → Network → SoC
- */
+/** Complete GNSS Pipeline (synchronous / logical-action variant): MCU → Network → SoC */
 federated reactor GNSSPipelineSynchronous {
   mcu = new MCU()
   soc = new PositionEngine()
   monitor = new LatencyMonitor()
 
-  // Network connection with deterministic timing
-  mcu.to_network -> soc.rtcm_stream
+  mcu.to_network -> soc.rtcm_stream  // Network connection with deterministic timing
   mcu.to_network -> monitor.data
 }
