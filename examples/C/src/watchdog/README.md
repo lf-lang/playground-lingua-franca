@@ -12,8 +12,7 @@ unless it gets restarted with `lf_watchdog_start` or stopped using `lf_watchdog_
 before that physical time elapses.
 
 When a watchdog expires, two things happen. First, the watchdog handler is invoked.
-Second, an event identified by the name of the watchdog is scheduled at the earliest
-available tag (typically the current tag plus one microstep).
+Second, an event identified by the name of the watchdog is scheduled to execute at the logical time of the watchdog expiration.
 The watchdog handler is invoked asynchronously, and therefore has limited access
 to the reactor's infrastructure, such as inputs and outputs.
 However, the scheduled watchdog event can trigger an ordinary reaction
