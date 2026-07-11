@@ -1,3 +1,6 @@
 [submodule "examples/C/src/mood-pad/c_lib/BME280_SensorAPI"]
 	path = examples/C/src/mood-pad/c_lib/BME280_SensorAPI
 	url = https://github.com/boschsensortec/BME280_SensorAPI.git
+[submodule "examples/C/lf_modules/mqtt-c"]
+	path = examples/C/lf-packages/mqtt-c
+	url = https://github.com/lf-lang/mqtt-c.git

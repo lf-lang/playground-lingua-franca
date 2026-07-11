@@ -26,13 +26,17 @@ These examples illustrated federated execution, where each top-level reactor bec
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
 * [Maxwait](src/maxwait/README.md): How to set `maxwait` in federated with decentralized coordination.
 * [Distributed Time](src/distributed-time/README.md): Federated, decentralized, with deadlines.
-* [MQTT](https://github.com/lf-lang/mqtt-c): Interacting with MQTT publish-and-subscribed (moved to a library repo).
 * [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.
 * [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
 * [Shared Memory](src/shared-memory/README.md): Using shared memory to exchange large data objects between federates. 
 * [Watchdog](src/watchdog/README.md): Federated illustration of watchdogs.
 * [Zero-delay Cycles](src/zero-delay-cycles/README.md): Federated patterns with zero-delay cycles.
 
+## Packages
+
+These examples are installed as packages in the `lf-packages` directory. They are designed to be imported into your applications.
+
+* [MQTT](lf-packages/mqtt-c/README.md): Publish and subscribe via MQTT.
 
 ## Embedded
 
