@@ -18,4 +18,9 @@ The following examples may be more platform dependent and difficult to set up:
 * [CARLA](src/carla/README.md): Using the CARLA automotive simulator with Lingua Franca.
 * [Digital Twin Keyfob](src/digital-twin/KeyFob/README.md) and [DoubleUnlock](src/digital-twin/DoubleUnlock/README.md): Dockerize and deploy to AWS.
 * [ROS](src/ROS/PythonMigration/README.md): Replacing ROS communication with LF for better determinism.
-* [YOLO](src/YOLOv5/README.md): Video processing with DNN object recognition.
+
+## Packages
+
+These examples are installed as packages in the `lf-packages` directory. They are designed to be imported into your applications.
+
+* [video-py](lf-packages/video-py/README.md): Video processing and object recognition.

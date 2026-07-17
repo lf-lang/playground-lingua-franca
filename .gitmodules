@@ -4,3 +4,6 @@
 [submodule "examples/C/lf_modules/mqtt-c"]
 	path = examples/C/lf-packages/mqtt-c
 	url = https://github.com/lf-lang/mqtt-c.git
+[submodule "examples/Python/lf-packages/video-py"]
+	path = examples/Python/lf-packages/video-py
+	url = https://github.com/lf-lang/video-py.git
