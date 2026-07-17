@@ -1,0 +1,33 @@
+target Python
+
+import MuJoCoAuto from <mujoco-py>
+
+/**
+ * Franka Emika Panda robot.
+ *
+ * @author Edward A. Lee
+ */
+reactor MuJoCoPanda(
+    model_file = {=
+      lf.source_directory() + "/models/mujoco_menagerie/franka_emika_panda/mjx_scene.xml"
+    =}) extends MuJoCoAuto {
+  input[8] motor
+  input read_state
+  output[9] joint_pos
+  output[9] joint_vel
+
+  reaction(motor) {=
+    self.advance_simulator()
+    for i in range(8):
+      if motor[i].is_present:
+        self.context.d.ctrl[i] = motor[i].value
+  =}
+
+  reaction(read_state) -> joint_pos, joint_vel {=
+    if not read_state.value:
+      return
+    for i in range(9):
+      joint_pos[i].set(float(self.context.d.qpos[i]))
+      joint_vel[i].set(float(self.context.d.qvel[i]))
+  =}
+}

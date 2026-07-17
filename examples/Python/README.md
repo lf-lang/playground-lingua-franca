@@ -5,6 +5,7 @@
 * [ACAS](src/acas/README.md): Airborne collision avoidance system using neural networks.
 * [Audio](src/audio/README.md): Live display of the spectrum of microphone audio input.
 * [Audio Classification](src/audio-classification/README.md): Audio classification using Tensorflow Lite.
+* [Panda Robot](src/mujoco/README.md): Mujoco simulation of a Frank Emika Panda robot.
 * [Reflex Game](src/reflex-game/README.md): Interactive timed game, showing pygame and enclaves.
 * [Resettable Counter](src/resettable-counter/README.md): Distributed replicated data structure with ACID 2.0 and non-ACID operations.
 * [Traffic Lights Control System](src/traffic-lights-control/README.md): AI-CPS demonstrator controlling the traffic lights of three intersections.
@@ -23,4 +24,5 @@ The following examples may be more platform dependent and difficult to set up:
 
 These examples are installed as packages in the `lf-packages` directory. They are designed to be imported into your applications.
 
+* [mujoco-py](lf-packages/mujoco-py/README.md): Mujoco physics-based simulation.
 * [video-py](lf-packages/video-py/README.md): Video processing and object recognition.

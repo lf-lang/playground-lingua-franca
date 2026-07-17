@@ -7,3 +7,9 @@
 [submodule "examples/Python/lf-packages/video-py"]
 	path = examples/Python/lf-packages/video-py
 	url = https://github.com/lf-lang/video-py.git
+[submodule "examples/Python/lf-packages/mujoco-py"]
+	path = examples/Python/lf-packages/mujoco-py
+	url = https://github.com/lf-lang/mujoco-py.git
+[submodule "examples/Python/src/mujoco/models/mujoco_menagerie"]
+	path = examples/Python/src/mujoco/models/mujoco_menagerie
+	url = https://github.com/google-deepmind/mujoco_menagerie.git
