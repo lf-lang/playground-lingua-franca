@@ -9,6 +9,7 @@ The examples are grouped into unfederated, federated, and embedded and listed in
 * [Deadlines](src/deadlines/README.md): Uses of deadlines in Lingua Franca.
 * [Furuta Pendulum](src/modal_models/FurutaPendulum/README.md): A controller and simulation illustrating a modal reactor.
 * [Keyboard](src/keyboard/README.md): Responding to keyboard input using ncurses.
+* [Panda](src/mujoco/README.md): Mujoco simulation of a Frank Emika Panda robot.
 * [Patterns](src/patterns/README.md): Common communication patterns.
 * [Reflex Game](src/reflex-game/README.md): Interactive timed game.
 * [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
@@ -37,6 +38,7 @@ These examples illustrated federated execution, where each top-level reactor bec
 These examples are installed as packages in the `lf-packages` directory. They are designed to be imported into your applications.
 
 * [MQTT](lf-packages/mqtt-c/README.md): Publish and subscribe via MQTT.
+* [Mujoco](lf-packages/mujoco-c/README.md): Physics-based simulation using Mujoco.
 
 ## Embedded
 

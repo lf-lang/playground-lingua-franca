@@ -13,3 +13,9 @@
 [submodule "examples/Python/src/mujoco/models/mujoco_menagerie"]
 	path = examples/Python/src/mujoco/models/mujoco_menagerie
 	url = https://github.com/google-deepmind/mujoco_menagerie.git
+[submodule "examples/C/src/mujoco/models/mujoco_menagerie"]
+	path = examples/C/src/mujoco/models/mujoco_menagerie
+	url = https://github.com/google-deepmind/mujoco_menagerie.git
+[submodule "examples/C/lf-packages/mujoco-c"]
+	path = examples/C/lf-packages/mujoco-c
+	url = https://github.com/lf-lang/mujoco-c.git
