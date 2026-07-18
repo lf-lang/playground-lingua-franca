@@ -29,7 +29,7 @@ jobs:
         with:
           check_mode: "compile"
           no_compile_flag: false
-          exclude_dirs: '["failing", "experiments", "led-matrix"]'
+          exclude_dirs: '["failing", "experiments", "led-matrix", "mujoco", "mujoco-c", "mujoco-py"]'
           compiler_ref: "master"
 
   check-format:
@@ -44,5 +44,5 @@ jobs:
       - uses: lf-lang/action-check-lf-files@main
         with:
           check_mode: "format"
-          exclude_dirs: '["failing", "experiments"]'
+          exclude_dirs: '["failing", "experiments", "mujoco", "mujoco-c", "mujoco-py"]'
           compiler_ref: "master"

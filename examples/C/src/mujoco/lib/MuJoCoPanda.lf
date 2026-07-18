@@ -1,0 +1,36 @@
+target C {
+  keepalive: true,  // Because of physical action.
+  files: "../models/mujoco_menagerie/franka_emika_panda"
+}
+
+import MuJoCoAuto from <mujoco-c>
+
+/**
+ * Franka Emika Panda robot.
+ *
+ * @author Edward A. Lee
+ */
+reactor MuJoCoPanda(
+    model_file: string = {=
+      LF_SOURCE_GEN_DIRECTORY LF_FILE_SEPARATOR "franka_emika_panda" LF_FILE_SEPARATOR "mjx_scene.xml"
+    =}) extends MuJoCoAuto {
+  input[8] motor: double
+  input read_state: bool
+  output[9] joint_pos: double
+  output[9] joint_vel: double
+
+  reaction(motor) {=
+    advance_simulator();
+    for (int i = 0; i < 8; i++) {
+      self->context.d->ctrl[i] = motor[i]->value;
+    }
+  =}
+
+  reaction(read_state) -> joint_pos, joint_vel {=
+    if (!read_state->value) return;
+    for (int i = 0; i < 9; i++) {
+      lf_set(joint_pos[i], self->context.d->qpos[i]);
+      lf_set(joint_vel[i], self->context.d->qvel[i]);
+    }
+  =}
+}

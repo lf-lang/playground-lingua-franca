@@ -1,0 +1,132 @@
+/**
+ * Franka Emika Panda robot demo.
+ *
+ * This moves each of the eight joints of the Panda robot through a range of values defined in the
+ * CSV file.
+ *
+ * See [README.md](README.md) for prerequisites and installation instructions.
+ *
+ * This program reads parameter values from a CSV file and uses them to control the Panda robot. The
+ * CSV file is "PandaDemoParameters.csv" located in the same directory as this program. There are
+ * three datasets in the CSV file corresponding to three different speeds of motion. To select a
+ * dataset, provide the command-line option `--dataset <dataset_number>`, where `<dataset_number>`
+ * is 0, 1, or 2.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  // On MacOS, GLFW can only be accessed from the main thread.
+  // The MuJoCoPanda reactor needs to be on this thread.
+  // Currently, the only way to ensure this is to set the workers to 1.
+  workers: 1,
+  // Because of physical action for the keypresses.
+  keepalive: true,
+  // To use the lf_initialize_double function, we need to include the following:
+  cmake-include: ["/lib/c/reactor-c/util/initialize_from_file.cmake"],
+  files: [
+      "/lib/c/reactor-c/util/initialize_from_file.c",
+      "/lib/c/reactor-c/util/initialize_from_file.h"]
+}
+
+import MuJoCoPanda from "lib/MuJoCoPanda.lf"
+
+preamble {=
+  #include "initialize_from_file.h"
+=}
+
+reactor SimpleController(
+    period: time = 100 ms,
+    dataset: int = 0,
+    step: double = 0.05,
+    high_limit: double = 1.0,
+    low_limit: double = -1.0,
+    bank_index: int = 0,
+    parameter_file: string = "") {
+  input restart: bool
+  output command: double
+  timer t(0, period)
+  state motor: double = 0.0
+
+  reaction(startup) {=
+    if (self->parameter_file != NULL && self->parameter_file[0] != '\0') {
+      int n = lf_initialize_double(
+          self->parameter_file,
+          ',',
+          (size_t)((9 * self->dataset) + self->bank_index + 1), // +1 skips the header row
+          &self->step,
+          &self->high_limit,
+          &self->low_limit,
+          NULL);
+    }
+  =}
+
+  reaction(restart) {=
+    self->motor = 0.0;
+  =}
+
+  reaction(t) -> command {=
+    lf_set(command, self->motor);
+    self->motor += self->step;
+    if (self->motor > self->high_limit || self->motor < self->low_limit) {
+      self->step = -self->step;
+    }
+  =}
+}
+
+main reactor(dataset: int = 0) {
+  timer read_state_timer(0, 500 ms)
+  m = new MuJoCoPanda(frame_period = 33 ms)
+  c = new[8] SimpleController(
+      dataset=dataset,
+      period = 100 ms,
+      parameter_file = {= LF_SOURCE_DIRECTORY "/PandaDemoParameters.csv" =})
+
+  c.command -> m.motor
+
+  reaction(startup) {=
+    lf_print("*** Backspace to reset.");
+    lf_print("*** Type q to quit.\n");
+  =}
+
+  reaction(m.key) -> m.restart, c.restart {=
+    // If backspace: reset simulation
+    // If q or Q: quit
+    if (m.key->value.act==GLFW_PRESS) {
+      if (m.key->value.key==GLFW_KEY_BACKSPACE) {
+        lf_set(m.restart, true);
+        for (int i = 0; i < 8; i++) {
+          lf_set(c[i].restart, true);
+        }
+      } else if (m.key->value.key==GLFW_KEY_Q) {
+        lf_request_stop();
+      }
+    }
+  =}
+
+  reaction(read_state_timer) -> m.read_state {=
+    lf_set(m.read_state, true);
+  =}
+
+  reaction(m.joint_pos, m.joint_vel) {=
+    lf_print(
+        "qpos=%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f | qvel=%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f",
+        m.joint_pos[0]->value,
+        m.joint_pos[1]->value,
+        m.joint_pos[2]->value,
+        m.joint_pos[3]->value,
+        m.joint_pos[4]->value,
+        m.joint_pos[5]->value,
+        m.joint_pos[6]->value,
+        m.joint_pos[7]->value,
+        m.joint_pos[8]->value,
+        m.joint_vel[0]->value,
+        m.joint_vel[1]->value,
+        m.joint_vel[2]->value,
+        m.joint_vel[3]->value,
+        m.joint_vel[4]->value,
+        m.joint_vel[5]->value,
+        m.joint_vel[6]->value,
+        m.joint_vel[7]->value,
+        m.joint_vel[8]->value);
+  =}
+}
