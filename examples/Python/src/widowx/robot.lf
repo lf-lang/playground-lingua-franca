@@ -1,104 +1,102 @@
-
 target Python
 
 preamble {=
-    import json
-    import os
-    import numpy as np
-    import trossen_arm
+  import json
+  import os
+  import numpy as np
+  import trossen_arm
 =}
 
-reactor Robot(host = "192.168.1.2") {
-    input press_button # str
+reactor Robot(host="192.168.1.2") {
+  input press_button  # str
 
-    output ready # bool
-    output pressed_key # str
+  output ready        # bool
+  output pressed_key  # str
 
-    state key_positions 
-    state driver
+  state key_positions
+  state driver
 
-    method move_to_home() {=
-        print("Moving to home position")
-        self.driver.set_arm_modes(trossen_arm.Mode.position)
-        self.driver.set_arm_positions(
-            np.zeros(self.driver.get_num_joints() - 1),
-            2.0,
-            True
-        )
-        print("Robot is at home position")
-    =}
+  method move_to_home() {=
+    print("Moving to home position")
+    self.driver.set_arm_modes(trossen_arm.Mode.position)
+    self.driver.set_arm_positions(
+        np.zeros(self.driver.get_num_joints() - 1),
+        2.0,
+        True
+    )
+    print("Robot is at home position")
+  =}
 
-    method close_gripper() {=
-        print("Closing gripper")
-        self.driver.set_gripper_mode(trossen_arm.Mode.position)
-        self.driver.set_gripper_position(0.0, 1.0, True)
-        print("Gripper is closed")
-    =}
+  method close_gripper() {=
+    print("Closing gripper")
+    self.driver.set_gripper_mode(trossen_arm.Mode.position)
+    self.driver.set_gripper_position(0.0, 1.0, True)
+    print("Gripper is closed")
+  =}
 
-    reaction(startup) -> ready {=
-        with open(os.path.join(os.path.dirname(__file__), "positions.json"), "r") as f:
-            data = json.load(f)
-        self.key_positions = data.get("key_positions", {})
-        if not self.key_positions.keys():
-            print("No keys found in positions.json!")
-            exit(1)
+  reaction(startup) -> ready {=
+    with open(os.path.join(os.path.dirname(__file__), "positions.json"), "r") as f:
+        data = json.load(f)
+    self.key_positions = data.get("key_positions", {})
+    if not self.key_positions.keys():
+        print("No keys found in positions.json!")
+        exit(1)
 
-        self.driver = trossen_arm.TrossenArmDriver()
-        host = os.environ.get("ROBOT_HOST", self.host)
-        print(f"Configuring driver to {host}")
-        self.driver.configure(
-            trossen_arm.Model.wxai_v0,
-            trossen_arm.StandardEndEffector.wxai_v0_follower,
-            host,
-            False
-        )
-        self.move_to_home()
-        self.close_gripper()
-        ready.set(True)
-    =}
+    self.driver = trossen_arm.TrossenArmDriver()
+    host = os.environ.get("ROBOT_HOST", self.host)
+    print(f"Configuring driver to {host}")
+    self.driver.configure(
+        trossen_arm.Model.wxai_v0,
+        trossen_arm.StandardEndEffector.wxai_v0_follower,
+        host,
+        False
+    )
+    self.move_to_home()
+    self.close_gripper()
+    ready.set(True)
+  =}
 
-    reaction (press_button) -> pressed_key {=
-        print(f"Pressing button: {press_button.value}")
-        if press_button.value not in self.key_positions:
-            exit(1)
-        
-        positions = self.key_positions[press_button.value]
-        if "hover" not in positions or "press" not in positions:
-            exit(1)
-        
-        hover_pos = np.array(positions["hover"])
-        press_pos = np.array(positions["press"])
-        
-        print(f"Moving to hover position above '{press_button.value}' button...")
-        self.driver.set_arm_positions(
-            hover_pos[:6],
-            2.0,
-            True
-        )
-        
-        print(f"Pressing the '{press_button.value}' button...")
-        self.driver.set_arm_positions(
-            press_pos[:6],
-            2.0,
-            True
-        )
-        
-        print(f"Returning to hover position above '{press_button.value}' button...")
-        self.driver.set_arm_positions(
-            hover_pos[:6],
-            2.0,
-            True
-        )
-        pressed_key.set(press_button.value)
-        print(f"Robot: Pressed key: {press_button.value}")
-    =}
+  reaction(press_button) -> pressed_key {=
+    print(f"Pressing button: {press_button.value}")
+    if press_button.value not in self.key_positions:
+        exit(1)
 
-    
-    reaction(shutdown) {=
-        print("Shutdown: Moving to home position")
-        self.move_to_home()
-        self.close_gripper()
-        print("Shutdown: Robot is at home position")
-        return
-    =}
+    positions = self.key_positions[press_button.value]
+    if "hover" not in positions or "press" not in positions:
+        exit(1)
+
+    hover_pos = np.array(positions["hover"])
+    press_pos = np.array(positions["press"])
+
+    print(f"Moving to hover position above '{press_button.value}' button...")
+    self.driver.set_arm_positions(
+        hover_pos[:6],
+        2.0,
+        True
+    )
+
+    print(f"Pressing the '{press_button.value}' button...")
+    self.driver.set_arm_positions(
+        press_pos[:6],
+        2.0,
+        True
+    )
+
+    print(f"Returning to hover position above '{press_button.value}' button...")
+    self.driver.set_arm_positions(
+        hover_pos[:6],
+        2.0,
+        True
+    )
+    pressed_key.set(press_button.value)
+    print(f"Robot: Pressed key: {press_button.value}")
+  =}
+
+  reaction(shutdown) {=
+    print("Shutdown: Moving to home position")
+    self.move_to_home()
+    self.close_gripper()
+    print("Shutdown: Robot is at home position")
+    return
+  =}
 }
