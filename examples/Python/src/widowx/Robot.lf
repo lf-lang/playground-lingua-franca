@@ -59,11 +59,15 @@ reactor Robot(host="192.168.1.2") {
   reaction(press_button) -> pressed_key {=
     print(f"Pressing button: {press_button.value}")
     if press_button.value not in self.key_positions:
-        exit(1)
+        print(f"Unknown button '{press_button.value}'; ignoring")
+        pressed_key.set(press_button.value + "not found")
+        return
 
     positions = self.key_positions[press_button.value]
     if "hover" not in positions or "press" not in positions:
-        exit(1)
+        print(f"Button '{press_button.value}' is missing 'hover' or 'press' position; ignoring")
+        pressed_key.set(press_button.value + "not found")
+        return
 
     hover_pos = np.array(positions["hover"])
     press_pos = np.array(positions["press"])
