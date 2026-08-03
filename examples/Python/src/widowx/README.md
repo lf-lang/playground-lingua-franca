@@ -4,8 +4,8 @@ An interactive Lingua Franca application that drives a [Trossen WidowX AI](https
 
 <img src="diagram.png" alt="Reactor diagram" width="500">
 
-- [press_button.lf](press_button.lf) — main program. The `KeyboardInput` reactor prompts for a key after the robot signals ready, validates it, and sends it to the robot. The next prompt only appears after the previous press completes.
-- [robot.lf](robot.lf) — the `Robot` reactor. Connects to the arm via the `trossen_arm` driver, homes it on startup, executes the hover → press → hover sequence for each key, and returns home on shutdown.
+- [PressButton.lf](PressButton.lf) — main program. The `KeyboardInput` reactor prompts for a key after the robot signals ready, validates it, and sends it to the robot. The next prompt only appears after the previous press completes.
+- [Robot.lf](Robot.lf) — the `Robot` reactor. Connects to the arm via the `trossen_arm` driver, homes it on startup, executes the hover → press → hover sequence for each key, and returns home on shutdown.
 - [positions.json](positions.json) — calibrated hover/press joint positions for each key.
 - [scene_numpad.xml](scene_numpad.xml) — MuJoCo scene (arm + numpad) matching `positions.json`, for running in simulation.
 
@@ -37,8 +37,8 @@ python -m trossen_arm_sim src/widowx/scene_numpad.xml --viewer    # Linux
 Compile and run the application in another:
 
 ```bash
-lfc src/widowx/press_button.lf
-bin/press_button
+lfc src/widowx/PressButton.lf
+bin/PressButton
 ```
 
 Enter a key name (e.g. `5`, `enter`, `backspace`) to press it, or `q` to quit and return the arm home.
@@ -48,7 +48,7 @@ Enter a key name (e.g. `5`, `enter`, `backspace`) to press it, or `q` to quit an
 Set the `ROBOT_HOST` environment variable to the controller's IP (or change the `host` parameter of `Robot` in the main reactor, which defaults to the simulator at `127.0.0.1`):
 
 ```bash
-ROBOT_HOST=192.168.1.2 bin/press_button
+ROBOT_HOST=192.168.1.2 bin/PressButton
 ```
 
 Positions in `positions.json` are specific to the arm and numpad placement; record your own with a calibration script before using real hardware.

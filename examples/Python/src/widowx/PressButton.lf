@@ -2,7 +2,7 @@ target Python {
   files: ["positions.json"]
 }
 
-import Robot from "robot.lf"
+import Robot from "Robot.lf"
 
 preamble {=
   import json
