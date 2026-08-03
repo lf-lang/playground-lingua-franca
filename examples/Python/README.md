@@ -11,6 +11,7 @@
 * [Traffic Lights Control System](src/traffic-lights-control/README.md): AI-CPS demonstrator controlling the traffic lights of three intersections.
 * [Train Door](src/train-door/README.md): Simple train door model, showing using threading with the Python target.
 * [Web Server](src/web-server/README.md): Simple web server examples.
+* [WidowX](src/widowx/README.md): MuJoCo simulation of WidowX robot.
 
 ## More Complicated Examples
 
