@@ -35,6 +35,8 @@
  *
  * @author Benjamin Gunnels
  * @date   05/20/2025
+ * 
+ * Extended with 8x8 animations (lf_logo_8x8, smiley_8x8) by Chadlia Jerad, 2026.
  */
 
 #include "ws2812.h"
@@ -362,6 +364,115 @@ void old_glory(uint32_t *led_strip, uint32_t** remapping, int i, float brightnes
             }  
             
             led_strip[remapping[row][col]] = color;
+        }
+    }
+}
+
+void lf_logo_8x8(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols)
+{
+    // Odd frames show full color; even frames collapse W/O to dark navy, creating a blink effect
+    int choose = i % 2;
+
+    uint32_t dark_navy = rgb_color(28, 28, 132, brightness * (choose ? 1 : 2));
+    uint32_t white     = rgb_color(255, 255, 255, brightness * (choose ? 1 : 2));
+    uint32_t orange    = rgb_color(255, 165, 0,   brightness * (choose ? 1 : 2));
+
+    // 8x8 pixel pattern: N=dark navy, W=white, O=orange
+    static const char pattern[8][8] = {
+        {'N','N','N','N','N','N','N','N'},
+        {'O','O','O','O','N','N','W','W'},
+        {'W','W','N','N','O','W','W','W'},
+        {'N','N','W','W','N','N','W','W'},
+        {'W','W','N','N','W','W','W','W'},
+        {'N','N','W','W','W','W','W','W'},
+        {'W','W','W','W','W','W','N','N'},
+        {'N','N','N','N','N','N','N','N'},
+    };
+
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            uint32_t color;
+            if (row < 8 && col < 8) {
+                switch (pattern[row][col]) {
+                    case 'W':
+                        if (choose) color = white;
+                        else color = dark_navy;
+                        break;
+                    case 'O':
+                        if (choose) color = orange;
+                        else color = dark_navy;
+                        break;
+                    default:  color = dark_navy; break;
+                }
+            } else {
+                color = dark_navy;
+            }
+            led_strip[remapping[row][col]] = color;
+        }
+    }
+}
+
+void smiley_8x8(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols)
+{
+    // Odd frames show a smile, even frames show a poker face
+
+    uint32_t red    = rgb_color(255,   0,  0, brightness * 2);
+    uint32_t green  = rgb_color(0, 255, 0, brightness * 2);
+    uint32_t yellow = rgb_color(255, 255,  0, brightness * 2);
+    uint32_t black  = 0; // eyes and mouth features
+
+    // B=blak, F=feature (red or yellow or green)
+    static const char happy[8][8] = {
+        {'B','B','F','F','F','F','B','B'},
+        {'B','F','B','B','B','B','F','B'},
+        {'F','B','F','B','B','F','B','F'},
+        {'F','B','B','B','B','B','B','F'},
+        {'F','B','F','B','B','F','B','F'},
+        {'F','B','B','F','F','B','B','F'},
+        {'B','F','B','B','B','B','F','B'},
+        {'B','B','F','F','F','F','B','B'},
+    };
+
+    static const char angry[8][8] = {
+        {'B','B','F','F','F','F','B','B'},
+        {'B','F','B','B','B','B','F','B'},
+        {'F','B','F','B','B','F','B','F'},
+        {'F','B','B','B','B','B','B','F'},
+        {'F','B','B','F','F','B','B','F'},
+        {'F','B','F','B','B','F','B','F'},
+        {'B','F','B','B','B','B','F','B'},
+        {'B','B','F','F','F','F','B','B'},
+    };
+
+        static const char neutral[8][8] = {
+        {'B','B','F','F','F','F','B','B'},
+        {'B','F','B','B','B','B','F','B'},
+        {'F','B','F','B','B','F','B','F'},
+        {'F','B','B','B','B','B','B','F'},
+        {'F','B','B','B','B','B','B','F'},
+        {'F','B','F','F','F','F','B','F'},
+        {'B','F','B','B','B','B','F','B'},
+        {'B','B','F','F','F','F','B','B'},
+    };
+
+    const char (*pattern)[8];
+    uint32_t color;
+    
+    int phase = (i / 3) % 3;
+    if (phase == 0) {
+        pattern = happy;
+        color = green;
+    } else if (phase == 1) {
+        pattern = neutral;
+        color = yellow;
+    } else {
+        pattern = angry;
+        color = red;
+    }
+
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            led_strip[remapping[row][col]] = (pattern[row][col] == 'F') ? color : black;
         }
     }
 }
