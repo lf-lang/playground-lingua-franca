@@ -1,0 +1,69 @@
+target Python {
+  files: ["positions.json"]
+}
+
+import Robot from "Robot.lf"
+
+preamble {=
+  import json
+  import os
+=}
+
+reactor KeyboardInput {
+  input robot_ready    # bool
+  input pressed_key    # str
+  output press_button  # str
+  state available_keys
+
+  method prompt_for_key() {=
+    while True:
+        try:
+            user_input = input("Enter key to press: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            request_stop()
+            return None
+        if not user_input:
+            print("Please enter a key name.")
+            continue
+        if user_input == "q":
+            request_stop()
+            return None
+        if user_input not in self.available_keys:
+            print(f"Error: '{user_input}' not found in positions.json.")
+            print(f"Available keys: {', '.join(self.available_keys)}")
+            continue
+        return user_input
+  =}
+
+  reaction(startup) {=
+    with open(os.path.join(os.path.dirname(__file__), "positions.json"), "r") as f:
+        data = json.load(f)
+    self.available_keys = list(data.get("key_positions", {}).keys())
+    if not self.available_keys:
+        print("No keys found in positions.json!")
+        exit(1)
+  =}
+
+  reaction(robot_ready) -> press_button {=
+    print(f"Available keys: {', '.join(self.available_keys)}")
+    print("Enter a key name to press, or 'q' to exit and return home")
+    key = self.prompt_for_key()
+    if key is not None:
+        press_button.set(key)
+  =}
+
+  reaction(pressed_key) -> press_button {=
+    print(f"Successfully pressed '{pressed_key.value}' button!\n")
+    key = self.prompt_for_key()
+    if key is not None:
+        press_button.set(key)
+  =}
+}
+
+main reactor {
+  robot = new Robot(host="127.0.0.1")
+  keyboard = new KeyboardInput()
+  keyboard.press_button -> robot.press_button
+  robot.ready -> keyboard.robot_ready
+  robot.pressed_key -> keyboard.pressed_key after 0
+}

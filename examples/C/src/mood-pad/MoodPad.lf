@@ -1,0 +1,76 @@
+target C
+
+import TempSensor from "lib/TempSensor.lf"
+import LightSensor from "lib/LightSensor.lf"
+import CapacitiveTouchSensor from "lib/CapacitiveTouch.lf"
+import Midi from "lib/Midi.lf"
+
+main reactor MoodPad {
+  preamble {=
+    const int ROOT_NOTES[7] = { 0, 2, 4, 5, 7, 9, 11 }; // C, D, E, F, G, A, B
+    const int MAJOR[7] = {0,2,4,5,7,9,11};
+    const int MINOR[7] = {0,2,3,5,7,8,10};
+  =}
+
+  temp_sensor = new TempSensor()
+  light_sensor = new LightSensor()
+  ct_sensor = new CapacitiveTouchSensor()
+  midi = new Midi()
+
+  state root_note: int = 0
+  state is_major: bool = true
+  state previous_note: int[2] = {0, 0}
+
+  method random_note_in_key(root: int, major: bool): int {=
+    int idx = rand() % 7;
+    int offset = major ? MAJOR[idx] : MINOR[idx];
+    return root + offset;
+  =}
+
+  // temperature pick letter key
+  reaction(light_sensor.lux) {=
+    float t = light_sensor.lux->value;
+    float t_min = 15.0;
+    float t_max = 35.0;
+
+    if (t < t_min) t = t_min;
+    if (t > t_max) t = t_max;
+
+
+    int octave_min = 2;  // C2 (can't hear past that)
+    int octave_max = 5;  // C5 (can't hear past that)
+    int octave = octave_min + (int)((octave_max - octave_min) * (t - t_min) / (t_max - t_min));
+
+    int index = ((int)t / 50) % 7;
+    self->root_note = ROOT_NOTES[index] + 12 * octave;
+    printf("[KEY] Root = %d (lux %.1f)\n", self->root_note, t);
+  =}
+
+  // light pick minor or major
+  reaction(temp_sensor.temperature) {=
+    float lx = temp_sensor.temperature->value;
+    self->is_major = lx > 25;
+    printf("[MODE] %s (temp %.1f)\n", self->is_major ? "MAJOR" : "MINOR", lx);
+  =}
+
+  reaction(ct_sensor.touches) -> midi.note_on, midi.velocity, midi.note_off {=
+    GTTouchPacket_t pkt = ct_sensor.touches->value;
+
+    for (unsigned i = 0; i < pkt.count; i++) {
+      if (self->previous_note[0] == pkt.x[i] && self->previous_note[1] == pkt.y[i]) continue;
+
+      self->previous_note[0] = pkt.x[i];
+      self->previous_note[1] = pkt.y[i];
+
+      int note = random_note_in_key(self->root_note, self->is_major);
+
+      int velocity = pkt.size[i] + 100;
+      if (velocity > 127) velocity = 127;
+
+      printf("TOUCH START id=%d → NOTE-ON %d vel %d\n", pkt.track_id[i], note, velocity);
+
+      lf_set(midi.note_on, note);
+      lf_set(midi.velocity, velocity);
+    }
+  =}
+}

@@ -1,0 +1,2 @@
+add_subdirectory(lib led_matrix)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC led_matrix)

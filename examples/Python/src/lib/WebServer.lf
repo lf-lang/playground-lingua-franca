@@ -1,0 +1,88 @@
+/**
+ * @file
+ * @author Shulu Li
+ * @brief Reactor for handling HTTP requests in Python.
+ */
+target Python {
+  keepalive: true
+}
+
+/**
+ * @brief A reactor that starts a FastAPI server to handle HTTP requests.
+ *
+ * The `port` parameter is the port number on which the server listens for requests.
+ *
+ * The `path` parameter is the path at which the server listens for HTTP POST requests.
+ *
+ * The `request` output is a list of two values: the request ID and the request data. If the request
+ * header indicates that the body is a JSON object, the request data is parsed into a python
+ * dictionary. Otherwise, the request body is forwarded as-is.
+ *
+ * The `response` input is a list of two values: the request ID and the response data. Request ID is
+ * required to respond to the correct request. Use a physical connection to connect the `response`
+ * input to avoid STP violations.
+ *
+ * To use this reactor, you must install the fastapi and uvicorn libraries for Python. You can do
+ * this with `pip install fastapi uvicorn`.
+ */
+reactor WebServer(port=5000, path="/") {
+  state app
+  state events
+  physical action phy_action
+  output request
+  input response
+
+  reaction(startup) -> phy_action {=
+    from fastapi import FastAPI, Request, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    import threading
+    import uvicorn
+    import asyncio
+    import uuid
+    self.events = {}
+    assert isinstance(self.path, str), "The path is not a string"
+    assert self.path.startswith("/"), "The path must start with a /"
+    self.app = FastAPI()
+    self.app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    @self.app.post(self.path)
+    async def addone(request: Request):
+        event = asyncio.Event()
+        request_id = str(uuid.uuid4())
+        self.events[request_id] = event
+        if request.headers.get("content-type") == "application/json":
+            req_data = await request.json()
+        else:
+            req_data = await request.body()
+        phy_action.schedule(0, [request_id, req_data])
+        await event.wait()
+        resp_data = self.events[request_id]
+        del self.events[request_id]
+        return resp_data
+
+    def run_fastapi_app():
+        print(f"FastAPI server starting...")
+        uvicorn.run(self.app, host="127.0.0.1", port=self.port, log_level="warning")
+    fastapi_thread = threading.Thread(target=run_fastapi_app)
+    fastapi_thread.start()
+  =}
+
+  reaction(phy_action) -> request {=
+    request.set(phy_action.value)
+  =}
+
+  reaction(response) {=
+    request_id, resp_data = response.value
+    if request_id not in self.events:
+        print("Invalid Request ID")
+        return
+    event = self.events[request_id]
+    self.events[request_id] = resp_data
+    event.set()
+  =}
+}

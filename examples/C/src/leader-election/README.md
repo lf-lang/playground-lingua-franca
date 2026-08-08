@@ -33,4 +33,12 @@ To run these programs, you are required to first [install the RTI](https://www.l
 <td> <img src="img/NRP_FD_Partitioning.png" alt="NRP_FD_Partitioning" width="100%"> </td>
 <td> <a href="NRP_FD_Partitioning.lf"> NRP_FD_Partitioning.lf </a>: This version partitions the network and shows that the protocol prevents the backup from becoming primary, thereby preventing two primaries.</td>
 </tr>
+<tr>
+<td> <img src="img/NRP_FD_NobodyFails.png" alt="NRP_FD_NobodyFails" width="100%"> </td>
+<td> <a href="NRP_FD_NobodyFails.lf"> NRP_FD_NobodyFails.lf </a>: This version has no failures at all. Use it to manually kill processes.</td>
+</tr>
+<tr>
+<td> <img src="img/NRP_FD_notModal.png" alt="NRP_FD_notModal" width="100%"> </td>
+<td> <a href="NRP_FD_notModal.lf"> NRP_FD_notModal.lf </a>: This version does not use modal models to better align with the Rebeca version on which it is based.</td>
+</tr>
 </table>

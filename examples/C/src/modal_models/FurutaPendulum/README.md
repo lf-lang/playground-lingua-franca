@@ -23,21 +23,21 @@ If this command is not available on your system you have to adjust the script ('
 
 ## Summary of the Examples
 
-* **[FurutaPendulum](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/modal_models/FurutaPendulum/FurutaPendulum.lf)**:
+* **[FurutaPendulum](FurutaPendulum.lf)**:
 This is the primary example. 
 It uses the modal controller and the simulation to illustrate a 3 second run of a Furuta pendulum and plots the results.
 
-* **[FurutaPendulumDisturbance](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/modal_models/FurutaPendulum/FurutaPendulumDisturbance.lf)**:
+* **[FurutaPendulumDisturbance](FurutaPendulumDisturbance.lf)**:
 In this example, the pendulum simulation is run for 5 seconds with an external disturbance introduced at 3 seconds that will move the pendulum out of its upright position and requires re-balancing of the controller.
 
 
 ### Involved Models
 
-* **[PendulumController](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/modal_models/FurutaPendulum/PendulumController.lf)**:
+* **[PendulumController](PendulumController.lf)**:
 The controller implementation using modes to separate the control logic.
 
-* **[PendulumSimulation](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/modal_models/FurutaPendulum/PendulumSimulation.lf)**:
+* **[PendulumSimulation](PendulumSimulation.lf)**:
 The simulation implementation based on a simple forward-Euler simulation by Eker et al.
 
-* **[Print](https://github.com/lf-lang/examples-lingua-franca/blob/main/C/src/modal_models/FurutaPendulum/Print.lf)**:
+* **[Print](Print.lf)**:
 A utility reactor that prints the state of the pendulum into a csv file.

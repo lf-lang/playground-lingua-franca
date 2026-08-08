@@ -1,0 +1,63 @@
+/** @author Cheng Yen, Tsai */
+target C {
+  cmake-include: ["../c_lib/ScreenPrinter.cmake"],
+  files: ["../c_lib/ScreenPrinter.c"]
+}
+
+reactor ScreenPrinter {
+  preamble {=
+    void skiLiftInit(int32_t offset);
+    void skiLiftUpdate(int32_t offset);
+    void printMotionStatus(char* str_motion);
+    void printGateStatus(char* str_gate);
+    void printDebugStr(char* debug_str);
+    void printDebugInt(int32_t debug_int);
+    void printReadyWeight(float ready_weight);
+    void printLiftWeight(float lift_weight);
+    void printExitWeight(float exit_lift_weight);
+  =}
+  input offset: int32_t
+  input motion_msg: string
+  input gate_msg: string
+  input debug_str: string
+  input debug_int: int32_t
+  input ready_weight: float
+  input lift_weight: float
+  input exit_weight: float
+
+  reaction(offset) {=
+    if (offset->value == 0) {
+      skiLiftInit(offset->value);
+    } else {
+      skiLiftUpdate(offset->value);
+    }
+  =}
+
+  reaction(motion_msg) {=
+    printMotionStatus(motion_msg->value);
+  =}
+
+  reaction(gate_msg) {=
+    printGateStatus(gate_msg->value);
+  =}
+
+  reaction(debug_str) {=
+    printDebugStr(debug_str->value);
+  =}
+
+  reaction(debug_int) {=
+    printDebugInt(debug_int->value);
+  =}
+
+  reaction(ready_weight) {=
+    printReadyWeight(ready_weight->value);
+  =}
+
+  reaction(lift_weight) {=
+    printLiftWeight(lift_weight->value);
+  =}
+
+  reaction(exit_weight) {=
+    printExitWeight(exit_weight->value);
+  =}
+}

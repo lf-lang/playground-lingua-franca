@@ -29,16 +29,19 @@ for arg in "$@"; do
 done
 
 # Install dependencies
+
+# Update package index first
 sudo apt-get update
+
 ## Setup C, C++, Python, Rust, protobuf, gRPC, gnuplot
 sudo apt-get install --assume-yes \
     build-essential \
-    python3 python3-dev python3-pip \
+    python3 python3-dev python3-venv \
     rustc cargo \
     libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python3-protobuf \
-    protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot
-    
-python3 -m pip install --upgrade pip
+    protobuf-compiler-grpc libgrpc-dev libgrpc++-dev gnuplot libasound2-dev libfluidsynth-dev libgpiod-dev
+
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 # Install python dependencies and
 # latest CMake; see https://www.kitware.com/cmake-python-wheels/ https://askubuntu.com/a/1070770
 sudo python3 -m pip install --exists-action i requests setuptools cmake
@@ -49,13 +52,7 @@ if [ $SETUP_NETWORK = true ]; then
         libprotobuf-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler \
         python3-protobuf protobuf-compiler-grpc libgrpc-dev libgrpc++-dev
     # Install libwebsockets library
-    git clone https://github.com/warmcat/libwebsockets.git
-    pushd libwebsockets
-    mkdir build
-    cd build
-    cmake ..
-    make
-    popd
+    sudo apt-get install -y libwebsockets-dev
     # Install crow
     curl --proto '=https' --tlsv1.2 -L -o ./crow.deb "${CROW_URL}"
     sudo apt-get install --assume-yes ./crow.deb
@@ -73,7 +70,9 @@ if [ $SETUP_ROS = true ]; then
         OS_VERSION_ID="$(\. /etc/os-release && echo "${VERSION_ID}")"
         # See https://www.ros.org/reps/rep-2000.html
         ROS_VERSION_CODENAME=""
-        if ([[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "22.04" ]]) || \
+        if [[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "24.04" ]]; then
+            ROS_VERSION_CODENAME="jazzy"
+        elif ([[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "22.04" ]]) || \
         ([[ "${OS_ID}" = "debian" ]] && [[ "${OS_VERSION_ID}" = "11" ]]); then
             ROS_VERSION_CODENAME="iron"
         elif [[ "${OS_ID}" = "ubuntu" ]] && [[ ! "${OS_VERSION_ID}" < "20.04" ]]; then
@@ -95,8 +94,15 @@ if [ $SETUP_ROS = true ]; then
             if [ "${OS_ID}" != "ubuntu" ] ; then 
                 echo "This script has only been tested on ubuntu. Proceed with caution."
             else
-                # On Ubuntu, we need to add universe; 
-                sudo add-apt-repository universe --yes
+                # Enable the universe component directly to avoid contacting Launchpad
+                # (add-apt-repository universe makes a network call to launchpad.net which can time out)
+                if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+                    # Ubuntu 24.04+ uses deb822 format
+                    sudo sed -i 's/^Components: main$/Components: main universe/' /etc/apt/sources.list.d/ubuntu.sources
+                else
+                    # Ubuntu 22.04 and earlier use the traditional sources.list format
+                    sudo sed -i 's/^\(deb [^ ]* [^ ]* main\)$/\1 universe/' /etc/apt/sources.list
+                fi
             fi
             
             sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg

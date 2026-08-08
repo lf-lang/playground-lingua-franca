@@ -29,11 +29,11 @@ main reactor {
   =}
 
   reaction(r) {=
-    lf_print("Elapsed logical time: %lld.", lf_time_logical_elapsed());
+    lf_print("Elapsed logical time: " PRINTF_TIME ".", lf_time_logical_elapsed());
     show_tick(".");
   =}
 
   reaction(key) {=
-    lf_print("You typed '%s' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
+    lf_print("You typed '%s' at elapsed time " PRINTF_TIME ".", key->value, lf_time_logical_elapsed());
   =}
 }

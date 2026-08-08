@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Request</title>
+    <script>
+      async function sendRequest() {
+        const input = document.getElementById("inputBox").value;
+
+        if (isNaN(input) || input === "") {
+          alert("Please enter a valid number.");
+          return;
+        }
+
+        const response = await fetch("http://127.0.0.1:5000/addone", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ data: input }),
+        });
+
+        const result = await response.json();
+        if (result.status === "success") {
+          document.getElementById("result").innerText = `Number: ${result.num}`;
+        } else {
+          document.getElementById("result").innerText = "Error occurred";
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Send Request to API</h1>
+    <div>
+      <label for="inputBox">Input Number:</label>
+      <input type="number" id="inputBox" placeholder="Enter a number" />
+    </div>
+    <button onclick="sendRequest()">Send Request</button>
+
+    <h2>Result:</h2>
+    <pre id="result"></pre>
+  </body>
+</html>

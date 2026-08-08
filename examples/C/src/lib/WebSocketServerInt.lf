@@ -1,0 +1,43 @@
+/**
+ * A simple web socket server enabling a user interface realized in the browser. This creates a web
+ * server that listens on a port (default 8080) for web socket connections. The intended usage is
+ * that you create a client in an HTML/JavaScript file that connects to this server and provides a
+ * browser-based user interface.
+ *
+ * This is a particularly simple version that only supports integers. Incoming messages on the web
+ * socket are assumed to be string representations of integers and are parsed using `atoi`. If a
+ * parse error occurs, the output will be zero.
+ *
+ * Inputs on the `response` port are converted to strings using `asprintf` and sent to the client
+ * over the web socket.
+ *
+ * For convenience using this in federated programs with decentralized coordination, STP violations
+ * on the `response` input are ignored. The incoming integers are simply sent back to the client
+ * over the web socket in the order they are received.
+ *
+ * @author: Edward A. Lee
+ */
+target C
+
+import WebSocketServerString from "WebSocketServerString.lf"
+
+reactor WebSocketServerInt(hostport: int = 8080, initial_file: string = {= NULL =}) {
+  input response: int
+  output received: int
+  output connected: bool
+
+  w = new WebSocketServerString(hostport=hostport, initial_file=initial_file)
+
+  w.connected -> connected
+
+  reaction(response) -> w.in_dynamic {=
+    char* result;
+    asprintf(&result, "%d", response->value);
+    lf_set_array(w.in_dynamic, result, strlen(result));
+  =} tardy
+
+  // Ignore STP violations.
+  reaction(w.received) -> received {=
+    lf_set(received, atoi(w.received->value));
+  =}
+}

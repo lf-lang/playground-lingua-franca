@@ -1,21 +1,23 @@
 /**
  * Demo of a use of WebSocketServer enabling a user interface realized in the browser. Compile and
- * run this program, then open WebSocket.html in your favorite browser. This example program sends
- * to all connected web pages a counting sequence. The count starts when the first web page
- * connects. This also accepts text messages from the web page and prints them on standard output.
+ * run this program, then point your browser to http://localhost:8080. This example program sends to
+ * all connected web pages a counting sequence. The count starts when the first web page connects.
+ * This also accepts text messages from the web page and prints them on standard output.
  *
  * This example also shows how to limit the number of connections to just two. If you try to open
- * the WebSocket.html web page more than twice, only the first two attempts will succeed in
- * connecting. By default, WebSocketServer imposes no such limit.
+ * http://localhost:8080 more than twice, only the first two attempts will succeed in connecting. By
+ * default, WebSocketServer imposes no such limit.
  *
  * This uses the <a href="https://libwebsockets.org">libwebsockets</a> (see <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/index.html">API documentation</a> and <a
  * href="https://libwebsockets.org/lws-api-doc-main/html/md_READMEs_README_build.html">installation
  * instructions</a>). To install on MacOS, we recommending using brew:
- * <pre> brew install libwebsockets
- * </pre> This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be
- * linked to using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake
- * include file.
+ * ```
+ *   brew install libwebsockets
+ * ```
+ * This puts the compiled libraries in {@code /usr/local/lib}, and these libraries can be linked to
+ * using the {@code -lwebsockets} compile option or the {@code WebSocketCmake.txt} Cmake include
+ * file.
  *
  * @author Edward A. Lee
  */
@@ -33,11 +35,7 @@ main reactor {
   s = new WebSocketServer(
       hostport=8080,
       max_clients=2,  // Limit number of clients to 2.
-      initial_file = {= LF_SOURCE_DIRECTORY LF_FILE_SEPARATOR "WebSocket.html" =})
-
-  reaction(startup) {=
-    lf_print("======== Starting server. Open WebSocket.html in your favorite browser.");
-  =}
+      initial_file="WebSocket.html")
 
   reaction(send_action) -> s.send, send_action {=
     char* message;

@@ -5,7 +5,7 @@
  * The after value on the connection gives a logical time offset between the sender and the
  * receiver. If the connection were not a physical one, indicated with ~>, then this logical time
  * offset would simply be the logical time offset obtained. However, since it is a physical one, the
- * offset between the timestamps is the the communication latency plus 10 msec.
+ * offset between the timestamps is the the communication latency plus 10 ms.
  *
  * @author Edward A. Lee
  */
@@ -19,5 +19,5 @@ import PrintMessage from "HelloWorld.lf"
 federated reactor HelloWorldPhysicalAfter {
   source = new MessageGenerator(prefix = "Hello World")
   print = new PrintMessage() at localhost;
-  source.message ~> print.message after 10 msec
+  source.message ~> print.message after 10 ms
 }

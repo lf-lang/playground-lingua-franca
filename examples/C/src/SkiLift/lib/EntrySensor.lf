@@ -1,0 +1,33 @@
+/** @author Cheng Yen, Tsai */
+target C
+
+preamble {=
+  #include <time.h>
+  #include <stdbool.h>
+  #include <stdlib.h>
+=}
+
+reactor EntrySensor {
+  preamble {=
+    int random_bool() {
+      srand((unsigned int)time(NULL));
+      double true_probability = 0.8;
+      double random_value = (double)rand() / RAND_MAX;
+      if (random_value < true_probability) {
+        return 1;
+      }
+      return 0;
+    };
+  =}
+  output gate_1: bool
+  output gate_2: bool
+  output gate_3: bool
+
+  timer t(0, 200 msec)
+
+  reaction(t) -> gate_1, gate_2, gate_3 {=
+    lf_set(gate_1, random_bool());
+    lf_set(gate_2, random_bool());
+    lf_set(gate_3, random_bool());
+  =}
+}

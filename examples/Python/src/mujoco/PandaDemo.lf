@@ -1,0 +1,104 @@
+/**
+ * Franka Emika Panda robot demo.
+ *
+ * This moves each of the eight joints of the Panda robot through a range of values defined in the CSV file.
+ *
+ * See [README.md](README.md) for prerequisites and installation instructions.
+ *
+ * This program reads parameter values from a CSV file and uses them to control the Panda robot.
+ * The CSV file is "PandaDemoParameters.csv" located in the same directory as this program.
+ * There are three datasets in the CSV file corresponding to three different speeds of motion.
+ * To select a dataset, change the top-level `dataset` parameter to 0, 1, or 2.
+ *
+ * @author Edward A. Lee
+ */
+target Python {
+  workers: 1,
+  keepalive: true
+}
+
+import MuJoCoPanda from "lib/MuJoCoPanda.lf"
+
+preamble {=
+  import csv
+  from mujoco.glfw import glfw
+=}
+
+reactor SimpleController(
+    period = 100 ms,
+    dataset = 0,
+    step=0.1,
+    high_limit=1.0,
+    low_limit=-1.0,
+    bank_index=0,
+    parameter_file="") {
+  input restart
+  output command
+  timer t(0, period)
+  state motor = 0.0
+
+  # In Python, can't overwrite parameter values, so we use state variables instead.
+  state step_value = step
+  state high_limit_value = high_limit
+  state low_limit_value = low_limit
+
+  reaction(startup) {=
+    if self.parameter_file:
+      with open(self.parameter_file, "r", encoding="utf-8-sig") as f:
+        rows = list(csv.reader(f))
+      row_idx = (9 * self.dataset) + self.bank_index + 1
+      if row_idx < len(rows):
+        row = rows[row_idx]
+        self.step_value = float(row[0].strip())
+        self.high_limit_value = float(row[1].strip())
+        self.low_limit_value = float(row[2].strip())
+  =}
+
+  reaction(restart) {=
+    self.motor = 0.0
+  =}
+
+  reaction(t) -> command {=
+    command.set(self.motor)
+    self.motor += self.step_value
+    if self.motor > self.high_limit_value or self.motor < self.low_limit_value:
+      self.step_value = -self.step_value
+  =}
+}
+
+main reactor(dataset = 1) {
+  timer read_state_timer(0, 500 ms)
+
+  m = new MuJoCoPanda(frame_period = 33 ms)
+  c = new[8] SimpleController(
+      period = 100 ms,
+      dataset = dataset,
+      parameter_file = {= lf.source_directory() + "/PandaDemoParameters.csv" =})
+
+  c.command -> m.motor
+
+  reaction(startup) {=
+    print("*** Backspace to reset.")
+    print("*** Type q to quit.\n")
+  =}
+
+  reaction(m.key) -> m.restart, c.restart {=
+    if m.key.value.act == glfw.PRESS:
+      if m.key.value.key == glfw.KEY_BACKSPACE:
+        m.restart.set(True)
+        for i in range(8):
+          c[i].restart.set(True)
+      elif m.key.value.key == glfw.KEY_Q:
+        lf.request_stop()
+  =}
+
+  reaction(read_state_timer) -> m.read_state {=
+    m.read_state.set(True)
+  =}
+
+  reaction(m.joint_pos, m.joint_vel) {=
+    qpos = " ".join(f"{m.joint_pos[i].value:.4f}" for i in range(9))
+    qvel = " ".join(f"{m.joint_vel[i].value:.4f}" for i in range(9))
+    print(f"qpos={qpos} | qvel={qvel}")
+  =}
+}

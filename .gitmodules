@@ -1,0 +1,21 @@
+[submodule "examples/C/src/mood-pad/c_lib/BME280_SensorAPI"]
+	path = examples/C/src/mood-pad/c_lib/BME280_SensorAPI
+	url = https://github.com/boschsensortec/BME280_SensorAPI.git
+[submodule "examples/C/lf_modules/mqtt-c"]
+	path = examples/C/lf-packages/mqtt-c
+	url = https://github.com/lf-lang/mqtt-c.git
+[submodule "examples/Python/lf-packages/video-py"]
+	path = examples/Python/lf-packages/video-py
+	url = https://github.com/lf-lang/video-py.git
+[submodule "examples/Python/lf-packages/mujoco-py"]
+	path = examples/Python/lf-packages/mujoco-py
+	url = https://github.com/lf-lang/mujoco-py.git
+[submodule "examples/Python/src/mujoco/models/mujoco_menagerie"]
+	path = examples/Python/src/mujoco/models/mujoco_menagerie
+	url = https://github.com/google-deepmind/mujoco_menagerie.git
+[submodule "examples/C/src/mujoco/models/mujoco_menagerie"]
+	path = examples/C/src/mujoco/models/mujoco_menagerie
+	url = https://github.com/google-deepmind/mujoco_menagerie.git
+[submodule "examples/C/lf-packages/mujoco-c"]
+	path = examples/C/lf-packages/mujoco-c
+	url = https://github.com/lf-lang/mujoco-c.git

@@ -1,0 +1,160 @@
+/**
+ * This program simulates a set of phase measurement units (PMUs) connected to two observers, each
+ * of which relays the data to a web page. The first observer is connected directly to the PMUs. The
+ * second observer is connected to the PMUs via a RandomDelay reactor, which simulates a physical
+ * connection (which discards the timestamp) with a random delay. The data provided to the two
+ * observers is plotted on a web page.
+ *
+ * The program illustrates the value of timestamping data. The first observer displays clean data
+ * that clearly shows a fault at PMU number 42. The second observer displays noisy data that
+ * obscures the fault.
+ *
+ * @author: Edward A. Lee
+ */
+target C {
+  keepalive: true,
+  build-type: debug
+}
+
+import WebSocketServerString from "../lib/WebSocketServerString.lf"
+import Random from "../lib/Random.lf"
+
+preamble {=
+  #include <math.h>
+  typedef struct complex_t {
+    double real;
+    double imaginary;
+  } complex_t;
+  typedef struct timestamped_complex_t {
+    complex_t phasor;
+    instant_t timestamp;
+  } timestamped_complex_t;
+=}
+
+main reactor(n: int = 50) {
+  s = new[n] PhaseMeasurementUnit(drift=0.1, period = 100 ms, faulty_index=42)
+  t = new[n] RandomDelay(average = 1 s)
+  clean = new Observer(n=n, hostport=8080, initial_file="Synchrophasors.html")
+  noisy = new Observer(n=n, hostport=8081)
+  s.phasor -> clean.phasors
+  s.phasor -> t.in
+  t.out -> noisy.phasors
+}
+
+reactor RandomDelay(average: time = 1 sec, bank_index: int = 0) extends Random {
+  input in: timestamped_complex_t
+  output out: timestamped_complex_t
+  logical action a: timestamped_complex_t
+
+  reaction(startup) {=
+    // Make sure each instance has a different seed.
+    self->seed = (unsigned int) self->bank_index;
+  =}
+
+  reaction(a) -> out {=
+    lf_set(out, a->value);
+  =}
+
+  reaction(in) -> a {=
+    double lambda = SEC(1) / ((double)self->average);
+    double exp = exponential(lambda);
+    interval_t delay = (interval_t)llround(exp * (double)SEC(1));
+    lf_schedule_copy(a, delay, &in->value, 1);
+  =}
+}
+
+reactor PhaseMeasurementUnit(
+    period: time = 100 ms,
+    bank_index: int = 0,  // identifier
+    faulty_index: int = -1,
+    initial_phase: double = 0.0,
+    // radians per second
+    drift: double = 0.0) {
+  output phasor: timestamped_complex_t
+  timer t(0, period)
+  state phase: double = initial_phase
+
+  reaction(startup) {=
+    // Give each instance a unique starting phase.
+    self->phase = 0.1 * self->bank_index;
+    if (self->bank_index == self->faulty_index) self->phase += 0.2;
+  =}
+
+  reaction(t) -> phasor {=
+    complex_t reading;
+    reading.real = cos(self->phase);
+    reading.imaginary = sin(self->phase);
+    timestamped_complex_t tc;
+    tc.phasor = reading;
+    tc.timestamp = lf_time_logical();
+    lf_set(phasor, tc);
+    self->phase += (self->drift * self->period) / SEC(1);
+  =}
+}
+
+/**
+ * Upon receiving inputs on the `phasors` port, construct a JSON string to convey the update via a
+ * web socket to the observing web page, if one is connected. The array has the form `[[channel,
+ * [real, imag]], ...]`, where `channel` is the index of the multiport input providing new data, and
+ * `real` and `imag` are the real and imaginary parts of the data. The size of the array is the
+ * number of present inputs.
+ *
+ * To avoid overwhelming the web socket communication, this reactor accumulates all inputs that
+ * arrive during a period of physical time given by the `period` parameter before sending any data
+ * out over the web socket. This can result in some data points being updated more than once in a
+ * single message. It will also send out data whenever the local buffer fills up.
+ */
+reactor Observer(
+    n: int = 2,  // Number of inputs
+    period: time = 100 ms,
+    hostport: int = 8080,
+    initial_file: string = {= NULL =}) {
+  input[n] phasors: timestamped_complex_t
+  state connected: bool = false
+  state json: char* = {= NULL =}
+  state p: char* = {= NULL =}
+  state last_sent: time = 0
+
+  w = new WebSocketServerString(hostport=hostport, initial_file=initial_file)
+
+  reaction(phasors) -> w.in_dynamic {=
+    if (self->connected) {
+      for (int n = 0; n < self->n; n++) {
+        if (phasors[n]->is_present) {
+          if (self->json == NULL) {
+            // Construct array big enough to hold the maximum possible size string, which
+            // occurs when all inputs are present. The fact that this buffer always has the
+            // same size should help prevent memory fragmentation because malloc will repeatedly
+            // allocate the same memory once it has been processed and freed by the
+            // WebSocketServerString reactor.
+            self->json = (char*)malloc(sizeof(char) * (3 + (20 * self->n)));
+            self->p = self->json; // pointer to next position to write.
+            *self->p++ = '[';
+          } else {
+            *self->p++ = ',';
+          }
+          long int real = lround(phasors[n]->value.phasor.real * 100);
+          long int imag = lround(phasors[n]->value.phasor.imaginary * 100);
+          int len = snprintf(self->p, 18, "[%3d,[%4ld,%4ld]]", n, real, imag);
+          if (len > 0) self->p += len; // Excluding trailing null terminator.
+
+          interval_t now = lf_time_physical_elapsed();
+          if (self->p - self->json > 2 + 20 * (self->n - 1)   // Not enough room for another entry
+              || now - self->last_sent >= self->period        // Enough physical time has elapsed.
+          ) {
+            self->last_sent = now;
+            *self->p++ = ']';
+            *self->p++ = '\0';
+            lf_set(w.in_dynamic, self->json);
+            // lf_print("%s", self->json);
+            self->json = NULL;  // Mark to reallocate on next arrival.
+          }
+        }
+      }
+    }
+  =}
+
+  reaction(w.connected) {=
+    self->connected = w.connected->value;
+  =}
+}

@@ -146,9 +146,9 @@ reactor RhythmSource(
       mkdir("log", 0755);
       int fed_id = lf_fed_id();
       if (fed_id < 0) {
-        sprintf(log_file_name, "log/Rhythm_%lld.log", lf_time_logical());
+        sprintf(log_file_name, "log/Rhythm_" PRINTF_TIME ".log", lf_time_logical());
     } else {
-        sprintf(log_file_name, "log/Rhythm_%d_%lld.log", fed_id, lf_time_logical());
+        sprintf(log_file_name, "log/Rhythm_%d_" PRINTF_TIME ".log", fed_id, lf_time_logical());
       }
     }
     if (start_sensor_simulator(
@@ -248,7 +248,7 @@ reactor RhythmSource(
 
   reaction(tempo_change_in) {=
     self->tick_duration -= tempo_change_in->value;
-    lf_print("REMOTE: Changing the tempo period by %lld ns.",
+    lf_print("REMOTE: Changing the tempo period by " PRINTF_TIME " ns.",
       -tempo_change_in->value
     );
   =}

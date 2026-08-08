@@ -1,0 +1,147 @@
+/**
+ * A nondeterministic resettable counter implementation demonstrating a CRDT (ACID 2.0)with an
+ * additional non-commutative reset operation. This program should be executed using the `--tmux` or
+ * `-x`option. Enter commands "i" or "r" (for increment or reset) in each of the Node panels. Each
+ * node will increment its element of a shared vector counter and then broadcast the updated vector
+ * counter to all other nodes. The increment operation is commutative and associative, and the
+ * broadcast ensures exactly once delivery, so the vector counter is a CRDT. To take advantage of
+ * this, the Node uses a `maxwait` of zero and a physical connection, so timestamps are ignored.
+ *
+ * The reset operation, however, is non-commutative. The goal is that all nodes agree on the value
+ * of the vector counter before the reset operation and then all reset their copy of the vector
+ * counter to zeros. This is realized by a distributed consensus algorithm, where each node, upon
+ * receiving a reset request, waits for a confirmation of the reset from all other nodes. During the
+ * wait, it queues increments to be processed after the reset.
+ *
+ * This implementation is not fault tolerant. If any one node fails and another issues a reset, then
+ * the nodes will all block indefinitely. It could be made more fault tolerant by waiting for quorum
+ * of nodes to confirm the reset. But this would introduce a further nondeterminism in that some
+ * nodes may reset before others, leading to a different final value.
+ *
+ * The program is nondeterministic in every sense. The agreed-upon value before the reset occurs is
+ * not in any way a function of the inputs and can be strongly affected by the random delays
+ * introduced by the Delay reactors.
+ *
+ * This example is inspired by the following paper:
+ *
+ * Zhao, X. and P. Haller (2020). "Replicated data types that unify eventual consistency and
+ * observable atomic consistency." Journal of Logical and Algebraic Methods in Programming 114.
+ * https://doi.org/10.1016/j.jlamp.2020.100561
+ *
+ * @author Edward A. Lee
+ */
+target Python {
+  coordination: decentralized
+}
+
+preamble {=
+  import sys
+  import threading
+=}
+
+reactor UserInput {
+  output text
+  physical action emit
+  state latest = ""
+
+  reaction(startup) -> emit {=
+    # Read stdin in a daemon thread so the reactor thread remains non-blocking.
+    def _stdin_reader():
+      for raw in sys.stdin:
+        self.latest = raw.rstrip("\n")
+        emit.schedule(0)
+
+    threading.Thread(target=_stdin_reader, daemon=True).start()
+  =}
+
+  reaction(emit) -> text {=
+    text.set(self.latest)
+  =}
+}
+
+reactor Node(N=3, bank_index=0) {
+  output out
+  output rst_out
+  input[N] inp
+  input[N] rst_inp
+
+  state count = {= [0] * self.N =}
+  state resets_received = 0
+
+  u = new UserInput()
+
+  initial mode INCREMENTING {
+    reaction(u.text) -> out, rst_out, reset(QUEUING) {=
+      if u.text.value[0] == "i":
+        if 0 <= self.bank_index < len(self.count):
+          self.count[self.bank_index] += 1
+          out.set(self.count)
+      elif u.text.value[0] == "r":
+        print("Sending reset. Entering QUEUING mode.")
+        rst_out.set("reset")
+        self.resets_received = 0
+        QUEUING.set()
+      else:
+        print(f"Unrecognized command: {u.text.value}")
+    =} tardy
+
+    reaction(inp) {=
+      for i, port in enumerate(inp):
+        if port.is_present:
+          for j in range(min(len(self.count), len(port.value))):
+            self.count[j] = max(self.count[j], port.value[j])
+          print(f"Received  '{port.value}' from {i}. count={self.count}")
+    =} tardy
+
+    reaction(rst_inp) -> rst_out, reset(QUEUING) {=
+      count = sum(1 for port in rst_inp if port.is_present)
+      if count > 0:
+        print(f"Received {count} resets. Sending reset. Entering QUEUING.")
+        QUEUING.set()
+        self.resets_received = count
+        rst_out.set("reset")
+    =} tardy
+  }
+
+  mode QUEUING {
+    reset state q_count = {= [0] * self.N =}
+    reaction(u.text) {=
+      if u.text.value[0] == "r":
+        print("Reset is already in progress. Ignoring input")
+      elif u.text.value[0] == "i":
+        self.q_count[self.bank_index] += 1
+        print(f"Queued increment. q_count={self.q_count}")
+      else:
+        print(f"Unrecognized command: {u.text.value}")
+    =} tardy
+
+    reaction(inp) {=
+      for i, port in enumerate(inp):
+        if port.is_present:
+          for j in range(min(len(self.q_count), len(port.value))):
+            self.q_count[j] = max(self.q_count[j], port.value[j])
+          print(f"Received  '{port.value}' from {i}. q_count={self.q_count}")
+    =} tardy
+
+    reaction(rst_inp) -> out, reset(INCREMENTING) {=
+      count = sum(1 for port in rst_inp if port.is_present)
+      if count > 0:
+        self.resets_received += count
+        print(f"Received {count} resets. resets_received={self.resets_received}.")
+        if self.resets_received == self.N:
+          print(f"All resets received. Consensus value: {self.count}.")
+          print("")
+          self.count = self.q_count
+          print(f"Processed queued increments. count={self.count}")
+          out.set(self.count)
+          INCREMENTING.set()
+    =} tardy
+  }
+}
+
+federated reactor(N=3) {
+  @maxwait(0)
+  nodes = new[N] Node(N=N)
+  (nodes.out)+ ~> nodes.inp
+  (nodes.rst_out)+ ~> nodes.rst_inp
+}

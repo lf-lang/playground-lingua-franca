@@ -1,0 +1,49 @@
+target C
+
+preamble {=
+  #include <unistd.h>   // Defines read(), close()
+  #include <string.h>   // Defines strchr()
+  #include <libgen.h>   // Defines dirname()
+=}
+
+/**
+ * Base class providing a function to read a file into a string.
+ * @author Edward A. Lee
+ */
+reactor FileReader {
+  preamble {=
+    /**
+     * Read a file at path relative to the source .lf file and return dynamically-allocated memory
+     * with its contents. The caller is responsible for freeing the pointer returned.
+     * @param path File path relative to the source .lf file.
+     */
+    char* read_file(const char* path) {
+      // Construct the path to the file to be read
+      char* file_path = (char *) malloc(strlen(LF_SOURCE_DIRECTORY) + strlen(path) + 2);
+      if (file_path == NULL) lf_print_error_and_exit("Out of memory.");
+
+      sprintf(file_path, "%s%s%s", LF_SOURCE_DIRECTORY, LF_FILE_SEPARATOR, path);
+
+      // Open the file for reading
+      FILE* file = fopen(file_path, "rb");
+      if (file == NULL) lf_print_error_and_exit("Error opening file at path %s.", file_path);
+
+      // Determine the file size
+      fseek(file, 0, SEEK_END);
+      long file_size = ftell(file);
+      fseek(file, 0, SEEK_SET);
+
+      // Allocate memory for the buffer
+      char* buffer = (char *) malloc(file_size + 1);
+      if (buffer == NULL) lf_print_error_and_exit("Out of memory.");
+
+      // Read the file into the buffer
+      fread(buffer, file_size, 1, file);
+      buffer[file_size] = '\0';
+
+      free(file_path);
+      fclose(file);
+      return buffer;
+    }
+  =}
+}

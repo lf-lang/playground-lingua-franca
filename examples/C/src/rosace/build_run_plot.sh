@@ -20,7 +20,7 @@ fi
 
 # Build the generated code.
 cd ${LF_SOURCE_GEN_DIRECTORY}
-cmake -DLF_THREADED=1 .
+cmake .
 cmake --build .
 
 # Move the executable to the bin directory.
@@ -33,7 +33,7 @@ cd ${LF_SOURCE_DIRECTORY}
 ${LF_BIN_DIRECTORY}/$1
 
 # Plot the results, which have appeared in the src directory.
-gnuplot rosace.gnuplot
+gnuplot $2
 
 # Open the produced PDF using the specified viewer
 if ! command -v $openPDF &> /dev/null

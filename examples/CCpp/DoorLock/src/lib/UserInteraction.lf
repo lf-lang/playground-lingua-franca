@@ -58,7 +58,7 @@ reactor UserInteraction {
   =}
 
   reaction(key) -> door, button, fob, mobile {=
-    // lf_print("You typed '%c' at elapsed time %lld.", key->value, lf_time_logical_elapsed());
+    // lf_print("You typed '%c' at elapsed time " PRINTF_TIME ".", key->value, lf_time_logical_elapsed());
 
     switch(key->value) {
     case 'o':

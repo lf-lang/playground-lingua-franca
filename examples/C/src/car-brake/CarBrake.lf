@@ -9,6 +9,7 @@
  */
 target C {
   timeout: 10 s,
+  DNET: false,
   keepalive: true
 }
 

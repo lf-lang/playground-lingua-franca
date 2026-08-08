@@ -1,0 +1,56 @@
+/**
+ * Demo of a use of WebSocketServerInt enabling a user interface realized in the browser. Compile
+ * and run this program, then point your browser to http://localhost:8080. This example program
+ * sends to the web page a counting sequence. It also accepts numbers from the web page and prints
+ * them on standard output. If the web page sends a string that is not a number, then the output
+ * will be zero.
+ *
+ * This example limits the number of connections to just one. Its purpose is to show how to use the
+ * simpler WebSocketServerInt when you need just one connection and the data exchanged is always an
+ * integer.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  keepalive: true
+}
+
+import WebSocketServerInt from "../lib/WebSocketServerInt.lf"
+
+main reactor {
+  state count: int = 0
+  state connected: bool = false
+
+  logical action send_action
+
+  s = new WebSocketServerInt(initial_file="WebSocket.html")
+
+  reaction(send_action) -> s.response, send_action {=
+    // Send using the `in_dynamic` port because the string sent is dynamically allocated.
+    // If the web socket is no longer connected, do nothing.
+    if (self->connected) {
+      // Send the message.
+      lf_set(s.response, self->count++);
+
+      // Schedule the next send.
+      lf_schedule(send_action, SEC(1));
+    }
+  =}
+
+  reaction(s.connected) -> send_action {=
+    if (s.connected->value) {
+      lf_print("======== Client has connected");
+    } else {
+      lf_print("======== Client has disconnected");
+    }
+    self->connected = s.connected->value;
+    if (s.connected->value) {
+      // Start sending.
+      lf_schedule(send_action, 0);
+    }
+  =}
+
+  reaction(s.received) {=
+    lf_print("======== Application received: %d", s.received->value);
+  =}
+}

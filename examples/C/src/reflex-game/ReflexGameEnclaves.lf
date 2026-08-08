@@ -1,0 +1,42 @@
+/**
+ * This version of the ReflexGame uses an enclave rather than a background thread to collect
+ * keyboard inputs. The Key reactor runs with its own enclave and sends keyboard inputs to the rest
+ * of the program using a physical connection. It uses a reaction that blocks on keyboard input, so
+ * its logical time will lag far behind that of the rest of the program. Each time you press Enter
+ * on the keyboard, it produces an output and schedules a physical action, which results in the same
+ * blocking reaction being invoked again. Because it is a physical action, each time you press
+ * Enter, logical time catches up to physical time.
+ *
+ * @author Edward A. Lee
+ */
+target C {
+  keepalive: true
+}
+
+import RandomSource, GetUserInput from "ReflexGame.lf"
+
+reactor Key {
+  // Use a physical action so that on each keypress, logical time catches up to physical time.
+  physical action trigger
+  output key: char
+
+  reaction(startup, trigger) -> key, trigger {=
+    char c = getchar();
+    lf_set(key, c);
+    if (c != EOF) {
+      lf_schedule(trigger, 0);
+    } else {
+      lf_request_stop();
+    }
+  =}
+}
+
+main reactor {
+  p = new RandomSource()
+  g = new GetUserInput()
+  @enclave
+  u = new Key()
+  p.out -> g.prompt
+  g.another -> p.another
+  u.key ~> g.user_response
+}

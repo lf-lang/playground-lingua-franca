@@ -77,7 +77,7 @@ reactor Client(
   reaction(startup, release_trigger) -> release, request_trigger {=
     if (release_trigger->is_present) {
       tag_t tag = lf_tag();
-      lf_print("%s (ID %d): At tag (%lld, %u), released access.",
+      lf_print("%s (ID %d): At tag " PRINTF_TAG ", released access.",
         self->name,
         self->id,
         tag.time - lf_time_start(), tag.microstep
@@ -89,7 +89,7 @@ reactor Client(
 
   reaction(request_trigger) -> request {=
     tag_t tag = lf_tag();
-    lf_print("%s (ID %d): At tag (%lld, %u), requesting access.",
+    lf_print("%s (ID %d): At tag " PRINTF_TAG ", requesting access.",
       self->name,
       self->id,
       tag.time - lf_time_start(), tag.microstep
@@ -100,7 +100,7 @@ reactor Client(
 
   reaction(grant) -> release_trigger {=
     tag_t tag = lf_tag();
-    lf_print("%s (ID %d): At tag (%lld, %u), granted access.",
+    lf_print("%s (ID %d): At tag " PRINTF_TAG ", granted access.",
       self->name,
       self->id,
       tag.time - lf_time_start(), tag.microstep

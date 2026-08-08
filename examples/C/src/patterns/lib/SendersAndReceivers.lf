@@ -38,7 +38,7 @@ reactor Receive {
   input in: int
 
   reaction(in) {=
-    lf_print("At elapsed tag (%lld, %d), received %d.",
+    lf_print("At elapsed tag " PRINTF_TAG ", received %d.",
       lf_time_logical_elapsed(), lf_tag().microstep,
       in->value
     );
@@ -63,7 +63,7 @@ reactor SendOnceAndReceive {
   =}
 
   reaction(in) {=
-    lf_print("At tag (%lld, %d), received %d.",
+    lf_print("At tag " PRINTF_TAG ", received %d.",
       lf_time_logical_elapsed(),
       lf_tag().microstep,
       in->value
@@ -129,7 +129,7 @@ reactor SendPeriodicallyAndReceiveMultiport(
   =}
 
   reaction(in) {=
-    lf_print("At tag (%lld, %d), received:",
+    lf_print("At tag " PRINTF_TAG ", received:",
       lf_time_logical_elapsed(), lf_tag().microstep
     );
     for (int i = 0; i < self->width; i++) {
@@ -158,7 +158,7 @@ reactor LocalRemoteUpdates(offset: time = 0, period: time = 1 sec, increment: in
 
   reaction(in) {=
     self->count += in->value;
-    lf_print("At tag (%lld, %d), count is %d",
+    lf_print("At tag " PRINTF_TAG ", count is %d",
       lf_time_logical_elapsed(), lf_tag().microstep,
       self->count
     );
