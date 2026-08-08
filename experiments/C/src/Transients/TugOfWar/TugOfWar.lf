@@ -1,0 +1,21 @@
+target C {
+  keepalive: true
+}
+
+import Player from "Player.lf"
+import TugOfWarGame from "TugOfWarGame.lf"
+
+preamble {=
+  #include <string.h>
+  #include <unistd.h>
+=}
+
+federated reactor TugOfWar {
+  towg = new TugOfWarGame()
+  p1 = new Player(max_force=5)
+  p2 = new Player(max_force=6)
+  p3 = new Player(max_force=3)
+  p4 = new Player(max_force=9)
+
+  p1.out, p2.out, p3.out, p4.out -> towg.force 
+}

@@ -1,0 +1,271 @@
+target C {
+  keepalive: true
+}
+
+/**
+ * Define needed structures and enumerations
+ * === Couldn't include display method as a function here, to avoid duplication!
+ */
+preamble {=
+  #include <stdlib.h>
+  #include <string.h>
+  #include <stdio.h>
+
+  // Useful enumerations
+  typedef enum {BID_NOT_STARTED, BID_IN_PROGRESS, BID_ENDED} auction_phase_t;
+  typedef enum {NO_BID, ITEM_PENDING, ITEM_WITHDRAWN, ITEM_SOLD} item_status_t;
+
+  typedef struct bid_t {
+      int bidder_id;
+      int item_id;
+      int amount; // A bid of 0 will be interpreted as a request for the latest bid.
+      item_status_t item_status;
+  } bid_t;
+
+  typedef struct notif_msg_t {
+    auction_phase_t phase;
+    bid_t bid;
+  } notif_msg_t;
+=}
+
+/**
+ * Auctioneer: Manages the auction process and sends updates about new bids. The silience_time is a
+ * parameter.
+ */
+reactor Auctioneer(silence_time: time = 5 sec) {
+  input[4] inBid: bid_t  // @sparse  // === Commented @sparse because it created a compilation error!
+  output[4] outNotif: notif_msg_t
+
+  state bid: bid_t  // Internal States
+  state auction_phase: auction_phase_t
+  state latest_seen_bid_time: time
+  state seed: {= unsigned int =} = 1
+
+  logical action a  // This logical action observes the silence time
+
+  // Pretty printing hthe status
+  // It is not an instantiate dreactor, ecause it needs to access the states of the parent reactor
+  method display(phase: auction_phase_t, bid: bid_t) {=
+    switch (phase) {
+      case BID_NOT_STARTED:
+        lf_print(" ** Bidding did not start yet. At least one bidder needs to join.");
+        break;
+      case BID_IN_PROGRESS:
+        lf_print(" ** Bidding is in progress.");
+        break;
+      case BID_ENDED:
+        lf_print(" ** Bidding ended. You cannot place bids anymore.");
+        break;
+    }
+    lf_print(" ** Item Id = %d.", bid.item_id);
+    lf_print(" ** Amount = %d.", bid.amount);
+    if (bid.bidder_id != -1) lf_print(" ** Bidder Id = %d.", bid.bidder_id);
+    if (bid.item_status == ITEM_WITHDRAWN) lf_print(" ** Status = Item Withdrawn.");
+    if (bid.item_status == ITEM_SOLD) lf_print(" ** Status = Item Sold.");
+  =}
+
+  // Prepares the notification message to send
+  // It is not an instantiate dreactor, ecause it needs to access the states of the parent reactor
+  method prepareNotification(): notif_msg_t {=
+    notif_msg_t notif_msg;
+    notif_msg.phase = self->auction_phase;
+    notif_msg.bid.bidder_id = self->bid.bidder_id;
+    notif_msg.bid.item_id = self->bid.item_id;
+    notif_msg.bid.amount = self->bid.amount;
+    notif_msg.bid.item_status = self->bid.item_status;
+    return notif_msg;
+  =}
+
+  // Initializations on startup
+  reaction(startup) {=
+    // On startup, set the bid item id and the minimum amount
+    // Both are computed in a random way, for the sake of the example
+    self->bid.bidder_id = -1;
+    self->bid.item_id = rand_r(&self->seed) % 10;
+    self->bid.amount = rand_r(&self->seed) % 1000;
+    self->bid.item_status = NO_BID;
+    self->auction_phase = BID_NOT_STARTED;
+    display(self->auction_phase, self->bid);
+    self->latest_seen_bid_time = 0;
+    lf_print("Initialization done! Waiting for a bidder to join.");
+  =}
+
+  // Reacts to recieving bids
+  reaction(inBid) -> outNotif, a {=
+    // Consider the bid only if the bidding has not ended.
+    if (self->auction_phase != BID_ENDED) {
+      // Bidding starts after any bidder has joined.
+      self->auction_phase = BID_IN_PROGRESS;
+      bool bid_changed = false;
+      // Since inputs can be sparse, we use the built-in iterator
+      struct lf_multiport_iterator_t i = lf_multiport_iterator(inBid);
+      // Get the least index of a channel with present inputs.
+      int channel = lf_multiport_next(&i);
+      // Iterate until no more channels have present inputs.
+      while(channel >= 0) {
+        // If the bid value is 0, then the bidder is just joining the auction and wants the status.
+        if (inBid[channel]->value.amount == 0) {
+          lf_print("===> Bidder %d joining at time " PRINTF_TIME ".",
+              channel, lf_time_logical_elapsed());
+          // Notify the bidder about the current situation.
+          notif_msg_t notif_msg = prepareNotification();
+          lf_set(outNotif[channel], notif_msg);
+          // Reschedule the silence time to make sure the bidder has time to respond.
+          self->latest_seen_bid_time = lf_time_logical();
+          lf_schedule(a, self->silence_time);
+        } else {
+          lf_print("===> Received bid %d from %d at time " PRINTF_TIME ".",
+              inBid[channel]->value.amount, channel, lf_time_logical_elapsed());
+          // If a higher bid is received, then update the records.
+          // Note that if there is a tie (two identical bids at the
+          // same logical time), the bidder with the lowest id wins.
+          if (inBid[channel]->value.amount > self->bid.amount) {
+            self->bid.amount = inBid[channel]->value.amount;
+            self->bid.bidder_id = channel;
+            self->bid.item_id = inBid[channel]->value.item_id;
+            self->bid.item_status = ITEM_PENDING;
+
+            bid_changed = true;
+          }
+        }
+        channel = lf_multiport_next(&i);
+      }
+      // If the bid changed, broadcast the new bid.
+      if (bid_changed) {
+        notif_msg_t notif_msg = prepareNotification();
+        for (int i = 0; i < outNotif_width; i++) {
+          lf_set(outNotif[i], notif_msg);
+        }
+        self->latest_seen_bid_time = lf_time_logical();
+        display(self->auction_phase, self->bid);
+        lf_schedule(a, self->silence_time);
+      }
+    }
+  =}
+
+  // Check to see whether the silence time has expired since the last bid,
+  // and if so, decide whether there is a winning bid or there has been no bid.
+  // This is put after the reaction to `inBid` so that bids that arrive exactly
+  // at the silence time are not ignored.
+  reaction(a) -> outNotif {=
+    if (self->auction_phase == BID_IN_PROGRESS
+        && lf_time_logical() - self->latest_seen_bid_time >= self->silence_time) {
+      lf_print("===> No bid during the last " PRINTF_TIME "ns. Time to decide.", self->silence_time);
+      // Case where at least one bidderjoined, but none placed bids.
+      if (self->bid.item_status == NO_BID) {
+        self->auction_phase = BID_ENDED;
+        self->bid.item_status = ITEM_WITHDRAWN;
+      } else {
+        self->auction_phase = BID_ENDED;
+        self->bid.item_status = ITEM_SOLD;
+      }
+      // Display and notify
+      lf_print("*** The decision is:");
+      display(self->auction_phase, self->bid);
+      notif_msg_t notif_msg = prepareNotification();
+      for (int i = 0; i < outNotif_width; i++) {
+        lf_set(outNotif[i], notif_msg);
+      }
+      lf_request_stop();
+    }
+  =}
+}
+
+/**
+ * Bidder: Participates in auctions by placing bids. This actor is transient. Instances may join or
+ * leave the auction at any time. This bidder is a random one that randomly decides whether to bid
+ * and what amount to bid.  It always waits for silence_time before deciding and bids at the last
+ * possible moment. Since all bidders do this, bids will tend to be logically simultaneous.
+ */
+reactor Bidder(
+    bank_index: int = 0,
+    silence_time: time = 5s,
+    max_bid_increment: int = 100,  // Maximum amount to increment the bid by
+    prob_bid: int = 75,  // Probability of bid (percentage)
+    prob_leave: int = 5  // Probability of leaving (percentage)
+) {
+
+  output outBid: bid_t
+  input inNotif: notif_msg_t
+
+  state latest_bid: bid_t
+  state auction_phase: auction_phase_t
+  state seed: {= unsigned int =} = 0
+  state started_waiting: time = 0
+
+  logical action wait
+
+  reaction(startup) -> outBid, wait {=
+    // Set the seed based on the bank index.
+    self->seed = self->bank_index + 2;
+
+    // Send a bid of 0 to get notified of the status.
+    bid_t bid = {
+      .bidder_id = self->bank_index,
+      .item_id = -1, // Any item,
+      .amount = 0,
+      .item_status = NO_BID
+    };
+    lf_set(outBid, bid);
+    lf_schedule(wait, 0); // In the next microstep, consider making a bid.
+  =}
+
+  reaction(wait) -> outBid, wait {=
+    // Place bids only if bidding has not started or is in progress.
+    if (self->auction_phase == BID_IN_PROGRESS || self->auction_phase == BID_NOT_STARTED) {
+      // Randomly decide whether to bid or not, how much to bid, and whether to leave.
+      int r = rand_r(&self->seed) % 100;
+      if (r < self->prob_leave) {
+        lf_print("<============ Bidder %d is leaving at time " PRINTF_TIME ". Bye...",
+            self->bank_index, lf_time_logical_elapsed());
+        lf_stop();
+      } else if (r < self->prob_leave + self->prob_bid) {
+        // Bidding with specified probability.
+        // If the winning bidder is me, then do nothing.
+        if (self->bank_index != self->latest_bid.bidder_id) {
+          int bid_amount = self->latest_bid.amount + rand_r(&self->seed) % self->max_bid_increment;
+          bid_t place_bid;
+          place_bid.bidder_id = self->bank_index;
+          place_bid.item_id = self->latest_bid.item_id;
+          place_bid.amount = bid_amount;
+          place_bid.item_status = self->latest_bid.item_status;
+          lf_set(outBid, place_bid);
+          lf_print("===> Bidder %d placing bid %d... at " PRINTF_TAG ".",
+              self->bank_index, place_bid.amount, lf_time_logical_elapsed(), lf_tag().microstep);
+          // Check again after wait time.
+          // Avoid scheduling multiple events at the same time.
+          instant_t now = lf_time_logical();
+          if (now > self->started_waiting) {
+            self->started_waiting = now;
+            lf_schedule(wait, self->silence_time);
+          }
+        }
+      }
+    }
+  =}
+
+  reaction(inNotif) -> wait {=
+    // Update the states with information from the received message
+    self->auction_phase = inNotif->value.phase;
+    self->latest_bid = inNotif->value.bid;
+    // If the bid is not mine, wait for the silence time and then decide whether to bid.
+    if (self->latest_bid.bidder_id != self->bank_index) {
+      // Avoid scheduling multiple events at the same time.
+      instant_t now = lf_time_logical();
+      if (now > self->started_waiting) {
+        self->started_waiting = now;
+        lf_schedule(wait, self->silence_time);
+      }
+    }
+  =}
+}
+
+federated reactor {
+  auc = new Auctioneer()
+  @transient
+  bid = new[4] Bidder()
+
+  //===  offset = {= offset_table[bank_index] =}, period = {= period_table[bank_index] =})
+  bid.outBid -> auc.inBid
+  auc.outNotif -> bid.inNotif
+}

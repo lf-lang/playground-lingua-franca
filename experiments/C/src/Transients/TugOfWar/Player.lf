@@ -1,0 +1,17 @@
+target C
+
+preamble {=
+  #include <stdlib.h>
+=}
+
+reactor Player(max_force: int = 7) {
+  output out: int
+  timer t(0, 1 s)
+
+  reaction(t) -> out {=
+    int lower = 1;
+    int force = (rand() % (self->max_force - lower + 1)) + lower;
+    lf_print("Force = %d", force);
+    lf_set(out, force);
+  =}
+}
