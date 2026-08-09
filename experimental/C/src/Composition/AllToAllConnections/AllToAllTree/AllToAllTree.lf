@@ -1,0 +1,55 @@
+/**
+ * This example does not compile. It uses some arbitrary syntax; the syntax is not the point. The
+ * idea is to sketch an all-to-all communication pattern that is hard to describe without
+ * parameterizing reactor constructors by each other.
+ */
+target C
+
+/** Send a message and say whether a message was received. */
+reactor Pinger<n>(k: int(0)) {
+    state destination(k)
+    timer t(0, 1 s)
+
+    input in: int
+    output out: int[n]
+
+    reaction(t) -> out {=
+        lf_set(out[self->destination++], self->k);
+    =}
+
+    reaction(in) {=
+        printf("Pinger %d received a message from pinger %d.", self->k, in->value);
+    =}
+}
+
+// This is just supposed to be a higher-order function that raises a function to the third power.
+// Such functions can be added and themselves raised to powers to get arbitrary numbers.
+C3<F><X> = F<F<F<X>>>
+
+/** This is a tree that routes messages in and out of its subtrees. */
+reactor Subtree<T><SubtreeType> {
+    // widths to be inferred. Width inference should be easy because inferred width depends only on
+    // contained reactors, which implies that a base case (no contained reactors) must be reached.
+    output out: T[]
+    input in: T[]
+
+    zero_subtree = new SubtreeType<T>()
+    one_subtree  = new SubtreeType<T>()
+
+    in -> zero_subtree.in, one_subtree.in
+
+    zero_subtree.out -> out
+    one_subtree.out -> out
+}
+
+/**
+ * The all-to-all connection pattern is implemented by looping the outputs of the tree back into it.
+ */
+reactor AllToAll<TreeType><T> {
+    tree = new TreeType<T>()
+    tree.out -> tree.in
+}
+
+main reactor {
+    all_to_all = new AllToAll<C3<Subtree<int>><Pinger<8>>>()
+}

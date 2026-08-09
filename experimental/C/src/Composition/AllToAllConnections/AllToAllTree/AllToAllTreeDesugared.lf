@@ -1,0 +1,127 @@
+/**
+ * See AllToAllTree.lf for documentation.
+ */
+target C {
+    Build-Type: Debug,
+    timeout: 8s
+}
+
+reactor Pinger/*<n>*/ {
+    // n = 8
+    state k: int
+    state destination: int
+    timer t(0, 1 s)
+
+    input init: int  // This provides the identifier of this on startup.
+    input in: int
+    output[8] out: int
+
+    reaction(init) {=
+        // This is a workaround for the fact that LF does not have arithmetic expressions. The bank
+        // index magic parameter is the usual workaround, but we don't have that here.
+        self->k = init->value;
+        self->destination = init->value;
+    =}
+
+    reaction(t) -> out {=
+        lf_set(out[self->destination], self->k);
+        self->destination = (self->destination + 1) % 8;
+        printf("Pinger %d sent to pinger %d.\n", self->k, self->destination);
+    =}
+
+    reaction(in) {=
+        printf("Pinger %d received from pinger %d.\n", self->k, in->value);
+    =}
+}
+
+// reactor Church3<F><X> F<F<F<X>>>
+
+reactor Merger(n: int(0)) {
+    // The following is totally beside the point -- just a side comment that came up on the way.
+    // I understand why this is necessary and why it is hard to make this unnecessary without
+    // introducing nondeterminism or complexity in the form of assigning some sort of priority to
+    // certain writes over others, but it would be nice if we could have some sort of "multiple
+    // drivers" runtime error for that. Is that what HDLs use when tri-state buffers go wrong?
+    input[n] in0: int
+    input[n] in1: int
+    output[n] out: int
+
+    reaction(in0, in1) -> out {=
+        for (int i = 0; i < self->n; i++) {
+            if (in0[i]->is_present) lf_set(out[i], in0[i]->value);
+            else if (in1[i]->is_present) lf_set(out[i], in1[i]->value);
+        }
+    =}
+}
+
+reactor Subtree1/*<SubtreeType><T>*/ {
+    // T = int
+    // SubTreeType = Pinger
+
+    output[8] out: int
+    input[2] init: int
+    input[2] in: int
+
+    zero_subtree = new Pinger()
+    one_subtree  = new Pinger()
+    merger = new Merger(n(8))
+
+    init -> zero_subtree.init, one_subtree.init
+    in -> zero_subtree.in, one_subtree.in
+
+    zero_subtree.out, one_subtree.out -> merger.in0, merger.in1
+    merger.out -> out
+}
+
+reactor Subtree2/*<SubtreeType><T>*/ {
+    // T = int
+    // SubTreeType = Subtree1
+
+    output[8] out: int
+    input[4] init: int
+    input[4] in: int
+
+    zero_subtree = new Subtree1()
+    one_subtree  = new Subtree1()
+    merger = new Merger(n(8))
+
+    init -> zero_subtree.init, one_subtree.init
+    in -> zero_subtree.in, one_subtree.in
+
+    zero_subtree.out, one_subtree.out -> merger.in0, merger.in1
+    merger.out -> out
+}
+
+reactor Subtree3/*<SubtreeType><T>*/ {
+    // T = int
+    // SubTreeType = Subtree2
+
+    output[8] out: int
+    input[8] init: int
+    input[8] in: int
+
+    zero_subtree = new Subtree2()
+    one_subtree  = new Subtree2()
+    merger = new Merger(n(8))
+
+    init -> zero_subtree.init, one_subtree.init
+    in -> zero_subtree.in, one_subtree.in
+
+    zero_subtree.out, one_subtree.out -> merger.in0, merger.in1
+    merger.out -> out
+}
+
+reactor AllToAll/*<TreeType><T>*/ {
+    tree = new Subtree3()
+    tree.out -> tree.in
+
+    reaction(startup) -> tree.init {=
+        for (int i = 0; i < 8; i++) {
+            lf_set(tree.init[i], i);
+        }
+    =}
+}
+
+main reactor {
+    all_to_all = new AllToAll()
+}
