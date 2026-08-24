@@ -1,0 +1,52 @@
+/**
+ * The same as ResettableCounterLF.lf, but with random delays in the communication between the
+ * nodes.
+ *
+ * @author Edward A. Lee
+ */
+target Python {
+  coordination: decentralized
+}
+
+import Node from "ResettableCounterLF.lf"
+
+preamble {=
+  import random
+  import sys
+  import threading
+  import time
+=}
+
+reactor Delay(min_delay = 1 s, max_delay = 5 s) {
+  input inp
+  output out
+  state rng = {= None =}
+
+  reaction(startup) {=
+    # Give each delay reactor its own PRNG with a unique seed.
+    seed = time.time_ns() ^ (id(self) << 16)
+    self.rng = random.Random(seed)
+  =}
+
+  reaction(inp) -> out {=
+    # Convert min_delay and max_delay from nanoseconds to seconds.
+    min_delay_s = self.min_delay / 1e9
+    max_delay_s = self.max_delay / 1e9
+    random_delay_s = self.rng.uniform(min_delay_s, max_delay_s)
+    print(f"Delaying {inp.value} by {random_delay_s} seconds.")
+    time.sleep(random_delay_s)
+    print(f"Forwarding {inp.value}.")
+    out.set(inp.value)
+  =}
+}
+
+federated reactor(N=3) {
+  @maxwait(0)
+  nodes = new[N] Node(N=N, lex = 6 s)
+  delay1 = new[N] Delay()
+  delay2 = new[N] Delay()
+  nodes.out -> delay1.inp
+  nodes.rst_out -> delay2.inp
+  (delay1.out)+ -> nodes.inp
+  (delay2.out)+ -> nodes.rst_inp
+}

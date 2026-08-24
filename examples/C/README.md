@@ -9,6 +9,7 @@ The examples are grouped into unfederated, federated, and embedded and listed in
 * [Deadlines](src/deadlines/README.md): Uses of deadlines in Lingua Franca.
 * [Furuta Pendulum](src/modal_models/FurutaPendulum/README.md): A controller and simulation illustrating a modal reactor.
 * [Keyboard](src/keyboard/README.md): Responding to keyboard input using ncurses.
+* [Panda](src/mujoco/README.md): Mujoco simulation of a Frank Emika Panda robot.
 * [Patterns](src/patterns/README.md): Common communication patterns.
 * [Reflex Game](src/reflex-game/README.md): Interactive timed game.
 * [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
@@ -22,17 +23,22 @@ The examples are grouped into unfederated, federated, and embedded and listed in
 
 These examples illustrated federated execution, where each top-level reactor becomes its own program that can be deployed across containers and networked machines.
 
-* [Chat](src/chat/README.md): Simple federated chat application with two users (run manually).
+* [Chat](src/chat/README.md): Simple federated chat application with two users (run using --tmux).
 * [Distributed](src/distributed/README.md): Basic federated hello-world examples.
-* [Distributed STA and STAA](src/distributed-sta/README.md): How to set STA and STAA in federated/decentralized.
+* [Maxwait](src/maxwait/README.md): How to set `maxwait` in federated with decentralized coordination.
 * [Distributed Time](src/distributed-time/README.md): Federated, decentralized, with deadlines.
-* [MQTT](https://github.com/lf-lang/mqtt-c): Interacting with MQTT publish-and-subscribed (moved to a library repo).
 * [Leader Election](src/leader-election/README.md): Federated fault-tolerant system with leader election.
 * [Rhythm](src/rhythm/README.md): Sound generation and terminal user interface demos.
 * [Shared Memory](src/shared-memory/README.md): Using shared memory to exchange large data objects between federates. 
 * [Watchdog](src/watchdog/README.md): Federated illustration of watchdogs.
 * [Zero-delay Cycles](src/zero-delay-cycles/README.md): Federated patterns with zero-delay cycles.
 
+## Packages
+
+These examples are installed as packages in the `lf-packages` directory. They are designed to be imported into your applications.
+
+* [MQTT](lf-packages/mqtt-c/README.md): Publish and subscribe via MQTT.
+* [Mujoco](lf-packages/mujoco-c/README.md): Physics-based simulation using Mujoco.
 
 ## Embedded
 

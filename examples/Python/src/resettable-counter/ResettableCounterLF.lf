@@ -1,0 +1,165 @@
+/**
+ * A more deterministic resettable counter implementation demonstrating a CRDT with an additional
+ * non-commutative reset operation. This program should be executed using the `--tmux` option. Enter
+ * commands "i" or "r" (increment or reset) in each of the Node panels. Each node will increment its
+ * element of a shared vector counter and then broadcast the updated vector counter to all other
+ * nodes. The increment operation is commutative and associative, and the broadcast ensures exactly
+ * once delivery, so the vector counter is a CRDT. To take advantage of this, the Node uses a
+ * `maxwait` of zero and processes inputs as soon as they are received, regardless of whether they
+ * are tardy. Assuming eventual delivery, all vector counters will eventually agree on the same
+ * value.
+ *
+ * The reset operation, however, is non-commutative. The goal is that all nodes agree on the value
+ * of the vector counter before the reset operation and then all reset their copy of the vector
+ * counter to zeros. This implementation introduces a time delay in the reset. When a Node requests
+ * a reset, it requests that the reset take effect 100 ms in the future. It modifies the `maxwait`
+ * to 100 ms so that processing of inputs will revert to timestamp order as long as network delays
+ * are less than 100 ms. The Node requesting the reset broadcasts a reset request to all other
+ * Nodes. The other Nodes will schedule a reset action for the requested time. If the reset request
+ * is received within 100 ms by all Nodes, then they will all reset at the same time. Therefore,
+ * they all agree on a time value such that any "i" commands received before that time will be
+ * processed before the reset.
+ *
+ * This implementation can still fail. If a reset request takes more than 100 ms to arrive, then the
+ * receiving Node may have already processed an increment that should have been processed after the
+ * reset. In addition, if a a state output takes more than 100 ms to arrive, then the receiving Node
+ * may have already processed a reset and will handle the input after the reset, incorrectly.
+ *
+ * In exchange for this possibility of failure, however, this implementation is more fault tolerant.
+ * The RessettableCounter.lf implemention blocks completely if one node fails and another issues a
+ * reset. This implementation will continue to operate, albeit with a possibility of failure.
+ *
+ * @author Edward A. Lee
+ */
+target Python {
+  coordination: decentralized
+}
+
+import UserInput from "ResettableCounterZH.lf"
+
+preamble {=
+  import random
+  import sys
+  import threading
+  import time
+=}
+
+reactor Node(N=3, bank_index=0, lex = 100 ms) {
+  input[N] inp               # Input to receive updated vector counter from all nodes
+  input[N] rst_inp           # Input to receive user request for reset from some node
+  output out                 # Output to send updated vector counter to all nodes
+  output rst_out             # Output to send user request for reset to all nodes
+
+  state count = {= [0] * self.N =}
+  state q_count = {= [0] * self.N =}
+  state rst_time = forever   # Logical time of a pending reset request.
+  state apply_rst = forever  # Time at which reset should be applied or was most recently applied.
+
+  logical action rst_action(0)
+
+  u = new UserInput()
+
+  reaction(u.text) -> out, rst_out, rst_action {=
+    if u.text.value[0] == "i":
+      if lf.time.logical() >= self.rst_time:
+        # Increment is after or at the reset time.
+        self.q_count[self.bank_index] += 1
+        out.set(self.q_count)
+        print(f"Queued increment for node {self.bank_index}. q_count={self.q_count}")
+      else:
+        self.count[self.bank_index] += 1
+        out.set(self.count)
+        print(f"Incremented node {self.bank_index}. count={self.count}")
+    elif u.text.value[0] == "r":
+      t = lf.time.logical() + self.lex
+      if t < self.rst_time:
+        self.rst_time = t
+        print(f"Sending reset and scheduling reset action for time {self.rst_time}")
+        # Allow time for reset request to propagate and updates up to reset time to propagate.
+        self.apply_rst = self.rst_time + self.lex
+        rst_action.schedule(self.lex * 2)
+        rst_out.set(self.rst_time)
+    else:
+      print(f"Unrecognized command: {u.text.value}")
+  =}
+
+  reaction(rst_action) {=
+    if self.apply_rst == lf.time.logical():
+      self.count = self.q_count
+      self.q_count = [0] * self.N
+      print(f"\nResetting count. After reset, count={self.count}")
+      self.rst_time = FOREVER
+  =}
+
+  reaction(rst_inp) -> rst_action {=
+    for i, port in enumerate(rst_inp):
+      if port.is_present and self.bank_index != i:
+        # port.value is the logical time of the reset request
+        print(f"Received reset from {i} for time {port.value}")
+        if port.value > lf.time.logical():
+          # Requested reset time is in the future.
+          if port.value >= self.rst_time:
+            # Requested reset time is after my scheduled reset time.
+            print(f"Ignoring reset from {i} because I already have an earlier reset pending.")
+          else:
+            print(f"Scheduling reset for time {port.value}")
+            t = port.value - lf.time.logical() + self.lex
+            rst_action.schedule(t)
+            self.rst_time = port.value
+            self.apply_rst = port.value + self.lex
+        else:
+          # Requested reset time is in the past.
+          print(f"FAULT: Received reset request too late!")
+          # Reset my count to 0. Will recover when I merge updates from other nodes.
+          self.count = [0] * self.N
+  =} tardy
+
+  # Handle tardy inputs normally.
+  reaction(inp) {=
+    for i, port in enumerate(inp):
+      if port.is_present and self.bank_index != i:
+        # Merge into count or q_count depending on the logical time.
+        if lf.time.logical() < self.rst_time:
+          for j in range(self.N):
+            self.count[j] = max(self.count[j], port.value[j])
+          print(f"Received '{port.value}' from {i}. count={self.count}")
+        else:
+          for j in range(self.N):
+            self.q_count[j] = max(self.q_count[j], port.value[j])
+          print(f"Received '{port.value}' from {i}. q_count={self.q_count}")
+  =} tardy {=
+    for i, port in enumerate(inp):
+      if port.is_present and self.bank_index != i:
+        # Merge into count or q_count depending on the logical time.
+        if port.intended_tag.time < self.rst_time:
+          # Intended to be processed before the reset time. Is it too late?
+          if port.intended_tag.time < self.apply_rst:
+            # It is on time. Merge into count.
+            for j in range(self.N):
+              self.count[j] = max(self.count[j], port.value[j])
+            print(f"Received '{port.value}' from {i}. count={self.count}")
+          else:
+            print(f"FAULT: Input from {i} is late! Should have been handled before reset. Ignoring.")
+        else:
+          # Intended to be processed after the reset time. Merge into count or q_count depending on
+          # whether the reset has been applied.
+          if lf.time.logical() >= self.rst_time:
+            # The reset has been applied. Merge into count.
+            for j in range(self.N):
+              self.count[j] = max(self.count[j], port.value[j])
+            print(f"Received '{port.value}' from {i}. count={self.count}")
+          else:
+            # The reset has not been applied. Merge into q_count.
+            for j in range(self.N):
+              self.q_count[j] = max(self.q_count[j], port.value[j])
+            print(f"Received '{port.value}' from {i}. q_count={self.q_count}")
+  =}
+}
+
+federated reactor(N=3) {
+  # Set maxwait to 0 so nodes process inputs as soon as they are received.
+  @maxwait(0)
+  nodes = new[N] Node(N=N)
+  (nodes.out)+ -> nodes.inp
+  (nodes.rst_out)+ -> nodes.rst_inp
+}
