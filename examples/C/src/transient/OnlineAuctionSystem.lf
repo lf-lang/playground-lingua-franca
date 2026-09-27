@@ -33,7 +33,8 @@ preamble {=
  * parameter.
  */
 reactor Auctioneer(silence_time: time = 5 sec) {
-  input[4] inBid: bid_t  // @sparse  // === Commented @sparse because it created a compilation error!
+  input[4] inBid: bid_t
+  @sparse
   output[4] outNotif: notif_msg_t
 
   state bid: bid_t  // Internal States
@@ -174,17 +175,16 @@ reactor Auctioneer(silence_time: time = 5 sec) {
 /**
  * Bidder: Participates in auctions by placing bids. This actor is transient. Instances may join or
  * leave the auction at any time. This bidder is a random one that randomly decides whether to bid
- * and what amount to bid.  It always waits for silence_time before deciding and bids at the last
+ * and what amount to bid. It always waits for silence_time before deciding and bids at the last
  * possible moment. Since all bidders do this, bids will tend to be logically simultaneous.
  */
 reactor Bidder(
     bank_index: int = 0,
-    silence_time: time = 5s,
+    silence_time: time = 5 s,
     max_bid_increment: int = 100,  // Maximum amount to increment the bid by
-    prob_bid: int = 75,  // Probability of bid (percentage)
-    prob_leave: int = 5  // Probability of leaving (percentage)
-) {
-
+    prob_bid: int = 75,            // Probability of bid (percentage)
+    // Probability of leaving (percentage)
+    prob_leave: int = 5) {
   output outBid: bid_t
   input inNotif: notif_msg_t
 
