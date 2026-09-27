@@ -29,7 +29,7 @@
  * The RessettableCounter.lf implemention blocks completely if one node fails and another issues a
  * reset. This implementation will continue to operate, albeit with a possibility of failure.
  *
- * @author Edward A. Lee
+ * @author Edward A. Lee and Shulu Li
  */
 target Python {
   coordination: decentralized
@@ -114,7 +114,6 @@ reactor Node(N=3, bank_index=0, lex = 100 ms) {
           self.count = [0] * self.N
   =} tardy
 
-  # Handle tardy inputs normally.
   reaction(inp) {=
     for i, port in enumerate(inp):
       if port.is_present and self.bank_index != i:
