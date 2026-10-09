@@ -72,6 +72,9 @@ reactor Node(N=3, bank_index=0) {
 
   initial mode INCREMENTING {
     reaction(u.text) -> out, rst_out, reset(QUEUING) {=
+      if len(u.text.value) == 0:
+        print("No input. Ignoring.")
+        return
       if u.text.value[0] == "i":
         if 0 <= self.bank_index < len(self.count):
           self.count[self.bank_index] += 1
@@ -106,6 +109,9 @@ reactor Node(N=3, bank_index=0) {
   mode QUEUING {
     reset state q_count = {= [0] * self.N =}
     reaction(u.text) {=
+      if len(u.text.value) == 0:
+        print("No input. Ignoring.")
+        return
       if u.text.value[0] == "r":
         print("Reset is already in progress. Ignoring input")
       elif u.text.value[0] == "i":

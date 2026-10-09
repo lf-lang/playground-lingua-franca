@@ -60,6 +60,9 @@ reactor Node(N=3, bank_index=0, lex = 100 ms) {
   u = new UserInput()
 
   reaction(u.text) -> out, rst_out, rst_action {=
+    if len(u.text.value) == 0:
+      print("No input. Ignoring.")
+      return
     if u.text.value[0] == "i":
       if lf.time.logical() >= self.rst_time:
         # Increment is after or at the reset time.
