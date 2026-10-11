@@ -1,0 +1,85 @@
+/**
+ * This program shows how to use `lf_async` in a reaction to make a blocking call to a C function
+ * without blocking the execution of other reactions nor the advancement of the current tag.
+ * The `read_string` function defined in the preamble contains a call to the `getline` function,
+ * which blocks until the user provides input. This function is invoked as follows:
+ * ```
+ *   char* line = NULL;
+ *   int nread = lf_async(awake, read_string, &line);
+ * ```
+ * where `awake` is a physical action. The reaction containing this call is triggered at
+ * startup and loops forever (or until the user provides an EOF, Control-D). Because `awake`
+ * is a physical action, the logical time after `lf_async` returns will be the physical time
+ * at which the user provides input. If a logical action had been used instead, then the
+ * logical time would have advanced by a fixed amount, the `min_delay` of the action or one
+ * microstep if no `min_delay` is specified.
+ *
+ * To show that this blocking call does not block other reactions, every five seconds, a
+ * reaction executes to prompt the user for input. 
+ */
+target C {
+  keepalive: true
+}
+
+reactor UserInput {
+  preamble {=
+    #include <stdio.h>
+    #include <stdlib.h>
+
+    /**
+     * Read a line from the keyboard (stdin) into dynamically allocated memory.
+     * The trailing newline, if present, is removed. The caller must free the
+     * returned pointer. Returns NULL on error or EOF.
+     */
+    size_t read_string(char** result) {
+      char* buffer = NULL;
+      size_t capacity = 0;
+      ssize_t nread = getline(&buffer, &capacity, stdin);
+      if (nread < 0) {
+        free(buffer);
+        return 0;
+      }
+      if (nread > 0 && buffer[nread - 1] == '\n') {
+        buffer[nread - 1] = '\0';
+      }
+      *result = buffer;
+      return nread;
+    }
+  =}
+  timer t(0, 5 s)
+  output out: char*
+  state count: int
+  physical action awake
+
+  // The following reaction is required to precede the reaction that awaits the physical action.
+  // It causes that reaction to resume at the logical time of the physical action.
+  reaction(awake) {=
+    lf_async_resume(awake);
+  =}
+
+  reaction(startup) -> out, awake {=
+    while (true) {
+      char* line = NULL;
+      int nread = lf_async(awake, read_string, &line);
+      if (nread == 0) {
+        lf_request_stop();
+        break;
+      }
+      // New logical time... drawn from the physical clock.
+      lf_set(out, line);
+    }
+  =}
+
+  reaction(t) -> out {=
+    char* prompt = NULL;
+    asprintf(&prompt, "%d: Waiting for input...", self->count++);
+    lf_set(out, prompt);
+  =}
+}
+
+main reactor {
+  async = new UserInput()
+  reaction(async.out) {=
+    lf_print("At logical time " PRINTF_TIME ", Line: %s", lf_time_logical_elapsed(), async.out->value);
+  =}
+}

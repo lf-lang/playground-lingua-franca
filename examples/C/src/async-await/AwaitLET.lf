@@ -1,0 +1,48 @@
+/**
+ * This program shows how to use `lf_await` in a reaction to wait for an input that will be provided
+ * at a future logical time. The feedback path has an `after` delay of 100 ms, which means that the
+ * `DoWork` reaction has a logical execution time (LET) of 100 ms. The `RequestWork` reaction sends
+ * an output to request work and then awaits the result. While it waits, logical time can advance and
+ * other reactions can execute.
+ *
+ * Prior to the introduction of `lf_await`, the `RequestWork` reaction would have to respond to the
+ * result in a separate reaction. Here, it responds in the same reaction, which enables it to use
+ * any variables that may have been put on the stack prior to the `lf_await` call after the `lf_await`
+ * call returns. Without `lf_await`, the `RequestWork` reaction would have to store in state variables
+ * anything it wants to use after getting the result (this is called "stack ripping").
+ */
+target C {
+  timeout: 1 s
+}
+reactor RequestWork {
+  input result: int
+  output request: int
+  timer t(0, 200 ms)
+  state count: int = 1
+
+  // The following reaction is required to precede the reaction that awaits the result.
+  // It causes that reaction to resume at the logical time of the result.
+  reaction(result) {=
+    lf_await_resume(result);
+  =}
+  reaction(t) result -> request {=
+    lf_print("Request work at logical time " PRINTF_TIME, lf_time_logical_elapsed());
+    lf_set(request, self->count++);
+    lf_await(result);
+    lf_print("Result %d received at logical time " PRINTF_TIME, result->value, lf_time_logical_elapsed());
+  =}
+}
+reactor DoWork {
+  input request: int
+  output result: int
+  reaction(request) -> result {=
+    lf_print("Do work starting at logical time " PRINTF_TIME, lf_time_logical_elapsed());
+    lf_set(result, request->value * 2);
+  =}
+}
+main reactor {
+  request_work = new RequestWork()
+  process_work = new DoWork()
+  request_work.request -> process_work.request
+  process_work.result -> request_work.result after 100 ms
+}
