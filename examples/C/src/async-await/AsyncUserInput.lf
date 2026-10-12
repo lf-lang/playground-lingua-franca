@@ -1,21 +1,21 @@
 /**
  * This program shows how to use `lf_async` in a reaction to make a blocking call to a C function
- * without blocking the execution of other reactions nor the advancement of the current tag.
- * The `read_string` function defined in the preamble contains a call to the `getline` function,
- * which blocks until the user provides input. This function is invoked as follows:
+ * without blocking the execution of other reactions nor the advancement of the current tag. The
+ * `read_string` function defined in the preamble contains a call to the `getline` function, which
+ * blocks until the user provides input. This function is invoked as follows:
  * ```
  *   char* line = NULL;
  *   int nread = lf_async(awake, read_string, &line);
  * ```
- * where `awake` is a physical action. The reaction containing this call is triggered at
- * startup and loops forever (or until the user provides an EOF, Control-D). Because `awake`
- * is a physical action, the logical time after `lf_async` returns will be the physical time
- * at which the user provides input. If a logical action had been used instead, then the
- * logical time would have advanced by a fixed amount, the `min_delay` of the action or one
- * microstep if no `min_delay` is specified.
+ * where `awake` is a physical action. The reaction containing this call is triggered at startup
+ * and loops forever (or until the user provides an EOF, Control-D). Because `awake` is a physical
+ * action, the logical time after `lf_async` returns will be the physical time at which the user
+ * provides input. If a logical action had been used instead, then the logical time would have
+ * advanced by a fixed amount, the `min_delay` of the action or one microstep if no `min_delay` is
+ * specified.
  *
- * To show that this blocking call does not block other reactions, every five seconds, a
- * reaction executes to prompt the user for input. 
+ * To show that this blocking call does not block other reactions, every five seconds, a reaction
+ * executes to prompt the user for input.
  */
 target C {
   keepalive: true
@@ -79,6 +79,7 @@ reactor UserInput {
 
 main reactor {
   async = new UserInput()
+
   reaction(async.out) {=
     lf_print("At logical time " PRINTF_TIME ", Line: %s", lf_time_logical_elapsed(), async.out->value);
   =}
