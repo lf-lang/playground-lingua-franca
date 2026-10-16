@@ -2,6 +2,7 @@
 
 (in alphabetical order)
 
+* [Async-Await](src/async-await/README.md): Waiting for future inputs and making blocking calls without stalling other reactions.
 * [ACAS](src/acas/README.md): Airborne collision avoidance system using neural networks.
 * [Audio](src/audio/README.md): Live display of the spectrum of microphone audio input.
 * [Audio Classification](src/audio-classification/README.md): Audio classification using Tensorflow Lite.

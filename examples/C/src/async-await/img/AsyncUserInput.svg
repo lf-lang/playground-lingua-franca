@@ -1,0 +1,77 @@
+<?xml version="1.0" standalone="no"?>
+
+<svg 
+     version="1.1"
+     baseProfile="full"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns:ev="http://www.w3.org/2001/xml-events"
+     xmlns:klighd="http://de.cau.cs.kieler/klighd"
+     x="0px"
+     y="0px"
+     width="167px"
+     height="60px"
+     viewBox="0 0 167 60"
+     >
+<title></title>
+<desc>Creator: FreeHEP Graphics2D Driver Producer: de.cau.cs.kieler.klighd.piccolo.freehep.SemanticSVGGraphics2D Revision Source:  Date: Sunday, October 11, 2026 at 4:18:13 PM Pacific Daylight Time</desc>
+<g stroke-dashoffset="0" stroke-linejoin="miter" stroke-dasharray="none" stroke-width="1" stroke-linecap="butt" stroke-miterlimit="10">
+<g fill="#ffffff" fill-rule="nonzero" fill-opacity="1" stroke="none">
+  <path d="M 0 0 L 167.3666534423828 0 L 167.3666534423828 60.4438099861145 L 0 60.4438099861145 L 0 0 z"/>
+</g>
+<g transform="matrix(1, 0, 0, 1, -0, 1.499992847442627)">
+<g fill="#ffffff" fill-rule="nonzero" fill-opacity="1" stroke="none">
+  <path d="M 0.5 8.5 L 0.5 50.443817138671875 C 0.5 54.86209513731822 4.081722001353653 58.443817138671875 8.5 58.443817138671875 L 158.8666534423828 58.443817138671875 C 163.28493144102916 58.443817138671875 166.8666534423828 54.86209513731822 166.8666534423828 50.443817138671875 L 166.8666534423828 8.5 C 166.8666534423828 4.081722001353653 163.28493144102916 0.5 158.8666534423828 0.5 L 8.5 0.5 C 4.081722001353653 0.5 0.5 4.081722001353653 0.5 8.5 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, -0, 1.499992847442627)">
+<g stroke-opacity="1" fill="none" stroke="#bebebe">
+  <path d="M 0.5 8.5 L 0.5 50.443817138671875 C 0.5 54.86209513731822 4.081722001353653 58.443817138671875 8.5 58.443817138671875 L 158.8666534423828 58.443817138671875 C 163.28493144102916 58.443817138671875 166.8666534423828 54.86209513731822 166.8666534423828 50.443817138671875 L 166.8666534423828 8.5 C 166.8666534423828 4.081722001353653 163.28493144102916 0.5 158.8666534423828 0.5 L 8.5 0.5 C 4.081722001353653 0.5 0.5 4.081722001353653 0.5 8.5 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 34.683326721191406, 7.499992847442627)">
+  <text x="0" y="13.333334" font-weight="normal" font-size="13.333333969116211px" font-family="Overpass" font-style="normal" fill="#000000" fill-opacity="1" stroke="none">AsyncUserInput</text>
+</g>
+<g transform="matrix(1, 0, 0, 1, 6, 28.443811893463135)">
+<g fill="#f2f2f2" fill-rule="nonzero" fill-opacity="1" stroke="none">
+  <path d="M 0.5 8.5 L 0.5 18.379985809326172 C 0.5 22.798263807972518 4.081722001353653 26.379985809326172 8.5 26.379985809326172 L 64.83333587646484 26.379985809326172 C 69.25161387511119 26.379985809326172 72.83333587646484 22.798263807972518 72.83333587646484 18.379985809326172 L 72.83333587646484 8.5 C 72.83333587646484 4.081722001353653 69.25161387511119 0.5 64.83333587646484 0.5 L 8.5 0.5 C 4.081722001353653 0.5 0.5 4.081722001353653 0.5 8.5 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 6, 28.443811893463135)">
+<g stroke-opacity="1" fill="none" stroke="#bebebe">
+  <path d="M 0.5 8.5 L 0.5 18.379985809326172 C 0.5 22.798263807972518 4.081722001353653 26.379985809326172 8.5 26.379985809326172 L 64.83333587646484 26.379985809326172 C 69.25161387511119 26.379985809326172 72.83333587646484 22.798263807972518 72.83333587646484 18.379985809326172 L 72.83333587646484 8.5 C 72.83333587646484 4.081722001353653 69.25161387511119 0.5 64.83333587646484 0.5 L 8.5 0.5 C 4.081722001353653 0.5 0.5 4.081722001353653 0.5 8.5 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 12, 34.443811893463135)">
+  <text x="0" y="13.333334" font-weight="normal" font-size="13.333333969116211px" font-family="Overpass" font-style="normal" fill="#000000" fill-opacity="1" stroke="none">UserInput</text>
+</g>
+<g transform="matrix(1, 0, 0, 1, 76.03333282470703, 37.443811893463135)">
+<g fill="#000000" fill-rule="nonzero" fill-opacity="1" stroke="none">
+  <path d="M 0 0 L 8 4 L 0 8 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 76.03333282470703, 37.443811893463135)">
+<g stroke-opacity="1" fill="none" stroke="#000000">
+  <path d="M 0 0 L 8 4 L 0 8 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 86.03333282470703, 26.939985752105713)">
+  <text x="0" y="10.666667" font-weight="normal" font-size="10.666666984558105px" font-family="Overpass" font-style="normal" fill="#000000" fill-opacity="1" stroke="none">out</text>
+</g>
+<g transform="matrix(1, 0, 0, 1, 117.03333282470703, 30.443811893463135)">
+<g fill="#a6a6a6" fill-rule="nonzero" fill-opacity="1" stroke="none">
+  <path d="M 0 0 L 39 0 L 45 11 L 39 22 L 0 22 L 6 11 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 117.03333282470703, 30.443811893463135)">
+<g stroke-opacity="1" fill="none" stroke="#737373">
+  <path d="M 0 0 L 39 0 L 45 11 L 39 22 L 0 22 L 6 11 z"/>
+</g>
+</g>
+<g transform="matrix(1, 0, 0, 1, 0, 28.3799786567688)">
+<g stroke-opacity="1" stroke-dasharray="3,1" fill="none" stroke="#000000">
+  <path d="M 84.03333282470703 13.063833236694336 L 123.03333282470703 13.063833236694336"/>
+</g>
+</g>
+</g>
+</svg>
