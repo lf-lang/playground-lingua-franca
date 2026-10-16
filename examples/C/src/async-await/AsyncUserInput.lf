@@ -25,26 +25,6 @@ reactor UserInput {
   preamble {=
     #include <stdio.h>
     #include <stdlib.h>
-
-    /**
-     * Read a line from the keyboard (stdin) into dynamically allocated memory.
-     * The trailing newline, if present, is removed. The caller must free the
-     * returned pointer. Returns NULL on error or EOF.
-     */
-    size_t read_string(char** result) {
-      char* buffer = NULL;
-      size_t capacity = 0;
-      ssize_t nread = getline(&buffer, &capacity, stdin);
-      if (nread < 0) {
-        free(buffer);
-        return 0;
-      }
-      if (nread > 0 && buffer[nread - 1] == '\n') {
-        buffer[nread - 1] = '\0';
-      }
-      *result = buffer;
-      return nread;
-    }
   =}
   timer t(0, 5 s)
   output out: char*
@@ -59,13 +39,19 @@ reactor UserInput {
 
   reaction(startup) -> out, awake {=
     while (true) {
+      lf_print("Control-D to exit.");
       char* line = NULL;
-      int nread = lf_async(awake, read_string, &line);
-      if (nread == 0) {
+      size_t capacity = 0;
+      int nread = lf_async(awake, getline, &line, &capacity, stdin);
+      if (nread < 0) {
+        lf_print("User input: EOF");
+        free(line);
         lf_request_stop();
         break;
       }
-      // New logical time... drawn from the physical clock.
+      if (nread > 0 && line[nread - 1] == '\n') {
+        line[nread - 1] = '\0';
+      }
       lf_set(out, line);
     }
   =}
