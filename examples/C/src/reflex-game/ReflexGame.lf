@@ -65,30 +65,19 @@ reactor User {
   output out: char
   physical action user_response: char
 
-  preamble {=
-    // Thread to read input characters until an EOF is received.
-    // Each time a newline is received, schedule a user_response action.
-    void* read_input(void* user_response) {
+  reaction(user_response) {=
+    lf_async_resume(user_response);
+  =}
+
+  reaction(startup) -> out, user_response {=
+    while (true) {
       int c;
-      while(1) {
-        while((c = getchar()) != '\n') {
-          if (c == EOF) break;
-        }
-        lf_schedule_copy(user_response, 0, &c, 1);
+      while((c = lf_async(user_response, getchar)) != '\n') {
         if (c == EOF) break;
       }
-      return NULL;
+      lf_set(out, c);
+      if (c == EOF) break;
     }
-  =}
-
-  reaction(startup) -> user_response {=
-    // Start the thread that listens for Enter or Return.
-    lf_thread_t thread_id;
-    lf_thread_create(&thread_id, &read_input, user_response);
-  =}
-
-  reaction(user_response) -> out {=
-    lf_set(out, user_response->value);
   =}
 }
 
