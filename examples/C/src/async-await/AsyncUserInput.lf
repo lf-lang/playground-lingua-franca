@@ -1,11 +1,12 @@
 /**
  * This program shows how to use `lf_async` in a reaction to make a blocking call to a C function
  * without blocking the execution of other reactions nor the advancement of the current tag. The
- * `read_string` function defined in the preamble contains a call to the `getline` function, which
- * blocks until the user provides input. This function is invoked as follows:
+ * `getline` function defined in the `<stdio.h>` header file blocks until the user provides input.
+ * This function is invoked as follows:
  * ```
  *   char* line = NULL;
- *   int nread = lf_async(awake, read_string, &line);
+ *   size_t capacity = 0;
+ *   int nread = lf_async(awake, getline, &line, &capacity, stdin);
  * ```
  * where `awake` is a physical action. The reaction containing this call is triggered at startup
  * and loops forever (or until the user provides an EOF, Control-D). Because `awake` is a physical
@@ -38,8 +39,8 @@ reactor UserInput {
   =}
 
   reaction(startup) -> out, awake {=
+    lf_print("Control-D to exit.");
     while (true) {
-      lf_print("Control-D to exit.");
       char* line = NULL;
       size_t capacity = 0;
       int nread = lf_async(awake, getline, &line, &capacity, stdin);
