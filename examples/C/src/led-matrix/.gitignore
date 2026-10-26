@@ -5,6 +5,7 @@ src-gen/
 include/
 build/
 .vscode/
+lib/pico-sdk/
 
 # MacOS junk
 .DS_Store

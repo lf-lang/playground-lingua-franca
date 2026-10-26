@@ -35,6 +35,8 @@
  * 
  * @author Benjamin Gunnels
  * @date   05/20/2025
+ * 
+ * Extended with 8x8 animations (lf_logo_8x8, smiley_8x8) by Chadlia Jerad, 2026.
 */
 
 #ifndef _WS2812_H
@@ -182,14 +184,52 @@ void chessboard(uint32_t *led_strip, uint32_t** remapping, int i, float brightne
 
 /**
  * @brief Displays the American Flag.
- * 
+ *
  * @param led_strip One dimensional array used to write values to the LED strip.
  * @param remapping Allows row/column format to be translated to the one dimensional LED array.
- * @param i Counter referring to the current frame. This is used for animation purposes. 
+ * @param i Counter referring to the current frame. This is used for animation purposes.
  *             By modding the pointer different patterns can be made per frame.
  * @param brightness Scalar to adjust the brightness of the pixel value.
  * @param rows Number of rows in the LED strip.
  * @param cols Number of columns in the LED strip.
  */
 void old_glory(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols);
+
+/**
+ * @brief Displays the LF logo on an 8x8 LED matrix with a blink animation.
+ *
+ * The pattern uses dark navy, white, and orange pixels. On odd frames (i % 2 == 1)
+ * the logo is shown at full brightness; on even frames all pixels collapse to dark navy,
+ * producing a blink effect whose rate is controlled by the frame timer.
+ *
+ * @param led_strip One dimensional array used to write values to the LED strip.
+ * @param remapping Allows row/column format to be translated to the one dimensional LED array.
+ * @param i Frame counter. Odd values show the logo; even values blank it.
+ * @param brightness Brightness scalar (0.0–1.0).
+ * @param rows Number of rows in the LED strip.
+ * @param cols Number of columns in the LED strip.
+ */
+void lf_logo_8x8(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols);
+
+/**
+ * @brief Displays an animated face sequence on an 8x8 LED matrix.
+ *
+ * Cycles through three moods every 9 frames (3 frames each), driven by
+ * the expression (i / 3) % 3:
+ *   - phase 0 (frames 0–2): happy face, green
+ *   - phase 1 (frames 3–5): neutral face, yellow
+ *   - phase 2 (frames 6–8): angry face, red
+ * Each face shares the same circular outline; only the mouth and face
+ * color change. Features (eyes, mouth) are rendered in black on a black
+ * background.
+ *
+ * @param led_strip One dimensional array used to write values to the LED strip.
+ * @param remapping Allows row/column format to be translated to the one dimensional LED array.
+ * @param i Frame counter. Phase is computed as (i / 3) % 3.
+ * @param brightness Brightness scalar (0.0–1.0).
+ * @param rows Number of rows in the LED strip.
+ * @param cols Number of columns in the LED strip.
+ */
+void smiley_8x8(uint32_t *led_strip, uint32_t** remapping, int i, float brightness, int rows, int cols);
+
 #endif /* _WS2812_H */

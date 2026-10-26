@@ -1,43 +1,305 @@
 <!DOCTYPE html>
 <html>
-  <head><title>Rosace Aircraft Controller</title></head>
+  <head>
+    <title>Rosace Aircraft Controller</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .container {
+        flex: 1;
+        display: flex;
+        gap: 20px;
+        min-height: 0;
+      }
+      .control-panel {
+        flex: 0 0 300px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        height: fit-content;
+      }
+      .plots-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-height: 0;
+      }
+      .chart-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .chart-wrapper {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+      }
+      h1 {
+        margin-top: 0;
+        color: #333;
+      }
+      h2 {
+        font-size: 16px;
+        color: #666;
+        margin-top: 0;
+      }
+      p {
+        margin: 10px 0;
+      }
+      input[type="text"] {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 150px;
+        box-sizing: border-box;
+      }
+      input[type="submit"] {
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      input[type="submit"]:hover {
+        background-color: #0056b3;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .status.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
   <body>
     <h1>Rosace Aircraft Controller</h1>
-    <p>
-        <b>Desired Altitude:</b>
-        <input type="text" id="altitude" value="10000" onchange="setAltitude(this.value)">
-        <input type="submit" value="Submit">
-    </p>
-    <p id="requested">No request.</p>
-    <p id="data">No data.</p>
+    
+    <div class="container">
+      <!-- Control Panel -->
+      <div class="control-panel">
+        <h2>Controls</h2>
+        <p>
+          <b>Desired Altitude:</b><br>
+          <input type="text" id="altitude" value="10000">
+          <input type="submit" value="Submit" onclick="setAltitude(document.getElementById('altitude').value)">
+        </p>
+        <div id="requested" class="status" style="display: none;"></div>
+        <div id="data">
+          <p><b>Airspeed (Va):</b> <span id="va-value">--</span> m/s</p>
+          <p><b>Altitude (h):</b> <span id="h-value">--</span> ft</p>
+        </div>
+      </div>
+
+      <!-- Plots Panel -->
+      <div class="plots-panel">
+        <!-- Altitude Plot -->
+        <div class="chart-container">
+          <h2>Altitude vs Time</h2>
+          <div class="chart-wrapper">
+            <canvas id="altitudeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Airspeed Plot -->
+        <div class="chart-container">
+          <h2>Airspeed vs Time</h2>
+          <div class="chart-wrapper">
+            <canvas id="airspeedChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
-  function setAltitude(altitude) {
-    var xhttp = new XMLHttpRequest();
-    xhttp.onload = function() {
-      if (this.status == 200) {
-        document.getElementById('requested').innerHTML = "Requested altitude: " + this.responseText;
-      } else {
-        document.getElementById('requested').innerHTML = "Error: " + this.statusText;
+      // Configuration
+      const MAX_DATA_POINTS = 600; // 10 minutes at 1 sample/second
+      const UPDATE_INTERVAL = 1000; // Poll every 1 second
+      const PLOT_DURATION = 600;    // X-axis spans 10 minutes (seconds)
+      const START_TIME = Date.now();
+
+      let altitudeChart, airspeedChart;
+
+      // Shared x-axis options: fixed 0–600 s window, ticks every minute
+      function xAxisOptions() {
+        return {
+          type: 'linear',
+          min: 0,
+          max: PLOT_DURATION,
+          title: { display: true, text: 'Time (mm:ss)' },
+          ticks: {
+            stepSize: 60,
+            callback: function(value) {
+              const m = Math.floor(value / 60);
+              const s = String(value % 60).padStart(2, '0');
+              return m + ':' + s;
+            }
+          }
+        };
       }
-    }
-    xhttp.open('GET', '?altitude=' + altitude, true);
-    xhttp.send(null);
-  }
-  setInterval(function() {
-    var xhttp = new XMLHttpRequest();
-    xhttp.onload = function() {
-      if (this.status == 200) {
-        var parsed = JSON.parse(this.responseText);
-        document.getElementById('data').innerHTML
-                = "<b>Airspeed:</b> " + parsed.Va
-                + "<br><b>Altitude:</b> " + parsed.h;
-      } else {
-        document.getElementById('data').innerHTML = "Error: " + this.statusText;
+
+      // Initialize charts
+      function initCharts() {
+        const ctxAlt = document.getElementById('altitudeChart').getContext('2d');
+        altitudeChart = new Chart(ctxAlt, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Altitude (ft)',
+              data: [],
+              borderColor: '#007bff',
+              backgroundColor: 'rgba(0, 123, 255, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 2,
+              pointHoverRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: true, position: 'top' } },
+            scales: {
+              x: xAxisOptions(),
+              y: {
+                title: { display: true, text: 'Altitude (feet)' },
+                min: 9800,
+                max: 11200
+              }
+            }
+          }
+        });
+
+        const ctxAir = document.getElementById('airspeedChart').getContext('2d');
+        airspeedChart = new Chart(ctxAir, {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: 'Airspeed (m/s)',
+              data: [],
+              borderColor: '#28a745',
+              backgroundColor: 'rgba(40, 167, 69, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 2,
+              pointHoverRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: true, position: 'top' } },
+            scales: {
+              x: xAxisOptions(),
+              y: {
+                title: { display: true, text: 'Airspeed (m/s)' },
+                min: 229,
+                max: 235
+              }
+            }
+          }
+        });
       }
-    };
-    xhttp.open('GET', '/data', true);
-    xhttp.send(null);
-  }, 1000); 
+
+      // Add data point to charts — each call appends one {x, y} point on the right
+      function addDataPoint(Va, h) {
+        const elapsed = (Date.now() - START_TIME) / 1000;
+
+        altitudeChart.data.datasets[0].data.push({ x: elapsed, y: h });
+        airspeedChart.data.datasets[0].data.push({ x: elapsed, y: Va });
+
+        if (altitudeChart.data.datasets[0].data.length > MAX_DATA_POINTS) {
+          altitudeChart.data.datasets[0].data.shift();
+          airspeedChart.data.datasets[0].data.shift();
+        }
+
+        altitudeChart.update();
+        airspeedChart.update();
+
+        document.getElementById('va-value').textContent = Va.toFixed(2);
+        document.getElementById('h-value').textContent = h.toFixed(2);
+      }
+
+      // Set altitude command
+      function setAltitude(altitude) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {
+          if (this.status == 200) {
+            var statusDiv = document.getElementById('requested');
+            statusDiv.innerHTML = "<b>✓ Requested altitude:</b> " + this.responseText + " ft";
+            statusDiv.classList.remove('error');
+            statusDiv.classList.add('success');
+            statusDiv.style.display = 'block';
+          } else {
+            var statusDiv = document.getElementById('requested');
+            statusDiv.innerHTML = "<b>✗ Error:</b> " + this.statusText;
+            statusDiv.classList.remove('success');
+            statusDiv.classList.add('error');
+            statusDiv.style.display = 'block';
+          }
+        }
+        xhttp.open('GET', '?altitude=' + altitude, true);
+        xhttp.send(null);
+      }
+
+      // Poll for data updates
+      function pollData() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {
+          if (this.status == 200) {
+            try {
+              var parsed = JSON.parse(this.responseText);
+              addDataPoint(parsed.Va, parsed.h);
+            } catch(e) {
+              console.error("Failed to parse response:", e);
+            }
+          }
+        };
+        xhttp.onerror = function() {
+          console.error("Request failed");
+        };
+        xhttp.open('GET', '/data', true);
+        xhttp.send(null);
+      }
+
+      // Initialize on page load
+      window.addEventListener('load', function() {
+        initCharts();
+        // Start polling immediately, then every UPDATE_INTERVAL
+        pollData();
+        setInterval(pollData, UPDATE_INTERVAL);
+      });
     </script>
   </body>
 </html>
