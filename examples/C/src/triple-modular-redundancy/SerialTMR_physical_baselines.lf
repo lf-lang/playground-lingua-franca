@@ -1,0 +1,481 @@
+target C
+
+preamble {=
+  #include <stdlib.h>
+  #include <time.h>
+  #include <stdint.h>
+  #include <stdbool.h>
+  #include <math.h>
+
+  typedef long double ldouble_t;
+
+  //static const long double fault_rate_per_millisecond = 0.20L;
+  static long double get_fault_rate_per_millisecond(void) {
+    static bool initialized = false;
+    static long double fault_rate = 0.20L;
+
+    if (!initialized) {
+        const char* s = getenv("FAULT_RATE");
+        if (s != NULL) {
+            fault_rate = strtold(s, NULL);
+        }
+        initialized = true;
+    }
+
+    return fault_rate;
+  }
+
+  static const long double prob_due_given_fault = 0.2L;
+  static const long double prob_sdc_given_fault = 0.2L;
+
+  static const long double required_failure_prob_per_millisecond = 0.00777411L  ;
+  static const long double task_period_ms  = 13.5L; // 13.5 ms
+  static const long double activations_per_millisecond = 1.0L / task_period_ms;
+
+  static const long long mean_exec_time_ns = 3000000LL; // 3 ms
+
+
+  static uint64_t rng_state = 10; //fixed seed
+
+  //https://github.com/lh3/hickit/blob/master/krng.h
+  static inline void rng_seed(uint64_t seed) {
+      rng_state = seed ? seed : 0xdeadbeefcafebabeULL;
+  }
+
+  //https://github.com/lh3/hickit/blob/master/krng.h
+  static inline uint64_t splitmix64_next(void) {
+      uint64_t z = (rng_state += 0x9e3779b97f4a7c15ULL);
+      z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+      z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+      return z ^ (z >> 31);
+  }
+
+
+
+  static inline long long random_between_ns(long long min_ns, long long max_ns) {
+    if (max_ns <= min_ns) return min_ns;
+
+    uint64_t range = (uint64_t)(max_ns - min_ns + 1);
+    return min_ns + (long long)(splitmix64_next() % range);
+  }
+
+  static inline void sleep_for_ns(long long ns) {
+    if (ns <= 0) return;
+
+    struct timespec req;
+    req.tv_sec = ns / 1000000000LL;
+    req.tv_nsec = ns % 1000000000LL;
+
+    nanosleep(&req, NULL);
+  }
+
+
+  //PREFACE-related features
+
+
+  static const long double time_unit_ns = 1000.0L; // 1 us
+
+  //static const long double k_time_units_per_hour = (3600.0L * 1000000000.0L) / time_unit_ns;
+  static const long double k_time_units_per_millisecond =
+    1000000.0L / time_unit_ns;
+
+
+  static inline long double derive_requirement_per_execution(void) {
+    return 1.0L - powl(1.0L - required_failure_prob_per_millisecond,
+                       1.0L / activations_per_millisecond);
+  }
+
+  static inline long double estimate_sdc_given_completed(instant_t exec_time_ns) {
+    long double E_i =
+        ((long double)exec_time_ns) / time_unit_ns;
+
+    long double p_due_unit =
+        1.0L - powl(
+            1.0L - get_fault_rate_per_millisecond() * prob_due_given_fault,
+            1.0L / k_time_units_per_millisecond
+        );
+
+    long double p_sdc_unit =
+        1.0L - powl(
+            1.0L - get_fault_rate_per_millisecond() * prob_sdc_given_fault,
+            1.0L / k_time_units_per_millisecond
+        );
+
+    long double p_benign_unit =
+        1.0L - (p_due_unit + p_sdc_unit);
+
+    long double P_due =
+        1.0L - powl(1.0L - p_due_unit, E_i);
+
+    long double P_benign =
+        powl(p_benign_unit, E_i);
+
+    long double P_completed =
+        1.0L - P_due;
+
+    if (P_completed <= 0.0L) {
+        return 1.0L;
+    }
+
+    long double P_sdc_given_completed =
+        1.0L - (P_benign / P_completed);
+
+    if (P_sdc_given_completed < 0.0L) return 0.0L;
+    if (P_sdc_given_completed > 1.0L) return 1.0L;
+
+
+    //lf_print("%.18Le\n", P_sdc_given_completed);//debug
+    return P_sdc_given_completed;
+  }
+
+  //for abstract fault injection
+
+  static long double uniform_0_1(void) {
+    return (long double)splitmix64_next() / ((long double)UINT64_MAX + 1.0L);
+  }
+
+  static int sample_poisson(long double mean) {
+    long double L = expl(-mean);
+    int k = 0;
+    long double p = 1.0L;
+
+    do {
+        k++;
+        p *= uniform_0_1();
+    } while (p > L);
+
+    return k - 1;
+  }
+=}
+
+reactor SingleExecWithFault {
+  input trigger: int
+  output result: int
+  output completed: bool
+
+  reaction(trigger) -> result, completed {=
+       int result_value = trigger->value * trigger->value; // Example computation: square the input
+
+       //fault injection
+
+    //1. Sample random execution time (50% ~ 150% from the average execution time)
+    long long exec_time_ns = random_between_ns(mean_exec_time_ns / 2,
+                             mean_exec_time_ns + mean_exec_time_ns / 2);
+
+    //2. Sample the number of faults during this execution window.
+       long double T_milliseconds =
+           (long double)exec_time_ns / 1000000.0L;
+
+       int num_of_faults =
+           sample_poisson(get_fault_rate_per_millisecond() * T_milliseconds);
+
+       // 3. Aggregate fault-level outcomes into an execution-level outcome.
+    // Rule:
+    //   1) if a DUE-inducing fault occurs, the execution-level outcome is DUE
+    //   2) else, if an SDC-inducing fault occurs, the execution-level outcome is SDC
+    //   3) else, the executon-level outcome is Benign
+       bool has_due = false;
+       bool has_sdc = false;
+    long long due_time_ns = exec_time_ns; //NOTE: DUE may terminate the task earlier
+
+       for (int i = 0; i < num_of_faults; i++) {
+           long long fault_time_ns =
+               (long long)(uniform_0_1() * (long double)exec_time_ns);
+
+    	long double u = uniform_0_1();
+
+    	if (u < prob_due_given_fault) {
+    		has_due = true;
+
+    		if (fault_time_ns < due_time_ns)
+    			due_time_ns = fault_time_ns;
+
+    		// Note: since we did not sort the fault times,
+    		// we should not break here.
+    	}
+    	else if (u < prob_due_given_fault + prob_sdc_given_fault)
+    		has_sdc = true;
+       }
+
+       // 4. Decide actual execution time and output.
+       if (has_due) {
+           // DUE: execution aborts at the earliest DUE fault time.
+           sleep_for_ns(due_time_ns);
+
+           lf_set(result, 0); // Garbage value
+           lf_set(completed, false);
+       }
+       else if (has_sdc) {
+           // SDC: execution completes, but result is corrupted.
+           sleep_for_ns(exec_time_ns);
+
+           int flip_bit = (int)(1U << (splitmix64_next() % 16));
+           lf_set(result, result_value ^ flip_bit);
+           lf_set(completed, true);
+       }
+       else {
+           // Benign: execution completes with correct result.
+           sleep_for_ns(exec_time_ns);
+
+           lf_set(result, result_value);
+           lf_set(completed, true);
+       }
+  =}
+}
+
+reactor MajorityVoter {
+  input count_completed: int
+  input[9] results: int
+  output agreed: bool
+  output finalOutput: int
+
+  reaction(count_completed, results) -> agreed, finalOutput {=
+    if (count_completed->value == 0) {
+    	//no completed execution
+              lf_set(agreed, false);
+    	lf_set(finalOutput, -1);
+    }
+
+    else if (count_completed->value == 1) {
+    	lf_set(finalOutput, results[0]->value);
+              lf_set(agreed, true);
+    }
+
+    else {
+    	int uniq_vals[9];
+    	int uniq_counts[9];
+    	int index = 0;   // number of unique values
+
+    	// build histogram
+    	for (int i = 0; i < count_completed->value; i++) {
+    		int value = results[i]->value;
+
+    		bool found = false;
+    		for (int j = 0; j < index; j++) {
+    			if (uniq_vals[j] == value) {
+    				uniq_counts[j]++;
+    				found = true;
+    				break;
+    			}
+    		}
+
+    		if (!found) {
+    			uniq_vals[index] = value;
+    			uniq_counts[index] = 1;
+    			index++;
+    		}
+    	}
+
+    	// find max
+    	int best_idx = 0;
+    	for (int i = 1; i < index; i++) {
+    		if (uniq_counts[i] > uniq_counts[best_idx]) {
+    			best_idx = i;
+    		}
+    	}
+
+    	// majority check
+    	if (2 * uniq_counts[best_idx] > count_completed->value) {
+    	    lf_set(finalOutput, uniq_vals[best_idx]);
+                  lf_set(agreed, true);
+    	} else {
+    		//majority cannot be agreed
+                  lf_set(agreed, false);
+    	    lf_set(finalOutput, -1);
+    	}
+    }
+  =}
+}
+
+reactor SerialExecution {
+  input start: bool
+
+  output finalOutput: int
+  output agreed: bool
+  output deadlineViolated: bool
+
+  output numExecutions: int
+  output numCompleted: int
+
+  state N: int = 1
+  state M: int = 1
+
+  state deadline_violated_current: bool = false
+
+  state last_attempt_start_time: time = 0 nsec
+
+  logical action execute_once
+
+  state count_completed: int = 0
+
+  state count_executions: int = 0
+
+  state voting_results: int[9] = {-1, -1, -1, -1, -1, -1, -1, -1, -1}
+
+  se = new SingleExecWithFault()
+  mv = new MajorityVoter()
+
+  reaction(start) -> execute_once {=
+       if (!start->value) return;
+
+       const char* n_env = getenv("N");
+       const char* m_env = getenv("M");
+
+       self->N = n_env ? atoi(n_env) : 1;
+       self->M = m_env ? atoi(m_env) : 1;
+
+       for (int i = 0; i < 9; i++) {
+           self->voting_results[i] = -1;
+       }
+
+       self->count_executions = 0;
+       self->count_completed = 0;
+    self->deadline_violated_current = false;
+
+       lf_schedule(execute_once, 0);
+  =}
+
+  reaction(execute_once) -> se.trigger {=
+    self->last_attempt_start_time = lf_time_physical_elapsed();
+    lf_set(se.trigger, 5);
+  =}
+
+  reaction(se.result, se.completed) -> execute_once, mv.count_completed, mv.results {=
+       bool should_re_exec = false;
+
+       self->count_executions += 1;
+
+       if(se.completed->value && self->count_completed < 9) { //report the completion information.
+           self->voting_results[self->count_completed] = se.result->value;
+           self->count_completed += 1;
+    }
+
+    if (self->count_completed < self->M && self->count_executions < self->N)
+    	should_re_exec = true;
+
+    if (should_re_exec && self->count_completed < 9) {
+        lf_schedule(execute_once, 0);
+    }
+
+    else { //Terminate the re-execution and proceed majority voting.
+      lf_set(mv.count_completed, self->count_completed);
+      for (int i = 0; i < 9; i++) {
+    	  lf_set(mv.results[i], self->voting_results[i]);
+      }
+    }
+  =}
+
+  reaction(mv.finalOutput, mv.agreed) ->
+  finalOutput, agreed, deadlineViolated, numExecutions, numCompleted {=
+    lf_set(finalOutput, mv.finalOutput->value);
+    lf_set(agreed, mv.agreed->value);
+    lf_set(deadlineViolated, false);
+    lf_set(numExecutions, self->count_executions);
+    lf_set(numCompleted, self->count_completed);
+  =}
+}
+
+main reactor {
+  state total_iteration: int = 100000
+  state success_cnt: int = 0
+  state cannot_agreed: int = 0
+  state agreed_sdc: int = 0
+  state deadline_violation_cnt: int = 0
+  state period_overrun_cnt: int = 0        // state dropped_overrun: int = 0
+  state total_slack_ns: int64_t = 0
+  state total_executions: int64_t = 0
+  state total_completed: int64_t = 0
+
+  state job_start_physical_time: time = 0 nsec  // state busy: bool = false //does not work well
+
+  state iter: int = 0
+  state expected: int = 25                 // 5 * 5;
+
+  timer tick(0, 13500 usec)
+
+  serialExecution = new SerialExecution()  // baseline 1
+
+  // baseline 2
+  // serialExecution = new SerialExecution(N = 2, M = 1)
+  // baseline 3
+  // serialExecution = new SerialExecution(N = 3, M = 1)
+  // baseline 4
+  // serialExecution = new SerialExecution(N = 3, M = 3)
+  reaction(tick) -> serialExecution.start {=
+       if (self->iter >= self->total_iteration) {
+           return;
+       }
+
+    /*
+       if (self->busy) {
+           // Previous job has not finished yet. drop this period.
+    	self->dropped_overrun += 1;
+           return;
+       }
+    */
+
+       //self->busy = true;
+    self->job_start_physical_time = lf_time_physical_elapsed();
+
+       lf_set(serialExecution.start, true);
+  =}
+
+  reaction(
+      serialExecution.finalOutput,
+      serialExecution.agreed,
+      serialExecution.deadlineViolated,
+      serialExecution.numExecutions,
+      serialExecution.numCompleted) {=
+       instant_t finish_time = lf_time_physical_elapsed();
+       instant_t elapsed_time = finish_time - self->job_start_physical_time;
+
+       // Period = 13.5 ms = 13,500,000 ns
+    long long period_ns = 13500000LL;
+    long long elapsed_ns = (long long)elapsed_time;
+    long long slack_ns = period_ns - elapsed_ns;
+    self->total_slack_ns += slack_ns;
+       if (elapsed_time > period_ns) {
+           self->period_overrun_cnt++;
+       }
+
+       if(serialExecution.agreed->value == false)
+           self->cannot_agreed++;
+       else if (serialExecution.finalOutput->value != self->expected)
+           self->agreed_sdc++;
+       else
+           self->success_cnt++;
+
+    if (serialExecution.deadlineViolated->value)
+           self->deadline_violation_cnt++;
+
+       self->iter++;
+    //self->busy = false;
+
+       self->total_executions += serialExecution.numExecutions->value;
+       self->total_completed += serialExecution.numCompleted->value;
+
+       if (self->iter >= self->total_iteration) {
+           lf_print("Finished.\n");
+           lf_print("Total trials: %d", self->total_iteration);
+           lf_print("Successed trials: %d", self->success_cnt);
+           lf_print("Failures (Cannot agree majority): %d", self->cannot_agreed); // no completed execution + no majority among completed executions
+           lf_print("Failures (Agreed output is incorrect): %d", self->agreed_sdc); // Voted result is incorrect (including only 1 completed execution cases)
+    	lf_print("(Reaction) Deadline violations: %d", self->deadline_violation_cnt);
+    	//lf_print("Dropped periods due to overruns: %d", self->dropped_overrun);
+    	lf_print("Overruns: %d", self->period_overrun_cnt);
+    	long double avg_slack_ms = ((long double)self->total_slack_ns / self->iter) / 1000000.0L;
+    	lf_print("Average slack time: %.3Lf ms", avg_slack_ms);
+    	long double avg_slack_percent = ((long double)self->total_slack_ns / self->iter) / (long double)period_ns * 100.0L;
+    	lf_print("Average slack: %.2Lf%% of period", avg_slack_percent);
+
+           long double avg_executions = (long double)self->total_executions / self->iter;
+           long double avg_completed = (long double)self->total_completed / self->iter;
+
+           lf_print("Average execution attempts per trial: %.3Lf", avg_executions);
+           lf_print("Average completed executions per trial: %.3Lf", avg_completed);
+
+
+    	lf_request_stop();
+       }
+  =}
+}
