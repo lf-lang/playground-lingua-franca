@@ -22,7 +22,7 @@ reactor RequestWork {
   timer t(0, 200 ms)
   state count = 1
 
-  reaction(t) result -> request {=
+  reaction(t, result) -> request {=
     print(f"Request work at logical time {lf.time.logical_elapsed()}")
     request.set(self.count)
     self.count += 1
