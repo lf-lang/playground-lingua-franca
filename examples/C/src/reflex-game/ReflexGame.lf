@@ -65,11 +65,7 @@ reactor User {
   output out: char
   physical action user_response: char
 
-  reaction(user_response) {=
-    lf_async_resume(user_response);
-  =}
-
-  reaction(startup) -> out, user_response {=
+  reaction(startup, user_response) -> out, user_response {=
     while (true) {
       int c;
       while((c = lf_async(user_response, getchar)) != '\n') {
