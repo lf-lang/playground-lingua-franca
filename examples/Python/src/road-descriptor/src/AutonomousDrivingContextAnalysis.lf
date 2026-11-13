@@ -1,0 +1,245 @@
+target Python
+
+reactor CameraSensor {
+  output image
+  input change_frame
+
+  logical action next_image
+
+  state frames_ref
+  state current_frame_pos
+
+  preamble {=
+    import glob
+
+    def get_all_frames(self, path):
+        # sets a list of strings corresponding to the paths of the images
+        self.frames_ref = self.glob.glob(path+"/*.png")
+
+    def get_current(self):
+        return self.frames_ref[self.current_frame_pos]
+  =}
+
+  reaction(change_frame) -> next_image {=
+    # move to the next frame (avoid going out of bounds)
+    self.current_frame_pos = (self.current_frame_pos + 1) % len(self.frames_ref)
+    next_image.schedule(0)
+  =}
+
+  reaction(startup) -> next_image {=
+    self.get_all_frames("D:\\playground-lingua-franca\\examples\\Python\\src\\road-descriptor\\pictures")
+    self.current_frame_pos = 0
+    # Trigger first user prompt
+    next_image.schedule(0)
+  =}
+
+  reaction(next_image) -> image {=
+    from PIL import Image
+    import time
+
+    #file_path = input("Image absolute path: ")
+    file_path = self.get_current()
+    if file_path.strip():
+        # ----- IMAGE LOAD -----
+        t0 = time.time()
+        image_data = Image.open(file_path)
+        image.set(image_data)
+        self.image_loading_time = time.time() - t0
+        print(f"Image loading time: {self.image_loading_time:.3f}s")
+  =}
+}
+
+reactor VLMInference {
+  input image
+  output response
+  logical action poll
+
+  state descriptor_prompt
+  state model
+  state tokenizer
+  state inference_thread
+  state inference_lock
+  state inference_in_progress
+  state inference_result
+  state inference_error
+
+  state model_loading_time
+  state image_encoding_time
+  state prefill_time
+  state decode_time_avg
+  state inference_time
+  state end_to_end_latency
+
+  preamble {=
+    import threading
+    import time
+    import traceback
+
+    def run_vlm_job(self, image_value):
+        """Run the blocking VLM work outside the LF reaction thread."""
+        try:
+            image_encoding_start = self.time.time()
+            enc_image = self.model.encode_image(image_value)
+            image_encoding_time = self.time.time() - image_encoding_start
+
+            t0 = self.time.time()
+            out_stream = self.model.query(
+                enc_image,
+                self.descriptor_prompt,
+                stream=True
+            )["answer"]
+
+            out = ""
+            num_tokens = 0
+            t_first = None
+            for token in out_stream:
+                if num_tokens == 0:
+                    t_first = self.time.time()
+                out = out + token
+                num_tokens += 1
+
+            t_end = self.time.time()
+            if t_first is None:
+                t_first = t_end
+
+            prefill_plus_first = t_first - t0
+            decode_only = t_end - t_first
+            avg_decode = decode_only / (num_tokens - 1) if num_tokens > 1 else 0.0
+
+            result = {
+                "text": out,
+                "image_encoding_time": image_encoding_time,
+                "avg_decode": avg_decode,
+                "decode_only": decode_only,
+                "prefill_plus_first": prefill_plus_first,
+            }
+
+            with self.inference_lock:
+                self.inference_result = result
+                self.inference_error = None
+                self.inference_in_progress = False
+        except Exception:
+            with self.inference_lock:
+                self.inference_result = None
+                self.inference_error = self.traceback.format_exc()
+                self.inference_in_progress = False
+  =}
+
+  # initialize our state
+  reaction(startup) {=
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    import torch
+    import sys
+    import os
+    import time
+
+    project_root = os.path.abspath(os.path.join(os.getcwd(), ".."))
+    src_path = os.path.join(project_root, "road-descriptor/src")
+    sys.path.append(src_path)
+
+    from prompts import descriptor_prompt
+
+    # model_id = "Qwen/Qwen2.5-VL-7B-Instruct"
+    model_id = "vikhyatk/moondream2"
+
+    loading_start = time.time()
+    self.model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        trust_remote_code=True
+    )
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[INFO] Using device: {device}")
+    self.model = self.model.to(device)  # Move model once at init
+
+    self.descriptor_prompt = descriptor_prompt
+    self.inference_thread = None
+    self.inference_lock = self.threading.Lock()
+    self.inference_in_progress = False
+    self.inference_result = None
+    self.inference_error = None
+
+    loading_end = time.time()
+    print(f"Model loading time: {loading_end - loading_start:.2f} seconds")
+  =}
+
+  reaction(image) -> poll {=
+    with self.inference_lock:
+        if self.inference_in_progress:
+            print("VLM inference is still running; dropping incoming image.")
+            return
+
+        self.inference_in_progress = True
+        self.inference_result = None
+        self.inference_error = None
+
+    self.inference_thread = self.threading.Thread(
+        target=self.run_vlm_job,
+        args=(image.value,),
+        daemon=True
+    )
+    self.inference_thread.start()
+    poll.schedule(MSEC(100))
+  =} deadline(5 sec) {=
+    print("Deadline violation of VLM detected.")
+  =}
+
+  reaction(poll) -> response, poll {=
+    with self.inference_lock:
+        result = self.inference_result
+        error = self.inference_error
+        in_progress = self.inference_in_progress
+
+        if result is not None or error is not None:
+            self.inference_result = None
+            self.inference_error = None
+
+    if in_progress:
+        poll.schedule(MSEC(100))
+        return
+
+    if error is not None:
+        print("VLM inference failed:")
+        print(error)
+        response.set("[VLM inference failed]")
+        return
+
+    if result is not None:
+        self.image_encoding_time = result["image_encoding_time"]
+        self.decode_time_avg = result["avg_decode"]
+        self.prefill_time = result["prefill_plus_first"]
+        self.inference_time = result["decode_only"] + result["prefill_plus_first"]
+        self.end_to_end_latency = self.image_encoding_time + self.inference_time
+
+        print(f"image encoding time: {self.image_encoding_time:.3f}")
+        print(f"Average Decode time: {self.decode_time_avg:.3f}s")
+        print(f"Decode time: {result['decode_only']:.3f}s")
+        print(f"Prefill time: {self.prefill_time:.3f}s")
+        print(f"End to End latency time: {self.end_to_end_latency:.3f}s")
+        response.set(result["text"])
+  =}
+}
+
+reactor ActionDisplay {
+  input response
+  output triggerSensor
+  logical action trigger
+
+  reaction(response) -> trigger {=
+    print("AI:", response.value)
+    trigger.schedule(0)
+  =}
+
+  reaction(trigger) -> triggerSensor {=
+    triggerSensor.set(1)
+  =}
+}
+
+main reactor {
+  u = new CameraSensor()
+  descriptor = new VLMInference()
+  o = new ActionDisplay()
+
+  u.image -> descriptor.image
+  descriptor.response -> o.response
+  o.triggerSensor -> u.change_frame after 0
+}
