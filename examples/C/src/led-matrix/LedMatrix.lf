@@ -133,7 +133,6 @@ reactor LED {
 }
 
 main reactor {
-  physical action button_press
   logical action change_mode
 
   state next_frame: int = 0
