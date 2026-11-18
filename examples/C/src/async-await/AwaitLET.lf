@@ -23,10 +23,12 @@ reactor RequestWork {
   state count: int = 1
 
   reaction(t, result) -> request {=
-    lf_print("Request work at logical time " PRINTF_TIME, lf_time_logical_elapsed());
+    instant_t request_time = lf_time_logical_elapsed();
+    lf_print("Request work at logical time " PRINTF_TIME, request_time);
     lf_set(request, self->count++);
     lf_await(result);
-    lf_print("Result %d received at logical time " PRINTF_TIME, result->value, lf_time_logical_elapsed());
+    lf_print("Result %d received at logical time " PRINTF_TIME " from request at " PRINTF_TIME,
+        result->value, lf_time_logical_elapsed(), request_time);
   =}
 }
 
