@@ -1,0 +1,220 @@
+/**
+ * SFWT (SensorFusionWithTransience): a decentralized federation with a
+ * transient LiDAR federate, structured after an Error-State Extended
+ * Kalman Filter: `i` (IMU) propagates the nominal state at 25 ms, `l`
+ * (LiDAR) produces a correction at 200 ms, `f` (Fuse) combines both,
+ * `c` (Control) acts on the result, and `p` (Persistence) preserves
+ * `l`'s calibration across its joins and leaves. `i`, `f`, `c`, and `p`
+ * are persistent; `l` is @transient: its process may be killed (e.g.,
+ * to save power) and relaunched at runtime, and on each re-join it
+ * recovers its calibration from `p` instead of recalibrating.
+ *
+ * This is a coordination demo, not a working filter: propagation and
+ * correction use placeholder arithmetic. What it illustrates is
+ * decentralized LF semantics: maxwait and absent_after contracts,
+ * tardy (STP) handling, deadline handling, and the transient join
+ * protocol. It accompanies the paper "Decentralized Coordination in
+ * LF: Timing Correctness and Transient Federate Support" (Jerad & Lee).
+ *
+ * ## Running
+ * Compile with lfc, launch the RTI and the five federates, then kill
+ * the LiDAR process and relaunch it while the rest keeps running. The
+ * federation stays live and deterministic; on re-join, `l` restores
+ * its calibration and resumes corrections.
+ *
+ * ## Exploring timing correctness (perturbation guide)
+ * The timing values below form a correct configuration. Changing one
+ * at a time produces a predictable violation, observable in the logs:
+ *  - Control's deadline 30 ms -> 25 ms: repeated deadline violations
+ *    around `l`'s re-join.
+ *  - Fuse's @maxwait 25 ms -> forever: STP violation at Persistence,
+ *    plus STP and deadline violations at Control, on re-join.
+ *  - absent_after on p.calib -> l.calib, 15 ms -> 5 ms: transitory
+ *    STP violation at the calib reaction on re-join.
+ *  - absent_after on f.pose -> p.pose, 30 ms -> 20 ms: transitory STP
+ *    violation at Persistence's pose reaction on re-join (the bound no
+ *    longer dominates Fuse's 25 ms maxwait).
+ *
+ * ## Measuring the join cost
+ * `tracing: true` records execution traces; render them with fedsd to
+ * see the three-step join protocol (connect outbound and collect peer
+ * tags; compute the effective start tag and notify inbound peers;
+ * start). The join cost is the physical time from `l`'s first
+ * connection request on a re-join to its startup reaction firing,
+ * minus the configured start-tag offset (delta, 1 s by default), both
+ * readable from the trace timestamps.
+ *
+ * @author: Chadlia Jerad
+ * @author: Edward A. Lee
+ */
+
+target C {
+  timeout: 10 s,
+  coordination: decentralized,
+  tracing: true
+}
+
+preamble {=
+  #include <math.h>
+  // Persistent calibration, to be sent to the transient LiDAR federate
+  // across joins.
+  typedef struct lidar_calibration_t {
+    double translation_x;
+    double translation_y;
+  } lidar_calibration_t;
+
+  typedef struct pose_t {
+    double x;
+    double y;
+    double theta;
+  } pose_t;
+=}
+
+/**
+ * High-frequency, persistent propagation source. Integrates IMU dynamics
+ * to produce the nominal state at a fixed rate.
+ */
+reactor IMU(period: time = 25 ms) {
+  output out: pose_t
+  timer t(0, period)
+  state x: double = 0.0
+  state y: double = 0.0
+  state theta: double = 0.0
+
+  reaction(t) -> out {=
+    // Nominal-state propagation (placeholder integration step).
+    self->x += 0.01;
+    self->theta += 0.001;
+    pose_t p = {self->x, self->y, self->theta};
+    lf_set(out, p);
+  =}
+}
+
+/**
+ * Holds the LiDAR calibration data (translation offset) across executions of
+ * the transient LiDAR federate.
+ */
+reactor Persistance {
+  state calibration: lidar_calibration_t = {0.0, 0.0}
+
+  input join: bool
+  input pose: pose_t
+  output calib: lidar_calibration_t
+
+  // Send saved calibration when the LiDAR first join.
+  reaction(join) -> calib {=
+    lf_set(calib, self->calibration);
+    lf_print("Notifying LiDAR of saved calibration: {translation_x=%f, translation_y=%f}", self->calibration.translation_x, self->calibration.translation_y);
+  =}
+  
+  // Placeholder: pose history is not actually stored yet.
+  reaction(pose) {=
+    lf_print("Pose saved in history.");
+  =}
+}
+
+/**
+ * Transient correction federate. 
+ * Could be killed (leave the federation), for example when power level 
+ * becomes critical. May join again at runtime.
+ * Restores its calibration from `Persistance` on re-join.
+ */
+reactor LiDAR(period: time = 200 ms) {
+  input calib: lidar_calibration_t
+  output out: pose_t
+  output join: bool
+
+  timer t(0, period)
+  state calib_xy: lidar_calibration_t = {0.0, 0.0}
+  state pose_corrected: pose_t = {0.0, 0.0, 0.0}
+
+  // Notify outbound Persistance that LiDAR has joined.
+  reaction(startup) -> join {=
+    lf_set(join, true);
+  =}
+
+  // Receive the calibration information on start
+  reaction(calib) {=
+    self->calib_xy = calib->value;
+	
+    lf_print("Restored calib: {translation_x=%f, translation_y=%f} at " PRINTF_TIME ".", self->calib_xy.translation_x, self->calib_xy.translation_x, lf_time_logical_elapsed());
+  =}
+
+  // Placeholder periodic correction (arbitrary increment, not a real
+  // calibration estimate).
+  reaction(t) -> out {=
+    self->pose_corrected.x += 0.001 + self->calib_xy.translation_x;
+    self->pose_corrected.y += 0.0015 + self->calib_xy.translation_y;
+    lf_set(out, self->pose_corrected);
+    lf_print("LiDAR correction sent: {translation_x=%f, translation_y=%f}",
+        self->pose_corrected.x, self->pose_corrected.y);
+  =}
+}
+
+/*
+ * Integrates IMU propagation with LiDAR correction (when present) into a
+ * fused pose estimate.
+ */
+reactor Fuse {
+  input imu: pose_t
+  input lidar: pose_t
+  output pose: pose_t
+  state tardy_count: int = 0
+  state pose: pose_t
+
+  timer t(0, 200ms)
+
+  // Predict based on IMU data
+  reaction(imu) {=
+    self->pose = imu->value;
+  =} 
+
+  // Integarte LiDAR correction
+  reaction(t, lidar) -> pose {=
+    if (lidar->is_present) {
+        self->pose.x += lidar->value.x;
+        self->pose.y += lidar->value.y;
+	} 
+    lf_set(pose, self->pose);
+  =} tardy {=
+	lf_print("Discard LiDAR data since it was received late.");
+  =}
+}
+
+/**
+ * Persistent controller. Must keep reacting to its own timer and to
+ * fused pose estimates, regardless of whether LiDAR is currently present.
+ */
+reactor Control {
+  input ctrl: pose_t
+
+  reaction(ctrl) {=
+  	lf_print("Received pose {x=%f, y=%f, theta=%f} and applied control.",
+        ctrl->value.x, ctrl->value.y, ctrl->value.theta);
+  =} deadline(30 ms) {=
+	lf_print_warning("Ctrl reacton missed its deadline at tag (" PRINTF_TAG ") by " PRINTF_TIME "ns. Apply ***degraded*** cotrol.", lf_time_logical_elapsed()/1000000, lf_tag().microstep, (lf_time_physical()-lf_time_logical())/1000);
+  =}
+}
+
+federated reactor {
+  i = new IMU()
+  @maxwait(25ms)
+  f = new Fuse()
+  c = new Control()
+  @maxwait(10 ms)
+  p = new Persistance()
+
+  @transient
+  @maxwait(0)
+  l = new LiDAR()
+
+  // Connections
+  i.out -> f.imu
+  l.out -> f.lidar
+  f.pose -> c.ctrl
+  @absent_after(30ms)
+  f.pose -> p.pose
+  l.join -> p.join
+  @absent_after(15 ms)
+  p.calib -> l.calib
+}
