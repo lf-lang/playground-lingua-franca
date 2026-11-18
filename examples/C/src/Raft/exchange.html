@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Simple but Robust Stock Exchange</title></head>
+  <body>
+    <h1>Simple but Robust Stock Exchange</h1>
+    <button id="buttonGet">Get Balance</button>
+    <!-- buy/sell controls -->
+    <span id="tradeControls">
+      <label for="shares">Shares:</label>
+      <input id="shares" type="number" min="1" value="1" />
+      <button id="buttonUpdate">Buy / Sell NVIDIA</button>
+    </span>
+    <p id="response">Welcome to the stock exchange! Want to buy some NVIDIA?</p>
+    <script>
+    // “Get Balance”
+    document.getElementById('buttonGet').addEventListener('click', function() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onload = function() {
+      if (this.status == 200) {
+        document.getElementById('response').innerHTML = this.responseText;
+      } else {
+        document.getElementById('response').innerHTML = "Error: " + this.statusText;
+      }
+    };
+    xhttp.open('GET', '/get', true);
+    xhttp.send(null);
+
+    // “Buy / Sell NVIDIA”
+    document.getElementById("buttonUpdate").addEventListener("click", () => {
+      const shares = document.getElementById("shares").value || 1;
+
+      const xhttp = new XMLHttpRequest();
+      xhttp.onload = function () {
+        document.getElementById("response").textContent =
+          this.status === 200
+            ? this.responseText
+            : "Error: " + this.statusText;
+      };
+      // example: POST /trade?symbol=NVDA&shares=3
+      xhttp.open("POST", `/trade?symbol=NVDA&shares=${shares}`, true);
+      xhttp.send();
+      });
+    }); 
+    </script>
+  </body>
+</html>
