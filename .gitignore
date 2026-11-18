@@ -154,4 +154,7 @@ gradle-app.setting
 ### Gradle Patch ###
 **/build/
 
+### venv ###
+.venv/
+
 # End of https://www.toptal.com/developers/gitignore/api/intellij,gradle,eclipse,maven,visualstudiocode
