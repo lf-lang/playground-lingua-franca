@@ -1,0 +1,62 @@
+target C
+
+reactor Merger {
+    input[2] in: int
+    output out: int
+
+    reaction(in) -> out {=
+        // Assume in[0] and in[1] always coincide
+        lf_set(out, in[0]->value + in[1]->value);
+    =}
+}
+
+reactor Tree2 {
+    input[4] in: int
+    output out: int
+
+    merger0 = new Merger()
+    merger1 = new Merger()
+    merger2 = new Merger()
+    in -> merger0.in, merger1.in
+    merger0.out, merger1.out -> merger2.in
+    merger2.out -> out
+}
+
+reactor Tree3 {
+    input[8] in: int
+    output out: int
+
+    merger0 = new Tree2()
+    merger1 = new Tree2()
+    merger2 = new Merger()
+    in -> merger0.in, merger1.in
+    merger0.out, merger1.out -> merger2.in
+    merger2.out -> out
+}
+
+reactor Tree4 {
+    input[16] in: int
+    output out: int
+
+    merger0 = new Tree3()
+    merger1 = new Tree3()
+    merger2 = new Merger()
+    in -> merger0.in, merger1.in
+    merger0.out, merger1.out -> merger2.in
+    merger2.out -> out
+}
+
+main reactor {
+    tree = new Tree4()
+
+    reaction(startup) -> tree.in {=
+        for (int i = 0; i < 16; i++) {
+            lf_set(tree.in[i], i);
+        }
+    =}
+
+    reaction(tree.out) {=
+        lf_print("Sum = %d", tree.out->value);
+        if (tree.out->value != 15 * 8) lf_print_error_and_exit("Incorrect sum.");
+    =}
+}

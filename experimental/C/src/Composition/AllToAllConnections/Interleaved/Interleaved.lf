@@ -1,0 +1,109 @@
+/**
+ * This example implements the behavior of the interleaved keyword for the special case where the
+ * width of the bank is 4 or 8. From these examples it should be possible to guess how this would
+ * generalize to other powers of 2, and how this could work if we allowed reactor constructors to be
+ * parameterized by each other.
+ */
+target C
+
+reactor Splitter(n: int(0)) {
+    input[n + n] in: int
+    output[n] out0: int
+    output[n] out1: int
+    in -> out0, out1
+}
+
+reactor InterleaverModule(stride: int(1)) {
+    input[stride + stride + stride + stride] in: int
+    output[stride + stride + stride + stride] out: int
+    splitter0 = new Splitter(n(stride))
+    splitter1 = new Splitter(n(stride))
+    in -> splitter0.in, splitter1.in
+    splitter0.out0, splitter1.out0, splitter0.out1, splitter1.out1 -> out
+}
+
+reactor Interleaver4(n: int(1), stride: int(1)) {
+    input[16] in: int
+    output[16] out: int
+
+    i2_0 = new[2] InterleaverModule(stride(2))
+    i4_0 = new[1] InterleaverModule(stride(4))
+
+    i1_1 = new[4] InterleaverModule(stride(1))
+    i2_1 = new[2] InterleaverModule(stride(2))
+
+    in -> i2_0.in
+    i2_0.out -> i4_0.in
+
+    i4_0.out -> i1_1.in
+    i1_1.out -> i2_1.in
+
+    i2_1.out -> out
+}
+
+reactor Interleaver8(n: int(1), stride: int(1)) {
+    input[64] in: int
+    output[64] out: int
+    i4_0 = new[4] InterleaverModule(stride(4))
+    i8_0 = new[2] InterleaverModule(stride(8))
+    i16_0 = new[1] InterleaverModule(stride(16))
+
+    i2_1 = new[8] InterleaverModule(stride(2))
+    i4_1 = new[4] InterleaverModule(stride(4))
+    i8_1 = new[2] InterleaverModule(stride(8))
+
+    i1_2 = new[16] InterleaverModule(stride(1))
+    i2_2 = new[8] InterleaverModule(stride(2))
+    i4_2 = new[4] InterleaverModule(stride(4))
+
+    in -> i4_0.in
+    i4_0.out -> i8_0.in
+    i8_0.out -> i16_0.in
+
+    i16_0.out -> i2_1.in
+    i2_1.out -> i4_1.in
+    i4_1.out -> i8_1.in
+
+    i8_1.out -> i1_2.in
+    i1_2.out -> i2_2.in
+    i2_2.out -> i4_2.in
+
+    i4_2.out -> out
+}
+
+reactor Pinger(bank_index: int(0), n: int(4)) {
+    input[n] in: int
+    output[n] out: int
+
+    logical action a
+
+    reaction(startup) -> a {=
+        lf_schedule(a, MSEC(self->n * 100));
+    =}
+
+    reaction(a) -> out {=
+        for (int i = 0; i < self->n; i++) {
+            printf("Sending %d to %d.\n", self->bank_index, i);
+            lf_set(out[i], self->bank_index);
+        }
+    =}
+    reaction(in) {=
+        for (int i = 0; i < self->n; i++) {
+            if (in[i]->is_present) {
+                printf("%d received %d from %d.\n", self->bank_index, in[i]->value, i);
+            }
+        }
+    =}
+}
+
+main reactor {
+    pingers4 = new[4] Pinger(n(4))
+    interleaver4 = new Interleaver4()
+    pingers4.out -> interleaver4.in
+    interleaver4.out -> pingers4.in
+
+    pingers8 = new[8] Pinger(n(8))
+    interleaver8 = new Interleaver8()
+    pingers8.out -> interleaver8.in
+    interleaver8.out -> pingers8.in
+}
